@@ -10,12 +10,9 @@
 
 ## 入门
 
-```shellscript
-# 先安装包吧
-npm i modexie
-
-# 使用 modexie 需要 dexie
-npm install dexie
+```bash
+# 使用 modexie 需要 dexie，所以两个都需要安装哦
+npm i modexie dexie
 ```
 
 接着我们在项目中新建一个 `models` 文件夹，用于存放我们的模型
