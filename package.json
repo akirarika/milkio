@@ -1,0 +1,20 @@
+{
+  "name": "modexie",
+  "version": "1.0.0",
+  "description": "A simple and practical ORM library, and use your favorite [Dexie.js](https://github.com/dfahlander/Dexie.js) to CURD.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akirarika/modexie.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/akirarika/modexie/issues"
+  },
+  "homepage": "https://github.com/akirarika/modexie#readme"
+}
