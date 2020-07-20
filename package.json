@@ -1,8 +1,8 @@
 {
   "name": "modexie",
   "version": "1.0.0",
-  "description": "A simple and practical ORM library, and use your favorite [Dexie.js](https://github.com/dfahlander/Dexie.js) to CURD.",
-  "main": "index.js",
+  "description": "A simple and practical IndexedDB Model library, the Database and View Data can be synchronized (If you have an MVVM framework😃), and use your favorite Dexie.js to CURD🎉",
+  "main": "Connection.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,11 +10,20 @@
     "type": "git",
     "url": "git+https://github.com/akirarika/modexie.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "indexeddb",
+    "dexie",
+    "model",
+    "orm",
+    "database"
+  ],
+  "author": "akirarika",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/akirarika/modexie/issues"
   },
-  "homepage": "https://github.com/akirarika/modexie#readme"
+  "homepage": "https://github.com/akirarika/modexie#readme",
+  "directories": {
+    "example": "examples"
+  }
 }
