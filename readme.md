@@ -1,8 +1,12 @@
-# Modexie (尚在开发阶段)
+# Modexie
 
 简体中文 | [English](./readme_en.md)
 
 一个简单实用的 IndexedDB Model 库，Database 的数据可以和 DOM 同步 (如果你有 MVVM 框架的话 😃)，和用你最爱的 [Dexie.js](https://dexie.org/) 来写增删改查 🎉
+
+## 许可证
+
+[GLWTL](./license.txt)
 
 ## 入门
 
