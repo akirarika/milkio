@@ -280,6 +280,9 @@ mydb.con;
 // 当前数据库所有的模型
 mydb.models;
 
+// 当前模型的 [Dexie Table](https://dexie.org/docs/Table/Table) 对象
+mydb.models.book.table();
+
 // 调用模型的方法
 mydb.models.book.method("methods name", ...args);
 
