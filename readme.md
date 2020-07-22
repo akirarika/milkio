@@ -212,7 +212,9 @@ console.log(book, books);
 
 ## 模型关联
 
-IndexedDB 是非关系型数据库，目前比较推崇的数据库表设计范式是 [如 MongoDB 所说](https://docs.mongodb.com/manual/applications/data-models-relationships/)，另外，由于 IndexedDB 是前端数据库，数据量通常远比后端数据库要少，所以在设计结构时，可读性和可扩展性远要比性能重要
+IndexedDB 是非关系型数据库，目前比较推崇的数据库表设计范式是 [如 MongoDB 所说](https://docs.mongodb.com/manual/applications/data-models-relationships/)，在使用模型关联功能之前，推荐先阅读下再决定是否真的有必要进行多表关联
+
+另外，由于 IndexedDB 是前端数据库，数据量通常远比后端数据库要少，所以在设计结构时，可读性和可扩展性远要比性能重要
 
 ### 一对一关联
 
@@ -284,7 +286,7 @@ export default {
 this.list = await this.$mydb.models.user.with(["phone"]).query("yourQueryName");
 ```
 
-### 一对以关联（反向）
+### 一对一关联（反向）
 
 我们已经可以从 `User` 拿到 `Phone` 了，那么我们想从 `Phone` 拿到 `User` 就在模型文件中定义反向关联
 
@@ -393,6 +395,8 @@ this.list = await this.$mydb.models.author
 同一对一关联（反向）
 
 ### 多对多关联
+
+因为 IndexedDB 是非关系数据库，所以没必要用一张中间表来存储关联关系，使用数组即可
 
 假设 `Book` 模型和 `Tag` 模型互相多对多关联
 
