@@ -274,6 +274,7 @@ export default {
         model: "phone", // 关联模型的名称，需与当前模型处于同一数据库
         // foreignKey: "user_id", // 外键，不填则默认为 `${父模型名}_id`
         // localKey: "id", // 主键，不填则默认为 `id`
+        // defaultValue: {}, // 当关联结果为空的默认值，不填则默认为空对象，原因：https://en.wikipedia.org/wiki/Null_object_pattern
       });
     },
   },
@@ -307,6 +308,7 @@ export default {
         model: "user", // 关联模型的名称，需与当前模型处于同一数据库
         // foreignKey: "user_id", // 外键，不填则默认为 `${子模型名}_id`
         // localKey: "id", // 主键，不填则默认为 `id`
+        // defaultValue: {}, // 当关联结果为空的默认值，不填则默认为空对象，原因：https://en.wikipedia.org/wiki/Null_object_pattern
       });
     },
   },
@@ -376,6 +378,7 @@ export default {
         model: "book", // 关联模型的名称，需与当前模型处于同一数据库
         // foreignKey: "user_id", // 外键，不填则默认为 `${父模型名}_id`
         // localKey: "id", // 主键，不填则默认为 `id`
+        // defaultValue: [], // 当关联结果为空的默认值，不填则默认为空数组，原因：https://en.wikipedia.org/wiki/Null_object_pattern
       });
     },
   },
@@ -439,6 +442,7 @@ export default {
         model: "tag", // 关联模型的名称，需与当前模型处于同一数据库
         // foreignKey: "user_id", // 外键，不填则默认为 `${父模型名}_id`
         // localKey: "id", // 主键，不填则默认为 `id`
+        // defaultValue: [], // 当关联结果为空的默认值，不填则默认为空数组，原因：https://en.wikipedia.org/wiki/Null_object_pattern
       });
     },
   },

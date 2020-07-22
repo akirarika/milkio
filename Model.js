@@ -56,7 +56,7 @@ const Model = {
         model,
         foreignKey = `${this.name}_id`,
         localKey = "id",
-        defaultValue = null,
+        defaultValue = {},
       }) => {
         const childModel = this.connection.models[model];
         const relResArr = await childModel
@@ -76,7 +76,7 @@ const Model = {
         model,
         foreignKey = void 0,
         localKey = "id",
-        defaultValue = null,
+        defaultValue = {},
       }) => {
         const childModel = this.connection.models[model];
 
@@ -119,7 +119,7 @@ const Model = {
         model,
         foreignKey = void 0,
         localKey = "id",
-        defaultValue = null,
+        defaultValue = [],
       }) => {
         const childModel = this.connection.models[model];
 
@@ -215,11 +215,11 @@ const Model = {
       return obj;
     };
 
-    this.table().hook("creating", function(primKey, obj, transaction) {
+    this.table().hook("creating", function (primKey, obj, transaction) {
       attribute(obj);
     });
 
-    this.table().hook("updating", function(
+    this.table().hook("updating", function (
       modifications,
       primKey,
       obj,
