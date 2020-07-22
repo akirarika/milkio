@@ -56,7 +56,7 @@ const Model = {
         model,
         foreignKey = `${this.name}_id`,
         localKey = "id",
-        defaultValue = null,
+        defaultValue = {},
       }) => {
         const childModel = this.connection.models[model];
         const relResArr = await childModel
@@ -76,7 +76,7 @@ const Model = {
         model,
         foreignKey = void 0,
         localKey = "id",
-        defaultValue = null,
+        defaultValue = {},
       }) => {
         const childModel = this.connection.models[model];
 
@@ -119,7 +119,7 @@ const Model = {
         model,
         foreignKey = void 0,
         localKey = "id",
-        defaultValue = null,
+        defaultValue = [],
       }) => {
         const childModel = this.connection.models[model];
 
@@ -145,41 +145,11 @@ const Model = {
       },
     });
 
-    // 改用递归加载关联？
-    console.warn(resArr);
-
     return this.loadRelationships(
       resArr,
       relationshipArray,
       ++currentRelationshipIndex
     );
-
-    // return this.loadRelationships()
-    // const whereIn = (model, key, resultKey) => {
-    //   return model
-    //     .table()
-    //     .where(key)
-    //     .anyOf(resultsArr.map((result) => result[resultKey]));
-    // };
-
-    // // 处理关联
-    // for (const r of relationshipArray) {
-    //   const { mount, array, defaults } = this.relationships[r]({
-    //     models: this.connection.models,
-    //     whereIn,
-    //     resultsArr,
-    //   });
-
-    //   for (let i = 0; i < resultsArr.length; i++) {
-    //     const relationshipArr = await array;
-    //     resultsArr[i][r] = void 0 === defaults ? null : defaults;
-
-    //     for (let j = 0; j < relationshipArr.length; j++) {
-    //       if (mount(resultsArr[i], relationshipArr[j]))
-    //         resultsArr[i][r] = relationshipArr[j];
-    //     }
-    //   }
-    // }
   },
 
   async method(name, ...args) {
@@ -215,11 +185,11 @@ const Model = {
       return obj;
     };
 
-    this.table().hook("creating", function(primKey, obj, transaction) {
+    this.table().hook("creating", function (primKey, obj, transaction) {
       attribute(obj);
     });
 
-    this.table().hook("updating", function(
+    this.table().hook("updating", function (
       modifications,
       primKey,
       obj,

@@ -5,9 +5,11 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "publish": "./publish.ps1"
   },
   "dependencies": {
+    "@babel/polyfill": "^7.10.4",
     "core-js": "^3.6.5",
     "dexie": "^3.0.1",
     "modexie": "^1.0.0",
@@ -15,6 +17,9 @@
     "vuex": "^3.4.0"
   },
   "devDependencies": {
+    "@babel/cli": "^7.10.5",
+    "@babel/core": "^7.10.5",
+    "@babel/preset-env": "^7.10.4",
     "@vue/cli-plugin-babel": "~4.4.0",
     "@vue/cli-plugin-eslint": "~4.4.0",
     "@vue/cli-plugin-vuex": "~4.4.0",

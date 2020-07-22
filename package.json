@@ -2,7 +2,7 @@
   "name": "modexie",
   "version": "1.3.0",
   "description": "A simple and practical IndexedDB Model library, the Database and View Data can be synchronized (If you have an MVVM framework😃), and use your favorite Dexie.js to CURD🎉",
-  "main": "Connection.js",
+  "main": "dist/Connection.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
