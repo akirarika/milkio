@@ -28,11 +28,12 @@ export default class ModexieConnection {
       this.migrations(model);
     }
 
+    this.seeding();
+
     for (const modelName in this.models) {
       const model = this.models[modelName];
       // 数据库打开中
       this.attributes(model);
-      this.seeding(model);
       this.hooking(model);
     }
   }
@@ -57,12 +58,15 @@ export default class ModexieConnection {
     model.attribute();
   }
 
-  seeding(model) {
+  seeding() {
     if (localStorage.getItem("__modexie:seeded")) return;
     else localStorage.setItem("__modexie:seeded", 1);
-    if (!model.seeding) return;
 
-    model.seeding(this.con[model.name]);
+    for (const modelName in this.models) {
+      const model = this.models[modelName];
+
+      model.seeding(this.con[model.name]);
+    }
   }
 
   hooking(model) {

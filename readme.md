@@ -2,7 +2,7 @@
 
 简体中文 | [English](./readme_en.md)
 
-一个简单实用的 IndexedDB Model 库，Database 的数据可以和 DOM 同步 (如果你有 MVVM 框架的话 😃)，和用你最爱的 [Dexie.js](https://dexie.org/) 来写增删改查 🎉
+一个简单实用的 IndexedDB Model 库，Database 的数据可以和 DOM 同步 (如果你有 MVVM 框架的话 😃)，和用你最爱的 [Dexie.js](https://github.com/dfahlander/Dexie.js) 来写增删改查 🎉
 
 ## 许可证
 
@@ -73,7 +73,7 @@ export default {
   /**
    * 方法
    * 一般来讲，为了避免耦合，对模型的增删改查，最好都通过一个封装了所有查询语句的方法来完成。外部只需要调用此方法，就能得到它想要得到的
-   * 第一个参数是 [Dexie Table](https://dexie.org/docs/Table/Table) 对象，可以根据 Dexie 文档增删改查
+   * 第一个参数是 [Dexie Table](https://dexie.org/docs/Table/Table) 对象
    * 方法可以是异步的，也可以返回 Promise
    */
   methods: {
@@ -87,10 +87,10 @@ export default {
 
   /**
    * 查询方法
-   * "方法(methods)"和"查询方法(queries)"的区别是，查询方法可以使用加载关联、数据绑定等功能，而方法则只是一个简单的函数
-   * "查询方法"必须返回一个对象(代表某条结果)或数组(代表数条结果)，也可以异步或是 Promise
+   * "方法(methods)"和"查询方法(queries)"的区别是，"查询方法(queries)"可以使用模型关联、数据视图绑定等功能，而"方法(methods)"则只是一个简单的函数
+   * "查询方法(queries)"必须返回一个对象(代表某条结果)或数组(代表数条结果)，也可以异步或是 Promise
    * 一般来说，增、删、改、或 count 等使用"方法(methods)"，而查，则使用"查询方法(queries)"
-   * 第一个参数是 [Dexie Table](https://dexie.org/docs/Table/Table) 对象，可以根据 Dexie 文档增删改查
+   * 第一个参数是 [Dexie Table](https://dexie.org/docs/Table/Table) 对象
    */
   queries: {
     async all(table) {
@@ -193,7 +193,7 @@ console.log(book, books);
   },
 ```
 
-监听默认情况只对修改和删除生效，之所以不对创建有效，是因为前端展示很多时候都需要分页，而且创建的内容插入的位置也不固定
+监听默认情况只对修改和删除生效，之所以不对创建有效，是因为前端展示许多情况都使用分页，将新增的对象添加到现有数据的末尾不是正确的，此时，你更希望什么都不做。而如果你对数据倒序时，你又会希望创建的新数据可以插入到到数组顶部
 
 所以如果需要监听创建操作，可以定义一个函数，来决定如何操作数据
 
@@ -212,35 +212,211 @@ console.log(book, books);
 
 ## 模型关联
 
-IndexedDB 是非关系型数据库，所以最好不要用 Mysql 的表关联思维来设计 IndexedDB 的数据结构
+IndexedDB 是非关系型数据库，目前比较推崇的数据库表设计范式是 [如 MongoDB 所说](https://docs.mongodb.com/manual/applications/data-models-relationships/)，另外，由于 IndexedDB 是前端数据库，数据量通常远比后端数据库要少，所以在设计结构时，可读性和可扩展性远要比性能重要
 
-一个比较好的思路是 [如 MongoDB 所说](https://docs.mongodb.com/manual/applications/data-models-relationships/)，另外由于 IndexedDB 是前端数据库，数据量要远比后端数据库要少，所以在设计结构时，可读性和可扩展性远要比性能重要
+### 一对一关联
 
-由于 IndexedDB 没有类似 MongoDB DBRefs 的功能，所以 Modexie 实现了一个模型关联功能
-
-以 Book 关联 Author 为例，原本 Book 结构为：
+假设一个 `User` 模型关联一个 `Phone` 模型
 
 ```javascript
+// models/User.js
+
 {
-  title: '2666',
-  author_id: 1,
+  id: 42,
+  name: 'david',
 }
 ```
 
-加载关联后查询出的结构为：
+```javascript
+// models/Phone.js
+
+{
+  id: 36,
+  user_id: 42,
+  code: '086',
+  number: '12345678901',
+}
+```
+
+加载关联后查询出的结构为
 
 ```javascript
 {
-  title: '2666',
-  author: {
-    id: 1,
-    name: 'roberto',
-    avatar: 'xxxxxxx',
-  },
+  id: 42,
+  name: 'david',
+  phone: {
+    id: 36,
+    user_id: 42,
+    code: '086',
+    number: '12345678901',
+  }
 }
 ```
 
 使用前需要先在模型文件中定义关联
+
+```javascript
+// models/User.js
+
+export default {
+  name: "user",
+
+  // ...
+
+  /**
+   * 模型关联
+   */
+  relationships: {
+    async phone({ hasOne, belongsTo, hasMany, belongsToMany }) {
+      return await hasOne({
+        model: "phone", // 关联模型的名称，需与当前模型处于同一数据库
+        // foreignKey: "user_id", // 外键，不填则默认为 `${父模型名}_id`
+        // localKey: "id", // 主键，不填则默认为 `id`
+      });
+    },
+  },
+};
+```
+
+然后在 `query` 前调用 `with` 即可使用，`with` 函数接受一个数组，你可以同时加载多个关联的子模型
+
+```javascript
+this.list = await this.$mydb.models.user.with(["phone"]).query("yourQueryName");
+```
+
+### 一对以关联（反向）
+
+我们已经可以从 `User` 拿到 `Phone` 了，那么我们想从 `Phone` 拿到 `User` 就在模型文件中定义反向关联
+
+```javascript
+// models/Phone.js
+
+export default {
+  name: "user",
+
+  // ...
+
+  /**
+   * 模型关联
+   */
+  relationships: {
+    async user({ hasOne, belongsTo, hasMany, belongsToMany }) {
+      return await belongsTo({
+        model: "user", // 关联模型的名称，需与当前模型处于同一数据库
+        // foreignKey: "user_id", // 外键，不填则默认为 `${子模型名}_id`
+        // localKey: "id", // 主键，不填则默认为 `id`
+      });
+    },
+  },
+};
+```
+
+然后在 `query` 前调用 `with` 即可使用
+
+```javascript
+this.list = await this.$mydb.models.phone.with(["user"]).query("yourQueryName");
+```
+
+结果如下
+
+```javascript
+{
+  id: 36,
+  user_id: 42,
+  code: '086',
+  number: '12345678901',
+  user: {
+    id: 42,
+    name: 'david',
+  }
+}
+```
+
+### 一对多关联
+
+假设一个 `Author` 模型关联多个 `Book` 模型
+
+```javascript
+// models/Author.js
+
+{
+  id: 42,
+  name: 'david',
+}
+```
+
+```javascript
+// models/Book.js
+
+{
+  id: 36,
+  author_id: 42,
+  title: '2666',
+}
+```
+
+使用前需要先在模型文件中定义关联
+
+```javascript
+// models/Author.js
+
+export default {
+  name: "user",
+
+  // ...
+
+  /**
+   * 模型关联
+   */
+  relationships: {
+    async books({ hasOne, belongsTo, hasMany, belongsToMany }) {
+      return await hasMany({
+        model: "book", // 关联模型的名称，需与当前模型处于同一数据库
+        // foreignKey: "user_id", // 外键，不填则默认为 `${父模型名}_id`
+        // localKey: "id", // 主键，不填则默认为 `id`
+      });
+    },
+  },
+};
+```
+
+然后在 `query` 前调用 `with` 即可使用
+
+```javascript
+this.list = await this.$mydb.models.author
+  .with(["books"])
+  .query("yourQueryName");
+```
+
+### 一对多关联（反向）
+
+同一对一关联（反向）
+
+### 多对多关联
+
+假设 `Book` 模型和 `Tag` 模型互相多对多关联
+
+```javascript
+// models/Book.js
+
+{
+  id: 1,
+  title: '2666',
+  tag_id: [1, 2]
+}
+```
+
+```javascript
+// models/Tag.js
+
+{
+  id: 2,
+  name: 'literature',
+  book_id: [2, 4, 6]
+}
+```
+
+模型中定义关联
 
 ```javascript
 // models/Book.js
@@ -254,20 +430,20 @@ export default {
    * 模型关联
    */
   relationships: {
-    author({ models, whereIn, resultsArr }) {
-      const authors = whereIn(models.author, "id", "author_id").toArray();
-
-      return {
-        mount: (result, relationship) => result.id === relationship.id,
-        array: authors,
-        defaults: {},
-      };
+    async tags({ hasOne, belongsTo, hasMany, belongsToMany }) {
+      return await belongsToMany({
+        model: "tag", // 关联模型的名称，需与当前模型处于同一数据库
+        // foreignKey: "user_id", // 外键，不填则默认为 `${父模型名}_id`
+        // localKey: "id", // 主键，不填则默认为 `id`
+      });
     },
   },
 };
 ```
 
-此部分待续
+### 嵌套关联
+
+To Be Continued
 
 ## API
 
@@ -290,7 +466,7 @@ mydb.models.book.method("methods name", ...args);
 mydb.models.book.query("queries name", ...args);
 
 // 加载模型关联
-mydb.models.book.with("relationships name").query(...);
+mydb.models.book.with(["relationships name"]).query(...);
 
 // 模型视图绑定监听
 mydb.models.book.watch(..., {

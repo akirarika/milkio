@@ -56,14 +56,12 @@ export default {
    * }
    */
   relationships: {
-    author({ models, whereIn, resultsArr }) {
-      const authors = whereIn(models.author, "id", "author_id").toArray();
-
-      return {
-        mount: (result, relationship) => result.id === relationship.id,
-        array: authors,
-        defaults: {},
-      };
+    async author({ hasOne, belongsTo, hasMany, belongsToMany }) {
+      return await belongsToMany({
+        model: "author",
+        // foreignKey: "book_id",
+        // localKey: "id",
+      });
     },
   },
   /**
@@ -80,7 +78,7 @@ export default {
   seeding(table) {
     table.add({
       title: "1984",
-      author_id: 1,
+      author_id: [1, 2],
     });
   },
 };
