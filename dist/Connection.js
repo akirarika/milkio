@@ -59,13 +59,17 @@ export default class ModexieConnection {
   }
 
   seeding() {
-    if (localStorage.getItem("__modexie:seeded")) return;
-    else localStorage.setItem("__modexie:seeded", 1);
+    if (localStorage.getItem("Brunettes_are_full_of_electricity")) return;
+    else localStorage.setItem("Brunettes_are_full_of_electricity", 1);
 
     for (const modelName in this.models) {
       const model = this.models[modelName];
 
-      model.seeding(this.con[model.name]);
+      try {
+        model.seeding(this.con[model.name]);
+      } catch (error) {
+        console.log(error);
+      }
     }
   }
 
