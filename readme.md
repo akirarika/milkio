@@ -42,9 +42,9 @@ export default {
    */
   migrations: {
     1: (store) => store("++id, name, book_id"),
-    // 等价于 mydb.version(1).stores({book: "++id, name, book_id"})
+    // 等价于 Dexie 的 mydb.version(1).stores({book: "++id, name, book_id"})
     // 2: (store) => store("++id, name, book_id").upgrade(...),
-    // 等价于 mydb.version(2).stores({book: "++id, name, book_id"}).upgrade(...),
+    // 等价于 Dexie 的 mydb.version(2).stores({book: "++id, name, book_id"}).upgrade(...),
   },
 
   /**
