@@ -1,7 +1,7 @@
 export default {
   name: "author",
   migrations: {
-    1: "++id, name, book_id",
+    1: (store) => store("++id, name, book_id"),
   },
   seeding(table) {
     table.add({

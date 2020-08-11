@@ -69,7 +69,8 @@ export default {
    * 声明版本和表索引的结构，
    */
   migrations: {
-    1: "++id, title, author_id",
+    1: (store) => store("++id, title"),
+    2: (store) => store("++id, title, author_id"),
   },
   /**
    * 数据填充

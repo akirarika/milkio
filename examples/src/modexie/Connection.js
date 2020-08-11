@@ -41,16 +41,19 @@ export default class ModexieConnection {
   migrations(model) {
     if (!model.migrations) {
       console.error(
-        `${model.name} 模型必须包含 migrations 函数且至少迁移一个版本`
+        `the "${model.name}" model must contain the migrations function and migrate at least one version`
       );
       return;
     }
 
     for (const version in model.migrations) {
-      const obj = {};
+      const store = (str) => {
+        const obj = {};
+        obj[model.name] = str;
+        this.con.version(version).stores(obj);
+      };
 
-      obj[model.name] = model.migrations[version];
-      this.con.version(version).stores(obj);
+      model.migrations[version](store);
     }
   }
 
@@ -113,7 +116,7 @@ export default class ModexieConnection {
         if (!creating) continue;
 
         if ("function" !== typeof creating)
-          throw `若使用 creating 属性，则其必须是一个函数`;
+          throw `if you use the creating attribute, it must be a function`;
 
         creating(obj);
       }
