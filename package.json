@@ -1,6 +1,6 @@
 {
   "name": "modexie",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "A simple and practical IndexedDB Model library, the Database and View Data can be synchronized (If you have an MVVM framework😃), and use your favorite Dexie.js to CURD🎉",
   "main": "dist/Connection.js",
   "scripts": {
