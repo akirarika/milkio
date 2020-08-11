@@ -195,7 +195,7 @@ const Model = {
       obj,
       transaction
     ) {
-      return attribute();
+      return attribute(obj);
     });
   },
 };
