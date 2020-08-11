@@ -37,9 +37,14 @@ export default {
    * 底层实现是调用 [Dexie Version](https://dexie.org/docs/Tutorial/Design#database-versioning)，将其拆分到每个模型下的用意是为了解耦
    * 注：indexedDB 不是关系型数据库，它只需要声明索引即可，而**不是**声明每个你可能用到的键
    * 至于哪些键应该被索引，一般来说，只需要索引你需要 where 的键即可。
+   *
+   * 版本 >= 1.6.0 后，迁移中的每个版本都必须是函数，此更改是为了方便在调用 [Dexie Upgrade](https://dexie.org/docs/Version/Version.upgrade()) 等函数
    */
   migrations: {
-    1: "++id, title, author_id",
+    1: (store) => store("++id, name, book_id"),
+    // 等价于 mydb.version(1).stores({book: "++id, name, book_id"})
+    // 2: (store) => store("++id, name, book_id").upgrade(...),
+    // 等价于 mydb.version(2).stores({book: "++id, name, book_id"}).upgrade(...),
   },
 
   /**
