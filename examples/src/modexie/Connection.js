@@ -50,7 +50,7 @@ export default class ModexieConnection {
       const store = (str) => {
         const obj = {};
         obj[model.name] = str;
-        this.con.version(version).stores(obj)();
+        this.con.version(version).stores(obj);
       };
 
       model.migrations[version](store);
