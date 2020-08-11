@@ -185,11 +185,11 @@ const Model = {
       return obj;
     };
 
-    this.table().hook("creating", function (primKey, obj, transaction) {
+    this.table().hook("creating", function(primKey, obj, transaction) {
       attribute(obj);
     });
 
-    this.table().hook("updating", function (
+    this.table().hook("updating", function(
       modifications,
       primKey,
       obj,
