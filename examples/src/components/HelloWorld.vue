@@ -19,25 +19,33 @@ export default {
   },
   async mounted() {
     setTimeout(async () => {
-      this.list = await this.$mydb.models.book.with(["author"]).query("all");
-      this.$mydb.models.book.watch(this.list, {
-        creating: (obj) => {
-          this.list.unshift(obj);
-        },
-      });
+      this.list = await this.$mydb.models.book.query("all");
+      console.log(this.list);
     }, 1000);
+    // setTimeout(async () => {
+    //   this.list = await this.$mydb.models.book.with(["author"]).query("all");
+    //   this.$mydb.models.book.watch(this.list, {
+    //     creating: (obj) => {
+    //       this.list.unshift(obj);
+    //     },
+    //   });
+    // }, 1000);
   },
   components: {},
   methods: {
     add() {
       this.$mydb.models.book.method("add", {
-        title: Math.random().toString(36).slice(-8),
+        title: Math.random()
+          .toString(36)
+          .slice(-8),
       });
     },
     put() {
       this.$mydb.models.book.method("put", {
         id: 1,
-        title: Math.random().toString(36).slice(-8),
+        title: Math.random()
+          .toString(36)
+          .slice(-8),
       });
     },
     del() {

@@ -80,6 +80,7 @@ export default class ModexieConnection {
     model
       .table()
       .hook("updating", (modifications, primKey, obj, transaction) => {
+        console.log("updataing");
         for (let i = 0; i < model.watchObject.length; i++) {
           const primary = model.watchObject[i].primary;
           const array = model.watchObject[i].array;
@@ -95,6 +96,7 @@ export default class ModexieConnection {
       });
 
     model.table().hook("deleting", function(primKey, obj, transaction) {
+      console.log("deleting");
       if (!obj) return;
       for (let i = 0; i < model.watchObject.length; i++) {
         const primary = model.watchObject[i].primary;
@@ -106,6 +108,7 @@ export default class ModexieConnection {
     });
 
     model.table().hook("creating", function(primKey, obj, transaction) {
+      console.log("creating");
       if (!obj) return;
 
       for (let i = 0; i < model.watchObject.length; i++) {

@@ -24,8 +24,8 @@ export default {
     all(table) {
       return table.toArray();
     },
-    first(table) {
-      return table.where({ id: 1 }).first();
+    async first(table) {
+      return [await table.where({ id: 1 }).first()];
     },
   },
   /**
@@ -76,8 +76,8 @@ export default {
    * 数据填充
    * 在用户首次运行程序时，自动填充的数据
    */
-  seeding(table) {
-    table.add({
+  async seeding(table) {
+    return await table.add({
       title: "1984",
       author_id: [1, 2],
     });
