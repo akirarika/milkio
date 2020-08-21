@@ -11,7 +11,7 @@
   "dependencies": {
     "@babel/polyfill": "^7.10.4",
     "core-js": "^3.6.5",
-    "dexie": "^3.0.1",
+    "dexie": "^3.0.2",
     "modexie": "^1.0.0",
     "vue": "^2.6.11",
     "vuex": "^3.4.0"

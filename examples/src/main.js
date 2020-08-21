@@ -5,10 +5,14 @@ import Connection from "./models/Model";
 import Book from "./models/Book";
 import Author from "./models/Author";
 import Dexie from "dexie";
+import migrations from "./models/Migrations";
 
 Vue.config.productionTip = false;
 
-Vue.prototype.$mydb = new Connection(new Dexie("mydb"), [Book, Author]);
+Vue.prototype.$mydb = new Connection(new Dexie("mydb"), migrations, [
+  Book,
+  Author,
+]);
 // window.mydb = new Connection(new Dexie("mydb"), [Book, Author]);
 
 new Vue({

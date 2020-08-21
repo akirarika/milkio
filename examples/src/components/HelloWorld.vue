@@ -18,10 +18,16 @@ export default {
     };
   },
   async mounted() {
-    setTimeout(async () => {
-      this.list = await this.$mydb.models.book.query("all");
-      console.log(this.list);
-    }, 1000);
+    this.list = await this.$mydb.models.book
+      .watch({
+        updating: async (a) => {
+          this.list = await a;
+        },
+      })
+      .with(["author"])
+      .query("all");
+
+    console.log(this.list);
     // setTimeout(async () => {
     //   this.list = await this.$mydb.models.book.with(["author"]).query("all");
     //   this.$mydb.models.book.watch(this.list, {
@@ -46,6 +52,7 @@ export default {
         title: Math.random()
           .toString(36)
           .slice(-8),
+        author_id: 1,
       });
     },
     del() {

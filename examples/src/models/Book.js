@@ -57,7 +57,7 @@ export default {
    */
   relationships: {
     async author({ hasOne, belongsTo, hasMany, belongsToMany }) {
-      return await belongsToMany({
+      return await hasMany({
         model: "author",
         // foreignKey: "book_id",
         // localKey: "id",

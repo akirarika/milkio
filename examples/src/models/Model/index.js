@@ -1,7 +1,8 @@
 import query from "./query";
-import migration from "./migration";
 import seed from "./seed";
 import method from "./method";
+import relationship from "./relationship";
+import hook from "./hook";
 
 export default class ModexieConnection {
   /**
@@ -9,10 +10,12 @@ export default class ModexieConnection {
    * @param {Dexie} dexieConnection
    * @param {Array} models
    */
-  constructor(dexieConnection, models, config = {}) {
+  constructor(dexieConnection, migrations, models, config = {}) {
     const that = this;
     this.con = dexieConnection;
     this.models = {};
+
+    migrations(dexieConnection);
 
     // 制作并挂载 models 对象
     models.forEach((model) => {
@@ -21,13 +24,14 @@ export default class ModexieConnection {
         table() {
           return dexieConnection[this.name];
         },
-        ...migration,
         ...query,
+        ...relationship,
         ...method,
+        ...hook,
         ...model,
       };
 
-      this.models[model.name].migration();
+      this.models[model.name].hook();
     });
 
     seed(this);
