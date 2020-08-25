@@ -8,8 +8,6 @@ export default {
 
     const rel = relationshipArray[currentRelationshipIndex];
 
-    console.log(this.relationships);
-
     await this.relationships[rel]({
       hasOne: async ({
         model,

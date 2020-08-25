@@ -32,22 +32,6 @@ export default {
   name: "book",
 
   /**
-   * 迁移 (*必需属性*)
-   * 声明版本和表索引的结构
-   * 底层实现是调用 [Dexie Version](https://dexie.org/docs/Tutorial/Design#database-versioning)，将其拆分到每个模型下的用意是为了解耦
-   * 注：indexedDB 不是关系型数据库，它只需要声明索引即可，而**不是**声明每个你可能用到的键
-   * 至于哪些键应该被索引，一般来说，只需要索引你需要 where 的键即可。
-   *
-   * 版本 >= 1.6.0 后，迁移中的每个版本都必须是函数，此更改是为了方便在调用 [Dexie Upgrade](https://dexie.org/docs/Version/Version.upgrade()) 等函数
-   */
-  migrations: {
-    1: (store) => store("++id, name, book_id"),
-    // 等价于 Dexie 的 mydb.version(1).stores({book: "++id, name, book_id"})
-    // 2: (store) => store("++id, name, book_id").upgrade(...),
-    // 等价于 Dexie 的 mydb.version(2).stores({book: "++id, name, book_id"}).upgrade(...),
-  },
-
-  /**
    * 填充
    * 只在用户首次运行程序时才会执行
    * 第一个参数返回了一个 [Dexie Table](https://dexie.org/docs/Table/Table) 对象
@@ -93,7 +77,7 @@ export default {
   /**
    * 查询方法
    * "方法(methods)"和"查询方法(queries)"的区别是，"查询方法(queries)"可以使用模型关联、数据视图绑定等功能，而"方法(methods)"则只是一个简单的函数
-   * "查询方法(queries)"必须返回一个对象(代表某条结果)或数组(代表数条结果)，也可以异步或是 Promise
+   * "查询方法(queries)"必须返回一个数组，当然结果可以异步或是 Promise
    * 一般来说，增、删、改、或 count 等使用"方法(methods)"，而查，则使用"查询方法(queries)"
    * 第一个参数是 [Dexie Table](https://dexie.org/docs/Table/Table) 对象
    */
@@ -102,7 +86,7 @@ export default {
       return await table.toArray();
     },
     async first(table) {
-      return await table.where({ id: 1 }).first();
+      return [await table.where({ id: 1 }).first()];
     },
   },
 };
@@ -122,7 +106,19 @@ import Author from "./models/Author";
 const connection = new Modexie(
   // 第一个参数需传入一个 [Dexie 实例对象](https://dexie.org/docs/Dexie/Dexie)，Modexie 的所有操作都将通过调用此对象来完成
   new Dexie("mydb"), // 小贴士：Dexie 的第一个参数是数据库名称
-  // 第二个参数是一个数组，里面传入所有你需要应用到此数据库的模型
+  // 第二个参数是要进行的迁移，见 [Dexie Version](https://dexie.org/docs/Dexie/Dexie.version())
+  (db) => {
+    db.version(2).stores({
+      book: "++id, title, author_id",
+      author: "++id, name, book_id",
+    });
+
+    db.version(1).stores({
+      book: "++id, title",
+      author: "++id, name, book_id",
+    });
+  },
+  // 第三个参数是一个数组，里面传入所有你需要应用到此数据库的模型
   [Book, Author]
 );
 
@@ -169,9 +165,21 @@ console.log(book, books);
       };
     },
     async mounted() {
-      this.books = await this.$mydb.models.book.query("all");
       // 调用 watch 函数来监听书籍变更，点下 `Put Book` 按钮吧！
-      this.$mydb.models.book.watch(this.books);
+      this.books = await this.$mydb.models.book
+        .watch({
+          creating: async (newObj) => {
+            this.books.unshift(newObj);
+          },
+          updating: async (query) => {
+            this.books = await query();
+          },
+          deleting: async (index, delObj) => {
+            this.books.splice(index, 1);
+          },
+        })
+        .with(["author"])
+        .query("all");
     },
     components: {},
     methods: {
@@ -186,40 +194,11 @@ console.log(book, books);
 </script>
 ```
 
-监听时，需要一个唯一的键来确定数据，类似 vue for 时需要 key，默认为 `id`，如需更改可以这样
-
-```javascript
-  async mounted() {
-    // ...
-
-    this.$mydb.models.book.watch(this.books, {
-      primary: 'unionid' // 以 'unionid' 为唯一的键
-    });
-  },
-```
-
-监听默认情况只对修改和删除生效，之所以不对创建有效，是因为前端展示许多情况都使用分页，将新增的对象添加到现有数据的末尾不是正确的，此时，你更希望什么都不做。而如果你对数据倒序时，你又会希望创建的新数据可以插入到到数组顶部
-
-所以如果需要监听创建操作，可以定义一个函数，来决定如何操作数据
-
-```javascript
-  async mounted() {
-    // ...
-
-    this.$mydb.models.book.watch(this.books, {
-      // 第一个参数代表要新增的对象
-      creating: (object) => {
-        this.books.unshift(object); // 将此对象添加到 this.books 的开头
-      },
-    });
-  },
-```
-
 ## 模型关联
 
-IndexedDB 是非关系型数据库，目前比较推崇的数据库表设计范式是 [如 MongoDB 所说](https://docs.mongodb.com/manual/applications/data-models-relationships/)，在使用模型关联功能之前，推荐先阅读下再决定是否真的有必要进行多表关联
+IndexedDB 是非关系型数据库，存储的数据是树状而不是表状的。往往插入一个数组或对象要比一对一/一对多关联方便得多。
 
-另外，由于 IndexedDB 是前端数据库，数据量通常远比后端数据库要少，所以在设计结构时，可读性和可扩展性远要比性能重要
+如果需要关联的话，目前比较推崇的数据库表设计范式是 [如 MongoDB 所说](https://docs.mongodb.com/manual/applications/data-models-relationships/)，推荐先行阅读
 
 ### 一对一关联
 

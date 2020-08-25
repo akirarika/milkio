@@ -30,6 +30,19 @@ export default {
   },
 
   /**
+   * 结果只取首条的查询
+   * @param {*} name
+   * @param {*} args
+   */
+  async first(name, args) {
+    const results = await this.query(name, args);
+
+    if (results) return results[0];
+
+    return null;
+  },
+
+  /**
    * 查询结束
    *
    * @param {*} name
