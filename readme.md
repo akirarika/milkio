@@ -2,7 +2,7 @@
 
 Kurimudb 是 Web 应用数据仓库，你可以用非常**简单的语法**，来**存储大量数据** (包括 Blob)、**管理状态** (可代替 Vuex、Redux)、并把它们**持久化在用户本地**。
 
-[阅读文档]()
+[阅读文档](https://akirarika.github.io/kurimudb/)
 
 ## 简单语法
 
@@ -54,4 +54,4 @@ await bookModel.data[2].name; // echo "Vingt mille lieues sous les mers"
 4. 当状态变更时，组件也会直接变更，有时我们更希望通过一个函数处理变更。
 5. 不容易实现监听一个 Store 下任意值的变更。
 
-这些在问题 Kurimudb 进行了解决。可参阅[状态管理](/state/)部分。
+这些在问题 Kurimudb 进行了解决。可参阅[状态管理](https://akirarika.github.io/kurimudb/state/)部分。

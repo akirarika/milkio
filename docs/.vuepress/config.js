@@ -1,5 +1,6 @@
 module.exports = {
     title: 'Kurimudb',
+    base: "/kurimudb/",
     themeConfig: {
         sidebar: [
             ['/intro/', '快速入门'],
