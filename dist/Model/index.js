@@ -1,7 +1,7 @@
-import { merge, Subject, BehaviorSubject } from 'rxjs';
-import Cache from './Cache';
-import Data from './Data';
-import Database from './Database';
+import { merge, Subject, BehaviorSubject } from "rxjs";
+import Cache from "./Cache";
+import Data from "./Data";
+import Database from "./Database";
 export default class Model {
     constructor(connection, [primary, primaryType]) {
         this.inserted$ = new Subject();
@@ -21,6 +21,7 @@ export default class Model {
         this._cache = new Cache(this);
         this.data = new Data(this);
         this.changed$.subscribe((d) => this.$.next(d));
+        this._seeding();
     }
     async all() {
         if (!this._connection)
@@ -74,15 +75,32 @@ export default class Model {
     checkPrimary(key) {
         if ("number" === this.primaryType && !isNaN(Number(key)))
             return Number(key);
-        if (this.primaryType !== (typeof key))
+        if (this.primaryType !== typeof key)
             throw new Error(`The model primary type needs to be ${this.primaryType}, not ${typeof key}`);
         return key;
     }
+    async _seeding() {
+        if (!this.seeding)
+            return;
+        if (!this._connection)
+            return this.seeding(this.data);
+        const table = this._connection.getConnection()["__Kurimudb"];
+        if (await table.get("is_seeded"))
+            return;
+        this.seeding(this.data);
+        await table.add({
+            key: "is_seeded",
+            value: "true",
+        });
+    }
     _humpToLine(str) {
-        return str.replace(/([A-Z])/g, "_$1").toLowerCase().replace(/^_/, "");
+        return str
+            .replace(/([A-Z])/g, "_$1")
+            .toLowerCase()
+            .replace(/^_/, "");
     }
     _isPlainObject(obj) {
-        if (typeof obj !== 'object' || obj === null)
+        if (typeof obj !== "object" || obj === null)
             return false;
         let proto = obj;
         while (Object.getPrototypeOf(proto) !== null) {
