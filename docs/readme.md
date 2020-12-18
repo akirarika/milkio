@@ -39,14 +39,17 @@ delete myModel.data.say
 ```js
 import bookModel from "models/bookModel"
 
-await new bookModel.data({
+const book1 = await new bookModel.data({
     name: "Alice in Wonderland",
     author: "Lewis Carroll",
 })
-await new bookModel.data({
+const book2 = await new bookModel.data({
     name: "Vingt mille lieues sous les mers",
     author: "Jules Gabriel Verne",
 })
+
+book1.id // echo 1
+book2.id // echo 2
 
 await bookModel.data[1].name // echo "Alice in Wonderland"
 await bookModel.data[2].name // echo "Vingt mille lieues sous les mers"
