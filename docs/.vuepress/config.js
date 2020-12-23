@@ -3,10 +3,10 @@ module.exports = {
     base: "/kurimudb/",
     themeConfig: {
         sidebar: [
+            ['/', '介绍'],
             ['/intro/', '快速入门'],
-            ['/version/', '版本控制'],
-            ['/select/', '集合筛选'],
-            ['/state/', '状态管理'],
+            ['/select/', '筛选查询'],
+            ['/monitor/', '订阅更新 (RxJS)'],
         ]
     }
 }

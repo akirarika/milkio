@@ -7,11 +7,7 @@
   "scripts": {
     "dev": "tsc --watch",
     "serve": "vuepress dev docs",
-    "build": "tsc --build && vuepress build docs",
-    "pre-commit": [
-      "tsc --build",
-      "vuepress build docs",
-    ]
+    "build": "tsc --build && vuepress build docs"
   },
   "repository": {
     "type": "git",

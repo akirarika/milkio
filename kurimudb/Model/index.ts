@@ -19,7 +19,11 @@ export default class Model {
   deleted$ = new Subject();
   updated$ = new Subject();
   changed$ = merge(this.inserted$, this.deleted$, this.updated$);
-  $ = new BehaviorSubject({});
+  $ = new BehaviorSubject({
+    type: 'inited',
+    key: null,
+    value: null
+  });
 
   seeding;
 
@@ -111,8 +115,7 @@ export default class Model {
       return Number(key);
     if (this.primaryType !== typeof key)
       throw new Error(
-        `The model primary type needs to be ${
-          this.primaryType
+        `The model primary type needs to be ${this.primaryType
         }, not ${typeof key}`
       );
     return key;

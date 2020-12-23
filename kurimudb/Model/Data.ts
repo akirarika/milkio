@@ -5,6 +5,7 @@ export default class Data {
         return new Proxy(function () { }, {
             construct: async (target: Data, [value, key = void 0]) => {
                 if (model._connection) value = await model._database.add(value, key, false);
+                if (void 0 === key) key = value[model.primary];
                 model._cache.add(key, value);
                 model.inserted$.next({
                     type: 'inserted',

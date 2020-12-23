@@ -1,4 +1,4 @@
-import { connection } from '../../../dist';
+import { connection } from '../../../../dist';
 
 export default new connection("default", (conn) => {
     conn.version(1).stores({

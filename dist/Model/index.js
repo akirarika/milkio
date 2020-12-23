@@ -8,7 +8,11 @@ export default class Model {
         this.deleted$ = new Subject();
         this.updated$ = new Subject();
         this.changed$ = merge(this.inserted$, this.deleted$, this.updated$);
-        this.$ = new BehaviorSubject({});
+        this.$ = new BehaviorSubject({
+            type: 'inited',
+            key: null,
+            value: null
+        });
         this.name = this.constructor.name;
         this.primary = primary;
         this.primaryType = primaryType;

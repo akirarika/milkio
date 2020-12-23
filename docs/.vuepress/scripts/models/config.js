@@ -1,4 +1,4 @@
-import { model } from '../../../dist';
+import { model } from '../../../../dist';
 import database from './database';
 
 export default new class Config extends model {
