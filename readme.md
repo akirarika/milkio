@@ -7,3 +7,18 @@ Kurimudb 是一款用于 [渐进式 Web 应用 (PWA)](https://developer.mozilla.
 Kurimudb 也可以充当 [状态管理器](/state/)。渐进式 Web 应用中由于存在大量下次访问时仍需复原的状态，同时状态间互相依赖耦合，Kurimudb 可能比 Vuex 更适合当作状态管理器使用。
 
 [点此阅读文档](https://akirarika.github.io/kurimudb/)
+
+```javascript
+import configModel from "models/configModel"
+
+// create or update
+configModel.data.token = "!dr0wssaP"
+// read
+console.log(await configModel.data.token)
+// delete
+delete configModel.data.token
+// watching
+configModel.data.token$.subscribe((token) => console.log(token))
+```
+
+[点此阅读文档](https://akirarika.github.io/kurimudb/)
