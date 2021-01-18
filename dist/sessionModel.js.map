@@ -1,0 +1,1 @@
+{"version":3,"file":"sessionModel.js","sourceRoot":"","sources":["../kurimudb/sessionModel.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,SAAS,CAAC;AAE5B,eAAe,IAAI,CAAC,MAAM,OAAQ,SAAQ,KAAK;IAC7C;QACE,KAAK,CAAC,KAAK,EAAE,CAAC,KAAK,EAAE,QAAQ,CAAC,CAAC,CAAC;IAClC,CAAC;CACF,CAAC,EAAE,CAAC"}

@@ -1,5 +1,7 @@
 # 快速入门
 
+在前文中，我们介绍了 `local` 和 `session` 两个对象，一个是将数据存储到 IndexedDB 里，用户刷新后也还在，一个是
+
 首先，在你的项目中安装 `kurimudb`：
 
 ```shell
@@ -23,13 +25,13 @@ import { model } from "kurimudb";
 
 // 模型需继承 `model` 类，模型的类名不可重复，必须唯一，这里把类名取为 Config
 // 为了保证数据源是唯一的，我们需要通过 `new` 操作符返回一个实例化好的对象
-export default new class Config extends model {
+export default new (class Config extends model {
   constructor() {
     // 构造函数第一个参数代表是否持久化数据，这里先写 false，下面的章节我们会讨论如何持久化数据
     // 第二个参数是一个数组，代表主键的名称与类型，主键是唯一不可重复的，类型支持 "string" 和 "number"
     super(false, ["key", "string"]);
   }
-};
+})();
 ```
 
 如此，模型便创建完成了。使用时则更加简单：
@@ -37,15 +39,15 @@ export default new class Config extends model {
 ```js
 // /main.js
 
-import configModel from "models/configModel.js"
+import configModel from "models/configModel.js";
 // 创建或更新
-configModel.data.token = "!dr0wssaP"
+configModel.data.token = "!dr0wssaP";
 // 读取
-console.log(await configModel.data.token)
+console.log(await configModel.data.token);
 // 删除
-delete configModel.data.token
+delete configModel.data.token;
 // 判断是否存在
-configModel.has('token')
+configModel.has("token");
 ```
 
 ## 持久化
@@ -67,7 +69,7 @@ export default new connection("default", (conn) => {
     // 代表 Config 模型中，主键为 "key" 字段
     Config: "key",
   });
-  
+
   // conn.version(2).stores({
   //   // 除了第一个 "key" 字段是主键以外，后面的均为索引，索引是用来加快查询速度的，
   //   // 也只有被添加了索引的字段才可以被查询，查询可参考后面的章节
@@ -84,12 +86,12 @@ export default new connection("default", (conn) => {
 import { model } from "kurimudb";
 import defaultConnection from "@/models/connections/defaultConnection";
 
-export default new class Config extends model {
+export default new (class Config extends model {
   constructor() {
     // 将第一个参数从 false 改为你刚刚新建的数据库连接，本模型的数据就会持久化到此数据库中
     super(defaultConnection, ["key", "string"]);
   }
-}
+})();
 ```
 
 传入数据库连接后，即使页面刷新，你的数据也不会丢失了。
@@ -112,7 +114,7 @@ export default new connection("default", (conn) => {
   conn.version(1).stores({
     Config: "key",
   });
-  
+
   conn.version(2).stores({
     Config: "key",
     Note: "++id", // "++id" 代表主键是自增的
@@ -127,12 +129,12 @@ export default new connection("default", (conn) => {
 import { model } from "kurimudb";
 import defaultConnection from "@/models/connections/defaultConnection";
 
-export default new class Config extends model {
+export default new (class Config extends model {
   constructor() {
     // 自增的主键叫做 id 比较好。既然是自增，也当然是 number 类型的啦
     super(defaultConnection, ["id", "number"]);
   }
-};
+})();
 ```
 
 使用时，可以通过 `new` 操作符来创建一条主键自增的数据：
@@ -155,7 +157,7 @@ console.log(await noteModel.data[2]); // echo "This is the content of note 2"
 import { model } from "kurimudb";
 import defaultConnection from "@/models/connections/defaultConnection";
 
-export default new class Config extends model {
+export default new (class Config extends model {
   constructor() {
     super(defaultConnection, ["key", "string"]);
   }
@@ -164,7 +166,7 @@ export default new class Config extends model {
     data.username = "hello";
     data.password = "world";
   }
-};
+})();
 ```
 
 如果模型没有持久化，那么 `seeding` 函数会在每次模型初始化后立刻执行。
@@ -172,7 +174,6 @@ export default new class Config extends model {
 如果模型设置了持久化，那么 `seeding` 函数只会执行一次，用户下次访问时不会再重复执行。
 
 这么设计是为了保证，数据库中，由 `seeding` 函数生成的数据只会存在一份。
-
 
 ## 注意事项
 
@@ -202,3 +203,37 @@ configModel.data.user = {
 const user = await configModel.data.user
 console.log(user.key) // "user"
 ```
+
+::: tip 小贴士
+在 Kurimudb 中，存储的数据本质都是对象哦，如果我们直接存储字符串或是其他类型的话，虽然读取时还是原来的样子，但其实这只是"语法糖"~
+
+```js
+import { local } from "kurimudb";
+
+local.data.password = "123456";
+// 直接存储字符串，其实只是"语法糖"，
+// 本质上，它被转换成了下面的对象：
+{
+  key: "password",
+  $__value: "123456"
+}
+// 在读取时，会直接取出 "$__value" 的值：
+console.log(await local.data.password); // 会输出："123456"
+
+// 如果直接存储一个对象：
+local.data.user = {
+  username: "akirarika",
+  password: "123456"
+}
+// 存储时，会直接存储它，并为它追加主键：
+{
+  key: "user",
+  username: "akirarika",
+  password: "123456"
+}
+// 取出时，主键不会被剔除，这意味着你可以直接从对象上拿出主键的值：
+const user = await local.data.user;
+console.log(user.key); // "user"
+```
+
+:::

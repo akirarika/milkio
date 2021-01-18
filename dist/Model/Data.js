@@ -8,9 +8,9 @@ export default class Data {
                     key = value[model.primary];
                 model._cache.add(key, value);
                 model.inserted$.next({
-                    type: 'inserted',
+                    type: "inserted",
                     key: key,
-                    value: value
+                    value: value,
                 });
                 return value;
             },
@@ -20,9 +20,9 @@ export default class Data {
                 if (model._connection)
                     (async () => await model._database.forget(key))();
                 model.deleted$.next({
-                    type: 'deleted',
+                    type: "deleted",
                     key: key,
-                    value: null
+                    value: null,
                 });
                 return true;
             },
@@ -32,15 +32,15 @@ export default class Data {
                 if (model._connection)
                     (async () => await model._database.put(key, value))();
                 model.updated$.next({
-                    type: 'updated',
+                    type: "updated",
                     key: key,
-                    value: value
+                    value: value,
                 });
                 return true;
             },
             get: (target, key, receiver) => {
                 key = model.checkPrimary(key);
-                if ('string' === typeof key && key.endsWith('$'))
+                if ("string" === typeof key && key.endsWith("$"))
                     return model._cache.get$(key.substring(0, key.length - 1));
                 return (async () => {
                     let result = model._cache.get(key, null);
@@ -54,7 +54,7 @@ export default class Data {
                 if (model._connection)
                     throw new Error(`For persistent models, the result of the "in" operator may be incorrect, need "await modelName.has(key)" replace your "key in modelName.data".`);
                 return model._cache.has(key);
-            }
+            },
         });
     }
 }

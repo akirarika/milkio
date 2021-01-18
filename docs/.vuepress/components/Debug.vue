@@ -23,6 +23,7 @@
 <script>
 import note from "../scripts/models/note";
 import config from "../scripts/models/config";
+import { local } from "../../../dist";
 
 export default {
   data() {
@@ -33,6 +34,8 @@ export default {
     };
   },
   async mounted() {
+    console.warn(await local.data.xxx);
+
     note.$.subscribe(async () => (this.noteList = await note.all()));
     config.$.subscribe(async () => (this.configList = await config.all()));
     config.data.test$.subscribe(console.log);

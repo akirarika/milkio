@@ -1,62 +1,60 @@
 # 介绍
 
-Kurimudb 是一款用于 [渐进式 Web 应用 (PWA)](https://developer.mozilla.org/docs/Web/Progressive_web_apps) 的**数据仓库**。
+## Kurimudb 是什么
 
-在渐进式 Web 应用中，我们希望缓存用户生成的数据，而不仅仅是 Web 页面本身。Kurimudb 可以把数据持久化，当用户离线或下次访问时，这些数据依然可用。
+Kurimudb 是一款渐进式的 **Web 数据仓库**，可以帮你将你应用的数据存储在 Memory 或 IndexedDB 里。它在保持语法简单的同时，还提供了[模块化]()、[订阅数据更新]()和[状态管理 (如代替 Vuex)]() 的能力。
 
-Kurimudb 也可以充当 [状态管理器](/state/)。渐进式 Web 应用中由于存在大量下次访问时仍需复原的状态，同时状态间互相依赖耦合，Kurimudb 可能比 Vuex 更适合当作状态管理器使用。
+### 特性
 
-## 用法
+- **语法足够简单 ✔️**
+  - Kurimudb 努力保持语法简单，进行增删改查就像操作普通的 Javascript 对象。
+- **读取按需加载 ✔️**
+  - Kurimudb 仅会按需加载数据，即使缓存了巨量的数据，也不用担心。
+- **数据可持久化 ✔️**
+  - Kurimudb 能将数据存储到 IndexedDB 中，即使用户刷新，数据也不会丢失。
 
-Kurimudb 的语法非常简单，就像操作一个普通的 Javascript 对象一样。但背后，你的数据已经被持久化到了本地，还可以订阅它未来的更新。
+## 安装
 
-``` js
-import configModel from "models/configModel"
-// create or update
-configModel.data.token = "!dr0wssaP"
-// read
-console.log(await configModel.data.token)
-// delete
-delete configModel.data.token
+```sh
+npm i kurimudb # or yarn add kurimudb
 ```
 
-除了像对象一样存储键值对，Kurimudb 还可以存储像数组一样的集合，不过下标是从 `1` 开始。
+## 快速体验
+
+想快速体验的话，可以直接使用 Kurimudb 内置的 `local` 和 `session` 对象。下面是一个增删改查的例子：
 
 ```js
-import bookModel from "models/bookModel"
+import { local, session } from "kurimudb";
+// local 和 session 的用法是一致的喔~
+// 区别是，local 的数据会被存储到 IndexedDB 里，刷新后还在，
+// 而 session 则不会，关掉页面，里面的数据就没有了 (๑´ㅂ`๑)
 
-// 通过 `new` 操作符来创建数据，就像数组的 `[].push(...)`
-const book1 = await new bookModel.data({
-    name: "Alice in Wonderland",
-    author: "Lewis Carroll",
-})
-const book2 = await new bookModel.data({
-    name: "Vingt mille lieues sous les mers",
-    author: "Jules Gabriel Verne",
-})
+// 创建或更新..
+local.data.say = "hello world";
 
-// read
-console.log(book1.id) // echo 1
-console.log(book2.id) // echo 2
+// 读取..
+await local.data.say;
 
-await bookModel.data[1].name // echo "Alice in Wonderland"
-await bookModel.data[2].name // echo "Vingt mille lieues sous les mers"
+// 删除..
+delete local.data.say;
+
+// 判断是否存在..
+say in local.data; // or local.has("say");
 ```
 
-## 状态管理
+如你所见，Kurimudb 的语法，就像操作一个普通的 Javascript 对象一样简单。但是，在背后，你的数据已经被持久化到了 IndexedDB 里啦。
 
-Kurimudb 也可以用来管理状态，且允许你将状态持久化，即使用户刷新网页状态也依然保留。
-
-同时，Kurimudb 中的每条数据都可以转换为 RxJS 的 [BehaviorSubject 对象](https://rxjs.dev/guide/subject#behaviorsubject)，只要在要读取的值后加上 `$` 符号即可。可以调用 `subscribe` 函数来获取此值及后续的变更，也可以利用 RxJS 强大的操作符来组合你的状态。
+Kurimudb 还整合了 [RxJS](https://rxjs.dev/)，只要你在变量名后加上 `$`，你就可以获得一个此值的 [BehaviorSubject 对象](https://rxjs.dev/guide/subject#behaviorsubject)。比如，我们可以拿来订阅这个变量，在它被改变时做点什么：
 
 ```js
-import stateModel from "models/stateModel"
+import { local } from "kurimudb";
 
-stateModel.data.token = "!dr0wssaP"
-// subscribe to updates for this data (Powered by ReactiveX)
-stateModel.data.token$.subscribe((token) => {
-    console.log(token)
-})
-
-setTimeout(() => stateModel.data.token = "Passw0rd!", 1000);
+// subscribe.. (based on RxJS)
+local.data.say$.subscribe((val) => {
+  console.log("what you want to say: " + val);
+});
 ```
+
+## 准备好了吗？
+
+我们刚刚介绍了 Kurimudb 的核心用法——但这些对于复杂的单页应用来说可能还不够，本教程的其余部分还介绍了更多的实用功能，所以请务必读完整个教程！

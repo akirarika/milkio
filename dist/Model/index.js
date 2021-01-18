@@ -9,9 +9,9 @@ export default class Model {
         this.updated$ = new Subject();
         this.changed$ = merge(this.inserted$, this.deleted$, this.updated$);
         this.$ = new BehaviorSubject({
-            type: 'inited',
+            type: "inited",
             key: null,
-            value: null
+            value: null,
         });
         this.name = this.constructor.name;
         this.primary = primary;
@@ -25,29 +25,38 @@ export default class Model {
         this._cache = new Cache(this);
         this.data = new Data(this);
         this.changed$.subscribe((d) => this.$.next(d));
-        this._seeding();
+        if (this["seeding"])
+            setTimeout(() => this._seeding(), 0);
     }
-    async all() {
+    async all(type) {
         if (!this._connection)
             return this._cache.all();
-        return this.getResults(this.query());
+        return this.getResults(this.query(), null, type);
     }
     query() {
         return this._database.query();
     }
-    async getResults(query, resultProt = {}) {
+    async getResults(query, resultProt = null, type = Object) {
         if (!this._connection)
             throw new Error(`This function can only be used when you have Collection`);
         let querys = await query.toArray();
         if (!(querys instanceof Array))
             throw new Error(`The query result is not a single object. If it's an array, please use 'getresult' instead.`);
+        if (null === resultProt)
+            resultProt = new type();
+        const setResult = (key, value) => {
+            if (resultProt instanceof Array)
+                resultProt.push(value);
+            else
+                resultProt[key] = value;
+        };
         for (const item of querys) {
             const key = item[this.primary];
             if (this._cache.has(key))
-                resultProt[key] = this._cache.get(key);
+                setResult(key, this._cache.get(key));
             else {
-                resultProt[key] = this._database.decode(item);
-                this._cache.add(key, resultProt[key]);
+                setResult(key, this._database.decode(item));
+                this._cache.add(key, this._database.decode(item));
             }
         }
         return resultProt;
@@ -84,17 +93,15 @@ export default class Model {
         return key;
     }
     async _seeding() {
-        if (!this.seeding)
-            return;
         if (!this._connection)
-            return this.seeding(this.data);
+            return this["seeding"](this.data);
         const table = this._connection.getConnection()["__Kurimudb"];
-        if (await table.get("is_seeded"))
+        if (await table.get(`${this.name}_is_seeded`))
             return;
-        this.seeding(this.data);
+        this["seeding"](this.data);
         await table.add({
-            key: "is_seeded",
-            value: "true",
+            key: `${this.name}_is_seeded`,
+            value: `true`,
         });
     }
     _humpToLine(str) {
