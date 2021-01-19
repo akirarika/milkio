@@ -2,14 +2,14 @@
 
 ## Kurimudb 是什么
 
-Kurimudb 是一款渐进式的 **Web 数据仓库**，可以帮你将你应用的数据存储在 Memory 或 IndexedDB 里。它在保持语法简单的同时，还提供了[模块化]()、[订阅数据更新]()和[状态管理 (如代替 Vuex)]() 的能力。
+Kurimudb 是一款渐进式的 **Web 数据仓库**，可以帮你将你应用的数据，存储在 Memory 或 IndexedDB 里。我们在保持语法简单的同时，还提供了[模块化](/intro/#模型)、[订阅数据更新](/monitor/)和[状态管理 (如代替 Vuex)](/state/) 的能力。
 
 ### 特性
 
 - **语法足够简单 ✔️**
   - Kurimudb 努力保持语法简单，进行增删改查就像操作普通的 Javascript 对象。
 - **读取按需加载 ✔️**
-  - Kurimudb 仅会按需加载数据，即使缓存了巨量的数据，也不用担心。
+  - Kurimudb 筛选时仅会按需读取数据，即使缓存了巨量的数据，也不用担心。
 - **数据可持久化 ✔️**
   - Kurimudb 能将数据存储到 IndexedDB 中，即使用户刷新，数据也不会丢失。
 
@@ -39,17 +39,17 @@ await local.data.say;
 delete local.data.say;
 
 // 判断是否存在..
-say in local.data; // or local.has("say");
+"say" in local.data; // or local.has("say");
 ```
 
-如你所见，Kurimudb 的语法，就像操作一个普通的 Javascript 对象一样简单。但是，在背后，你的数据已经被持久化到了 IndexedDB 里啦。
+如你所见，Kurimudb 的语法很简单，就像操作一个普通的 Javascript 对象一样。但是，在背后，你的数据已经被存储到了 IndexedDB 里啦。
 
-Kurimudb 还整合了 [RxJS](https://rxjs.dev/)，只要你在变量名后加上 `$`，你就可以获得一个此值的 [BehaviorSubject 对象](https://rxjs.dev/guide/subject#behaviorsubject)。比如，我们可以拿来订阅这个变量，在它被改变时做点什么：
+Kurimudb 还整合了 [RxJS](https://rxjs.dev/)，只要你在变量名后加上 `$`，你就可以获得一个此值的 [BehaviorSubject 对象](https://rxjs.dev/guide/subject#behaviorsubject)。我们可以通过这种方式来订阅此变量，在它被改变时做点什么：
 
-```js
+```js {4}
 import { local } from "kurimudb";
 
-// subscribe.. (based on RxJS)
+// 订阅这个变量.. (based on RxJS)
 local.data.say$.subscribe((val) => {
   console.log("what you want to say: " + val);
 });
@@ -57,4 +57,4 @@ local.data.say$.subscribe((val) => {
 
 ## 准备好了吗？
 
-我们刚刚介绍了 Kurimudb 的核心用法——但这些对于复杂的单页应用来说可能还不够，本教程的其余部分还介绍了更多的实用功能，所以请务必读完整个教程！
+我们刚刚介绍了 Kurimudb 的核心用法——但这些对于复杂的应用来说可能还不够，所以，请务必读完整个教程！

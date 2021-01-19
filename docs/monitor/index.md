@@ -1,16 +1,18 @@
 # 订阅更新
 
+待续 🐸
+
 ## 订阅单个数据更新
 
 Kurimudb 集成了 RxJS，每一条数据都可以转换为 [BehaviorSubject 对象](https://rxjs.dev/guide/subject#behaviorsubject)，只要在要读取的值后加上 `$` 符号即可。调用 `subscribe` 函数，可以立刻获取此值，及订阅此值后续的变更。
 
 ```js
-config.data.name = 'hello'
+config.data.name = "hello";
 
 setTimeout(() => {
-    config.data.name$.subscribe((name) => this.name = name)
-    setTimeout(() => config.data.name = 'world', 1000)
-}, 1000)
+  config.data.name$.subscribe((name) => (this.name = name));
+  setTimeout(() => (config.data.name = "world"), 1000);
+}, 1000);
 
 // 执行会输出：
 // hello
@@ -21,30 +23,28 @@ setTimeout(() => {
 
 ```vue {17,18}
 <template>
-  <div>
-    Name: {{ name }} <button @click="setName">Set Name</button>
-  </div>
+  <div>Name: {{ name }} <button @click="setName">Set Name</button></div>
 </template>
 
 <script>
-import configModel from "@/models/configModel"
+  import configModel from "@/models/configModel";
 
-export default {
-  data() {
-    return {
-        name: null
-    };
-  },
-  async mounted() {
-    configModel.data.name = 'hello'
-    configModel.data.name$.subscribe((name) => this.name = name)
-  },
-  methods: {
+  export default {
+    data() {
+      return {
+        name: null,
+      };
+    },
+    async mounted() {
+      configModel.data.name = "hello";
+      configModel.data.name$.subscribe((name) => (this.name = name));
+    },
+    methods: {
       setName() {
-          configModel.data.name = prompt("Your name?")
-      }
-  }
-};
+        configModel.data.name = prompt("Your name?");
+      },
+    },
+  };
 </script>
 ```
 
@@ -80,28 +80,28 @@ configModel.$.subscribe(...) // 它和值一样，将返回 [BehaviorSubject 对
 </template>
 
 <script>
-import bookModel from "@/models/bookModel"
+  import bookModel from "@/models/bookModel"
 
-export default {
-  data() {
-    return {
-        books: {}
-    };
-  },
-  async mounted() {
-    bookModel.$.subscribe((name) => this.books = await bookModel.all())
-  },
-  methods: {
-      async addNote() {
-          // 添加一本书
-          console.log(
-            await new bookModel.data({
-                title: `name-${Math.random().toString(36).slice(-6)}`, // 标题使用随机字符串
-                timestamp: new Date().getTime(),
-            })
-        )
-      }
-  }
-};
+  export default {
+    data() {
+      return {
+          books: {}
+      };
+    },
+    async mounted() {
+      bookModel.$.subscribe((name) => this.books = await bookModel.all())
+    },
+    methods: {
+        async addNote() {
+            // 添加一本书
+            console.log(
+              await new bookModel.data({
+                  title: `name-${Math.random().toString(36).slice(-6)}`, // 标题使用随机字符串
+                  timestamp: new Date().getTime(),
+              })
+          )
+        }
+    }
+  };
 </script>
 ```

@@ -1,12 +1,12 @@
 {
   "name": "kurimudb",
-  "version": "1.0.1",
-  "description": "A simple and practical IndexedDB Model library, the Database and View Data can be synchronized (If you have an MVVM framework😃), and use your favorite Dexie.js to CURD🎉",
+  "version": "1.1.1",
+  "description": "Kurimudb 是一款渐进式的 **Web 数据仓库**，可以帮你将你应用的数据，存储在 Memory 或 IndexedDB 里。我们在保持语法简单的同时，还提供了[模块化](/intro/#模型)、[订阅数据更新](/monitor/)和[状态管理 (如代替 Vuex)](/state/) 的能力。",
   "main": "./dist/index.js",
   "license": "MIT",
   "scripts": {
-    "dev": "tsc --watch",
-    "serve": "vuepress dev docs",
+    "ts:dev": "tsc --watch",
+    "doc:dev": "vuepress dev docs",
     "build": "tsc --build && vuepress build docs"
   },
   "repository": {
