@@ -63,3 +63,5 @@ local.data.say$.subscribe((val) => {
 ## 准备好了吗？
 
 我们刚刚介绍了 Kurimudb 的核心用法——但这些对于复杂的应用来说可能还不够，所以，请务必读完整个教程！
+
+[点击阅读完整文档](https://akirarika.github.io/kurimudb/)
