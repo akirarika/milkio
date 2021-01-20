@@ -1,17 +1,16 @@
-# 订阅更新
+# 模型订阅
 
-待续 🐸
+## 订阅数据变动
 
-## 订阅单个数据更新
-
-Kurimudb 集成了 RxJS，每一条数据都可以转换为 [BehaviorSubject 对象](https://rxjs.dev/guide/subject#behaviorsubject)，只要在要读取的值后加上 `$` 符号即可。调用 `subscribe` 函数，可以立刻获取此值，及订阅此值后续的变更。
+Kurimudb 集成了 RxJS，每一条数据都可以转换为 [BehaviorSubject 对象](https://rxjs.dev/guide/subject#behaviorsubject)，只要在要读取的值后加上 `$` 符号即可。调用 `subscribe` 函数，可以立刻获取此值，及订阅此值后续的变更 (就像 Vue3 的 `watchEffect`)。
 
 ```js
-config.data.name = "hello";
-
+configModel.data.name = "hello";
 setTimeout(() => {
-  config.data.name$.subscribe((name) => (this.name = name));
-  setTimeout(() => (config.data.name = "world"), 1000);
+  configModel.data.name$.subscribe((name) => (this.name = name));
+  setTimeout(() => {
+    configModel.data.name = "world";
+  }, 1000);
 }, 1000);
 
 // 执行会输出：
@@ -19,36 +18,7 @@ setTimeout(() => {
 // world
 ```
 
-假设我们使用 `Vue` 开发视图页面，我们可以这样来订阅数据的更新：
-
-```vue {17,18}
-<template>
-  <div>Name: {{ name }} <button @click="setName">Set Name</button></div>
-</template>
-
-<script>
-  import configModel from "@/models/configModel";
-
-  export default {
-    data() {
-      return {
-        name: null,
-      };
-    },
-    async mounted() {
-      configModel.data.name = "hello";
-      configModel.data.name$.subscribe((name) => (this.name = name));
-    },
-    methods: {
-      setName() {
-        configModel.data.name = prompt("Your name?");
-      },
-    },
-  };
-</script>
-```
-
-## 订阅整个模型更新
+## 订阅模型变动
 
 你可能希望订阅模型执行的一些动作，它们都是 [Subject 对象](https://rxjs.dev/guide/subject)：
 
@@ -69,9 +39,54 @@ configModel.changed$.subscribe(...)
 configModel.$.subscribe(...) // 它和值一样，将返回 [BehaviorSubject 对象](https://rxjs.dev/guide/subject#behaviorsubject)
 ```
 
-这通常用于视图中展示了一组模型内容的列表，且需要在模型变换时实时更新的情况。以 Vue 为例：
+## 状态管理 (Vue)
 
-```vue {18}
+Kurimudb 也可以用来管理应用的状态。**它和 Vuex 相比，有以下特点：**
+
+- 语法相对简单，心智负担较轻。
+
+- 状态可以持久化到 IndexedDB 中。
+
+- Vuex 中状态的变化直接触发视图的变更，存在副作用。
+
+- Vuex 的 `Mutation` 必须是同步函数，Kurimudb 的模型方法可以是异步函数。
+
+---
+
+想将 Kurimudb 用作状态管理，其实很简单：
+
+```vue
+<template>
+  <div>Name: {{ name }} <button @click="setName">Set Name</button></div>
+</template>
+
+<script>
+  import configModel from "@/models/configModel";
+
+  configModel.data.name = "hello";
+
+  export default {
+    data() {
+      return {
+        name: null,
+      };
+    },
+    async created() {
+      // 我们订阅 name 的变化，如果 name 发生了改变，就将新结果赋值给组件内部
+      configModel.data.name$.subscribe((name) => (this.name = name));
+    },
+    methods: {
+      setName() {
+        configModel.data.name = prompt("Your name?");
+      },
+    },
+  };
+</script>
+```
+
+---
+
+```vue
 <template>
   <div>
     <button @click="addNote">Add Note</button>
@@ -89,6 +104,7 @@ configModel.$.subscribe(...) // 它和值一样，将返回 [BehaviorSubject 对
       };
     },
     async mounted() {
+      // 如果书籍模型的数据有任何变动，就都将变化后的数据列表赋值给组件内部
       bookModel.$.subscribe((name) => this.books = await bookModel.all())
     },
     methods: {
@@ -105,3 +121,7 @@ configModel.$.subscribe(...) // 它和值一样，将返回 [BehaviorSubject 对
   };
 </script>
 ```
+
+## 状态管理 (React)
+
+待续 🐸

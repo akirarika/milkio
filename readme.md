@@ -1,5 +1,7 @@
 # 介绍
 
+[![](https://img.shields.io/badge/github-kurimudb-white.svg)](https://github.com/akirarika/kurimudb) ![](https://img.shields.io/github/forks/akirarika/kurimudb) ![](https://img.shields.io/github/stars/akirarika/kurimudb) ![](https://img.shields.io/badge/language-javascript-orange.svg) ![](https://img.shields.io/github/license/akirarika/kurimudb)
+
 ## Kurimudb 是什么
 
 Kurimudb 是一款渐进式的 **Web 数据仓库**，可以帮你将你应用的数据，存储在 Memory 或 IndexedDB 里。我们在保持语法简单的同时，还提供了[模块化](/intro/#模型)、[订阅数据更新](/monitor/)和[状态管理 (如代替 Vuex)](/state/) 的能力。
@@ -40,6 +42,9 @@ delete local.data.say;
 
 // 判断是否存在..
 "say" in local.data; // or local.has("say");
+
+// 获取所有数据..
+await local.all();
 ```
 
 如你所见，Kurimudb 的语法很简单，就像操作一个普通的 Javascript 对象一样。但是，在背后，你的数据已经被存储到了 IndexedDB 里啦。
@@ -58,5 +63,3 @@ local.data.say$.subscribe((val) => {
 ## 准备好了吗？
 
 我们刚刚介绍了 Kurimudb 的核心用法——但这些对于复杂的应用来说可能还不够，所以，请务必读完整个教程！
-
-[点此阅读文档](https://akirarika.github.io/kurimudb/)

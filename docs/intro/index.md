@@ -53,6 +53,8 @@ console.log(await configModel.data.say);
 delete configModel.data.say;
 // 判断是否存在..
 configModel.has("say");
+// 获取模型的所有数据..
+await configModel.all();
 ```
 
 ## 模型方法
@@ -67,21 +69,25 @@ class Config extends model {
     super(false, ["key", "string"]);
   }
 
-  // 在模型类中可以添加任何方法..
-  setUserInfo(bar, foo) {
+  setFoo(bar, foo)) {
     // 各种逻辑..
     this.data.foo = foo;
     this.data.bar = bar;
   }
 
-  getFoo() {
-    // ..
-  }
-
-  calcBar() {
+  async calcBar() {
     // ..
   }
 }
+```
+
+在使用时，直接调用此类上的方法即可：
+
+```js
+import configModel from "./models/configModel.js";
+
+configModel.setFoo();
+await configModel.calcBar();
 ```
 
 ## 持久化
@@ -171,7 +177,7 @@ import myConnection from "@/models/connection";
 export default new (class Config extends model {
   constructor() {
     // 自增的主键叫做 id 比较好。既然是自增，也当然是 number 类型的啦
-    super(yConnection, ["id", "number"]);
+    super(myConnection, ["id", "number"]);
   }
 })();
 ```
@@ -185,34 +191,52 @@ const note1 = await new noteModel.data("This is the content of note 1");
 const note2 = await new noteModel.data("This is the content of note 2");
 console.log(await noteModel.data[1]); // echo "This is the content of note 1"
 console.log(await noteModel.data[2]); // echo "This is the content of note 2"
+
+// 获取模型的所有数据..
+await configModel.all();
+// 以返回普通数组的形式，获取模型所有的数据..
+await configModel.all(Array);
 ```
 
 大功告成啦。
 
+::: tip 小贴士
+
+1. IndexedDB 主键是从 `1` 开始自增的，因此，集合模型是主键也是从 `1` 开始递增的。这和数组是不同的。
+2. 目前，集合模型必须配置数据库连接，无法只存储在 Memory 中。但后续更新计划中，有取消此限制的计划~
+3. 集合模型的主键，类型必须为 `number` 才行哦！
+
+:::
+
 ## 模型填充
 
-我们可能想为一些模型设置默认值，比如用户的默认配置……那么可以在模型中新增一个 `seeding` 函数，用来填充默认值：
+有些场景下，我们可能想为一些模型设置默认值。例如，我们在做一个电子书应用，希望在用户首次使用时，为他指定一个默认的字体大小、主题、翻页模式……
+
+那么可以在模型中新增一个 `seeding` 函数，用来填充默认值：
 
 ```js {10,11,12,13}
 // /models/configModel.js
 import { model } from "kurimudb";
-import defaultConnection from "@/models/connections/defaultConnection";
+import myConnection from "@/models/connections/connection";
 
 export default new (class Config extends model {
   constructor() {
-    super(defaultConnection, ["key", "string"]);
+    super(myConnection, ["key", "string"]);
   }
 
   async seeding(data) {
     data.fontSize = "12px";
-    data.theme = "DefaultTheme";
+    data.theme = "defaultTheme";
+    data.turnPageMode = "transverse";
   }
 })();
 ```
 
-如果模型中存在 `seeding` 函数，用户首次访问应用时，该函数会自动执行一次。如果模型没有把数据存储到 IndexedDB 中，`seeding` 函数会在每次访问应用时都执行一次。
+如果模型中存在 `seeding` 函数，用户首次访问应用时，该函数会自动执行一次。
 
-## 注意事项
+如果此模型没有把数据存储到 IndexedDB 中，即没有配置数据库连接，`seeding` 函数会在每次访问应用时都执行一次。
+
+## “语法糖”
 
 ::: tip 小贴士
 在 Kurimudb 中，存储的数据本质都是对象哦，如果我们直接存储字符串或是其他类型的话，虽然读取时还是原来的样子，但其实这只是"语法糖"！
