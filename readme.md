@@ -4,7 +4,7 @@
 
 ## Kurimudb 是什么
 
-<img src="./ill.jpg" style="margin-top:-32px;width:240px;float:right;"></img>
+![](./illu.jpg)
 
 Kurimudb 是一款渐进式的 **Web 数据仓库**，可以帮你将你应用的数据，存储在 Memory 或 IndexedDB 里，和成为你应用真正的单一数据源。我们在保持语法简单的同时，还提供了[模块化](https://akirarika.github.io/kurimudb/intro/#模型)、[订阅数据更新](https://akirarika.github.io/kurimudb/monitor/)和[状态管理 (如代替 Vuex)](https://akirarika.github.io/kurimudb/state/) 的能力。
 

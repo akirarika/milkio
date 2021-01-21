@@ -4,7 +4,7 @@
 
 ## Kurimudb 是什么
 
-<img src="./ill.jpg" style="margin-top:-32px;width:240px;float:right;"></img>
+<img src="./illu.jpg" style="margin-top:-32px;width:240px;float:right;"></img>
 
 Kurimudb 是一款渐进式的 **Web 数据仓库**，可以帮你将你应用的数据，存储在 Memory 或 IndexedDB 里，和成为你应用真正的单一数据源。
 
