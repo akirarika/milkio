@@ -1,6 +1,6 @@
 # 介绍
 
-[阅读文档](https://akirarika.github.io/kurimudb/) [![](https://img.shields.io/badge/github-kurimudb-white.svg)](https://github.com/akirarika/kurimudb) ![](https://img.shields.io/github/forks/akirarika/kurimudb) ![](https://img.shields.io/github/stars/akirarika/kurimudb) ![](https://img.shields.io/badge/language-javascript-orange.svg) ![](https://img.shields.io/github/license/akirarika/kurimudb)
+[![](https://img.shields.io/badge/文档-点击阅读文档-white.svg)](https://akirarika.github.io/kurimudb) ![](https://img.shields.io/github/forks/akirarika/kurimudb) ![](https://img.shields.io/github/stars/akirarika/kurimudb) ![](https://img.shields.io/badge/language-javascript-orange.svg) ![](https://img.shields.io/github/license/akirarika/kurimudb)
 
 ## Kurimudb 是什么
 
