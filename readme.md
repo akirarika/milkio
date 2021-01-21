@@ -1,10 +1,10 @@
-![](./illu.jpg)
-
 # 介绍
 
 [![](https://img.shields.io/badge/github-kurimudb-white.svg)](https://github.com/akirarika/kurimudb) ![](https://img.shields.io/github/forks/akirarika/kurimudb) ![](https://img.shields.io/github/stars/akirarika/kurimudb) ![](https://img.shields.io/badge/language-javascript-orange.svg) ![](https://img.shields.io/github/license/akirarika/kurimudb)
 
 ## Kurimudb 是什么
+
+![](./illu.jpg)
 
 Kurimudb 是一款渐进式的 **Web 数据仓库**，可以帮你将你应用的数据，存储在 Memory 或 IndexedDB 里，和成为你应用真正的单一数据源。我们在保持语法简单的同时，还提供了[模块化](https://akirarika.github.io/kurimudb/intro/#模型)、[订阅数据更新](https://akirarika.github.io/kurimudb/monitor/)和[状态管理 (如代替 Vuex)](https://akirarika.github.io/kurimudb/state/) 的能力。
 
