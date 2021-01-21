@@ -24,7 +24,7 @@ import { model } from "kurimudb";
 class Config extends model {
   constructor() {
     super(
-      // 第一个参数代表是否存储数据的位置，false 代表存储到 Memory 里。
+      // 第一个参数是存储数据的位置，false 代表存储到 Memory 里。
       // 下面的章节，我们会讨论如何持久化数据。
       false,
       // 第二个参数是一个数组，代表主键的名称与类型。
