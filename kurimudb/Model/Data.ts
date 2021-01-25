@@ -42,7 +42,13 @@ export default class Data {
       get: (target: Data, key: string | number, receiver) => {
         key = model.checkPrimary(key);
         if ("string" === typeof key && key.endsWith("$"))
-          return model._cache.get$(key.substring(0, key.length - 1));
+          return model._cache.get$(
+            key.substring(0, key.length - 1),
+            async (key) => {
+              if (model._connection)
+                model._cache.put(key, await model._database.get(key));
+            }
+          );
 
         return (async () => {
           let result = model._cache.get(key, null);

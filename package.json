@@ -1,7 +1,7 @@
 {
   "name": "kurimudb",
-  "version": "1.1.1",
-  "description": "Kurimudb 是一款渐进式的 **Web 数据仓库**，可以帮你将你应用的数据，存储在 Memory 或 IndexedDB 里。我们在保持语法简单的同时，还提供了[模块化](/intro/#模型)、[订阅数据更新](/monitor/)和[状态管理 (如代替 Vuex)](/state/) 的能力。",
+  "version": "1.2.0",
+  "description": "⚓语法超简单的前端数据库🎉可以将数据保存在 IndexedDB 或 Memory 里",
   "main": "./dist/index.js",
   "license": "MIT",
   "scripts": {
