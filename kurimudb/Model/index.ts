@@ -119,6 +119,13 @@ export default class Model {
     else return false;
   }
 
+  async set(key, func) {
+    key = this.checkPrimary(key);
+    const val = await this.data[key];
+    await func(val);
+    this.data[key] = val;
+  }
+
   checkPrimary(key) {
     if ("number" === this.primaryType && !isNaN(Number(key)))
       return Number(key);
