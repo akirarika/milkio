@@ -1,13 +1,14 @@
 {
   "name": "kurimudb",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "description": "⚓语法超简单的前端数据库🎉可以将数据保存在 IndexedDB 或 Memory 里",
   "main": "./dist/index.js",
   "license": "MIT",
   "scripts": {
     "ts:dev": "tsc --watch",
+    "ts:build": "tsc --build",
     "doc:dev": "vuepress dev docs",
-    "build": "tsc --build && vuepress build docs"
+    "doc:build": "vuepress build docs"
   },
   "repository": {
     "type": "git",

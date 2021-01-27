@@ -1,7 +1,11 @@
 #!/usr/bin/bash
 
+set -e
+
 # 生成静态文件
-npm run build
+npm run ts:build
+npm run doc:build
+npm publish
 
 # 进入生成的文件夹
 cd docs/.vuepress/dist

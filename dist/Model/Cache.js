@@ -1,4 +1,4 @@
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject } from "rxjs";
 export default class Cache {
     constructor(model) {
         this.value = new Map();
@@ -10,11 +10,11 @@ export default class Cache {
             result[key] = value.getValue();
         return result;
     }
-    get$(key) {
+    get$(key, setInitialValue) {
         if (this.value.has(key))
             return this.value.get(key);
-        else
-            this.value.set(key, new BehaviorSubject(null));
+        this.value.set(key, new BehaviorSubject(null));
+        setInitialValue(key);
         return this.value.get(key);
     }
     get(key, def = null) {

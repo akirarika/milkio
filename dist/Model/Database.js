@@ -4,7 +4,7 @@ export default class Database {
     }
     query() {
         if (!this.model._connection)
-            throw new Error(`This model cannot persist data without a connection.`);
+            throw new Error(`This model "${this.model.name}" cannot persist data without a connection.`);
         return this.model._connection.getConnection()[this.model.name];
     }
     async all() {
@@ -31,12 +31,12 @@ export default class Database {
         await this.query().delete(key);
     }
     async has(key) {
-        return !!await this.query().where(this.model.primary).equals(key).count();
+        return !!(await this.query().where(this.model.primary).equals(key).count());
     }
     encode(value) {
         if (this.model._isPlainObject(value))
             return value;
-        return { "$__value": value };
+        return { $__value: value };
     }
     decode(value) {
         if (void 0 === value || null === value)
