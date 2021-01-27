@@ -13,7 +13,7 @@ export default class Model {
   _connection: Connection | false;
   _database: Database;
   _cache: Cache;
-  data: any;
+  data: Record<string | number, any>;
 
   inserted$ = new Subject();
   deleted$ = new Subject();

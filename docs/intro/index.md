@@ -240,7 +240,7 @@ export default new (class Config extends model {
 
 ```js
 configModel.data.test = { foo: "bar" };
-configModel.data.test["foo"] = "baz";
+configModel.data.test.foo = "baz";
 ```
 
 当你向模型中存入一个对象或数组时，你很可能会凭直觉写出如上的代码来修改其属性值，但这样是错误的。由于 JavaScript 的限制，只有对 `configModel.data` 子属性的更改，才会生效并触发订阅。如果你想更改存入对象的某些属性，你可以使用 `set` 方法：
@@ -248,7 +248,7 @@ configModel.data.test["foo"] = "baz";
 ```js
 // set 方法接受两个参数，第一个是要修改的属性名，第二个是修改值的闭包函数
 await configModel.set("test", (val) => (val["foo"] = "baz"));
-// 在其中你任意修改此对象的值
+// 在此闭包函数中，你可以任意修改此对象的值
 await configModel.set("test", (val) => {
   val["foo"] = "baz";
   val["qux"] = "quux";
