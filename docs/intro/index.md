@@ -298,7 +298,7 @@ configModel.set("drafts", (val) => {
     content: "bar",
   });
 });
-console.log(await draftModel.data[0]);
+console.log((await draftModel.data.drafts)[0]);
 
 // good ✔
 await new draftModel.data({
