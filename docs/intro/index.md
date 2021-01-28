@@ -310,8 +310,8 @@ configModel.set("drafts", (val) => {
 });
 
 // good ✔
-// push..
 console.log(await draftModel.data[1]);
+// push..
 await new draftModel.data({
   name: "foo",
   content: "bar",
