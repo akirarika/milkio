@@ -275,16 +275,24 @@ configModel.data.theme = {
   mode: "white",
   background: "foo.jpg",
 };
+// set..
+configModel.set("theme", (val) => {
+  val.color = "red";
+});
 
 // good ✔
 configModel.data.themeColor = "blue";
 configModel.data.themeMode = "white";
 configModel.data.themeBackground = "foo.jpg";
+// set..
+configModel.data.themeColor = "red";
 
 // good ✔
 themeModel.data.color = "blue";
 themeModel.data.mode = "white";
 themeModel.data.background = "foo.jpg";
+// set..
+themeModel.data.color = "red";
 ```
 
 如果你想要存储一组数据的集合，比起向对象模型中存入一个数组，我们更推荐直接使用[集合模型](#集合模型)：
@@ -292,20 +300,22 @@ themeModel.data.background = "foo.jpg";
 ```js
 // bad ✖
 configModel.data.drafts = [];
+console.log((await draftModel.data.drafts)[0]);
+// push..
 configModel.set("drafts", (val) => {
   val.push({
     name: "foo",
     content: "bar",
   });
 });
-console.log((await draftModel.data.drafts)[0]);
 
 // good ✔
+// push..
+console.log(await draftModel.data[1]);
 await new draftModel.data({
   name: "foo",
   content: "bar",
 });
-console.log(await draftModel.data[1]);
 ```
 
 ## 异步更新队列

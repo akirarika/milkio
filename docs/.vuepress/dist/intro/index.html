@@ -8,7 +8,7 @@
     
     <meta name="description" content="">
     
-    <link rel="preload" href="/kurimudb/assets/css/0.styles.afb2c109.css" as="style"><link rel="preload" href="/kurimudb/assets/js/app.c6ac5e23.js" as="script"><link rel="preload" href="/kurimudb/assets/js/2.daf47ad8.js" as="script"><link rel="preload" href="/kurimudb/assets/js/12.56ce2b61.js" as="script"><link rel="prefetch" href="/kurimudb/assets/js/10.895b4b62.js"><link rel="prefetch" href="/kurimudb/assets/js/11.c75048c5.js"><link rel="prefetch" href="/kurimudb/assets/js/13.7d18a952.js"><link rel="prefetch" href="/kurimudb/assets/js/3.223aaabe.js"><link rel="prefetch" href="/kurimudb/assets/js/4.fb8a7a00.js"><link rel="prefetch" href="/kurimudb/assets/js/5.3f35da1a.js"><link rel="prefetch" href="/kurimudb/assets/js/6.c8fc2db8.js"><link rel="prefetch" href="/kurimudb/assets/js/7.8b05f61b.js"><link rel="prefetch" href="/kurimudb/assets/js/8.32917ebd.js"><link rel="prefetch" href="/kurimudb/assets/js/9.627b9973.js">
+    <link rel="preload" href="/kurimudb/assets/css/0.styles.afb2c109.css" as="style"><link rel="preload" href="/kurimudb/assets/js/app.a7fcd400.js" as="script"><link rel="preload" href="/kurimudb/assets/js/2.daf47ad8.js" as="script"><link rel="preload" href="/kurimudb/assets/js/12.964c3cba.js" as="script"><link rel="prefetch" href="/kurimudb/assets/js/10.895b4b62.js"><link rel="prefetch" href="/kurimudb/assets/js/11.185fb2d3.js"><link rel="prefetch" href="/kurimudb/assets/js/13.20fac8dd.js"><link rel="prefetch" href="/kurimudb/assets/js/3.223aaabe.js"><link rel="prefetch" href="/kurimudb/assets/js/4.fb8a7a00.js"><link rel="prefetch" href="/kurimudb/assets/js/5.3f35da1a.js"><link rel="prefetch" href="/kurimudb/assets/js/6.c8fc2db8.js"><link rel="prefetch" href="/kurimudb/assets/js/7.8b05f61b.js"><link rel="prefetch" href="/kurimudb/assets/js/8.32917ebd.js"><link rel="prefetch" href="/kurimudb/assets/js/9.627b9973.js">
     <link rel="stylesheet" href="/kurimudb/assets/css/0.styles.afb2c109.css">
   </head>
   <body>
@@ -172,32 +172,42 @@ configModel<span class="token punctuation">.</span>data<span class="token punctu
   mode<span class="token operator">:</span> <span class="token string">&quot;white&quot;</span><span class="token punctuation">,</span>
   background<span class="token operator">:</span> <span class="token string">&quot;foo.jpg&quot;</span><span class="token punctuation">,</span>
 <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token comment">// set..</span>
+configModel<span class="token punctuation">.</span><span class="token function">set</span><span class="token punctuation">(</span><span class="token string">&quot;theme&quot;</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token parameter">val</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>
+  val<span class="token punctuation">.</span>color <span class="token operator">=</span> <span class="token string">&quot;red&quot;</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 <span class="token comment">// good ✔</span>
 configModel<span class="token punctuation">.</span>data<span class="token punctuation">.</span>themeColor <span class="token operator">=</span> <span class="token string">&quot;blue&quot;</span><span class="token punctuation">;</span>
 configModel<span class="token punctuation">.</span>data<span class="token punctuation">.</span>themeMode <span class="token operator">=</span> <span class="token string">&quot;white&quot;</span><span class="token punctuation">;</span>
 configModel<span class="token punctuation">.</span>data<span class="token punctuation">.</span>themeBackground <span class="token operator">=</span> <span class="token string">&quot;foo.jpg&quot;</span><span class="token punctuation">;</span>
+<span class="token comment">// set..</span>
+configModel<span class="token punctuation">.</span>data<span class="token punctuation">.</span>themeColor <span class="token operator">=</span> <span class="token string">&quot;red&quot;</span><span class="token punctuation">;</span>
 
 <span class="token comment">// good ✔</span>
 themeModel<span class="token punctuation">.</span>data<span class="token punctuation">.</span>color <span class="token operator">=</span> <span class="token string">&quot;blue&quot;</span><span class="token punctuation">;</span>
 themeModel<span class="token punctuation">.</span>data<span class="token punctuation">.</span>mode <span class="token operator">=</span> <span class="token string">&quot;white&quot;</span><span class="token punctuation">;</span>
 themeModel<span class="token punctuation">.</span>data<span class="token punctuation">.</span>background <span class="token operator">=</span> <span class="token string">&quot;foo.jpg&quot;</span><span class="token punctuation">;</span>
+<span class="token comment">// set..</span>
+themeModel<span class="token punctuation">.</span>data<span class="token punctuation">.</span>color <span class="token operator">=</span> <span class="token string">&quot;red&quot;</span><span class="token punctuation">;</span>
 </code></pre></div><p>如果你想要存储一组数据的集合，比起向对象模型中存入一个数组，我们更推荐直接使用<a href="#%E9%9B%86%E5%90%88%E6%A8%A1%E5%9E%8B">集合模型</a>：</p> <div class="language-js extra-class"><pre class="language-js"><code><span class="token comment">// bad ✖</span>
 configModel<span class="token punctuation">.</span>data<span class="token punctuation">.</span>drafts <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token keyword">await</span> draftModel<span class="token punctuation">.</span>data<span class="token punctuation">.</span>drafts<span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment">// push..</span>
 configModel<span class="token punctuation">.</span><span class="token function">set</span><span class="token punctuation">(</span><span class="token string">&quot;drafts&quot;</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token parameter">val</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>
   val<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
     name<span class="token operator">:</span> <span class="token string">&quot;foo&quot;</span><span class="token punctuation">,</span>
     content<span class="token operator">:</span> <span class="token string">&quot;bar&quot;</span><span class="token punctuation">,</span>
   <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token keyword">await</span> draftModel<span class="token punctuation">.</span>data<span class="token punctuation">.</span>drafts<span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 <span class="token comment">// good ✔</span>
+<span class="token comment">// push..</span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token keyword">await</span> draftModel<span class="token punctuation">.</span>data<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">await</span> <span class="token keyword">new</span> <span class="token class-name">draftModel<span class="token punctuation">.</span>data</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
   name<span class="token operator">:</span> <span class="token string">&quot;foo&quot;</span><span class="token punctuation">,</span>
   content<span class="token operator">:</span> <span class="token string">&quot;bar&quot;</span><span class="token punctuation">,</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token keyword">await</span> draftModel<span class="token punctuation">.</span>data<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre></div><h2 id="异步更新队列"><a href="#异步更新队列" class="header-anchor">#</a> 异步更新队列</h2> <p>待续 🐸</p> <h2 id="语法糖"><a href="#语法糖" class="header-anchor">#</a> “语法糖”</h2> <div class="custom-block tip"><p class="custom-block-title">小贴士</p> <p>在 Kurimudb 中，存储的数据本质都是对象哦，如果我们直接存储字符串或是其他类型的话，虽然读取时还是原来的样子，但其实这只是&quot;语法糖&quot;！</p></div> <div class="language-js extra-class"><pre class="language-js"><code><span class="token keyword">import</span> <span class="token punctuation">{</span> local <span class="token punctuation">}</span> <span class="token keyword">from</span> <span class="token string">&quot;kurimudb&quot;</span><span class="token punctuation">;</span>
 
 <span class="token comment">// 直接存储字符串，其实只是&quot;语法糖&quot;，</span>
@@ -234,6 +244,6 @@ console<span class="token punctuation">.</span><span class="token function">log<
       </a>
       →
     </span></p></div> </main></div><div class="global-ui"></div></div>
-    <script src="/kurimudb/assets/js/app.c6ac5e23.js" defer></script><script src="/kurimudb/assets/js/2.daf47ad8.js" defer></script><script src="/kurimudb/assets/js/12.56ce2b61.js" defer></script>
+    <script src="/kurimudb/assets/js/app.a7fcd400.js" defer></script><script src="/kurimudb/assets/js/2.daf47ad8.js" defer></script><script src="/kurimudb/assets/js/12.964c3cba.js" defer></script>
   </body>
 </html>
