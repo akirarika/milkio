@@ -244,7 +244,7 @@ configModel.data.test = { foo: "bar" };
 configModel.data.test.foo = "baz";
 ```
 
-当你向模型中存入一个对象或数组时，你很可能会凭直觉写出如上的代码来修改其属性值，但这样会导致错误出现。由于 JavaScript 的限制，只有对 `configModel.data` 子属性的更改，才会生效并触发订阅。如果你想更改存入对象的某些属性，你可以使用 `set` 方法：
+当你向模型中存入一个对象或数组时，你很可能会凭直觉写出如上的代码来修改其属性值，但这样会导致错误出现。由于 [JavaScript](https://stackoverflow.com/a/6605700) 的限制，只有对 `configModel.data.test` 本身的更改，才会存储生效并触发订阅。如果你想更改存入对象的某些属性，你可以使用 `set` 方法：
 
 ```js
 // set 方法接受两个参数，第一个是要修改的属性名，第二个是修改值的闭包函数
@@ -263,6 +263,50 @@ await configModel.set("test", async (val) => {
 ```
 
 数组同理~
+
+### 我应该使用 set 方法吗？
+
+这一点见仁见智。我们推荐的最佳实践是，应当修改存储的内容本身，而不是存入对象再修改它的子属性。同时，这样也能最大限度地利用 IndexedDB 的性能优势，和避免在读取大量数据时一次全部读到 Memory 里。如果你想存储多个相关的值，可以：
+
+```js
+// bad ✖
+configModel.data.theme = {
+  color: "blue",
+  mode: "white",
+  background: "foo.jpg",
+};
+
+// good ✔
+configModel.data.themeColor = "blue";
+configModel.data.themeMode = "white";
+configModel.data.themeBackground = "foo.jpg";
+
+// good ✔
+themeModel.data.color = "blue";
+themeModel.data.mode = "white";
+themeModel.data.background = "foo.jpg";
+```
+
+如果你想要存储一组数据的集合，比起向对象模型中存入一个数组，我们更推荐直接使用[集合模型](#集合模型)：
+
+```js
+// bad ✖
+configModel.data.drafts = [];
+configModel.set("drafts", (val) => {
+  val.push({
+    name: "foo",
+    content: "bar",
+  });
+});
+console.log(await draftModel.data[0]);
+
+// good ✔
+await new draftModel.data({
+  name: "foo",
+  content: "bar",
+});
+console.log(await draftModel.data[1]);
+```
 
 ## 异步更新队列
 
