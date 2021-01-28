@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "dexie": "^3.0.3",
-    "rxjs": "^6.6.3"
+    "rxjs": "^6.6.3",
+    "vuepress-theme-yuu": "^3.0.0"
   }
 }

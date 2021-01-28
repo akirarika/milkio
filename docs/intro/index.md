@@ -264,12 +264,14 @@ await configModel.set("test", async (val) => {
 
 数组同理~
 
-### 我应该使用 set 方法吗？
+### 我应该避免使用 set 方法吗？
 
 这一点见仁见智。我们推荐的最佳实践是，应当修改存储的内容本身，而不是存入对象再修改它的子属性。同时，这样也能最大限度地利用 IndexedDB 的性能优势，和避免在读取大量数据时一次全部读到 Memory 里。如果你想存储多个相关的值，可以：
 
 ```js
-// bad ✖
+/**
+ * bad ✖ 将相关数据存入一个对象
+ */
 configModel.data.theme = {
   color: "blue",
   mode: "white",
@@ -280,14 +282,18 @@ configModel.set("theme", (val) => {
   val.color = "red";
 });
 
-// good ✔
+/**
+ * good ✔ 利用变量名来区分归类
+ */
 configModel.data.themeColor = "blue";
 configModel.data.themeMode = "white";
 configModel.data.themeBackground = "foo.jpg";
 // set..
 configModel.data.themeColor = "red";
 
-// good ✔
+/**
+ * good ✔ 建立一个模型，存储此类数据
+ */
 themeModel.data.color = "blue";
 themeModel.data.mode = "white";
 themeModel.data.background = "foo.jpg";
@@ -298,9 +304,12 @@ themeModel.data.color = "red";
 如果你想要存储一组数据的集合，比起向对象模型中存入一个数组，我们更推荐直接使用[集合模型](#集合模型)：
 
 ```js
-// bad ✖
+/**
+ * bad ✖ 将数组存入对象模型的一个属性中
+ */
 configModel.data.drafts = [];
-console.log((await draftModel.data.drafts)[0]);
+const drafts = await draftModel.data.drafts;
+console.log(drafts[0]);
 // push..
 configModel.set("drafts", (val) => {
   val.push({
@@ -309,7 +318,9 @@ configModel.set("drafts", (val) => {
   });
 });
 
-// good ✔
+/**
+ * good ✔ 建立一个集合模型，存储此类数据
+ */
 console.log(await draftModel.data[1]);
 // push..
 await new draftModel.data({

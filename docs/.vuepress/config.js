@@ -1,13 +1,17 @@
 module.exports = {
   title: "Kurimudb",
   base: "/kurimudb/",
+  theme: "yuu",
   themeConfig: {
+    yuu: {
+      defaultColorTheme: "blue",
+    },
     nav: [
-      { text: "Github", link: "https://github.com/akirarika/kurimudb" },
       {
         text: "更新日志",
         link: "https://github.com/akirarika/kurimudb/releases",
       },
+      { text: "Github", link: "https://github.com/akirarika/kurimudb" },
     ],
     sidebar: [
       ["/", "介绍"],
