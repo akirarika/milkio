@@ -89,7 +89,12 @@ export default class Model {
         key = this.checkPrimary(key);
         const val = await this.data[key];
         await func(val);
-        this.data[key] = val;
+        if (val instanceof Array)
+            this.data[key] = [...val];
+        else if (val instanceof Object)
+            this.data[key] = { ...val };
+        else
+            this.data[key] = val;
     }
     checkPrimary(key) {
         if ("number" === this.primaryType && !isNaN(Number(key)))
