@@ -2,6 +2,10 @@
 
 [![](https://img.shields.io/badge/github-kurimudb-white.svg)](https://github.com/akirarika/kurimudb) ![](https://img.shields.io/github/forks/akirarika/kurimudb) ![](https://img.shields.io/github/stars/akirarika/kurimudb) ![](https://img.shields.io/badge/language-javascript-orange.svg) ![](https://img.shields.io/github/license/akirarika/kurimudb)
 
+::: tip v2.0
+2.0 版本文档正在编写中，敬请期待
+:::
+
 ## Kurimudb 是什么
 
 <img src="./illu.jpg" style="margin-top:-32px;width:240px;float:right;"></img>
@@ -22,7 +26,7 @@ Kurimudb 在保持语法简单的同时，还提供了[模块化](https://akirar
 ## 安装
 
 ```sh
-npm i kurimudb # or yarn add kurimudb
+npm i kurimudb@1 # or yarn add kurimudb@1
 ```
 
 ## 快速体验

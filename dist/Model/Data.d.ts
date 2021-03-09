@@ -1,4 +1,4 @@
 import Model from ".";
-export default class Data {
-    constructor(model: Model);
+export default class Data<T> {
+    constructor(model: Model<T>);
 }

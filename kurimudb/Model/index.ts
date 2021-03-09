@@ -1,171 +1,336 @@
-import { Collection, Table } from "dexie";
-import { merge, Subject, BehaviorSubject, throwError } from "rxjs";
-import Connection from "../Connection";
-import Cache from "./Cache";
-import Data from "./Data";
-import Database from "./Database";
+import Data from "./data";
+import {
+  ModelInterface,
+  ConfigInterface,
+  PersistenceInterface,
+  CacheDriverInterface,
+} from "..";
+import Cache from "./cache";
+import Persistence from "./persistence";
 
-export default class Model {
-  name;
-  primary;
-  primaryType;
+type DataItemInterface<T> = T & {
+  id?: number | string;
+};
 
-  _connection: Connection | false;
-  _database: Database;
-  _cache: Cache;
-  data: Record<string | number, any>;
+interface DataInterface<T> {
+  new (val: T, primary?: string | number): Promise<DataItemInterface<T>>;
+  [others: string]: DataItemInterface<T>;
+  [others: number]: DataItemInterface<T>;
+}
 
-  inserted$ = new Subject();
-  deleted$ = new Subject();
-  updated$ = new Subject();
-  changed$ = merge(this.inserted$, this.deleted$, this.updated$);
-  $ = new BehaviorSubject({
-    type: "inited",
-    key: null,
-    value: null,
-  });
+export default class Model<T> implements ModelInterface {
+  primary: string = "id";
+  config: ConfigInterface;
+  data: DataInterface<T>;
+  cache: Cache<T>;
+  persistence: Persistence<T> | null = null;
+  async: boolean = false;
+  changed: CacheDriverInterface;
+  $: any;
 
-  constructor(
-    connection: Connection | false,
-    [primary, primaryType]: [string, string]
-  ) {
-    this.name = this.constructor.name;
-    this.primary = primary;
-    this.primaryType = primaryType;
+  constructor(options: ModelInterface) {
+    this.config = this._checkConfig(options.config);
+    Object.assign(this, options);
+    if (this.isPersistence()) {
+      this.persistence = new Persistence<T>(this);
+      this.async = this.persistence.async;
+    }
+    this.data = new Data<T>(this) as DataInterface<T>;
+    this.cache = new Cache<T>(this);
+    this.changed = this.cache.createCacheItem(null);
+    this.$ = this.changed.subscribe();
 
-    if (!this.name) throw new Error(`'name' not found.`);
-    if (connection && !connection.getConnection()[this.name])
+    this._seeding();
+  }
+
+  /**
+   * 获取模型中的全部数据
+   */
+  all(): Record<number | string, T> | Promise<Record<number | string, T>> {
+    if (this.isPersistence())
+      return this.getObjectResults(this.persistence?.all() as any);
+    else return this.cache.all();
+  }
+
+  /**
+   * 判断数据是否存在于模型
+   * @param key
+   */
+  has(key: string | number): boolean | Promise<boolean> {
+    key = this.checkPrimary(key);
+    if (this.cache.has(key)) return true;
+    if (this.async) return this.persistence?.exists(key) as Promise<boolean>;
+    return false;
+  }
+
+  /**
+   * 查询 (一般用于 indexeddb)
+   * 可用于实现了 query 功能的持久化驱动
+   * 一般返回一个由驱动实现的，可链式调用的查询对象
+   */
+  query(): any {
+    return this.persistence?.query();
+  }
+
+  /**
+   * 获取数组形式的结果
+   * @param query
+   */
+  async getArrayResults(
+    query: Array<T> | Promise<Array<T>>
+  ): Promise<Array<T>> {
+    return await this.getResults(query, new Array());
+  }
+
+  /**
+   * 获取对象形式的结果
+   */
+  async getObjectResults(
+    query: Array<T> | Promise<Array<T>>
+  ): Promise<Record<number | string, T>> {
+    return await this.getResults(query, new Object());
+  }
+
+  /**
+   * 获取结果
+   * @param query
+   * @param initialResult
+   */
+  async getResults<T>(
+    query: Array<any> | Promise<Array<any>>,
+    initialResult: Record<string | number, any> | Array<any> = new Object()
+  ): Promise<T> {
+    if (!this.isPersistence())
       throw new Error(
-        `Table not found. Did you add this table '${this.name}' to the migrations?`
+        `This method can only be called by a model that has been persisted.`
       );
-
-    this._connection = connection;
-    this._database = new Database(this);
-    this._cache = new Cache(this);
-    this.data = new Data(this);
-
-    this.changed$.subscribe((d: any) => this.$.next(d));
-
-    if (this["seeding"]) setTimeout(() => this._seeding(), 0);
-  }
-
-  async all(type) {
-    if (!this._connection) return this._cache.all();
-    return this.getResults(this.query(), null, type);
-  }
-
-  query(): Table {
-    return this._database.query();
-  }
-
-  async getResults(
-    query: Collection | Table,
-    resultProt: any = null,
-    type = Object
-  ) {
-    if (!this._connection)
-      throw new Error(
-        `This function can only be used when you have Collection`
-      );
-    let querys = await query.toArray();
-    if (!(querys instanceof Array))
+    query = await query;
+    if (!(query instanceof Array))
       throw new Error(
         `The query result is not a single object. If it's an array, please use 'getresult' instead.`
       );
-    if (null === resultProt) resultProt = new type();
 
     const setResult = (key, value) => {
-      if (resultProt instanceof Array) resultProt.push(value);
-      else resultProt[key] = value;
+      if (initialResult instanceof Array) initialResult.push(value);
+      else initialResult[key] = value;
     };
 
-    for (const item of querys) {
+    for (const item of query) {
       const key = item[this.primary];
-      if (this._cache.has(key)) setResult(key, this._cache.get(key));
+      if (this.cache.has(key)) setResult(key, this.cache.get(key));
       else {
-        setResult(key, this._database.decode(item));
-        this._cache.add(key, this._database.decode(item));
+        setResult(key, this.decode(item));
+        this.cache.add(key, this.decode(item));
       }
     }
-    return resultProt;
+    return initialResult as T;
   }
 
+  /**
+   * 获取单个结果
+   * @param query
+   * @param initialResult
+   */
   async getResult(
-    query: Promise<Record<string | number, any>>,
-    resultProt = {}
-  ) {
-    if (!this._connection)
+    query: T | Promise<T>,
+    initialResult: Record<string | number, any> = new Object()
+  ): Promise<T | null> {
+    if (!this.isPersistence())
       throw new Error(
-        `This function can only be used when you have Collection`
-      );
-    if (!this._isPlainObject(await query))
-      throw new Error(
-        `The query result is not a single array. If it's an object, please use 'getresults' instead.`
+        `This method can only be called by a model that has been persisted.`
       );
     const item = await query;
+    if (!this._isPlainObject(item))
+      throw new Error(
+        `The query result is not a single Object. If it's an Array, please use 'getresults' instead.`
+      );
     const key = item[this.primary];
-    if (this._cache.has(key)) resultProt[key] = this._cache.get(key);
+    if (this.cache.has(key))
+      initialResult = {
+        ...initialResult,
+        ...this.cache.get(key),
+      };
     else {
-      resultProt[key] = this._database.decode(item);
-      this._cache.add(key, resultProt[key]);
+      initialResult = this.decode(item);
+      this.cache.add(key, initialResult);
     }
-    return resultProt;
+    return initialResult as any;
   }
 
-  async has(key) {
-    key = this.checkPrimary(key);
-    if (this._cache.has(key)) return true;
-    if (this._connection) return this._database.has(key);
-    else return false;
+  /**
+   * 判断模型是否持久化
+   */
+  isPersistence(): boolean {
+    return "persistence" in this.config.drivers;
   }
 
-  async set(key, func) {
-    key = this.checkPrimary(key);
-    const val = await this.data[key];
-    await func(val);
-    if (val instanceof Array) this.data[key] = [...val];
-    else if (val instanceof Object) this.data[key] = { ...val };
-    else this.data[key] = val;
+  /**
+   * 编码
+   * 将原数据封装为适合直接存储到 indexeddb 的对象格式
+   * @param value
+   * @param key
+   */
+  encode(value: any, key: any = void 0): object {
+    if (this._isPlainObject(value)) {
+      // if (this.primary in value)
+      //   throw new Error(
+      //     'The object you want to store contains the attribute with the value of "' +
+      //       this.primary +
+      //       '", ' +
+      //       "which is the same as the primary key name specified in your model. " +
+      //       'Consider changing this value to a different name, such as "' +
+      //       this.config.name +
+      //       "_" +
+      //       this.primary +
+      //       '".'
+      //   );
+      if (void 0 !== key) value[this.primary] = key;
+      return value;
+    } else {
+      const object = { $__value: value };
+      if (void 0 !== key) object[this.primary] = key;
+      return object;
+    }
   }
 
-  checkPrimary(key) {
-    if ("number" === this.primaryType && !isNaN(Number(key)))
+  /**
+   * 解码
+   * 将 indexeddb 的对象格式还原为原来的数据
+   * @param value
+   */
+  decode(value: any): any {
+    if (void 0 === value || null === value) return null;
+    if ("object" === typeof value && "$__value" in value)
+      return value["$__value"];
+    return value;
+  }
+
+  /**
+   * 校验主键
+   * 验证主键使其必须和模型中声明的主键格式一致，如果模型要求组件是 number 类型，
+   * 而传入的是字符串组成的 number 类型，则自动将其转为真正的 number 类型。
+   * @param key
+   */
+  checkPrimary(key: any): any {
+    if ("number" === this.config.type && !isNaN(Number(key)))
       return Number(key);
-    if (this.primaryType !== typeof key)
+    if (this.config.type !== typeof key)
       throw new Error(
         `The model primary type needs to be ${
-          this.primaryType
+          this.config.type
         }, not ${typeof key}`
       );
     return key;
   }
 
-  async _seeding() {
-    if (!this._connection) return this["seeding"](this.data);
-    const table = this._connection.getConnection()["__Kurimudb"];
-    if (await table.get(`${this.name}_is_seeded`)) return;
-    this["seeding"](this.data);
-    await table.add({
-      key: `${this.name}_is_seeded`,
-      value: `true`,
-    });
-  }
+  /**
+   * 深拷贝
+   * 将对象深拷贝。在解决地址引用的同时，避免 proxy 对象无法存入 indexeddb 的问题。
+   * 如果你是 vue3 用户，此函数可以解决 vue3 中的 data 对象无法存入 indexeddb 中的问题。
+   * 通过 `model.data` 新增/更新的数据，会自动对值调用此函数来深拷贝。
+   *
+   * 可向第二个参数传入不被深拷贝的对象类型，避免如 `Set` `Map` `Blob` 等特殊对象被深拷贝
+   * 导致数据丢失的问题。若第二个参数为空，则默认为不深拷贝以下对象：
+   * [
+   *   'Boolean',
+   *   'String',
+   *   'Date',
+   *   'RegExp',
+   *   'Blob',
+   *   'File',
+   *   'FileList',
+   *   'ArrayBuffer',
+   *   'DataView',
+   *   'Uint8ClampedArray',
+   *   'ImageData',
+   *   'Map',
+   *   'Set',
+   * ]
+   *
+   * @param oldObject
+   * @param intrinsicTypes
+   */
+  deepClone(oldObject, intrinsicTypes: string[] | null = null) {
+    if (!oldObject || typeof oldObject !== "object") return oldObject;
 
-  _humpToLine(str: string) {
-    return str
-      .replace(/([A-Z])/g, "_$1")
-      .toLowerCase()
-      .replace(/^_/, "");
-  }
-
-  _isPlainObject(obj) {
-    if (typeof obj !== "object" || obj === null) return false;
-
-    let proto = obj;
-    while (Object.getPrototypeOf(proto) !== null) {
-      proto = Object.getPrototypeOf(proto);
+    if (null === intrinsicTypes) {
+      if (!("intrinsicTypes" in this.config))
+        intrinsicTypes = [
+          "Boolean",
+          "String",
+          "Date",
+          "RegExp",
+          "Blob",
+          "File",
+          "FileList",
+          "ArrayBuffer",
+          "DataView",
+          "Uint8ClampedArray",
+          "ImageData",
+          "Map",
+          "Set",
+        ];
+      else if (false === this.config.intrinsicTypes) return oldObject;
+      else intrinsicTypes = this.config.intrinsicTypes as string[];
     }
-    // proto = null
-    return Object.getPrototypeOf(obj) === proto;
+
+    if (Array.isArray(oldObject)) {
+      let newObject = new Array();
+      for (let i = 0, l = oldObject.length; i < l; ++i)
+        newObject.push(this.deepClone(oldObject[i]));
+      return newObject;
+    }
+
+    if (0 <= intrinsicTypes.indexOf(oldObject.constructor.name)) {
+      return oldObject;
+    }
+
+    let newObject = new Object();
+    for (let key in oldObject) {
+      if (key in oldObject) newObject[key] = this.deepClone(oldObject[key]);
+    }
+    return newObject;
+  }
+
+  /**
+   * 设置值
+   * 此函数一般用于修改模型中存入的对象的子属性。
+   * @param key
+   * @param func
+   */
+  async set(key, func) {
+    key = this.checkPrimary(key);
+    const val = await this.data[key];
+    await func(val);
+    if (val instanceof Array) this.data[key] = [...val] as any;
+    else if (val instanceof Object) this.data[key] = { ...val };
+    else this.data[key] = val;
+  }
+
+  async _seeding(): Promise<void> {
+    if (!this["seeding"]) return;
+    if (!this.isPersistence()) return this["seeding"](this);
+    this.persistence?.seeding(this["seeding"], this);
+  }
+
+  _checkConfig(config: ConfigInterface): ConfigInterface {
+    if (!config.name) throw new Error(`Model options "name" is required.`);
+    if (!config.type) throw new Error(`Model options "type" is required.`);
+    if ("string" !== config.type && "number" !== config.type)
+      throw new Error(
+        `Model options "type" value must be "string" or "number".`
+      );
+    if (!config.drivers)
+      throw new Error(`Model options "drivers" is required.`);
+    if (!config.drivers.cache)
+      throw new Error(`Model options "drivers.cache" is required.`);
+    if ("primary" in config) this.primary = config.primary as string;
+
+    return config;
+  }
+
+  _isPlainObject(object: any): boolean {
+    if ("Object" !== object?.constructor?.name) return false;
+    return true;
   }
 }

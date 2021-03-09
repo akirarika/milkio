@@ -1,60 +1,42 @@
-import Connection from "./Connection";
-import Model from "./Model";
-export declare const connection: typeof Connection;
-export declare const model: typeof Model;
-export declare const local: {
-    name: any;
-    primary: any;
-    primaryType: any;
-    _connection: false | Connection;
-    _database: import("./Model/Database").default;
-    _cache: import("./Model/Cache").default;
-    data: Record<string | number, any>;
-    inserted$: import("rxjs").Subject<unknown>;
-    deleted$: import("rxjs").Subject<unknown>;
-    updated$: import("rxjs").Subject<unknown>;
-    changed$: import("rxjs").Observable<unknown>;
-    $: import("rxjs").BehaviorSubject<{
-        type: string;
-        key: null;
-        value: null;
-    }>;
-    all(type: any): Promise<any>;
-    query(): import("dexie").Table<any, import("dexie").IndexableType>;
-    getResults(query: import("dexie").Table<any, import("dexie").IndexableType> | import("dexie").Collection<any, import("dexie").IndexableType>, resultProt?: any, type?: ObjectConstructor): Promise<any>;
-    getResult(query: Promise<Record<string | number, any>>, resultProt?: {}): Promise<{}>;
-    has(key: any): Promise<boolean>;
-    set(key: any, func: any): Promise<void>;
-    checkPrimary(key: any): any;
-    _seeding(): Promise<any>;
-    _humpToLine(str: string): string;
-    _isPlainObject(obj: any): boolean;
-};
-export declare const session: {
-    name: any;
-    primary: any;
-    primaryType: any;
-    _connection: false | Connection;
-    _database: import("./Model/Database").default;
-    _cache: import("./Model/Cache").default;
-    data: Record<string | number, any>;
-    inserted$: import("rxjs").Subject<unknown>;
-    deleted$: import("rxjs").Subject<unknown>;
-    updated$: import("rxjs").Subject<unknown>;
-    changed$: import("rxjs").Observable<unknown>;
-    $: import("rxjs").BehaviorSubject<{
-        type: string;
-        key: null;
-        value: null;
-    }>;
-    all(type: any): Promise<any>;
-    query(): import("dexie").Table<any, import("dexie").IndexableType>;
-    getResults(query: import("dexie").Table<any, import("dexie").IndexableType> | import("dexie").Collection<any, import("dexie").IndexableType>, resultProt?: any, type?: ObjectConstructor): Promise<any>;
-    getResult(query: Promise<Record<string | number, any>>, resultProt?: {}): Promise<{}>;
-    has(key: any): Promise<boolean>;
-    set(key: any, func: any): Promise<void>;
-    checkPrimary(key: any): any;
-    _seeding(): Promise<any>;
-    _humpToLine(str: string): string;
-    _isPlainObject(obj: any): boolean;
-};
+import _dexieDriver from './drivers/DexieDriver';
+import _model from './model/index';
+export declare const model: typeof _model;
+export declare const dexieDriver: typeof _dexieDriver;
+export declare const localStorageDriver: typeof _dexieDriver;
+export declare const rxjsDriver: typeof _dexieDriver;
+export interface ModelInterface {
+    config: ConfigInterface;
+    [others: string]: any;
+}
+export interface ConfigInterface {
+    name: string;
+    type: 'string' | 'number';
+    drivers: DriversInterface;
+    primary?: string;
+    intrinsicTypes?: string[] | false;
+}
+export interface DriversInterface {
+    cache: any;
+    cacheInject?: any;
+    persistence?: any;
+    persistenceInject?: any;
+}
+export interface CacheDriverInterface {
+    value: any;
+    set(value: any): void;
+    get(): any;
+    forget(): void;
+    subscribe(): any;
+}
+export interface PersistenceInterface {
+    async: boolean;
+    all(): Array<any> | Promise<Array<any>>;
+    insert(value: any, key?: string | number): string | number | Promise<string | number>;
+    insertOrUpdate(key: string | number, value: any): void | Promise<void>;
+    update(key: string | number, value: any): void | Promise<void>;
+    select(key: string | number): any | Promise<any>;
+    exists(key: string | number): boolean | Promise<boolean>;
+    delete(key: string | number): void | Promise<void>;
+    seeding(sedding: Function, model: any): void;
+    query?(): Object;
+}

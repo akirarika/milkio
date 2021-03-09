@@ -1,50 +1,46 @@
 import { BehaviorSubject } from "rxjs";
+import { CacheDriverInterface } from "..";
 import Model from ".";
 
-export default class Cache {
-  private model: Model;
-  public value: Map<string | number, BehaviorSubject<any>> = new Map();
+export default class Cache<T> {
+  private model: Model<T>;
+  public value: Map<string | number, CacheDriverInterface> = new Map();
 
-  constructor(model: Model) {
+  constructor(model: Model<T>) {
     this.model = model;
   }
 
   all() {
     const result = {};
-    for (const [key, value] of this.value.entries())
-      result[key] = value.getValue();
+    for (const [key, value] of this.value.entries()) result[key] = value.get();
     return result;
   }
 
-  get$(key, setInitialValue) {
-    if (this.value.has(key)) return this.value.get(key);
-    this.value.set(key, new BehaviorSubject(null));
-    setInitialValue(key);
-    return this.value.get(key);
+  subscribe(key): Function {
+    if (this.value.has(key)) return this.value.get(key)?.subscribe();
+    this.value.set(key, this.createCacheItem(null));
+    return this.value.get(key)?.subscribe();
   }
 
   get(key, def = null) {
-    let result;
-
-    if (this.value.has(key)) result = this.value.get(key)?.getValue();
-    else result = def;
-
-    return result;
+    if (this.value.has(key)) return this.value.get(key)?.get();
+    return def;
   }
 
   add(key, value) {
     if (this.value.has(key))
       throw new Error(`Key already exists in the object store.`);
-    this.value.set(key, new BehaviorSubject(value));
+    this.value.set(key, this.createCacheItem(value));
   }
 
   put(key, value) {
-    if (this.value.has(key)) this.value.get(key)?.next(value);
-    else this.value.set(key, new BehaviorSubject(value));
+    if (this.value.has(key)) this.value.get(key)?.set(value);
+    else this.value.set(key, this.createCacheItem(value));
   }
 
   forget(key) {
-    this.value.get(key)?.next(void 0);
+    this.value.get(key)?.forget();
+    this.value.delete(key);
   }
 
   has(key): boolean {
@@ -53,5 +49,12 @@ export default class Cache {
 
   count() {
     return this.value.size;
+  }
+
+  createCacheItem(value) {
+    return new this.model.config.drivers.cache(
+      value,
+      this.model.config.drivers.cacheInject
+    );
   }
 }
