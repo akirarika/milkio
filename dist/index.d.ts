@@ -1,9 +1,11 @@
 import _dexieDriver from "./drivers/DexieDriver";
+import _localStorageDriver from "./drivers/LocalStorageDriver";
+import _rxjsDriver from "./drivers/RxjsDriver";
 import _model from "./model/index";
 export declare const Model: typeof _model;
 export declare const DexieDriver: typeof _dexieDriver;
-export declare const LocalStorageDriver: typeof _dexieDriver;
-export declare const RxjsDriver: typeof _dexieDriver;
+export declare const LocalStorageDriver: typeof _localStorageDriver;
+export declare const RxjsDriver: typeof _rxjsDriver;
 export interface ModelInterface {
     config: ConfigInterface;
     [others: string]: any;
