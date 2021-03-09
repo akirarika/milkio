@@ -20,7 +20,7 @@ Kurimudb 是一款渐进式的 **Web 数据仓库**，可以帮你将你应用�
 ## 安装
 
 ```sh
-npm i kurimudb # or yarn add kurimudb
+npm i kurimudb@1 # or yarn add kurimudb@1
 ```
 
 ## 快速体验
