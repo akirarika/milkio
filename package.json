@@ -1,6 +1,6 @@
 {
   "name": "kurimudb",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "⚓语法超简单的前端数据库🎉可以将数据保存在 IndexedDB 或 Memory 里",
   "main": "./dist/index.js",
   "license": "MIT",
