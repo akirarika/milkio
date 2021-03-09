@@ -1,3 +1,5 @@
+2.0 版本文档正在编写中，敬请期待
+
 # 介绍
 
 [![](https://img.shields.io/badge/文档-点击阅读文档-white.svg)](https://akirarika.github.io/kurimudb) ![](https://img.shields.io/github/forks/akirarika/kurimudb) ![](https://img.shields.io/github/stars/akirarika/kurimudb) ![](https://img.shields.io/badge/language-javascript-orange.svg) ![](https://img.shields.io/github/license/akirarika/kurimudb)

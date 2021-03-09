@@ -1,9 +1,9 @@
-import _dexieDriver from './drivers/DexieDriver';
-import _model from './model/index';
+import _dexieDriver from "./drivers/DexieDriver";
+import _model from "./model/index";
 // model base class
-export const model = _model;
+export const Model = _model;
 // built-in drivers
-export const dexieDriver = _dexieDriver;
-export const localStorageDriver = _dexieDriver;
-export const rxjsDriver = _dexieDriver;
+export const DexieDriver = _dexieDriver;
+export const LocalStorageDriver = _dexieDriver;
+export const RxjsDriver = _dexieDriver;
 //# sourceMappingURL=index.js.map

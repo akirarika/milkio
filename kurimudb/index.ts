@@ -1,15 +1,15 @@
-import _dexieDriver from './drivers/DexieDriver';
-import _localStorageDriver from './drivers/LocalStorageDriver';
-import _rxjsDriver from './drivers/RxjsDriver';
-import _model from './model/index';
+import _dexieDriver from "./drivers/DexieDriver";
+import _localStorageDriver from "./drivers/LocalStorageDriver";
+import _rxjsDriver from "./drivers/RxjsDriver";
+import _model from "./model/index";
 
 // model base class
-export const model = _model;
+export const Model = _model;
 
 // built-in drivers
-export const dexieDriver = _dexieDriver;
-export const localStorageDriver = _dexieDriver;
-export const rxjsDriver = _dexieDriver;
+export const DexieDriver = _dexieDriver;
+export const LocalStorageDriver = _dexieDriver;
+export const RxjsDriver = _dexieDriver;
 
 // interfaces
 export interface ModelInterface {
@@ -19,7 +19,7 @@ export interface ModelInterface {
 
 export interface ConfigInterface {
   name: string;
-  type: 'string' | 'number';
+  type: "string" | "number";
   drivers: DriversInterface;
   primary?: string;
   intrinsicTypes?: string[] | false;
@@ -43,7 +43,10 @@ export interface CacheDriverInterface {
 export interface PersistenceInterface {
   async: boolean;
   all(): Array<any> | Promise<Array<any>>;
-  insert(value: any, key?: string | number): string | number | Promise<string | number>;
+  insert(
+    value: any,
+    key?: string | number
+  ): string | number | Promise<string | number>;
   insertOrUpdate(key: string | number, value: any): void | Promise<void>;
   update(key: string | number, value: any): void | Promise<void>;
   select(key: string | number): any | Promise<any>;
