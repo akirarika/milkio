@@ -8,8 +8,8 @@ export const Model = _model;
 
 // built-in drivers
 export const DexieDriver = _dexieDriver;
-export const LocalStorageDriver = _dexieDriver;
-export const RxjsDriver = _dexieDriver;
+export const LocalStorageDriver = _localStorageDriver;
+export const RxjsDriver = _rxjsDriver;
 
 // interfaces
 export interface ModelInterface {
