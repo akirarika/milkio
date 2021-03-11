@@ -1,73 +1,80 @@
 # 介绍
 
-[![](https://img.shields.io/badge/github-kurimudb-white.svg)](https://github.com/akirarika/kurimudb) ![](https://img.shields.io/github/forks/akirarika/kurimudb) ![](https://img.shields.io/github/stars/akirarika/kurimudb) ![](https://img.shields.io/badge/language-javascript-orange.svg) ![](https://img.shields.io/github/license/akirarika/kurimudb)
-
-::: tip v2.0
-2.0 版本文档正在编写中，敬请期待
-:::
+![](https://img.shields.io/github/forks/akirarika/kurimudb) ![](https://img.shields.io/github/stars/akirarika/kurimudb) ![](https://img.shields.io/badge/language-javascript-orange.svg) ![](https://img.shields.io/github/license/akirarika/kurimudb)
 
 ## Kurimudb 是什么
 
 <img src="./illu.jpg" style="margin-top:-32px;width:240px;float:right;"></img>
 
-Kurimudb 是一款渐进式的 **Web 数据仓库**，可以帮你将你应用的数据，存储在 Memory 或 IndexedDB 里、和成为你应用真正的单一数据源。
+Kurimudb 是一款渐进式的 **Web 数据仓库**，可以帮你将数据存储在 Memory、LocalStorage 或 IndexedDB 里，并可订阅其值的更新。
 
-Kurimudb 在保持语法简单的同时，还提供了[模块化](https://akirarika.github.io/kurimudb/intro/#%e6%a8%a1%e5%9e%8b)、[订阅数据更新](https://akirarika.github.io/kurimudb/monitor/)和[状态管理 (如代替 Vuex)](https://akirarika.github.io/kurimudb/monitor/#%e7%8a%b6%e6%80%81%e7%ae%a1%e7%90%86-vue) 的能力。
+除了持久化数据之外，若你愿意，Kurimudb 还能成为你应用的 [Model 层](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel#Components_of_MVVM_pattern) 抽象，然后接任你应用中状态管理库的职责 (诸如 Vuex、Redux、Mobx)，并使你应用真正拥有单一数据来源。
 
-### 特性
-
-- **语法足够简单 ✔️**
-  - Kurimudb 努力保持语法简单，进行增删改查就像操作普通的 Javascript 对象。
-- **读取按需加载 ✔️**
-  - Kurimudb 筛选时仅会按需读取数据，即使缓存了巨量的数据，也不用担心。
-- **数据可持久化 ✔️**
-  - Kurimudb 能将数据存储到 IndexedDB 中，即使用户刷新，数据也不会丢失。
-
-## 安装
-
-```sh
-npm i kurimudb@1 # or yarn add kurimudb@1
-```
+Kurimudb 是驱动化的，这意味着你可以不更改代码的情况下更换具体实现。其中订阅更新功能，目前内置了 `Rxjs` 一种驱动；持久化功能，内置了 `LocalStorage` 和 `Dexie (IndexedDB)` 两种驱动。如果不满足你的需求，你也可以编写自己的驱动实现。
 
 ## 快速体验
 
-想快速体验的话，可以直接使用 Kurimudb 内置的 `local` 和 `session` 对象。下面是一个增删改查的例子：
+安装此 NPM 包，无需任何配置，你就可以快速体验 Kurimudb 啦！
 
-```js
-import { local, session } from "kurimudb";
-// local 和 session 的用法是一致的喔~
-// 区别是，local 的数据会被存储到 IndexedDB 里，刷新后还在，
-// 而 session 则不会，关掉页面，里面的数据就没有了 (๑´ㅂ`๑)
-
-// 创建或更新..
-local.data.say = "hello world";
-
-// 读取..
-await local.data.say;
-
-// 删除..
-delete local.data.say;
-
-// 判断是否存在..
-"say" in local.data; // or local.has("say");
-
-// 获取所有数据..
-await local.all();
+```sh
+npm i kurimudb-zero-config
+# or yarn add kurimudb-zero-config
 ```
 
-如你所见，Kurimudb 的语法很简单，就像操作一个普通的 Javascript 对象一样。但是，在背后，你的数据已经被存储到了 IndexedDB 里啦。
+包内提供了 `memory`，`local` 和 `db` 三个对象，下面是使用它们进行增删改查的例子，超简单：
 
-Kurimudb 还整合了 [RxJS](https://rxjs.dev/)，只要你在变量名后加上 `$`，你就可以获得一个此值的 [BehaviorSubject 对象](https://rxjs.dev/guide/subject#behaviorsubject)。我们可以通过这种方式来订阅此变量，在它被改变时做点什么：
+```js
+import { memory, local, db } from "kurimudb-zero-config";
 
-```js {4}
+/**
+ * Memory 对象
+ * 它会把你的数据存储在 Memory 中，当页面刷新，数据就会被清空咯~
+ */
+memory.data.say = "hello world"; // 创建或更新..
+const say = memory.data.say; // 读取..
+delete memory.data.say; // 删除..
+"say" in memory.data; // 判断是否存在..
+
+/**
+ * Local 对象
+ * 它会把你的数据存储在 LocalStorage 中，即使页面刷新，数据还会在哒！
+ * LocalStorage 一般可以存储约 5MB 左右的数据
+ */
+local.data.say = "hello world"; // 创建或更新..
+const say = local.data.say; // 读取..
+delete local.data.say; // 删除..
+"say" in local.data; // 判断是否存在..
+
+/**
+ * db 对象
+ * 它会把你的数据存储在 IndexedDB 中，注意，IndexedDB 是异步的哦！
+ * IndexedDB 可以保存诸如 File、Blob 等 JavaScript 对象
+ * IndexedDB 数据量基于设备的可用硬盘大小
+ */
+db.data.say = "hello world"; // 创建或更新..
+const say = await db.data.say; // 读取，记得加 await..
+delete db.data.say; // 删除..
+db.has("say"); // 判断是否存在..
+```
+
+如你所见，Kurimudb 就像操作一个普通 Javascript 对象一样简单。但是，在背后，你的数据已经被存储到各种地方啦。
+
+`kurimudb-zero-config` 默认使用了 [RxJS](/cache/#rxjs) 作为订阅更新的驱动，只要你在变量名后加上 `$`，你就可以获得一个此值的 [BehaviorSubject 对象](https://rxjs.dev/guide/subject#behaviorsubject)。我们可以通过这种方式来订阅此变量，在它被改变时做点什么：
+
+```js
 import { local } from "kurimudb";
 
-// 订阅这个变量.. (based on RxJS)
+// 订阅这个变量..
 local.data.say$.subscribe((val) => {
   console.log("what you want to say: " + val);
 });
+
+local.data.say = "hello world";
+
+// 也可以用 rxjs 强大的操作符..
+local.data.say$.pipe(...).subscribe((val) => { ... });
 ```
 
 ## 准备好了吗？
 
-我们刚刚介绍了 Kurimudb 的核心用法——但这些对于复杂的应用来说可能还不够，所以，请务必读完整个教程！
+我们刚刚介绍了 Kurimudb 的核心用法——但这些对于大中型应用来说可能还不够，所以，请务必读完整个教程！

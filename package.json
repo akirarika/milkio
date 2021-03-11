@@ -1,7 +1,7 @@
 {
   "name": "kurimudb",
-  "version": "2.0.6",
-  "description": "⚓语法超简单的前端数据库🎉可以将数据保存在 IndexedDB 或 Memory 里",
+  "version": "2.0.7",
+  "description": "⚓语法超简单的前端数据库🎉可将数据保存到 LocalStorage、IndexedDB 或 Memory 里",
   "main": "./dist/index.js",
   "license": "MIT",
   "scripts": {

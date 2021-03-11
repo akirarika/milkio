@@ -1,3 +1,4 @@
+import { __awaiter } from "tslib";
 export default class DexieDriver {
     constructor(name, primary, inject) {
         this.async = true; // if true, some functions can return Promise.
@@ -5,33 +6,47 @@ export default class DexieDriver {
         this.primary = primary;
         this.db = inject;
     }
-    async insert(value, key) {
-        return await this._table().add(value);
-    }
-    async insertOrUpdate(key, value) {
-        await this._table().put(value);
-    }
-    async update(key, value) {
-        await this._table().put(value);
-    }
-    async select(key) {
-        return await this._table().get(key);
-    }
-    async exists(key) {
-        return Boolean(await this._table().where(this.primary).equals(key).count());
-    }
-    async delete(key) {
-        await this._table().delete(key);
-    }
-    async seeding(seedingFunc, model) {
-        const table = this.db['_seed'];
-        if (await table.get(`${this.name}_is_seeded`))
-            return;
-        await table.add({
-            id: `${this.name}_is_seeded`,
-            value: `true`,
+    insert(value, key) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this._table().add(value);
         });
-        await seedingFunc(model);
+    }
+    insertOrUpdate(key, value) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this._table().put(value);
+        });
+    }
+    update(key, value) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this._table().put(value);
+        });
+    }
+    select(key) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this._table().get(key);
+        });
+    }
+    exists(key) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return Boolean(yield this._table().where(this.primary).equals(key).count());
+        });
+    }
+    delete(key) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this._table().delete(key);
+        });
+    }
+    seeding(seedingFunc, model) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const table = this.db['_seed'];
+            if (yield table.get(`${this.name}_is_seeded`))
+                return;
+            yield table.add({
+                id: `${this.name}_is_seeded`,
+                value: `true`,
+            });
+            yield seedingFunc(model);
+        });
     }
     query() {
         return this._table();

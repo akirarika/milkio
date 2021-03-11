@@ -10,14 +10,16 @@ export default class Cache {
         return result;
     }
     subscribe(key) {
+        var _a, _b;
         if (this.value.has(key))
-            return this.value.get(key)?.subscribe();
+            return (_a = this.value.get(key)) === null || _a === void 0 ? void 0 : _a.subscribe();
         this.value.set(key, this.createCacheItem(null));
-        return this.value.get(key)?.subscribe();
+        return (_b = this.value.get(key)) === null || _b === void 0 ? void 0 : _b.subscribe();
     }
     get(key, def = null) {
+        var _a;
         if (this.value.has(key))
-            return this.value.get(key)?.get();
+            return (_a = this.value.get(key)) === null || _a === void 0 ? void 0 : _a.get();
         return def;
     }
     add(key, value) {
@@ -26,13 +28,15 @@ export default class Cache {
         this.value.set(key, this.createCacheItem(value));
     }
     put(key, value) {
+        var _a;
         if (this.value.has(key))
-            this.value.get(key)?.set(value);
+            (_a = this.value.get(key)) === null || _a === void 0 ? void 0 : _a.set(value);
         else
             this.value.set(key, this.createCacheItem(value));
     }
     forget(key) {
-        this.value.get(key)?.forget();
+        var _a;
+        (_a = this.value.get(key)) === null || _a === void 0 ? void 0 : _a.forget();
         this.value.delete(key);
     }
     has(key) {

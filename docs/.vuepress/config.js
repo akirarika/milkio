@@ -16,8 +16,10 @@ module.exports = {
     sidebar: [
       ["/", "介绍"],
       ["/intro/", "入门"],
-      ["/database/", "数据库"],
-      ["/monitor/", "模型订阅"],
+      ["/typescript/", "Typescript"],
+      ["/cache/", "缓存驱动"],
+      ["/persistence/", "持久化驱动"],
+      ["/more/", "深入"],
     ],
   },
 };

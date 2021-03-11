@@ -1,8 +1,9 @@
 export default class Persistence {
     constructor(model) {
+        var _a;
         this.model = model;
         this.persistence = new this.model.config.drivers.persistence(this.model.config.name, this.model.primary, this.model.config.drivers.persistenceInject);
-        this.async = Boolean(this.persistence?.async);
+        this.async = Boolean((_a = this.persistence) === null || _a === void 0 ? void 0 : _a.async);
     }
     insert(value, key) {
         return this.persistence.insert(this.model.encode(value, void 0), key);

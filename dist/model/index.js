@@ -1,3 +1,4 @@
+import { __awaiter } from "tslib";
 import Data from "./data";
 import Cache from "./cache";
 import Persistence from "./persistence";
@@ -22,8 +23,9 @@ export default class Model {
      * 获取模型中的全部数据
      */
     all() {
+        var _a;
         if (this.isPersistence())
-            return this.getObjectResults(this.persistence?.all());
+            return this.getObjectResults((_a = this.persistence) === null || _a === void 0 ? void 0 : _a.all());
         else
             return this.cache.all();
     }
@@ -32,11 +34,12 @@ export default class Model {
      * @param key
      */
     has(key) {
+        var _a;
         key = this.checkPrimary(key);
         if (this.cache.has(key))
             return true;
         if (this.async)
-            return this.persistence?.exists(key);
+            return (_a = this.persistence) === null || _a === void 0 ? void 0 : _a.exists(key);
         return false;
     }
     /**
@@ -45,71 +48,77 @@ export default class Model {
      * 一般返回一个由驱动实现的，可链式调用的查询对象
      */
     query() {
-        return this.persistence?.query();
+        var _a;
+        return (_a = this.persistence) === null || _a === void 0 ? void 0 : _a.query();
     }
     /**
      * 获取数组形式的结果
      * @param query
      */
-    async getArrayResults(query) {
-        return await this.getResults(query, new Array());
+    getArrayResults(query) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getResults(query, new Array());
+        });
     }
     /**
      * 获取对象形式的结果
      */
-    async getObjectResults(query) {
-        return await this.getResults(query, new Object());
+    getObjectResults(query) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.getResults(query, new Object());
+        });
     }
     /**
      * 获取结果
      * @param query
      * @param initialResult
      */
-    async getResults(query, initialResult = new Object()) {
-        if (!this.isPersistence())
-            throw new Error(`This method can only be called by a model that has been persisted.`);
-        query = await query;
-        if (!(query instanceof Array))
-            throw new Error(`The query result is not a single object. If it's an array, please use 'getresult' instead.`);
-        const setResult = (key, value) => {
-            if (initialResult instanceof Array)
-                initialResult.push(value);
-            else
-                initialResult[key] = value;
-        };
-        for (const item of query) {
-            const key = item[this.primary];
-            if (this.cache.has(key))
-                setResult(key, this.cache.get(key));
-            else {
-                setResult(key, this.decode(item));
-                this.cache.add(key, this.decode(item));
+    getResults(query, initialResult = new Object()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.isPersistence())
+                throw new Error(`This method can only be called by a model that has been persisted.`);
+            query = yield query;
+            if (!(query instanceof Array))
+                throw new Error(`The query result is not a single object. If it's an array, please use 'getresult' instead.`);
+            const setResult = (key, value) => {
+                if (initialResult instanceof Array)
+                    initialResult.push(value);
+                else
+                    initialResult[key] = value;
+            };
+            for (const item of query) {
+                const key = item[this.primary];
+                if (this.cache.has(key))
+                    setResult(key, this.cache.get(key));
+                else {
+                    setResult(key, this.decode(item));
+                    this.cache.add(key, this.decode(item));
+                }
             }
-        }
-        return initialResult;
+            return initialResult;
+        });
     }
     /**
      * 获取单个结果
      * @param query
      * @param initialResult
      */
-    async getResult(query, initialResult = new Object()) {
-        if (!this.isPersistence())
-            throw new Error(`This method can only be called by a model that has been persisted.`);
-        const item = await query;
-        if (!this._isPlainObject(item))
-            throw new Error(`The query result is not a single Object. If it's an Array, please use 'getresults' instead.`);
-        const key = item[this.primary];
-        if (this.cache.has(key))
-            initialResult = {
-                ...initialResult,
-                ...this.cache.get(key),
-            };
-        else {
-            initialResult = this.decode(item);
-            this.cache.add(key, initialResult);
-        }
-        return initialResult;
+    getResult(query, initialResult = new Object()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.isPersistence())
+                throw new Error(`This method can only be called by a model that has been persisted.`);
+            const item = yield query;
+            if (!this._isPlainObject(item))
+                throw new Error(`The query result is not a single Object. If it's an Array, please use 'getresults' instead.`);
+            const key = item[this.primary];
+            if (this.cache.has(key))
+                initialResult = Object.assign(Object.assign({}, initialResult), this.cache.get(key));
+            else {
+                initialResult = this.decode(item);
+                this.cache.add(key, initialResult);
+            }
+            return initialResult;
+        });
     }
     /**
      * 判断模型是否持久化
@@ -247,23 +256,28 @@ export default class Model {
      * @param key
      * @param func
      */
-    async set(key, func) {
-        key = this.checkPrimary(key);
-        const val = await this.data[key];
-        await func(val);
-        if (val instanceof Array)
-            this.data[key] = [...val];
-        else if (val instanceof Object)
-            this.data[key] = { ...val };
-        else
-            this.data[key] = val;
+    set(key, func) {
+        return __awaiter(this, void 0, void 0, function* () {
+            key = this.checkPrimary(key);
+            const val = yield this.data[key];
+            yield func(val);
+            if (val instanceof Array)
+                this.data[key] = [...val];
+            else if (val instanceof Object)
+                this.data[key] = Object.assign({}, val);
+            else
+                this.data[key] = val;
+        });
     }
-    async _seeding() {
-        if (!this["seeding"])
-            return;
-        if (!this.isPersistence())
-            return this["seeding"](this);
-        this.persistence?.seeding(this["seeding"], this);
+    _seeding() {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this["seeding"])
+                return;
+            if (!this.isPersistence())
+                return this["seeding"](this);
+            (_a = this.persistence) === null || _a === void 0 ? void 0 : _a.seeding(this["seeding"], this);
+        });
     }
     _checkConfig(config) {
         if (!config.name)
@@ -281,7 +295,8 @@ export default class Model {
         return config;
     }
     _isPlainObject(object) {
-        if ("Object" !== object?.constructor?.name)
+        var _a;
+        if ("Object" !== ((_a = object === null || object === void 0 ? void 0 : object.constructor) === null || _a === void 0 ? void 0 : _a.name))
             return false;
         return true;
     }
