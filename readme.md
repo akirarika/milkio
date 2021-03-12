@@ -1,6 +1,6 @@
 # 介绍
 
-[![](https://img.shields.io/badge/文档-点击阅读文档-white.svg)](//kurimudb.nito.ink/kurimudb) ![](https://img.shields.io/github/forks/akirarika/kurimudb) ![](https://img.shields.io/github/stars/akirarika/kurimudb) ![](https://img.shields.io/badge/language-javascript-orange.svg) ![](https://img.shields.io/github/license/akirarika/kurimudb)
+[![](https://img.shields.io/badge/文档-点击阅读文档-white.svg)](//kurimudb.nito.ink/) ![](https://img.shields.io/github/forks/akirarika/kurimudb) ![](https://img.shields.io/github/stars/akirarika/kurimudb) ![](https://img.shields.io/badge/language-javascript-orange.svg) ![](https://img.shields.io/github/license/akirarika/kurimudb)
 
 ## Kurimudb 是什么
 
@@ -79,4 +79,4 @@ local.data.say$.pipe(...).subscribe((val) => { ... });
 
 我们刚刚介绍了 Kurimudb 的核心用法——但这些对于大中型应用来说可能还不够，所以，请务必读完整个教程！
 
-[文档地址](//kurimudb.nito.ink/kurimudb/intro/)
+[文档地址](//kurimudb.nito.ink/intro/)
