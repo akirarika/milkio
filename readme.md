@@ -10,7 +10,7 @@ Kurimudb 是一款渐进式的 **Web 数据仓库**，可以帮你将数据存�
 
 除了持久化数据之外，若你愿意，Kurimudb 还能成为你应用的 [Model 层](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel#Components_of_MVVM_pattern) 抽象，然后接任你应用中状态管理库的职责 (诸如 Vuex、Redux、Mobx)，并使你应用真正拥有单一数据来源。
 
-Kurimudb 是驱动化的，这意味着你可以不更改代码的情况下更换具体实现。其中订阅更新功能，目前内置了 `Rxjs` 一种驱动；持久化功能，内置了 `LocalStorage` 和 `Dexie (IndexedDB)` 两种驱动。如果不满足你的需求，你也可以编写自己的驱动实现。
+Kurimudb 是驱动化的，这意味着你可以不更改代码的情况下更换具体实现。其中订阅更新功能，内置了 `Rxjs` 一种驱动；持久化功能，内置了 `LocalStorage` 和 `Dexie (IndexedDB)` 两种驱动，并计划新增 `Cookie` 驱动。如果不满足你的需求，你也可以编写自己的驱动实现。
 
 ## 快速体验
 
