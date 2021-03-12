@@ -1,6 +1,6 @@
 module.exports = {
   title: "Kurimudb",
-  base: "/kurimudb/",
+  // base: "/kurimudb/",
   theme: "yuu",
   themeConfig: {
     yuu: {
