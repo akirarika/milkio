@@ -1,7 +1,8 @@
-import { Table } from 'dexie';
-import { PersistenceInterface } from '..';
+import { Table } from "dexie";
+import { PersistenceInterface } from "..";
 export default class DexieDriver implements PersistenceInterface {
     async: boolean;
+    encode: boolean;
     primary: string;
     name: string;
     db: any;

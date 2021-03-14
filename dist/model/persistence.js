@@ -6,13 +6,19 @@ export default class Persistence {
         this.async = Boolean((_a = this.persistence) === null || _a === void 0 ? void 0 : _a.async);
     }
     insert(value, key) {
-        return this.persistence.insert(this.model.encode(value, void 0), key);
+        if (this.persistence.encode)
+            value = this.model.encode(value, void 0);
+        return this.persistence.insert(value, key);
     }
     insertOrUpdate(key, value) {
-        return this.persistence.insertOrUpdate(key, this.model.encode(value, key));
+        if (this.persistence.encode)
+            value = this.model.encode(value, key);
+        return this.persistence.insertOrUpdate(key, value);
     }
     update(key, value) {
-        return this.persistence.update(key, this.model.encode(value, key));
+        if (this.persistence.encode)
+            value = this.model.encode(value, key);
+        return this.persistence.update(key, value);
     }
     select(key) {
         return this.persistence.select(key);

@@ -17,15 +17,18 @@ export default class Persistence<T> {
   }
 
   insert(value: any, key?: string | number) {
-    return this.persistence.insert(this.model.encode(value, void 0), key);
+    if (this.persistence.encode) value = this.model.encode(value, void 0);
+    return this.persistence.insert(value, key);
   }
 
   insertOrUpdate(key: string | number, value: any) {
-    return this.persistence.insertOrUpdate(key, this.model.encode(value, key));
+    if (this.persistence.encode) value = this.model.encode(value, key);
+    return this.persistence.insertOrUpdate(key, value);
   }
 
   update(key: string | number, value: any) {
-    return this.persistence.update(key, this.model.encode(value, key));
+    if (this.persistence.encode) value = this.model.encode(value, key);
+    return this.persistence.update(key, value);
   }
 
   select(key: string | number) {

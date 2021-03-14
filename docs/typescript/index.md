@@ -1,7 +1,5 @@
 # Typescript
 
-在 Typescript 中使用 Kurimudb，可以获得代码提示，和约束传入数据的格式类型。
-
 ## 定义模型
 
 在前文 Javascript 的定义模型方式中，我们使用了向构造函数传入对象的方式：

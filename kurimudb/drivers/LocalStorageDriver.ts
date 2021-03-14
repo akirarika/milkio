@@ -2,6 +2,7 @@ import { PersistenceInterface } from "..";
 
 export default class LocalStorageDriver implements PersistenceInterface {
   async: boolean = false; // if true, some functions can return Promise.
+  encode: boolean = true; // if true, value will be encoded.
   primary: string; // model primary, all data received by the driver are objects.
   name: string; // the name of the model.
   db: any; // dexie object injected in by user.

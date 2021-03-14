@@ -1,3 +1,7 @@
+---
+sidebarDepth: 2
+---
+
 # 持久化驱动
 
 在[入门章节](/intro/)中，我们并没有指定持久化层的驱动，所以页面一旦刷新，数据就全部丢掉了。如果我们想此模型的数据在页面刷新后依旧存在，可以指定持久化层的驱动。
@@ -37,15 +41,19 @@ delete configModel.data.say; // 删除..
 
 :::warning 注意事项
 
-LocalStorage 所存储的内容，本质都是存为字符串。Kurimudb 会对存入的数据进行 `JSON.stringify`，所以，请勿存入无法被正确 `JSON.stringify` 的对象 (如 `Set`、`Map` 等)。
+LocalStorage 所存储的内容，本质都是存为字符串。LocalStorage 驱动会对存入的数据进行 `JSON.stringify`，所以，请勿存入无法被正确 `JSON.stringify` 的对象 (如 `Set`、`Map` 等)。
 
 :::
+
+## Cookie
+
+待续 🐸
 
 ## Dexie.js (IndexedDB)
 
 IndexedDB 的容量和[用户硬盘大小有关](https://web.dev/storage-for-the-web/#how-much)，可以直接存储 JavaScript 对象。注意，和 LocalStorage 不同的是， **IndexedDB 是异步的。** [Dexie.js](https://dexie.org/) 则是功能非常强大的 IndexedDB 的包装器，Github 上搜索 IndexedDB，它在结果中排名第一。
 
-### 版本
+### 版本控制
 
 在使用 Dexie 前，需要先声明数据库的版本，推荐阅读 [Dexie 官方文档](https://dexie.org/docs/Tutorial/Design#database-versioning)，下方是一个例子：
 
@@ -74,7 +82,7 @@ _版本的顺序是不重要的，Dexie.js 会在迁移不同版本时，自动�
 
 然后把它放在模型中依赖注入即可：
 
-```js {13,14}
+```js {15,18}
 // /models/noteModel.js
 
 import { BehaviorSubject } from "rxjs";
@@ -125,6 +133,8 @@ const data = await noteModel.getResults(
 console.log(data);
 ```
 
+### 包装查询结果
+
 `noteModel.getResults()` 函数会对 Dexie 查询出的结果 (`Promise<Array<any>>`) 进行包装，**同时数据也会被缓存到缓存层**。默认包装成对象，对象的键为值的主键。如果你需要数组，则可以向第二个参数传入一个空数组 `[]`：
 
 ```js {7}
@@ -169,6 +179,8 @@ await noteModel.getObjectResults(noteModel.toArray());
 await noteModel.getArrayResults(noteModel.toArray());
 ```
 
+### 包装单个结果
+
 如果 Dexie.js 的查询结果只会有一个 (如 `first` 函数)，那么请用 `getResult` 函数：
 
 ```js
@@ -180,6 +192,8 @@ await userModel.getResult(
     .first()
 );
 ```
+
+### 复用查询逻辑
 
 我们更推荐将查询写在模型内部，以便实现代码的复用。
 
@@ -209,7 +223,3 @@ await noteModel.getIdBelow5Results();
 Dexie 拥有强大又简洁明确的查询 Api，强烈推荐阅读 [Dexie 文档](https://dexie.org/docs/API-Reference) 和 [Dexie 最佳实践](https://dexie.org/docs/Tutorial/Best-Practices#1-understand-promises)！
 
 :::
-
-## Cookie
-
-待续 🐸

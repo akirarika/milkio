@@ -1,6 +1,7 @@
 export default class LocalStorageDriver {
     constructor(name, primary, inject) {
         this.async = false; // if true, some functions can return Promise.
+        this.encode = true; // if true, value will be encoded.
         this.name = name;
         this.primary = primary;
         this.db = inject;

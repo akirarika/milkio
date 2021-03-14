@@ -1,6 +1,6 @@
 {
   "name": "kurimudb",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "⚓语法超简单的前端数据库🎉可将数据保存到 LocalStorage、IndexedDB 或 Memory 里",
   "main": "./dist/index.js",
   "license": "MIT",
@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "dexie": "^3.0.3",
-    "rxjs": "^6.6.3",
+    "rxjs": "^6.6.6",
     "vuepress-theme-yuu": "^3.0.0"
   }
 }

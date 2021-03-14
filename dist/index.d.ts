@@ -1,10 +1,12 @@
-import _dexieDriver from "./drivers/DexieDriver";
 import _localStorageDriver from "./drivers/LocalStorageDriver";
+import _cookieDriver from "./drivers/CookieDriver";
+import _dexieDriver from "./drivers/DexieDriver";
 import _rxjsDriver from "./drivers/RxjsDriver";
 import _model from "./model/index";
 export declare const Model: typeof _model;
-export declare const DexieDriver: typeof _dexieDriver;
 export declare const LocalStorageDriver: typeof _localStorageDriver;
+export declare const CookieDriver: typeof _cookieDriver;
+export declare const DexieDriver: typeof _dexieDriver;
 export declare const RxjsDriver: typeof _rxjsDriver;
 export interface ModelInterface {
     config: ConfigInterface;
@@ -32,6 +34,7 @@ export interface CacheDriverInterface {
 }
 export interface PersistenceInterface {
     async: boolean;
+    encode: boolean;
     all(): Array<any> | Promise<Array<any>>;
     insert(value: any, key?: string | number): string | number | Promise<string | number>;
     insertOrUpdate(key: string | number, value: any): void | Promise<void>;

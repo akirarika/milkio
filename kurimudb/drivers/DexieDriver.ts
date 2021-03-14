@@ -1,8 +1,9 @@
-import { Table } from 'dexie';
-import { PersistenceInterface } from '..';
+import { Table } from "dexie";
+import { PersistenceInterface } from "..";
 
 export default class DexieDriver implements PersistenceInterface {
   async: boolean = true; // if true, some functions can return Promise.
+  encode: boolean = true; // if true, value will be encoded.
   primary: string; // model primary, all data received by the driver are objects.
   name: string; // the name of the model.
   db: any; // dexie object injected in by user.
@@ -30,7 +31,12 @@ export default class DexieDriver implements PersistenceInterface {
   }
 
   async exists(key: string | number): Promise<boolean> {
-    return Boolean(await this._table().where(this.primary).equals(key).count());
+    return Boolean(
+      await this._table()
+        .where(this.primary)
+        .equals(key)
+        .count()
+    );
   }
 
   async delete(key: string | number): Promise<void> {
@@ -38,7 +44,7 @@ export default class DexieDriver implements PersistenceInterface {
   }
 
   async seeding(seedingFunc: Function, model: any) {
-    const table = this.db['_seed'];
+    const table = this.db["_seed"];
     if (await table.get(`${this.name}_is_seeded`)) return;
     await table.add({
       id: `${this.name}_is_seeded`,
@@ -58,6 +64,8 @@ export default class DexieDriver implements PersistenceInterface {
   _table() {
     const table = this.db[this.name];
     if (table) return table;
-    throw new Error(`table "${this.name}" does not exist in the database. did you forget to add the new version?`);
+    throw new Error(
+      `table "${this.name}" does not exist in the database. did you forget to add the new version?`
+    );
   }
 }

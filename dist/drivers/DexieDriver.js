@@ -2,6 +2,7 @@ import { __awaiter } from "tslib";
 export default class DexieDriver {
     constructor(name, primary, inject) {
         this.async = true; // if true, some functions can return Promise.
+        this.encode = true; // if true, value will be encoded.
         this.name = name;
         this.primary = primary;
         this.db = inject;
@@ -28,7 +29,10 @@ export default class DexieDriver {
     }
     exists(key) {
         return __awaiter(this, void 0, void 0, function* () {
-            return Boolean(yield this._table().where(this.primary).equals(key).count());
+            return Boolean(yield this._table()
+                .where(this.primary)
+                .equals(key)
+                .count());
         });
     }
     delete(key) {
@@ -38,7 +42,7 @@ export default class DexieDriver {
     }
     seeding(seedingFunc, model) {
         return __awaiter(this, void 0, void 0, function* () {
-            const table = this.db['_seed'];
+            const table = this.db["_seed"];
             if (yield table.get(`${this.name}_is_seeded`))
                 return;
             yield table.add({
