@@ -1,0 +1,8 @@
+{
+  "name": "kurimudb-driver-cookie",
+  "version": "3.0.1",
+  "description": "",
+  "main": "./dist/index.js",
+  "author": "akirarika",
+  "license": "MIT"
+}

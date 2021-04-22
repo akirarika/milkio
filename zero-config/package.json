@@ -1,0 +1,22 @@
+{
+  "name": "kurimudb-zero-config",
+  "version": "3.0.1",
+  "description": "⚓Kurimudb 零配置",
+  "main": "./dist/index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc --build"
+  },
+  "author": "akirarika",
+  "dependencies": {
+    "dexie": "^3.0.3",
+    "kurimudb": "^3.0.5",
+    "kurimudb-driver-cookie": "^3.0.1",
+    "kurimudb-driver-dexie": "^3.0.1",
+    "kurimudb-driver-localstorage": "^3.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^4.2.3"
+  }
+}

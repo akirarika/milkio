@@ -1,0 +1,19 @@
+:root {
+  --c-brand: #1890ff;
+}
+
+[class*="language-"] code {
+  color: #e06c75;
+}
+
+span.token.keyword {
+  color: #c678dd;
+}
+
+span.token.string {
+  color: #98c379;
+}
+
+span.token.key.atrule {
+  color: #c678dd;
+}

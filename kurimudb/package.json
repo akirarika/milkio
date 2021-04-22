@@ -1,0 +1,8 @@
+{
+  "name": "kurimudb",
+  "version": "3.0.5",
+  "description": "",
+  "main": "./dist/index.js",
+  "author": "akirarika",
+  "license": "MIT"
+}
