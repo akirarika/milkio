@@ -50,7 +50,7 @@ import { DexieDriver } from "kurimudb-driver-dexie";
 import migrations from "../models/migrations";
 
 class IndexedDbState extends Models.keyValue {
-  db: Dexie = migrations; // 将你声明好版本的 Dexie 实例引入在模型的 db 属性中
+  db = migrations; // 将你声明好版本的 Dexie 实例，挂载在模型的 db 属性中，驱动会自动使用它
 
   constructor() {
     super({

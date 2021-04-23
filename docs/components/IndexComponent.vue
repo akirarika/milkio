@@ -142,6 +142,8 @@
 
   .welcome > img {
     width: 352px;
+    height: auto;
+    aspect-ratio: 1/1;
     margin-right: -36px;
     margin-left: -32px;
     opacity: 0.84;

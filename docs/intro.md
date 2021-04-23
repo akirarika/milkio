@@ -2,7 +2,7 @@
 
 ## Kurimudb 是什么
 
-Kurimudb 是一款渐进式的 **Web 端本地存储包**，可将数据保存到 LocalStorage、IndexedDB、Cookie 等地方，和订阅值的变更。
+Kurimudb 是一款渐进式的 **Web 端本地存储库**，可将数据保存到 LocalStorage、IndexedDB、Cookie 等地方，和订阅值的变更。
 
 除了持久化数据之外，若你愿意，Kurimudb 还能成为你应用的 [Model 层](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel#Components_of_MVVM_pattern) 抽象，接任你应用中状态管理库的职责 (如 Vuex、Redux、Mobx)，使你应用真正拥有单一数据来源。
 

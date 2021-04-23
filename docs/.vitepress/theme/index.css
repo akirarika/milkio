@@ -2,6 +2,10 @@
   --c-brand: #1890ff;
 }
 
+[class*="language-"] {
+  line-height: 1 !important;
+}
+
 [class*="language-"] code {
   color: #e06c75;
 }
