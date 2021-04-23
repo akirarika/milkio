@@ -235,13 +235,13 @@ class ConfigState extends Models.keyValue {
 
 如果你想对任何对象**都**进行深克隆，你可以直接传入一个空数组：
 
-```text
+```yaml
 intrinsicTypes: []
 ```
 
 如果你想对任何对象**都不**进行深克隆，你可以传入 `false`：
 
-```text
+```yaml
 intrinsicTypes: false
 ```
 

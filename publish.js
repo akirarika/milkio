@@ -9,8 +9,9 @@ console.log(path);
 if ("docs" === type) {
   execSync(
     [
+      `rm -rf ./docs/.vuepress/dist`,
       `npm run docs:build`,
-      `cd docs/.vuepress/dist`,
+      `cd ./docs/.vitepress/dist`,
       `echo 'kurimudb.nito.ink' > CNAME`,
       `git init`,
       `git add -A`,
