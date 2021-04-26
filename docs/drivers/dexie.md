@@ -134,4 +134,4 @@ await userList.storage.getResult(
 
 ## 深入了解 Dexie.js
 
-Dexie.js 的功能非常丰富，强烈推荐阅读 [Dexie 文档](https://dexie.org/docs/API-Reference) 和 [Dexie 最佳实践](https://dexie.org/docs/Tutorial/Best-Practices#1-understand-promises)！
+Dexie.js 的功能非常丰富，强烈推荐阅读 [Dexie Api 文档](https://dexie.org/docs/API-Reference) 和 [Dexie 最佳实践](https://dexie.org/docs/Tutorial/Best-Practices#1-understand-promises)！

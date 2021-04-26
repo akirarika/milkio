@@ -4,7 +4,7 @@ import curdTest from "./curdTest";
 import persistenceCurdTest from "./persistenceCurdTest";
 
 export default function () {
-  memory.data.hello = void 0;
+  memory.data.hello = "233";
   memory.data.hello$((val) => {
     console.log(val);
   });
