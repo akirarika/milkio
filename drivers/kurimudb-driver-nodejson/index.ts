@@ -24,7 +24,11 @@ function save(): void {
 
 export class NodeJsonDriver {
     model;
-    root;
+    root: {
+      nextid: number,
+      data: object,
+      seeded?: boolean
+    };
   
     constructor(model) {
       this.model = model;
