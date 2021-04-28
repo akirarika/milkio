@@ -34,9 +34,3 @@ class CookieState extends Models.keyValue {
 
 export default new CookieState();
 ```
-
-## 获取全部 Cookie
-
-```js
-cookieState.storage;
-```
