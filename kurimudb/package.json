@@ -1,6 +1,6 @@
 {
   "name": "kurimudb",
-  "version": "3.0.6",
+  "version": "3.1.1",
   "description": "",
   "main": "./dist/index.js",
   "author": "akirarika",
