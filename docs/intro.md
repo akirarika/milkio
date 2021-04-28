@@ -80,16 +80,7 @@ local.data.say$((val) => {
 });
 ```
 
-默认情况下，闭包函数会立即执行一次，方便你为你视图中的响应式变量赋初始值。如果你不希望这么做，而是只在后续值变更时执行，那么如下即可：
-
-```js {5}
-local.data.say$(
-  (val) => {
-    console.log("what you want to say: " + val);
-  },
-  { immediate: false }
-);
-```
+关于订阅还有更多的高级用法噢！欢迎阅读[订阅变更](/subscribe)章节。
 
 ## 准备好了吗？
 
