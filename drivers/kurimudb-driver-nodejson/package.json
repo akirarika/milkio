@@ -1,0 +1,11 @@
+{
+  "name": "kurimudb-driver-nodejson",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/index.js",
+  "author": "nekosu",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^15.0.1"
+  }
+}
