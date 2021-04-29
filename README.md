@@ -1,5 +1,3 @@
-# 介绍
-
 ## Kurimudb 是什么
 
 Kurimudb 是一款渐进式的 **Web 端本地存储库**，可将数据保存到 LocalStorage、IndexedDB、Cookie 等地方，和订阅值的变更。
@@ -8,11 +6,11 @@ Kurimudb 是一款渐进式的 **Web 端本地存储库**，可将数据保存�
 
 Kurimudb 是驱动化的，这意味着你可以几乎不更改代码的情况下更换具体实现。我们提供了 `Cookie` `LocalStorage` 和 `Dexie (IndexedDB)` 三种驱动。如果不满足你的需求，你还可以编写自己的驱动实现。
 
-# 文档
+## 文档
 
 你可以[点击这里](https://kurimudb.nito.ink/)来阅读文档。
 
-# 后续计划
+## 后续计划
 
 - [x] 为文档网站做一个首页
 
