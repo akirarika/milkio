@@ -18,7 +18,7 @@ Kurimudb 是驱动化的，这意味着你可以几乎不更改代码的情况�
 
 - [x] 新增[自动订阅](http://kurimudb.nito.ink/subscribe.html)功能
 
-- [ ] 将 npm 包拆分到多个仓库中
+- [ ] ~~将 npm 包拆分到多个仓库中~~
 
 - [ ] LocalStorage 驱动可以使用 `all` 函数
 
@@ -37,3 +37,5 @@ Kurimudb 是驱动化的，这意味着你可以几乎不更改代码的情况�
 - [ ] （待定）加入对服务端渲染的资瓷，服务端中添加的数据，会在用户访问页面后存储到浏览器里
 
 - [ ] 国际化
+
+![](./docs/components/loading.gif)
