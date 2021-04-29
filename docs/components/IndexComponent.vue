@@ -80,10 +80,12 @@
   ref: loaded = false;
   ref: loadCounter = 0;
 
-  watchEffect(() => {
-    if (2 <= loadCounter) setTimeout(() => (loaded = true), 800);
+  onMounted(() => {
+    watchEffect(() => {
+      if (1 <= loadCounter) setTimeout(() => (loaded = true), 800);
+    });
+    setTimeout(() => (loaded = true), 4800);
   });
-  onMounted(() => setTimeout(() => (loaded = true), 4800));
 </script>
 
 <template>
@@ -123,7 +125,6 @@
             <div class="welcome-button--github-corner">
               <img
                 src="https://img.shields.io/github/stars/akirarika/kurimudb?color=%2300000000&label=%20&style=for-the-badge"
-                @load="++loadCounter"
               />
             </div>
           </div>
