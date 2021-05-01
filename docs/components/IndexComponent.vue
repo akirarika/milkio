@@ -9,17 +9,18 @@
             {{ text("足够简单的，") }}
           </div>
           <div v-else-if="1 === i % 4" class="welcome-title--text1">
-            {{ text("渐进式的，")}}
+            {{ text("渐进式的，") }}
           </div>
           <div v-else-if="2 === i % 4" class="welcome-title--text1">
-            {{text("驱动化的，")}}
+            {{ text("驱动化的，") }}
           </div>
           <div v-else-if="3 === i % 4" class="welcome-title--text1">
-            {{text("框架无关的，")}}
+            {{ text("框架无关的，") }}
           </div>
         </transition>
         <div class="welcome-title--text2">
-          <span style="text-decoration: underline">{{text("前端存储")}}</span>{{text("解决方案。")}}
+          <span style="text-decoration: underline">{{ text("前端存储") }}</span
+          >{{ text("解决方案。") }}
         </div>
         <div class="welcome-button-group">
           <div class="welcome-button--docs" @click="toDocs">
@@ -47,23 +48,23 @@
 <script lang="ts" setup>
 import { onMounted, onUnmounted, defineProps } from "vue";
 
-const {lang} = defineProps({
+const { lang } = defineProps({
   lang: {
     type: String,
-    default: 'zh',
+    default: "zh",
     required: false,
     validator: (value: string) => {
-      return ['zh', 'en'].includes(value);
-    }
-  }
-})
+      return ["zh", "en"].includes(value);
+    },
+  },
+});
 
 ref: i = 0;
 
 setTimeout(() => setInterval(() => i++, 3200), 1600);
 
 const toDocs = () => {
-  location.href = "/intro.html";
+  location.href = "intro.html";
 };
 
 const toGithub = () => {
@@ -75,26 +76,26 @@ let navBarBottomBorderStyle = "";
 const localizedText = {
   default: "zh",
   "足够简单的，": {
-    "en": "Simple Enouth" 
+    en: "Simple Enouth",
   },
   "渐进式的，": {
-    "en": "Progressive" 
+    en: "Progressive",
   },
   "驱动化的，": {
-    "en": "Driven" 
+    en: "Driven",
   },
   "框架无关的，": {
-    "en": "Framework Independent " 
+    en: "Framework Independent ",
   },
-  "前端存储": {
-    "en": "Front-end Storage"
+  前端存储: {
+    en: "Front-end Storage",
   },
   "解决方案。": {
-    "en": " Solution"
+    en: " Solution",
   },
-  "阅读文档": {
-    "en": "Reading Document"
-  }
+  阅读文档: {
+    en: "Reading Document",
+  },
 };
 
 const text = (key: string) => {
@@ -102,7 +103,7 @@ const text = (key: string) => {
     return key;
   }
   return localizedText[key][lang];
-}
+};
 
 onMounted(() => {
   const navBar = document.querySelector(".nav-bar") as HTMLHeadElement;
@@ -117,7 +118,7 @@ onUnmounted(() => {
   if (!!navBar) {
     navBar.style.borderBottom = navBarBottomBorderStyle;
   }
-})
+});
 </script>
 
 <style>
