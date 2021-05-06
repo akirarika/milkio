@@ -257,10 +257,12 @@ yourModel.deepClone(yourOldObject);
 
 ```js
 local.setItem("say", "hello"); // create it
-let say = local.setItem("say"); // retrieve it
+let say = local.getItem("say"); // retrieve it
 local.removeItem("say"); // delete it
 local.subscribeItem("say")((val) => { ... }); // subscribe it
 ```
+
+> 📜 使用此功能需要 (^3.1.2) 版本。
 
 ## 全部数据
 
