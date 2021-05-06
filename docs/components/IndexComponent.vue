@@ -95,7 +95,7 @@
   <div v-show="loaded" class="index">
     <i class="ri-anchor-line index-logo"></i>
     <div class="welcome">
-      <img src="./kurimu.png" @load="loadCounter++" />
+      <img src="./assets/kurimu.png" @load="loadCounter++" />
       <div class="welcome-title">
         <transition name="fade" mode="out-in">
           <div v-if="0 === i % 4" class="welcome-title--text1">

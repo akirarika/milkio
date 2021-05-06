@@ -13,7 +13,7 @@
 
 <template>
   <div class="loading">
-    <img src="./loading.gif" />
+    <img src="./assets/loading.gif" />
     <p>{{ progress }}%</p>
   </div>
 </template>

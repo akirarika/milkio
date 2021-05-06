@@ -26,7 +26,7 @@ import { local } from "kurimudb-zero-config";
 local.data.say = "hello world"; // 写入..
 let say = local.data.say; // 读取..
 delete local.data.say; // 删除..
-"say" in local.data; // 判断是否存在..
+if ("say" in local.data) { ... } // 判断是否存在..
 ```
 
 ### Cookie
@@ -39,7 +39,7 @@ import { cookie } from "kurimudb-zero-config";
 cookie.data.say = "hello world"; // 写入..
 let say = cookie.data.say; // 读取..
 delete cookie.data.say; // 删除..
-"say" in cookie.data; // 判断是否存在..
+if ("say" in cookie.data) { ... } // 判断是否存在..
 ```
 
 ### Memory
@@ -52,7 +52,7 @@ import { memory } from "kurimudb-zero-config";
 memory.data.say = "hello world"; // 写入..
 let say = memory.data.say; // 读取..
 delete memory.data.say; // 删除..
-"say" in memory.data; // 判断是否存在..
+if ("say" in memory.data) { ... } // 判断是否存在..
 ```
 
 ### Db
@@ -67,10 +67,10 @@ import { db } from "kurimudb-zero-config";
 db.data.say = "hello world"; // 写入..
 let say = await db.data.say; // 读取，返回值将是 Promise..
 delete db.data.say; // 删除..
-await db.has("say"); // 判断是否存在，返回值将是 Promise..
+if (await db.data.say) { ... } // 判断是否存在..
 ```
 
-### 订阅数据变更
+### 订阅变更
 
 Kurimudb 还提供了订阅值变化的功能，只需在值后加上 `$` 符号，就能在它被改变时做点什么：
 
@@ -80,7 +80,18 @@ local.data.say$((val) => {
 });
 ```
 
-关于订阅，还有更多的高级用法噢！欢迎阅读[订阅变更](/subscribe)章节。
+或者使用**自动订阅功能**，当闭包中用到的值，有任一被更改时，都会触发订阅，重新执行此闭包：
+
+```js
+import { auto$ } from "kurimudb-zero-config";
+
+auto$(() => {
+  console.log(configState.data.foo);
+  console.log(configState.data.bar);
+});
+```
+
+关于订阅，还有更多的高级用法噢！请阅读[订阅变更](/subscribe)章节。
 
 ## 准备好了吗？
 

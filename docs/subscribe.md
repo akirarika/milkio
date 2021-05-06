@@ -2,7 +2,7 @@
 
 ## 订阅
 
-Kurimudb 中，可以很方便地订阅一个值的变更，只需要在值后加上 `$` 符号，并传入一个闭包函数：
+Kurimudb 中，`$` 符号代表 `subscribe` 的简写。你可以在一个值后加上 `$` 符号来订阅它的变更：
 
 ```js
 configState.data.foo$((value, key) => {
