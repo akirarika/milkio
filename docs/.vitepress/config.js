@@ -1,5 +1,4 @@
 module.exports = {
-  base: "/kurimudb/",
   title: "Kurimudb",
   head: [["link", { rel: "icon", href: "favicon.png" }]],
   markdown: {
