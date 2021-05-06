@@ -2,7 +2,7 @@
 sidebar: false
 ---
 
-# 足够简单的 Web 本地存储库
+# 足够简单的前端存储解决方案
 
 <IndexComponent>
 

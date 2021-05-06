@@ -2,7 +2,7 @@
 
 ## 订阅
 
-Kurimudb 中，可以很方便地订阅一个值的变更，只需要在值后加上 `$` 符号，并传入一个闭包函数：
+Kurimudb 中，`$` 符号代表 `subscribe` 的简写。你可以在一个值后加上 `$` 符号来订阅它的变更：
 
 ```js
 configState.data.foo$((value, key) => {
@@ -38,23 +38,17 @@ batch$([configState.data.foo$, configState.data.bar$], (value, key) => {
 手动声明要订阅的值可能会有些繁琐，我们还提供了一种便捷的方式。当你在闭包中所使用的值有任一被更改时，都会触发一次订阅：
 
 ```js
-import { batch$ } from "kurimudb";
+import { auto$ } from "kurimudb";
 
-batch$(() => {
+auto$(() => {
   console.log(configState.data.foo);
   console.log(configState.data.bar);
 });
 ```
 
-在闭包函数的首次执行过程时，Kurimudb 会记录其中哪些值被读取，然后订阅它们。
+在闭包函数的首次执行过程时，Kurimudb 会收集其中哪些值被读取，随后订阅它们，因此，闭包函数**必须是同步的**。
 
-因此，如果在你的闭包中出现了流程控制代码 (如 `if/else`)，请确保其中你所需要订阅的值，在首次执行中进行了读取操作。
-
-:::warning 注意
-
-【自动订阅变更功能】还在开发中，应该很快就能上线了，咕咕咕。
-
-:::
+> 📜 使用此功能需要 (^3.1.1) 版本。
 
 ## 订阅模型
 

@@ -1,4 +1,5 @@
 import { kurimudbConfig } from "..";
+import runtime from "../runtime";
 
 export interface subscribeConfigInterface {
   immediate?: boolean;
@@ -28,6 +29,9 @@ export class Item<T = any> {
   }
 
   get(): T {
+    if (runtime.collectingReadItemDependencies) {
+      runtime.readItemDependencies.push(this);
+    }
     return this.value;
   }
 

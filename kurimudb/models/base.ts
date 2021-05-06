@@ -1,14 +1,14 @@
-import { ModelOptionsInterface, PersistenceInterface } from '..';
-import Cache from '../cache';
-import { Item, subscribeInterface } from '../cache/item';
-import Data from '../data';
+import { ModelOptionsInterface, PersistenceInterface } from "..";
+import Cache from "../cache";
+import { Item, subscribeInterface } from "../cache/item";
+import Data from "../data";
 
 type DataType<T> = T & {
   [others: string]: any;
 };
 
 export default class BaseModel<DataInterface, driver> {
-  primary = '_id';
+  primary = "_id";
   options: ModelOptionsInterface;
   cache: Cache;
   data: DataType<DataInterface>;
@@ -20,9 +20,10 @@ export default class BaseModel<DataInterface, driver> {
   constructor(options: ModelOptionsInterface) {
     this.options = this._checkOptions(options);
     this.cache = new Cache(this);
-    this.changed = this.cache.createCacheItem<string>('', this.options.name);
+    this.changed = this.cache.createCacheItem<string>("", this.options.name);
     this.$ = this.changed.subscribe;
-    if (this.isPersistence()) this.storage = new this.options.driver(this) as driver;
+    if (this.isPersistence())
+      this.storage = new this.options.driver(this) as driver;
     else this.storage = (void 0 as unknown) as driver;
     this.data = new Data(this) as DataType<DataInterface>;
   }
@@ -31,7 +32,7 @@ export default class BaseModel<DataInterface, driver> {
    * 判断此模型是否可持久化
    */
   isPersistence(): boolean {
-    return 'driver' in this.options;
+    return "driver" in this.options;
   }
 
   /**
@@ -49,9 +50,14 @@ export default class BaseModel<DataInterface, driver> {
    * @param key
    */
   checkPrimary(key: any): string | number {
-    if ('number' === this.options.type && !isNaN(Number(key))) return Number(key);
+    if ("number" === this.options.type && !isNaN(Number(key)))
+      return Number(key);
     if (this.options.type !== typeof key)
-      throw new Error(`The model primary type needs to be ${this.options.type}, not ${typeof key}: ${key}`);
+      throw new Error(
+        `The model primary type needs to be ${
+          this.options.type
+        }, not ${typeof key}: ${key}`
+      );
     return key;
   }
 
@@ -68,17 +74,18 @@ export default class BaseModel<DataInterface, driver> {
    * @param intrinsicTypes
    */
   deepClone(oldObject: object, intrinsicTypes: string[] | null = null) {
-    if (!oldObject || typeof oldObject !== 'object') return oldObject;
+    if (!oldObject || typeof oldObject !== "object") return oldObject;
 
     if (null === intrinsicTypes) {
-      if (!('intrinsicTypes' in this.options)) intrinsicTypes = [];
+      if (!("intrinsicTypes" in this.options)) intrinsicTypes = [];
       else if (false === this.options.intrinsicTypes) return oldObject;
       else intrinsicTypes = this.options.intrinsicTypes as string[];
     }
 
     if (Array.isArray(oldObject)) {
       const newObject: any = [];
-      for (let i = 0, l = oldObject.length; i < l; ++i) newObject.push(this.deepClone(oldObject[i]));
+      for (let i = 0, l = oldObject.length; i < l; ++i)
+        newObject.push(this.deepClone(oldObject[i]));
       return newObject;
     }
 
@@ -101,28 +108,30 @@ export default class BaseModel<DataInterface, driver> {
   _checkOptions(options: ModelOptionsInterface): ModelOptionsInterface {
     if (!options.name) throw new Error(`Model options "name" is required.`);
     if (!options.type) throw new Error(`Model options "type" is required.`);
-    if ('string' !== options.type && 'number' !== options.type)
-      throw new Error(`Model options "type" value must be "string" or "number".`);
+    if ("string" !== options.type && "number" !== options.type)
+      throw new Error(
+        `Model options "type" value must be "string" or "number".`
+      );
 
-    if ('primary' in options) this.primary = options.primary as string;
-    if ('methods' in options) Object.assign(this, options.methods);
-    if (!('intrinsicTypes' in options))
+    if ("primary" in options) this.primary = options.primary as string;
+    if ("methods" in options) Object.assign(this, options.methods);
+    if (!("intrinsicTypes" in options))
       options.intrinsicTypes = [
-        'Boolean',
-        'String',
-        'Date',
-        'RegExp',
-        'Blob',
-        'File',
-        'FileList',
-        'ArrayBuffer',
-        'DataView',
-        'Uint8ClampedArray',
-        'ImageData',
-        'Map',
-        'Set',
-        'Symbol',
-        'HTMLDivElement',
+        "Boolean",
+        "String",
+        "Date",
+        "RegExp",
+        "Blob",
+        "File",
+        "FileList",
+        "ArrayBuffer",
+        "DataView",
+        "Uint8ClampedArray",
+        "ImageData",
+        "Map",
+        "Set",
+        "Symbol",
+        "HTMLDivElement",
       ];
 
     return options;
@@ -135,5 +144,21 @@ export default class BaseModel<DataInterface, driver> {
   seed(seedFunc: Function) {
     if (!this.isPersistence()) return seedFunc();
     (this.storage as any).seeding(seedFunc, this);
+  }
+
+  getItem(key: string | number) {
+    return this.data[key];
+  }
+
+  setItem(key: string | number, value: any) {
+    (this.data as any)[key] = value;
+  }
+
+  removeItem(key: string | number) {
+    delete this.data[key];
+  }
+
+  subscribeItem(key: string | number) {
+    return this.data[`${key}$`];
   }
 }

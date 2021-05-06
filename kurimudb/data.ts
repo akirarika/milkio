@@ -4,12 +4,14 @@ export default class Data {
       set: (target, key, value, proxy) => {
         key = model.checkPrimary(key);
         model.cache.put(key, value);
-        if (model.isPersistence()) (async () => await model.storage.insertOrUpdate(key, model.cache.get(key)))();
+        if (model.isPersistence())
+          (async () =>
+            await model.storage.insertOrUpdate(key, model.cache.get(key)))();
         model.changed.set(key);
         return true;
       },
       get: (target, key, receiver) => {
-        if ('string' === typeof key && key.endsWith('$')) {
+        if ("string" === typeof key && key.endsWith("$")) {
           // 取出原始值，无需 await
           key = key.substring(0, key.length - 1);
           key = model.checkPrimary(key);
@@ -39,20 +41,20 @@ export default class Data {
           if (model.isPersistence()) {
             if (!model.async) {
               // 持久化，同步
-              const result = model.cache.get(key, null);
-              if (null !== result) return result;
+              const result = model.cache.get(key);
+              if (void 0 !== result) return result;
               return model.storage.select(key);
             } else {
               return (async () => {
                 // 持久化，异步
-                const result = model.cache.get(key, null);
-                if (null !== result) return result;
+                const result = model.cache.get(key);
+                if (void 0 !== result) return result;
                 return await model.storage.select(key);
               })();
             }
           } else {
             // 不持久化
-            return model.cache.get(key, null);
+            return model.cache.get(key);
           }
         }
       },
@@ -60,7 +62,7 @@ export default class Data {
         key = model.checkPrimary(key);
         if (model.async)
           throw new Error(
-            `For persistent models, the result of the "in" operator may be incorrect, need "await modelName.has(key)" replace your "key in modelName.data".`,
+            `For persistent models, the result of the "in" operator may be incorrect, need "await modelName.has(key)" replace your "key in modelName.data".`
           );
         return model.cache.has(key);
       },
@@ -112,7 +114,8 @@ export default class Data {
       deleteProperty: (target, key) => {
         key = model.checkPrimary(key);
         model.cache.forget(key);
-        if (model.isPersistence()) (async () => await model.storage.delete(key))();
+        if (model.isPersistence())
+          (async () => await model.storage.delete(key))();
         model.changed.set(key);
 
         return true;

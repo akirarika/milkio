@@ -70,68 +70,21 @@ export default new IndexedDbState();
 indexedDbState.data.say = "hello world"; // 创建或更新..
 const say = await indexedDbState.data.say; // 读取，由于 IndexedDB 是异步的，所以需要加 await..
 delete indexedDbState.data.say; // 删除..
-await indexedDbState.has("say"); // 判断是否存在..
+if (await indexedDbState.data.say) { ... } // 判断是否存在..
 ```
 
 ## 查询构造器
 
-允许从一组数据中高效率地查询，是 IndexedDB 的特色之一。我们可以通过 [Dexie](https://dexie.org/docs/Table/Table) 以链式调用的语法，来编写查询条件：
+可以从一组数据中高效率地筛选，是 IndexedDB 的特色之一。我们可以通过 [Dexie](https://dexie.org/docs/Table/Table)，以链式调用的语法，来编写查询条件：
 
 ```js
-// 查询 id 小于 5 的便签
-const data = await noteList.storage.getResults(
-  noteList.storage
-    .query() // query 函数会返回一个此模型的 [Dexie Table 对象](https://dexie.org/docs/Table/Table)
-    .where("id")
-    .below(5)
-    .toArray()
-);
-
-console.log(data);
+await noteList.storage.query().where("id").below(5).toArray();
 ```
 
-## 包装查询结果
+使用 `query` 函数，可以获得当前模型所在表的 [Dexie Table](https://dexie.org/docs/Table/Table) 对象。使用它，你可以通过链式调用的语法来查询一个或多个数据。
 
-`noteList.storage.getResults()` 函数会对 Dexie 查询出的结果 (`Promise<Array<any>>`) 进行包装，**同时数据也会被缓存到缓存层**。默认包装成对象，对象的键为值的主键。如果你需要数组，则可以向第二个参数传入一个空数组 `[]`：
-
-```js {7}
-const data = await noteList.storage.getResults(
-  noteList.storage.query().where("id").below(5).toArray(),
-  []
-);
-```
-
-你也可以传入非空的数组或对象，查询出的结果会在原来的数据末尾追加：
-
-```js {7,16,17,18}
-await noteList.storage.getResults(
-  noteList.storage.query().where("id").below(5).toArray(),
-  ["hello", "world"]
-);
-
-await noteList.storage.getResults(
-  noteList.storage.query().where("id").below(5).toArray(),
-  { hello: "world" }
-);
-```
-
-或者调用 `getArrayResults()` 和 `getObjectResults()` 也行：
-
-```js
-await noteList.storage.getObjectResults(noteList.storage.toArray());
-await noteList.storage.getArrayResults(noteList.storage.toArray());
-```
-
-## 包装单个结果
-
-如果 Dexie.js 的查询结果只会有一个 (如 `first` 函数)，那么请用 `getResult` 函数：
-
-```js
-await userList.storage.getResult(
-  userList.storage.query().where("name").equals("akirarika").first()
-);
-```
+注意，尽管通过 `query` 函数，我们可以通过操作 Dexie 完成很多事情，但我们仅推荐，在需要**按条件查询的场景**使用它，别的场景请优先使用 Kurimudb 本身的 Api 进行。这么做，能让我们的[订阅功能](/subscribe)可用，同时在**增删改**和**按主键查询单条数据**时，简化 Dexie 的语法。
 
 ## 深入了解 Dexie.js
 
-Dexie.js 的功能非常丰富，强烈推荐阅读 [Dexie 文档](https://dexie.org/docs/API-Reference) 和 [Dexie 最佳实践](https://dexie.org/docs/Tutorial/Best-Practices#1-understand-promises)！
+Dexie.js 的功能非常丰富，强烈推荐阅读 [Dexie Api 文档](https://dexie.org/docs/API-Reference) 和 [Dexie 最佳实践](https://dexie.org/docs/Tutorial/Best-Practices#1-understand-promises)！

@@ -251,6 +251,19 @@ intrinsicTypes: false
 yourModel.deepClone(yourOldObject);
 ```
 
+## 类 Storage Api
+
+你还可以使用类似 [Storage](https://developer.mozilla.org/docs/Web/API/Storage) 的 Api 来增删改查数据：
+
+```js
+local.setItem("say", "hello"); // create it
+let say = local.getItem("say"); // retrieve it
+local.removeItem("say"); // delete it
+local.subscribeItem("say")((val) => { ... }); // subscribe it
+```
+
+> 📜 使用此功能需要 (^3.1.2) 版本。
+
 ## 全部数据
 
 调用 `all` 函数，可以获取此模型的全部数据。(注意：对于配置了 LocalStorage 驱动的模型来说，暂时无法获取全部数据，后续迭代将完善此功能)

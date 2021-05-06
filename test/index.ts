@@ -1,15 +1,30 @@
-import { local, cookie, memory } from "../zero-config/dist";
-import asyncPersistenceCurdTest from "./asyncPersistenceCurdTest";
-import curdTest from "./curdTest";
-import persistenceCurdTest from "./persistenceCurdTest";
+import configState from "./models/configState";
+import { auto$ } from "../kurimudb";
 
 export default function () {
-  memory.data.hello = void 0;
-  memory.data.hello$((val) => {
-    console.log(val);
+  console.log(configState.data.xxxxx);
+  configState.data.xxxxx$((a) => {
+    console.log(a);
   });
-  memory.data.hello = "233";
-  // curdTest();
-  // persistenceCurdTest();
-  // asyncPersistenceCurdTest();
+
+  //   auto$(async () => {
+  //     const baz = await configState.data.baz;
+  //     console.log(baz);
+  //   });
+  //   setTimeout(() => {
+  //     configState.data.baz = "nihao";
+  //   }, 1000);
+  //   auto$(() => {
+  // ..
+  //     const foo = configState.data.foo;
+  //     const bar = configState.data.bar;
+  //     console.log(foo, bar);
+  //   });
+  //   auto$(() => {
+  //     const baz = configState.data.baz;
+  //     console.log(baz);
+  //   });
+  //   setTimeout(() => {
+  //     configState.data.baz = "nihao";
+  //   }, 1000);
 }

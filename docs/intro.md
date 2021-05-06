@@ -18,7 +18,7 @@ npm i kurimudb-zero-config@3
 
 ### Local
 
-操作 `local` 对象，可以把数据存储在 LocalStorage 中，即使页面刷新，数据还会在哒！
+操作 `local` 对象，可以把数据存储在 LocalStorage 中，即使页面刷新，数据还会在哒！可以存储约 5M 数据。
 
 ```js
 import { local } from "kurimudb-zero-config";
@@ -26,12 +26,12 @@ import { local } from "kurimudb-zero-config";
 local.data.say = "hello world"; // 写入..
 let say = local.data.say; // 读取..
 delete local.data.say; // 删除..
-"say" in local.data; // 判断是否存在..
+if ("say" in local.data) { ... } // 判断是否存在..
 ```
 
 ### Cookie
 
-操作 `cookie` 对象，可以把数据存储在 Cookie 中，其中存储的数据应当尽量的少，因为浏览器一般会在每次请求时，都将你的所有 Cookie 自动发送给服务端。
+操作 `cookie` 对象，可以把数据存储在 Cookie 中，其中存储的数据应当尽量的少，因为浏览器一般会在每次请求时，将你的 Cookie 都发送给服务端。
 
 ```js
 import { cookie } from "kurimudb-zero-config";
@@ -39,7 +39,7 @@ import { cookie } from "kurimudb-zero-config";
 cookie.data.say = "hello world"; // 写入..
 let say = cookie.data.say; // 读取..
 delete cookie.data.say; // 删除..
-"say" in cookie.data; // 判断是否存在..
+if ("say" in cookie.data) { ... } // 判断是否存在..
 ```
 
 ### Memory
@@ -52,7 +52,7 @@ import { memory } from "kurimudb-zero-config";
 memory.data.say = "hello world"; // 写入..
 let say = memory.data.say; // 读取..
 delete memory.data.say; // 删除..
-"say" in memory.data; // 判断是否存在..
+if ("say" in memory.data) { ... } // 判断是否存在..
 ```
 
 ### Db
@@ -67,10 +67,10 @@ import { db } from "kurimudb-zero-config";
 db.data.say = "hello world"; // 写入..
 let say = await db.data.say; // 读取，返回值将是 Promise..
 delete db.data.say; // 删除..
-await db.has("say"); // 判断是否存在，返回值将是 Promise..
+if (await db.data.say) { ... } // 判断是否存在..
 ```
 
-### 订阅数据变更
+### 订阅变更
 
 Kurimudb 还提供了订阅值变化的功能，只需在值后加上 `$` 符号，就能在它被改变时做点什么：
 
@@ -80,16 +80,18 @@ local.data.say$((val) => {
 });
 ```
 
-默认情况下，闭包函数会立即执行一次，方便你为你视图中的响应式变量赋初始值。如果你不希望这么做，而是只在后续值变更时执行，那么如下即可：
+或者使用**自动订阅功能**，当闭包中用到的值，有任一被更改时，都会触发订阅，重新执行此闭包：
 
-```js {5}
-local.data.say$(
-  (val) => {
-    console.log("what you want to say: " + val);
-  },
-  { immediate: false }
-);
+```js
+import { auto$ } from "kurimudb-zero-config";
+
+auto$(() => {
+  console.log(configState.data.foo);
+  console.log(configState.data.bar);
+});
 ```
+
+关于订阅，还有更多的高级用法噢！请阅读[订阅变更](/subscribe)章节。
 
 ## 准备好了吗？
 

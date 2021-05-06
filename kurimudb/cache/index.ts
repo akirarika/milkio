@@ -1,4 +1,4 @@
-import { Item } from './item';
+import { Item } from "./item";
 
 export default class Cache {
   private model;
@@ -20,19 +20,27 @@ export default class Cache {
     return this.value.get(key)?.subscribe;
   }
 
-  get(key, def = null) {
-    if (this.value.has(key)) return this.value.get(key)?.get();
-    return def;
+  get(key, def = void 0) {
+    if (!this.value.has(key)) {
+      this.value.set(key, this.createCacheItem(def, key));
+    }
+    return this.value.get(key)?.get();
   }
 
   add(key, value) {
-    if (this.value.has(key)) throw new Error(`Key already exists in the object store.`);
+    if (this.value.has(key))
+      throw new Error(`Key already exists in the object store.`);
     this.value.set(key, this.createCacheItem(this.model.deepClone(value), key));
   }
 
   put(key, value) {
-    if (this.value.has(key)) this.value.get(key)?.set(this.model.deepClone(value));
-    else this.value.set(key, this.createCacheItem(this.model.deepClone(value), key));
+    if (this.value.has(key))
+      this.value.get(key)?.set(this.model.deepClone(value));
+    else
+      this.value.set(
+        key,
+        this.createCacheItem(this.model.deepClone(value), key)
+      );
   }
 
   forget(key) {

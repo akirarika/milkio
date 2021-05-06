@@ -1,5 +1,3 @@
-# 介绍
-
 ## Kurimudb 是什么
 
 Kurimudb 是一款渐进式的 **Web 端本地存储库**，可将数据保存到 LocalStorage、IndexedDB、Cookie 等地方，和订阅值的变更。
@@ -8,17 +6,25 @@ Kurimudb 是一款渐进式的 **Web 端本地存储库**，可将数据保存�
 
 Kurimudb 是驱动化的，这意味着你可以几乎不更改代码的情况下更换具体实现。我们提供了 `Cookie` `LocalStorage` 和 `Dexie (IndexedDB)` 三种驱动。如果不满足你的需求，你还可以编写自己的驱动实现。
 
-# 文档
+## 文档
 
 你可以[点击这里](https://kurimudb.nito.ink/)来阅读文档。
 
-# 后续计划
+## 后续计划
 
 - [x] 为文档网站做一个首页
 
+- [x] 新增[自动订阅](http://kurimudb.nito.ink/subscribe.html)功能
+
+- [ ] 新增异步自动订阅功能
+
+- [ ] ~~将 npm 包拆分到多个仓库中~~
+
 - [ ] LocalStorage 驱动可以使用 `all` 函数
 
-- [ ] 批量订阅功能无需手动声明要订阅的值，而是自动推断
+- [ ] （待定）为模型加入一种新模式，省去需手动定义接口，再去调用 seed 函数来填充数据的麻烦
+
+- [ ] 旧值与新值相同时，不再重复触发订阅
 
 - [ ] 编写一个不依赖 Dexie 的轻量级 IndexedDB 驱动 (现有 Dexie 驱动会继续保留，也不会停止维护)
 
@@ -31,3 +37,5 @@ Kurimudb 是驱动化的，这意味着你可以几乎不更改代码的情况�
 - [ ] （待定）加入对服务端渲染的资瓷，服务端中添加的数据，会在用户访问页面后存储到浏览器里
 
 - [ ] 国际化
+
+![](./docs/components/assets/loading.gif)
