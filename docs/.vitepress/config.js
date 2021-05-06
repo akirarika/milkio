@@ -64,9 +64,9 @@ module.exports = {
         ],
         sidebar: [
           {
-            text: "文档",
+            text: "Documents",
             children: [
-              { text: "入门", link: "/intro" },
+              { text: "Getting Started", link: "/intro" },
               { text: "模型", link: "/model" },
               { text: "持久化", link: "/persistence" },
               {
