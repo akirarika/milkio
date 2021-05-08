@@ -1,6 +1,6 @@
 {
   "name": "kurimudb-driver-taro",
-  "version": "3.0.1",
+  "version": "3.0.0",
   "description": "a kurimudb driver for Taro",
   "main": "./dist/index.js",
   "author": "polichan",

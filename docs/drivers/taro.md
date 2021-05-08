@@ -2,11 +2,9 @@
 
 :::tip 注意事项
 
-Taro 框架中的 LocalStorage 出于抹平多端差异性的原因，针对原生 LocalStorage 进行了进一步的封装，但本质还是 LocalStorage。
+[Taro](https://taro.jd.com/) 是一个开放式跨端跨框架解决方案，它在 Web 端会使用 [LocalStorage](https://developer.mozilla.org/docs/Web/API/Window/localStorage)（约 5M），微信小程序端使用 [StorageSync Api](https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.setStorageSync.html)（约 10M）。
 
-[LocalStorage](https://developer.mozilla.org/docs/Web/API/Window/localStorage) 一般可以存储约 5MB 左右的数据。
-
-LocalStorage 只能存储字符串。LocalStorage 驱动会对存入的数据进行 `JSON.stringify`，所以，请勿存入无法被正确 `JSON.stringify` 的对象 (如 `Set`、`Map` 等)。
+Taro 驱动会对存入的数据进行 `JSON.stringify`，所以，请勿存入无法被正确 `JSON.stringify` 的对象 (如 `Set`、`Map` 等)。
 
 :::
 
@@ -34,3 +32,5 @@ class TaroState extends Models.keyValue {
 
 export default new TaroState();
 ```
+
+> 📜 感谢 [polichan](https://github.com/polichan) 贡献的本驱动 [PR](https://github.com/akirarika/kurimudb/pull/12)。

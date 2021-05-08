@@ -6,6 +6,7 @@
     "docs:build": "vitepress build docs",
     "test:dev": "vite",
     "test:build": "vue-tsc --noEmit && vite build",
+    "tsc": "tsc",
     "publish": "node publish.js"
   },
   "dependencies": {

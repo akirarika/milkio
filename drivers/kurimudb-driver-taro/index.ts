@@ -1,4 +1,4 @@
-import { getStorageSync, setStorageSync } from "@tarojs/taro"
+import { getStorageSync, setStorageSync } from "@tarojs/taro";
 export class TaroDriver {
   model;
 
@@ -12,10 +12,7 @@ export class TaroDriver {
       let id = getStorageSync(`$table_id__${this.model.options.name}`);
       if (!id) id = "1";
       key = parseInt(id);
-      setStorageSync(
-        `$table_id__${this.model.options.name}`,
-        `${key + 1}`
-      );
+      setStorageSync(`$table_id__${this.model.options.name}`, `${key + 1}`);
     }
     setStorageSync(
       `$table__${this.model.options.name}_${key}`,
@@ -46,9 +43,7 @@ export class TaroDriver {
   }
 
   exists(key: string | number): boolean {
-    return Boolean(
-      getStorageSync(`$table__${this.model.options.name}_${key}`)
-    );
+    return Boolean(getStorageSync(`$table__${this.model.options.name}_${key}`));
   }
 
   delete(key: string | number): void {
