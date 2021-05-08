@@ -41,6 +41,7 @@ module.exports = {
                   { text: "LocalStorage", link: "/drivers/localstorage" },
                   { text: "Cookie", link: "/drivers/cookie" },
                   { text: "Dexie (IndexedDB)", link: "/drivers/dexie" },
+                  { text: "Taro (LocalStorage)", link: "/drivers/taro" },
                   { text: "自定义驱动", link: "/drivers/custom-driver" },
                 ],
               },
