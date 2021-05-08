@@ -9,6 +9,8 @@
     "publish": "node publish.js"
   },
   "dependencies": {
+    "@tarojs/taro": "^2.2.17",
+    "@types/react": "^17.0.5",
     "dexie": "^3.0.3",
     "highlight.js": "^10.7.2",
     "kurimudb": "file:kurimudb",
