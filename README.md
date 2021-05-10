@@ -28,8 +28,6 @@ Kurimudb 是驱动化的，这意味着你可以几乎不更改代码的情况�
 
 - [ ] 国际化
 
-![](./docs/components/assets/loading.gif)
-
 ## Maybe Todo
 
 - [ ] 为模型加入一种新模式，省去需手动定义接口，再去调用 seed 函数来填充数据的麻烦
@@ -39,3 +37,5 @@ Kurimudb 是驱动化的，这意味着你可以几乎不更改代码的情况�
 - [ ] 加入适配微信小程序和 uniapp 驱动
 
 - [ ] 更好的服务端渲染支持：在服务端中添加的数据，会在用户访问页面后，存储到浏览器里
+
+![](./docs/components/assets/loading.gif)
