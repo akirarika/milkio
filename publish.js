@@ -28,7 +28,7 @@ if ("docs" === type) {
       `tsc --build drivers/kurimudb-driver-${name}`,
       // 发布 npm 新版本
       `cd ./drivers/kurimudb-driver-${name}`,
-      `npm version patch`,
+      // `npm version patch`,
       `npm publish`,
     ].join(" && "),
     {
@@ -43,7 +43,7 @@ if ("docs" === type) {
       `tsc --build kurimudb`,
       // 发布 npm 新版本
       `cd ./kurimudb`,
-      `npm version patch`,
+      // `npm version patch`,
       `npm publish`,
     ].join(" && "),
     {

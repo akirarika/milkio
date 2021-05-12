@@ -1,5 +1,5 @@
-import keyValue from './keyValue';
-import collection from './collection';
+import keyValue from "./keyValue";
+import collection from "./collection";
 
 export default {
   keyValue,

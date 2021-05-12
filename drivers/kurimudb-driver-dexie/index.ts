@@ -21,7 +21,11 @@ export class DexieDriver {
 
   constructor(model) {
     this.model = model;
-    this.model.async = true;
+    this.model.options.async = true;
+    if (!("db" in this.model.options))
+      throw new Error(
+        `"db" does not exist in options of the model, pass it a dexie object.`
+      );
   }
 
   async insert(value: any, key?: string | number): Promise<string | number> {
@@ -42,7 +46,7 @@ export class DexieDriver {
 
   async exists(key: string | number): Promise<boolean> {
     return Boolean(
-      await this.table().where(this.model.primary).equals(key).count()
+      await this.table().where(this.model.options.primary).equals(key).count()
     );
   }
 
@@ -51,8 +55,9 @@ export class DexieDriver {
   }
 
   async seeding(seedingFunc: Function, model) {
-    const table = this.model.db["_seed"];
+    const table = this.model.options.db["_seed"];
     if (await table.get(`${this.model.options.name}_is_seeded`)) return;
+
     await table.add({
       _id: `${this.model.options.name}_is_seeded`,
       value: `true`,
@@ -61,7 +66,7 @@ export class DexieDriver {
   }
 
   all() {
-    return this.table().toArray();
+    return this.getArrayResults(this.table().toArray());
   }
 
   /**
@@ -69,7 +74,7 @@ export class DexieDriver {
    * @returns
    */
   table(): Table {
-    const table = this.model?.db[this.model.options.name];
+    const table = this.model.options?.db[this.model.options.name];
     if (table) return table;
     throw new Error(
       `table "${this.model.options.name}" does not exist in the database. did you forget to add the new version?`
@@ -96,11 +101,11 @@ export class DexieDriver {
       //       this.primary +
       //       '".'
       //   );
-      if (void 0 !== key) value[this.model.primary] = key;
+      if (void 0 !== key) value[this.model.options.primary] = key;
       return this.model.deepClone(value, intrinsicTypes);
     } else {
       const object: any = { $__value: value };
-      if (void 0 !== key) object[this.model.primary] = key;
+      if (void 0 !== key) object[this.model.options.primary] = key;
       return this.model.deepClone(object, intrinsicTypes);
     }
   }
@@ -166,7 +171,7 @@ export class DexieDriver {
     };
 
     for (const item of query) {
-      const key = item[this.model.primary];
+      const key = item[this.model.options.primary];
       if (this.model.cache.has(key)) setResult(key, this.model.cache.get(key));
       else {
         setResult(key, this.decode(item));
@@ -188,7 +193,7 @@ export class DexieDriver {
       throw new Error(
         `The query result is not a single Object. If it's an Array, please use 'getresults' instead.`
       );
-    const key = item[this.model.primary];
+    const key = item[this.model.options.primary];
     if (this.model.cache.has(key)) return this.model.cache.get(key);
     else {
       const initialResult = this.decode(item);

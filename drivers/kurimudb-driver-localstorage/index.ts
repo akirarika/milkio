@@ -20,6 +20,7 @@ export class LocalStorageDriver {
       `$table__${this.model.options.name}_${key}`,
       JSON.stringify(value)
     );
+    this._addModelIndex(key);
 
     return key;
   }
@@ -29,6 +30,7 @@ export class LocalStorageDriver {
       `$table__${this.model.options.name}_${key}`,
       JSON.stringify(value)
     );
+    this._addModelIndex(key);
   }
 
   update(key: string | number, value: any): void {
@@ -36,6 +38,7 @@ export class LocalStorageDriver {
       `$table__${this.model.options.name}_${key}`,
       JSON.stringify(value)
     );
+    this._addModelIndex(key);
   }
 
   select(key: string | number): any {
@@ -52,6 +55,7 @@ export class LocalStorageDriver {
 
   delete(key: string | number): void {
     localStorage.removeItem(`$table__${this.model.options.name}_${key}`);
+    this._deleteModelIndex(key);
   }
 
   seeding(seeding: Function, model) {
@@ -61,8 +65,45 @@ export class LocalStorageDriver {
   }
 
   all() {
-    throw new Error(`The localstorage driver cannot use the 'all' method.`);
+    const index = localStorage.getItem(`$index__${this.model.options.key}`);
+    if (!index) return {};
+    const indexArr = JSON.parse(index);
+    const rtnAllData = {};
+    for (const item of indexArr) {
+      rtnAllData[item] = this.select(item);
+    }
+    return rtnAllData;
+  }
 
-    return [];
+  _addModelIndex(key: string | number) {
+    if ("collection" !== this.model.options.modelType) return;
+
+    let index = localStorage.getItem(`$index__${this.model.options.key}`);
+
+    let indexArr;
+    if (index) indexArr = JSON.parse(index);
+    else indexArr = [];
+
+    if (-1 !== indexArr.indexOf(key)) return;
+    indexArr.push(key);
+    localStorage.setItem(
+      `$index__${this.model.options.key}`,
+      JSON.stringify(indexArr)
+    );
+  }
+
+  _deleteModelIndex(key: string | number) {
+    if ("collection" !== this.model.options.modelType) return;
+
+    let index = localStorage.getItem(`$index__${this.model.options.key}`);
+    if (!index) return;
+    const indexArr = JSON.parse(index);
+    const indexOf = indexArr.indexOf(key);
+    if (-1 === indexOf) return;
+    indexArr.splice(indexOf, 1);
+    localStorage.setItem(
+      `$index__${this.model.options.key}`,
+      JSON.stringify(indexArr)
+    );
   }
 }

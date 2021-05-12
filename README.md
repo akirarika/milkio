@@ -18,9 +18,13 @@ Kurimudb 是驱动化的，这意味着你可以几乎不更改代码的情况�
 
 - [x] 新增[自动订阅](http://kurimudb.nito.ink/subscribe.html)功能
 
-- [ ] 自动类型推断：若不指定模型的主键类型，则键值对模型使用 `string`，集合模型使用 `number`
+- [x] 规范化模型的配置，全部通过构造函数来传入
 
-- [ ] LocalStorage 驱动可以使用 `all` 函数
+- [x] 自动名称推断：若不指定模型的名称，则通过 `constructor.name` 来确定
+
+- [x] 自动类型推断：若不指定模型的主键类型，则键值对模型使用 `string`，集合模型使用 `number`
+
+- [x] LocalStorage 驱动可以使用 `all` 函数
 
 - [ ] 编写一个不依赖 Dexie 的轻量级 IndexedDB 驱动 (现有 Dexie 驱动会继续保留，也不会停止维护)
 

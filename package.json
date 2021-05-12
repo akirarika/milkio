@@ -4,7 +4,7 @@
   "scripts": {
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "test:dev": "vite",
+    "test:dev": "vite --force",
     "test:build": "vue-tsc --noEmit && vite build",
     "tsc": "tsc",
     "publish": "node publish.js"

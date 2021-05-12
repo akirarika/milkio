@@ -21,6 +21,12 @@ configState.data.foo$(
 );
 ```
 
+或者使用类 Storage Api 的形式：
+
+```js
+configState.subscribeItem(key, closFunc, config);
+```
+
 ## 批量订阅
 
 如果你想一次订阅多个值的变更，可以使用 `batch$` 函数：

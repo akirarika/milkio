@@ -16,7 +16,7 @@ export default class Data {
           key = key.substring(0, key.length - 1);
           key = model.checkPrimary(key);
           if (model.isPersistence() && !model.cache.has(key)) {
-            if (!model.async) {
+            if (!model.options.async) {
               // 值不存在，持久化，同步方式
               model.cache.put(key, model.storage.select(key));
               const result = model.cache.subscribe(key);
@@ -39,7 +39,7 @@ export default class Data {
           key = model.checkPrimary(key);
           // 取出可用值
           if (model.isPersistence()) {
-            if (!model.async) {
+            if (!model.options.async) {
               // 持久化，同步
               const result = model.cache.get(key);
               if (void 0 !== result) return result;
@@ -60,7 +60,7 @@ export default class Data {
       },
       has: (target, key) => {
         key = model.checkPrimary(key);
-        if (model.async)
+        if (model.options.async)
           throw new Error(
             `For persistent models, the result of the "in" operator may be incorrect, need "await modelName.has(key)" replace your "key in modelName.data".`
           );

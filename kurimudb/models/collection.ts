@@ -1,24 +1,33 @@
-import { ModelOptionsInterface } from '..';
-import BaseModel from './base';
+import { ModelOptionsInterface } from "..";
+import BaseModel from "./base";
 
-export default class CollectionModel<DataItemInterface, driver = any> extends BaseModel<DataItemInterface[], driver> {
-  modelType = 'collection';
+export default class CollectionModel<
+  DataItemInterface = Record<string | number, any>,
+  driver = any
+> extends BaseModel<DataItemInterface[], driver> {
   private __INCREMENT = 0; // 模型自增的主键，仅在未持久化时使用
 
-  constructor(options: ModelOptionsInterface) {
-    super(options);
+  constructor(options: ModelOptionsInterface = {}) {
+    super(
+      (() => {
+        options.modelType = "collection";
+        if (!("type" in options)) options.type = "number";
+        return options;
+      })()
+    );
   }
 
   /**
-   * 插入数据
-   * 向集合模型中插入一条新数据，此数据的主键会自动递增
+   * Insert item
+   * Insert a new piece of data into the collection model,
+   * the primary key of this data will be automatically incremented.
    *
    * @param value
    * @returns 新数据的id
    */
   insert(value: DataItemInterface): number | Promise<number> {
     if (this?.storage) {
-      if (this.async)
+      if (this.options.async)
         return (async () => {
           const storage = this.storage as any;
           const key = await storage.insert(value);
@@ -34,11 +43,32 @@ export default class CollectionModel<DataItemInterface, driver = any> extends Ba
         return key;
       }
     } else {
-      // 不持久化
-      const key = ++this['__INCREMENT'];
+      const key = ++this["__INCREMENT"];
       this.cache.add(key, value);
       this.changed.set(key);
       return key;
     }
+  }
+
+  /**
+   * Seed data
+   * @returns
+   */
+  seed(seed: any) {
+    let seedFunc;
+    if ("function" === typeof seed) seedFunc = seed;
+    else if (seed instanceof Array) {
+      seedFunc = () => {
+        for (const item of seed) this.insert(item);
+      };
+    } else {
+      throw new Error(
+        `In "collection" model, the argument to the seed function must be "Function" or "Array".`
+      );
+    }
+
+    if (!this.isPersistence()) return seedFunc();
+    const storage = this.storage as any;
+    storage.seeding(seedFunc, this);
   }
 }

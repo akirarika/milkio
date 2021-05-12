@@ -1,11 +1,15 @@
 import configState from "./models/configState";
 import { auto$ } from "../kurimudb";
 
-export default function () {
-  console.log(configState.data.xxxxx);
-  configState.data.xxxxx$((a) => {
-    console.log(a);
-  });
+export default async function () {
+  configState.insert("hello");
+  console.log(
+    configState.$((a) => {
+      console.log(a);
+    })
+  );
+  configState.insert("world");
+  console.warn(await configState.all());
 
   //   auto$(async () => {
   //     const baz = await configState.data.baz;
