@@ -13,7 +13,7 @@ Kurimudb's persistence feature is driver-oriented. It means you can replace the 
 `kurimudb-zero-config` is the library that allow using Kurimudb with no config. Run following config to install it:
 
 ```bash
-npm i kurimudb-zero-config@3
+npm i kurimudb-zero-config@4
 ```
 
 ### Local

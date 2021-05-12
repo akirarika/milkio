@@ -8,23 +8,19 @@
 
 下面让我们将为模型添加 `LocalStorage` 驱动，只需要引入驱动，并在模型中配置 `driver` 即可。
 
-```js {4,11}
+```js {4,9}
 // /models/configState.js
 
 import { Models } from "kurimudb";
 import { LocalStorageDriver } from "kurimudb-driver-localstorage";
 
-class ConfigState extends Models.keyValue {
+export default new class ConfigState extends Models.keyValue {
   constructor() {
     super({
-      name: "configState",
-      type: "string",
       driver: LocalStorageDriver,
     });
   }
 }
-
-export default new ConfigState();
 ```
 
 现在再试试看，数据会不会丢失？后面的驱动章节，我们将会为你详细介绍 Kurimudb 提供的各种驱动，和教你如何编写自己的驱动，来完全掌控数据存储的逻辑。

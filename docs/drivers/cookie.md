@@ -13,24 +13,20 @@ Cookie 只能存储字符串。Cookie 驱动会对存入的数据进行 `JSON.st
 ## 安装
 
 ```bash
-npm i kurimudb-driver-cookie@3
+npm i kurimudb-driver-cookie@4
 ```
 
 ## 示例
 
-```js {2,9}
+```js {2,7}
 import { Models } from "kurimudb";
 import { CookieDriver } from "kurimudb-driver-cookie";
 
-class CookieState extends Models.keyValue {
+export default new class CookieState extends Models.keyValue {
   constructor() {
     super({
-      name: "cookieState",
-      type: "string",
       driver: CookieDriver,
     });
   }
 }
-
-export default new CookieState();
 ```

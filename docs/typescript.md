@@ -14,20 +14,16 @@ interface ThemeInterface {
   background: string;
 }
 
-class ThemeState extends Models.keyValue<
+export default new class ThemeState extends Models.keyValue<
   ThemeInterface, // 限制模型的数据格式，即 `themeState.data` 的格式
   LocalStorageDriver // 若传入驱动，可获得驱动专有 Api 的代码提示
 > {
   constructor() {
     super({
-      name: "themeState",
-      type: "string",
       driver: LocalStorageDriver,
     });
   }
 }
-
-export default new ThemeState();
 ```
 
 ## 集合模型
@@ -41,18 +37,14 @@ interface NoteItemInterface {
   content: string;
 }
 
-class NoteList extends Models.collection<
+export default new class NoteList extends Models.collection<
   NoteItemInterface, // 限制集合模型中，每个子项目的格式
   LocalStorageDriver // 若传入驱动，可获得驱动专有 Api 的代码提示
 > {
   constructor() {
     super({
-      name: "noteList",
-      type: "number",
       driver: LocalStorageDriver,
     });
   }
 }
-
-export default new NoteList();
 ```

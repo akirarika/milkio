@@ -17,7 +17,7 @@ sidebarDepth: 2
 继续之前，我们先安装 Kurimudb 本体吧：
 
 ```bash
-npm i kurimudb@3
+npm i kurimudb@4
 ```
 
 ## 创建模型
@@ -27,19 +27,9 @@ npm i kurimudb@3
 ```js
 // 创建一个 /models/configState.js 文件
 // 我们可以拿它来存和用户配置有关的数据
-
 import { Models } from "kurimudb";
 
-class ConfigState extends Models.keyValue {
-  constructor() {
-    super({
-      name: "configState", // 模型名称，必须是唯一的
-      type: "string", // 模型的主键类型
-    });
-  }
-}
-
-export default new ConfigState();
+export default new class ConfigState extends Models.keyValue { }
 ```
 
 如此，你就拥有了一个 `ConfigState` 模型，它是一个 **键值对模型**，使用时则更加简单：
@@ -51,6 +41,27 @@ configState.data.say = "hello world"; // 写入..
 console.log(configState.data.say); // 读取..
 delete configState.data.say; // 删除..
 "say" in configState; // 判断是否存在..
+```
+
+通过构造函数，你还可以自定义模型的选项：
+
+```js
+// /models/configState.js
+
+import { Models } from "kurimudb";
+
+export default new class ConfigState extends Models.keyValue {
+  constructor() {
+    super({
+      // 模型名称，必须全局唯一
+      // 默认情况下，将使用你此类的类名
+      name: "OurModel",
+      // 模型的主键类型
+      // 默认情况下，键值对模型会用 "string"，集合模型会用 "number"
+      type: "number",
+    });
+  }
+}
 ```
 
 ## 模型方法
@@ -91,7 +102,7 @@ await configState.calcBar();
 
 ## 集合模型
 
-在前文中，我们的模型都是键值对模型，它们用起来就像对象那样：
+在前文中，我们的模型都是键值对模型，它们用起来，就像对象那样：
 
 ```js
 configState.data.foo;
@@ -112,16 +123,9 @@ configState.data[700];
 import { Models } from "kurimudb";
 
 // 继承 Models.collection 来让它变成一个集合模型
-class NoteList extends Models.collection {
-  constructor() {
-    super({
-      name: "noteList",
-      type: "number", // 集合模型的类型需要是 number 哦！
-    });
-  }
+export default new class NoteList extends Models.collection {
+  // ...
 }
-
-export default new NoteList();
 ```
 
 使用时，通过 `insert` 方法来创建的数据，主键会自增：
@@ -133,14 +137,15 @@ const note1 = noteList.insert("This is the content of note 1");
 const note2 = noteList.insert("This is the content of note 2");
 console.log(noteList.data[1]); // echo "This is the content of note 1"
 console.log(noteList.data[2]); // echo "This is the content of note 2"
+```
 
-// 获取模型的所有数据..
+你还可以使用 `all` 函数来获取此集合模型中的全部数据：
+
+```js
 noteList.all();
 ```
 
-大功告成啦。
-
-::: tip 小贴士
+::: warning 小贴士
 
 1. 集合模型的主键是从 `1` 开始递增的，这和数组不同。这么设计是为了更好的兼容 IndexedDB，因为 IndexedDB 是从 `1` 开始的。
 2. 集合模型中，删除任意值，不会导致其他值的主键变动，这和数组不同。也就是说，主键可以视为唯一且不变的。
@@ -170,9 +175,36 @@ class ConfigState extends Models.keyValue {
 }
 ```
 
-向 `seed` 方法传递的闭包函数，会在用户每次访问此页面时会运行一次。
+对于**键值对模型**，你可以传入一个对象来简化模型填充：
 
-如果模型配置了[存储驱动](/persistence)，那么只有在用户首次访问此页面时，`seed` 方法才会运行你传递的闭包函数。
+```js
+this.seed({
+  foo: 'bar',
+  baz: 'qux',
+});
+// 相当于：
+this.seed(() => {
+  this.data.foo = 'bar';
+  this.data.baz = 'qux';
+});
+```
+
+对于**集合模型**，你可以传入一个数组来简化模型填充：
+
+```js
+this.seed(['foo', 'bar']);
+// 相当于：
+this.seed(() => {
+  this.insert('foo');
+  this.insert('bar');
+});
+```
+
+默认情况下，每次运行你的网页，都会填充一次数据。
+
+如果模型配置了[存储驱动](/persistence)，那么只有在用户首次运行你的网页时，才会进行数据填充。
+
+
 
 ## 深克隆
 
@@ -225,8 +257,6 @@ import { Models } from "kurimudb";
 class ConfigState extends Models.keyValue {
   constructor() {
     super({
-      name: "configState",
-      type: "string",
       intrinsicTypes: ["File", "FileList"],
     });
   }
@@ -235,13 +265,13 @@ class ConfigState extends Models.keyValue {
 
 如果你想对任何对象**都**进行深克隆，你可以直接传入一个空数组：
 
-```yaml
+```js
 intrinsicTypes: []
 ```
 
 如果你想对任何对象**都不**进行深克隆，你可以传入 `false`：
 
-```yaml
+```js
 intrinsicTypes: false
 ```
 
@@ -259,15 +289,7 @@ yourModel.deepClone(yourOldObject);
 local.setItem("say", "hello"); // create it
 let say = local.getItem("say"); // retrieve it
 local.removeItem("say"); // delete it
-local.subscribeItem("say")((val) => { ... }); // subscribe it
+local.subscribeItem("say", (val) => { ... }); // subscribe it
 ```
 
-> 📜 使用此功能需要 (^3.1.2) 版本。
-
-## 全部数据
-
-调用 `all` 函数，可以获取此模型的全部数据。(注意：对于配置了 LocalStorage 驱动的模型来说，暂时无法获取全部数据，后续迭代将完善此功能)
-
-```js
-yourModel.all();
-```
+> 📜 使用此功能需要 (^4.0.0) 版本。

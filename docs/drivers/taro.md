@@ -1,5 +1,7 @@
 # Taro
 
+> 📜 本驱动正在努力完善中，敬请期待。感谢 [polichan](https://github.com/polichan) 贡献的本驱动 [PR](https://github.com/akirarika/kurimudb/pull/12)。
+
 :::tip 注意事项
 
 [Taro](https://taro.jd.com/) 是一个开放式跨端跨框架解决方案，它在 Web 端会使用 [LocalStorage](https://developer.mozilla.org/docs/Web/API/Window/localStorage)（约 5M），微信小程序端使用 [StorageSync Api](https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.setStorageSync.html)（约 10M）。
@@ -11,26 +13,22 @@ Taro 驱动会对存入的数据进行 `JSON.stringify`，所以，请勿存入�
 ## 安装
 
 ```bash
-npm i kurimudb-driver-taro@3
+npm i kurimudb-driver-taro@4
 ```
 
 ## 示例
 
-```js {2,9}
+```js {2,7}
 import { Models } from "kurimudb";
 import { TaroDriver } from "kurimudb-driver-taro";
 
-class TaroState extends Models.keyValue {
+export default new class TaroState extends Models.keyValue {
   constructor() {
     super({
-      name: "TaroState",
-      type: "string",
       driver: TaroDriver,
     });
   }
 }
-
-export default new TaroState();
 ```
 
 > 📜 感谢 [polichan](https://github.com/polichan) 贡献的本驱动 [PR](https://github.com/akirarika/kurimudb/pull/12)。

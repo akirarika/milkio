@@ -21,7 +21,7 @@ configState.data.foo$(
 );
 ```
 
-或者使用类 Storage Api 的形式：
+你也可以使用[类 Storage Api](/model.html#%E7%B1%BB-storage-api) 的形式进行订阅：
 
 ```js
 configState.subscribeItem(key, closFunc, config);

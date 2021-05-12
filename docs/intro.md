@@ -13,7 +13,7 @@ Kurimudb 的数据存储功能是驱动化的，这意味着你可以在不更�
 `kurimudb-zero-config` 是 Kurimudb 的零配置包，执行下面命令来安装它：
 
 ```bash
-npm i kurimudb-zero-config@3
+npm i kurimudb-zero-config@4
 ```
 
 ### Local

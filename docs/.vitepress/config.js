@@ -35,19 +35,31 @@ module.exports = {
               { text: "入门", link: "/intro" },
               { text: "模型", link: "/model" },
               { text: "持久化", link: "/persistence" },
+              { text: "订阅变更", link: "/subscribe" },
+              { text: "TypeScript", link: "/typescript" },
+            ],
+          },
+          {
+            text: "驱动", children: [
               {
-                text: "驱动",
+                text: "浏览器驱动",
                 children: [
                   { text: "LocalStorage", link: "/drivers/localstorage" },
                   { text: "Cookie", link: "/drivers/cookie" },
                   { text: "Taro", link: "/drivers/taro" },
                   { text: "Dexie (IndexedDB)", link: "/drivers/dexie" },
-                  { text: "自定义驱动", link: "/drivers/custom-driver" },
                 ],
               },
-              { text: "订阅变更", link: "/subscribe" },
-              { text: "TypeScript", link: "/typescript" },
-            ],
+              {
+                text: "其他驱动",
+                children: [{ text: "Taro", link: "/drivers/taro" }],
+              },
+              { text: "自定义驱动", link: "/drivers/custom-driver" },
+            ]
+          },
+          {
+            text: "迁移",
+            children: [{ text: "从 v3 迁移", link: "/migrations/v3" }],
           },
           { text: "最佳实践", link: "/bestPractices" },
           { text: "模型生成器", link: "/modelCodeMaker" },

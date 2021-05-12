@@ -11,24 +11,20 @@ LocalStorage 只能存储字符串。LocalStorage 驱动会对存入的数据进
 ## 安装
 
 ```bash
-npm i kurimudb-driver-localstorage@3
+npm i kurimudb-driver-localstorage@4
 ```
 
 ## 示例
 
-```js {2,9}
+```js {2,7}
 import { Models } from "kurimudb";
 import { LocalStorageDriver } from "kurimudb-driver-localstorage";
 
-class LocalStorageState extends Models.keyValue {
+export default new class LocalStorageState extends Models.keyValue {
   constructor() {
     super({
-      name: "localStorageState",
-      type: "string",
       driver: LocalStorageDriver,
     });
   }
 }
-
-export default new LocalStorageState();
 ```

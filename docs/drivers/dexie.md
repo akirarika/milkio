@@ -14,7 +14,7 @@ IndexedDB 是 Web 数据库，它的容量和[用户硬盘大小有关](https://
 # 安装 Dexie 本体
 npm i dexie@3
 # 安装 Kurimudb 的 Dexie 驱动
-npm i kurimudb-driver-dexie@3
+npm i kurimudb-driver-dexie@4
 ```
 
 ## 版本控制
@@ -44,24 +44,19 @@ _版本的顺序是不重要的，Dexie.js 会在迁移不同版本时，自动�
 
 ## 示例
 
-```js {2,3,6,12}
+```js {2,3,8,9}
 import { Models } from "kurimudb";
 import { DexieDriver } from "kurimudb-driver-dexie";
 import migrations from "../models/migrations";
 
-class IndexedDbState extends Models.keyValue {
-  db = migrations; // 将你声明好版本的 Dexie 实例，挂载在模型的 db 属性中，驱动会自动使用它
-
+export default new class IndexedDbState extends Models.keyValue {
   constructor() {
     super({
-      name: "indexedDbState",
-      type: "string",
+      db: migrations;// 将你声明好版本的 Dexie 实例，传入到 db 选项中，模型将使用它
       driver: DexieDriver,
     });
   }
 }
-
-export default new IndexedDbState();
 ```
 
 由于 IndexedDB 的 Api 是异步的，因此使用了 Dexie 驱动的模型，和读有关的 Api 将返回 `Promise` 对象。你可以在其前加上 `await` 关键字以等待其返回结果。
@@ -83,7 +78,28 @@ await noteList.storage.query().where("id").below(5).toArray();
 
 使用 `query` 函数，可以获得当前模型所在表的 [Dexie Table](https://dexie.org/docs/Table/Table) 对象。使用它，你可以通过链式调用的语法来查询一个或多个数据。
 
-注意，尽管通过 `query` 函数，我们可以通过操作 Dexie 完成很多事情，但我们仅推荐，在需要**按条件查询的场景**使用它，别的场景请优先使用 Kurimudb 本身的 Api 进行。这么做，能让我们的[订阅功能](/subscribe)可用，同时在**增删改**和**按主键查询单条数据**时，简化 Dexie 的语法。
+::: warning 注意事项
+
+尽管通过 `query` 函数，我们能够以操作 Dexie 的方式完成很多事情，但请只在需要按条件查询的场景使用它。增、删、改请使用 Kurimudb 来完成。
+
+:::
+
+## 结果封装
+
+为了更好的利用 Indexeddb 的性能，当你存入非对象的值时，我们会将其包装成一个对象：
+
+```js
+// 存入一个非对象的值：
+configState.data.hello = "world";
+// 实际存入到 Indexedb 的值是：
+{
+  _id: "hello",
+  $__value: "world",
+}
+```
+
+当你使用 Dexie.js 进行查询时，需注意按照实际存入的数据格式来进行查询。
+
 
 ## 深入了解 Dexie.js
 
