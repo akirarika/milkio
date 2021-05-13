@@ -15,7 +15,7 @@ const { lang } = defineProps({
 
 ref: i = 0;
 
-setTimeout(() => setInterval(() => i++, 3200), 1600);
+setTimeout(() => setInterval(() => i++, 3200), 3200);
 
 const toDocs = () => {
   location.href = "intro.html";
@@ -84,7 +84,7 @@ onMounted(() => {
   watchEffect(() => {
     if (1 <= loadCounter) setTimeout(() => (loaded = true), 800);
   });
-  setTimeout(() => (loaded = true), 4800);
+  setTimeout(() => (loaded = true), 3600);
 });
 </script>
 

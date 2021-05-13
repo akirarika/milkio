@@ -7,12 +7,11 @@ export default new (class Db extends Models.keyValue<
   Record<string, any>,
   DexieDriver
 > {
-  db: Dexie = db;
-
   constructor() {
     super({
       name: "db",
       type: "string",
+      db: db,
       driver: DexieDriver,
     });
   }

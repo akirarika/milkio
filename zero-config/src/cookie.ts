@@ -3,7 +3,7 @@ import { CookieDriver } from "kurimudb-driver-cookie";
 
 export default new (class Cookie extends Models.keyValue<
   Record<string, any>,
-  null
+  CookieDriver
 > {
   constructor() {
     super({

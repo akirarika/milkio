@@ -7,7 +7,7 @@
     const timer = setInterval(() => {
       if (99 <= progress) return clearInterval(timer);
       return ++progress;
-    }, 42);
+    }, 32);
   });
 </script>
 

@@ -3,7 +3,7 @@ import { LocalStorageDriver } from "kurimudb-driver-localstorage";
 
 export default new (class Local extends Models.keyValue<
   Record<string, any>,
-  null
+  LocalStorageDriver
 > {
   constructor() {
     super({

@@ -54,10 +54,10 @@ export default new class ConfigState extends Models.keyValue {
   constructor() {
     super({
       // 模型名称，必须全局唯一
-      // 默认情况下，将使用你此类的类名
+      // 未指定的情况下，将使用你此类的类名
       name: "OurModel",
       // 模型的主键类型
-      // 默认情况下，键值对模型会用 "string"，集合模型会用 "number"
+      // 未指定的情况下，键值对模型会用 "string"，集合模型会用 "number"
       type: "number",
     });
   }

@@ -46,7 +46,6 @@ module.exports = {
                 children: [
                   { text: "LocalStorage", link: "/drivers/localstorage" },
                   { text: "Cookie", link: "/drivers/cookie" },
-                  { text: "Taro", link: "/drivers/taro" },
                   { text: "Dexie (IndexedDB)", link: "/drivers/dexie" },
                 ],
               },

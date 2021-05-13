@@ -29,9 +29,9 @@ import Dexie from "dexie";
 const db = new Dexie("kurimudb");
 db.version(2).stores({
   // 一个表对应一个模型，需和模型名一致。模型的主键名称默认为 _id，所以表也需要将主键设置为 _id
-  indexedDbState: "_id",
+  IndexedDbState: "_id",
   // ++id 代表主键是自增的
-  indexedDbList: "++_id",
+  IndexedDbList: "++_id",
 });
 db.version(1).stores({
   _seed: "_id", // 为了使 kurimudb 的填充功能正常工作，必须创建此表

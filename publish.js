@@ -57,7 +57,7 @@ if ("docs" === type) {
       `cd ./zero-config`,
       `npm install`,
       `npm run build`,
-      `npm version patch`,
+      // `npm version patch`,
       `npm publish`,
     ].join(" && "),
     {
