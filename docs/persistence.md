@@ -6,7 +6,13 @@
 
 ## 使用驱动
 
-下面让我们将为模型添加 `LocalStorage` 驱动，只需要引入驱动，并在模型中配置 `driver` 即可。
+下面让我们将为模型添加 `LocalStorage` 驱动，安装驱动：
+
+```sh
+npm i kurimudb-driver-localstorage@4
+```
+
+在模型上，声明我们要使用的驱动即可：
 
 ```js {4,9}
 // /models/configState.js
