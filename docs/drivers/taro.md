@@ -18,13 +18,14 @@ Taro 驱动会对存入的数据进行 `JSON.stringify`，所以，请勿存入�
 
 ## 示例
 
-```js {2,7}
+```js {2,8}
 import { Models } from "kurimudb";
 import { TaroDriver } from "kurimudb-driver-taro";
 
 export default new class TaroState extends Models.keyValue {
   constructor() {
     super({
+      name: "TaroState",
       driver: TaroDriver,
     });
   }

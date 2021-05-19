@@ -44,7 +44,7 @@ _版本的顺序是不重要的，Dexie.js 会在迁移不同版本时，自动�
 
 ## 示例
 
-```js {2,3,8,9}
+```js {2,3,9,10}
 import { Models } from "kurimudb";
 import { DexieDriver } from "kurimudb-driver-dexie";
 import migrations from "../models/migrations";
@@ -52,7 +52,8 @@ import migrations from "../models/migrations";
 export default new class IndexedDbState extends Models.keyValue {
   constructor() {
     super({
-      db: migrations;// 将你声明好版本的 Dexie 实例，传入到 db 选项中，模型将使用它
+      name: "IndexedDbState",
+      db: migrations, // 将你声明好版本的 Dexie 实例，传入到 db 选项中
       driver: DexieDriver,
     });
   }

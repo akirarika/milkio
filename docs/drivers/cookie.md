@@ -18,13 +18,14 @@ npm i kurimudb-driver-cookie@4
 
 ## 示例
 
-```js {2,7}
+```js {2,8}
 import { Models } from "kurimudb";
 import { CookieDriver } from "kurimudb-driver-cookie";
 
 export default new class CookieState extends Models.keyValue {
   constructor() {
     super({
+      name: "CookieState",
       driver: CookieDriver,
     });
   }

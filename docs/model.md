@@ -29,7 +29,15 @@ npm i kurimudb@4
 // 我们可以拿它来存和用户配置有关的数据
 import { Models } from "kurimudb";
 
-export default new class ConfigState extends Models.keyValue { }
+export default new class ConfigState extends Models.keyValue {
+  super({
+    // 模型名称，必填，须全局唯一
+    name: "ConfigState",
+    // 模型的主键类型
+    // 未指定的情况下，键值对模型会用 "string"，集合模型会用 "number"
+    type: "number",
+  });
+}
 ```
 
 如此，你就拥有了一个 `ConfigState` 模型，它是一个 **键值对模型**，使用时则更加简单：
@@ -44,25 +52,6 @@ delete configState.data.say; // 删除..
 ```
 
 通过构造函数，你还可以自定义模型的选项：
-
-```js
-// /models/configState.js
-
-import { Models } from "kurimudb";
-
-export default new class ConfigState extends Models.keyValue {
-  constructor() {
-    super({
-      // 模型名称，必须全局唯一
-      // 未指定的情况下，将使用你此类的类名
-      name: "OurModel",
-      // 模型的主键类型
-      // 未指定的情况下，键值对模型会用 "string"，集合模型会用 "number"
-      type: "number",
-    });
-  }
-}
-```
 
 ## 模型方法
 

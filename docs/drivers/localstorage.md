@@ -16,13 +16,14 @@ npm i kurimudb-driver-localstorage@4
 
 ## 示例
 
-```js {2,7}
+```js {2,8}
 import { Models } from "kurimudb";
 import { LocalStorageDriver } from "kurimudb-driver-localstorage";
 
 export default new class LocalStorageState extends Models.keyValue {
   constructor() {
     super({
+      name: "LocalStorageState",
       driver: LocalStorageDriver,
     });
   }

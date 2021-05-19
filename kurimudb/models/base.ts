@@ -108,7 +108,7 @@ export default class BaseModel<DataInterface, driver> {
    * @returns
    */
   _checkOptions(options: ModelOptionsInterface): ModelOptionsInterface {
-    if (!("name" in options)) options.name = this.constructor.name;
+    if (!("name" in options)) throw new Error(`The model name does not exist.`);
     if (!("primary" in options)) options.primary = "_id";
     if (!("async" in options)) options.async = false;
     if ("methods" in options) Object.assign(this, options.methods);

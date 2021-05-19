@@ -1,5 +1,5 @@
-import { kurimudbConfig } from "..";
-import runtime from "../runtime";
+import { kurimudbConfig } from '..';
+import runtime from '../runtime';
 
 export interface subscribeConfigInterface {
   immediate?: boolean;
@@ -51,10 +51,7 @@ export class Item<T = any> {
     return Promise.all(arr);
   }
 
-  subscribe: subscribeInterface<T> = (
-    closFunc: any,
-    config: subscribeConfigInterface = {}
-  ): Function => {
+  subscribe: subscribeInterface<T> = (closFunc: any, config: subscribeConfigInterface = {}): Function => {
     const conf: subscribeConfigInterface = {
       immediate: true,
       autoUnsubscribe: true,
@@ -67,8 +64,7 @@ export class Item<T = any> {
     // 生成此订阅的退订函数
     const unsubscribe = () => this.subscribers.delete(id);
     if (conf.autoUnsubscribe) {
-      if (false !== kurimudbConfig.autoUnsubscribe)
-        kurimudbConfig.autoUnsubscribe(unsubscribe);
+      if (false !== kurimudbConfig.autoUnsubscribe) kurimudbConfig.autoUnsubscribe(unsubscribe);
     }
     return unsubscribe;
   };
