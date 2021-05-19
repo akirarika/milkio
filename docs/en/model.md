@@ -12,7 +12,7 @@ This is the time for **Model feature** to make its grand debut！ 🎉
 
 ## Getting Started
 
-Models are the core of saving and managing your data. The `memory`、`local`、`cookie` and `db` object we previously used in our zero config library are actually all models!
+Models are the core of saving and managing your data. The `memory`、`local`、`cookie` and `db` objects we previously used in our zero config library are actually all models!
 
 Before we continue, let's install Kurimudb: 
 
@@ -128,7 +128,7 @@ export default new (class NoteList extends Models.collection {
 })();
 ```
 
-When using, the primary key of data created through `insert` method will be auto incremented
+When using it, the primary key of data created through `insert` method will be auto incremented:
 
 ```js
 import noteList from "@/models/noteList";
@@ -155,7 +155,7 @@ noteList.all();
 
 ## Populating the Model
 
-We may want to populate the model with some initial values. Example, we are currently developing an e-book application. When the user first utilize the application, we hope to set a default font size, theme, page flipping mode......
+We may want to populate the model with some initial values. For example, we are currently developing an e-book application. When the user first utilize the application, we hope to set a default font size, theme, page flipping mode......
 
 In this case, we can use the `seed` method in the constructor method to populate the model with initial values：
 
@@ -200,13 +200,13 @@ this.seed(() => {
 });
 ```
 
-By default, everytime you run your web page, the data will be populated once.
+By default, everytime the web page is run, the data will be populated once.
 
-If the model has the [persistence](/persistence) configuration set，then, the model will only be populated during the initial run of the web page by the user.
+If the model has the [persistence](/persistence) configuration set，then, the model will only be populated when the user first run the web page.
 
 ## Deep Clone
 
-Before we explore further, let's discuss how copying in Javascript works: When you assign a object or array to another variable, you are actually **passing the reference of the original variable**. Please see the example below: ：
+Before we explore further, let's discuss some JavaScript knowledge: When you assign a object or array to another variable, you are actually **passing the reference of the original variable**. Please see the example below: ：
 
 ```js
 let number1 = 965;
@@ -222,7 +222,7 @@ console.log(object2.foo);
 // echo 996
 ```
 
-This characteristic of Javascript will cause **side effects**, becoming the root causes of bugs. Therefore，to ensure that the data is immutable,we will perform a **deep clone** of the data when you store data through Kurimudb. When reading data, it is completely independent of the original value.
+This characteristic of Javascript will cause **side effects**, becoming the root cause of bugs. Therefore，to ensure that the data is immutable, we will perform a **deep clone** of the data when you store data through Kurimudb. When reading data, it is completely independent of the original value.
 
 For **plain object** ，there is nothing to worry about deep cloning. However, for other objects, such as `new Set(...)` 或 `new Blob(...)`，as we can only deep clone **enumerable properties**，deep clone will result in data loss.
 
