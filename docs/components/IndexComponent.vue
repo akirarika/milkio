@@ -30,7 +30,7 @@ let navBarBottomBorderStyle = "";
 const localizedText = {
   default: "zh",
   "足够简单的，": {
-    en: "Simple Enouth",
+    en: "Simple Enough",
   },
   "渐进式的，": {
     en: "Progressive",
@@ -48,7 +48,7 @@ const localizedText = {
     en: " Solution",
   },
   阅读文档: {
-    en: "Reading Document",
+    en: "Read the Documentation",
   },
 };
 
