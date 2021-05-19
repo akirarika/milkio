@@ -79,7 +79,7 @@ module.exports = {
             text: "Documents",
             children: [
               { text: "Getting Started", link: "/intro" },
-              { text: "模型", link: "/model" },
+              { text: "Model", link: "/model" },
               { text: "持久化", link: "/persistence" },
               {
                 text: "驱动",
