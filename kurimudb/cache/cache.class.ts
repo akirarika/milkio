@@ -1,6 +1,6 @@
-import { Item } from './item';
+import { Item } from "./item.class";
 
-export default class Cache {
+export class Cache {
   private model;
   public value: Map<string | number, Item> = new Map();
 
@@ -28,13 +28,19 @@ export default class Cache {
   }
 
   add(key, value) {
-    if (this.value.has(key)) throw new Error(`Key already exists in the object store.`);
+    if (this.value.has(key))
+      throw new Error(`Key already exists in the object store.`);
     this.value.set(key, this.createCacheItem(this.model.deepClone(value), key));
   }
 
   put(key, value) {
-    if (this.value.has(key)) this.value.get(key)?.set(this.model.deepClone(value));
-    else this.value.set(key, this.createCacheItem(this.model.deepClone(value), key));
+    if (this.value.has(key))
+      this.value.get(key)?.set(this.model.deepClone(value));
+    else
+      this.value.set(
+        key,
+        this.createCacheItem(this.model.deepClone(value), key)
+      );
   }
 
   forget(key) {

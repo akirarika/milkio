@@ -1,15 +1,17 @@
-export default class Data {
+export class Data {
   constructor(model) {
     return new Proxy(function () {}, {
       set: (target, key, value, proxy) => {
         key = model.checkPrimary(key);
         model.cache.put(key, value);
-        if (model.isPersistence()) (async () => await model.storage.insertOrUpdate(key, model.cache.get(key)))();
+        if (model.isPersistence())
+          (async () =>
+            await model.storage.insertOrUpdate(key, model.cache.get(key)))();
         model.changed.set(key);
         return true;
       },
       get: (target, key, receiver) => {
-        if ('string' === typeof key && key.endsWith('$')) {
+        if ("string" === typeof key && key.endsWith("$")) {
           // 取出原始值，无需 await
           key = key.substring(0, key.length - 1);
           key = model.checkPrimary(key);
@@ -60,7 +62,7 @@ export default class Data {
         key = model.checkPrimary(key);
         if (model.options.async)
           throw new Error(
-            `For persistent models, the result of the "in" operator may be incorrect, need "await modelName.has(key)" replace your "key in modelName.data".`,
+            `For persistent models, the result of the "in" operator may be incorrect, need "await modelName.has(key)" replace your "key in modelName.data".`
           );
         return model.cache.has(key);
       },
@@ -112,7 +114,8 @@ export default class Data {
       deleteProperty: (target, key) => {
         key = model.checkPrimary(key);
         model.cache.forget(key);
-        if (model.isPersistence()) (async () => await model.storage.delete(key))();
+        if (model.isPersistence())
+          (async () => await model.storage.delete(key))();
         model.changed.set(key);
 
         return true;

@@ -1,14 +1,7 @@
-import { kurimudbConfig } from '..';
-import runtime from '../runtime';
-
-export interface subscribeConfigInterface {
-  immediate?: boolean;
-  autoUnsubscribe?: boolean;
-}
-
-export interface subscribeInterface<T> {
-  (closFunc: any, config?: subscribeConfigInterface): Function;
-}
+import { globalConfig } from "../global-config";
+import { runtime } from "../runtime";
+import { SubscribeConfig } from "./subscribe-config.interface";
+import { Subscribe } from "./subscribe.interface";
 
 let counter = 0;
 
@@ -51,8 +44,11 @@ export class Item<T = any> {
     return Promise.all(arr);
   }
 
-  subscribe: subscribeInterface<T> = (closFunc: any, config: subscribeConfigInterface = {}): Function => {
-    const conf: subscribeConfigInterface = {
+  subscribe: Subscribe<T> = (
+    closFunc: any,
+    config: SubscribeConfig = {}
+  ): Function => {
+    const conf: SubscribeConfig = {
       immediate: true,
       autoUnsubscribe: true,
       ...config,
@@ -64,7 +60,8 @@ export class Item<T = any> {
     // 生成此订阅的退订函数
     const unsubscribe = () => this.subscribers.delete(id);
     if (conf.autoUnsubscribe) {
-      if (false !== kurimudbConfig.autoUnsubscribe) kurimudbConfig.autoUnsubscribe(unsubscribe);
+      if (false !== globalConfig.autoUnsubscribe)
+        globalConfig.autoUnsubscribe(unsubscribe);
     }
     return unsubscribe;
   };

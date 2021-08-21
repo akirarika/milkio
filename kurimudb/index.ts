@@ -1,31 +1,9 @@
-export { default as kurimudbConfig } from "./config";
-export { default as auto$ } from "./helpers/auto$";
-export { default as batch$ } from "./helpers/batch$";
-export { default as Models } from "./models";
+export { globalConfig as kurimudbConfig } from "./global-config";
+export { auto$ } from "./helpers/auto$.func";
+export { batch$ } from "./helpers/batch$.func";
+export { ModelOptions as ModelOptionsInterface } from "./models/model-options.interface";
+export { Persistence as PersistenceInterface } from "./persistence.interface";
 
-// interfaces
-export interface ModelOptionsInterface {
-  name?: string;
-  type?: "string" | "number";
-  modelType?: "keyValue" | "collection";
-  primary?: string;
-  driver?: any;
-  methods?: Record<string, any>;
-  intrinsicTypes?: Array<string> | false;
-  async?: boolean;
-  [others: string]: any;
-}
-
-export interface PersistenceInterface {
-  all(): Array<any> | Promise<Array<any>>;
-  insert(
-    value: any,
-    key?: string | number
-  ): string | number | Promise<string | number>;
-  insertOrUpdate(key: string | number, value: any): void | Promise<void>;
-  update(key: string | number, value: any): void | Promise<void>;
-  select(key: string | number): any | Promise<any>;
-  exists(key: string | number): boolean | Promise<boolean>;
-  delete(key: string | number): void | Promise<void>;
-  seeding(sedding: Function, model): void;
-}
+import { CollectionModel } from "./models/collection-model.class";
+import { KeyValueModel } from "./models/key-value-model.class";
+export const Models = { keyValue: KeyValueModel, collection: CollectionModel };

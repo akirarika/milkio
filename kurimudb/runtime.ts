@@ -3,9 +3,7 @@ interface RuntimeInterface {
   collectingReadItemDependencies: boolean;
 }
 
-const runtime: RuntimeInterface = {
+export const runtime: RuntimeInterface = {
   readItemDependencies: [],
   collectingReadItemDependencies: false,
 };
-
-export default runtime;

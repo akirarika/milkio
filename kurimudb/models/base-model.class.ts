@@ -1,32 +1,30 @@
-import { ModelOptionsInterface, PersistenceInterface } from "..";
-import Cache from "../cache";
-import {
-  Item,
-  subscribeInterface,
-  subscribeConfigInterface,
-} from "../cache/item";
-import Data from "../data";
+import { Cache } from "../cache/cache.class";
+import { Item } from "../cache/item.class";
+import { SubscribeConfig } from "../cache/subscribe-config.interface";
+import { Subscribe } from "../cache/subscribe.interface";
+import { Data } from "../data.class";
+import { ModelOptions } from "./model-options.interface";
 
 type DataType<T> = T & {
   [others: string]: any;
 };
 
-export default class BaseModel<DataInterface, driver> {
-  options: ModelOptionsInterface;
+export class BaseModel<DataInterface, driver> {
+  options: ModelOptions;
   cache: Cache;
   data: DataType<DataInterface>;
   storage: driver;
   changed: Item<any>;
-  $: subscribeInterface<string>;
+  $: Subscribe<string>;
 
-  constructor(options: ModelOptionsInterface) {
+  constructor(options: ModelOptions) {
     this.options = this._checkOptions(options);
     this.cache = new Cache(this);
     this.changed = this.cache.createCacheItem<string>("", this.options.name);
     this.$ = this.changed.subscribe;
     if (this.isPersistence())
       this.storage = new this.options.driver(this) as driver;
-    else this.storage = (void 0 as unknown) as driver;
+    else this.storage = void 0 as unknown as driver;
     this.data = new Data(this) as DataType<DataInterface>;
   }
 
@@ -107,7 +105,7 @@ export default class BaseModel<DataInterface, driver> {
    * @param options
    * @returns
    */
-  _checkOptions(options: ModelOptionsInterface): ModelOptionsInterface {
+  _checkOptions(options: ModelOptions): ModelOptions {
     if (!("name" in options)) throw new Error(`The model name does not exist.`);
     if (!("primary" in options)) options.primary = "_id";
     if (!("async" in options)) options.async = false;
@@ -149,7 +147,7 @@ export default class BaseModel<DataInterface, driver> {
   subscribeItem(
     key: string | number,
     closFunc: Function,
-    config: subscribeConfigInterface = {}
+    config: SubscribeConfig = {}
   ) {
     return this.data[`${key}$`](closFunc, config);
   }

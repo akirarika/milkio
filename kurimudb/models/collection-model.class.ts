@@ -1,13 +1,13 @@
-import { ModelOptionsInterface } from "..";
-import BaseModel from "./base";
+import { BaseModel } from "./base-model.class";
+import { ModelOptions } from "./model-options.interface";
 
-export default class CollectionModel<
+export class CollectionModel<
   DataItemInterface = Record<string | number, any>,
   driver = any
 > extends BaseModel<DataItemInterface[], driver> {
   private __INCREMENT = 0; // 模型自增的主键，仅在未持久化时使用
 
-  constructor(options: ModelOptionsInterface = {}) {
+  constructor(options: ModelOptions = {}) {
     super(
       (() => {
         options.modelType = "collection";
