@@ -5,6 +5,9 @@
   "main": "./dist/index.js",
   "author": "polichan",
   "license": "MIT",
+  "peerDependencies": {
+    "@tarojs/taro": "^3.3.3"
+  },
   "devDependencies": {
     "@tarojs/taro": "^3.3.3"
   }
