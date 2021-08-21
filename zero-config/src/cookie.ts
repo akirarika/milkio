@@ -1,10 +1,7 @@
 import { Models } from "kurimudb";
 import { CookieDriver } from "kurimudb-driver-cookie";
 
-export default new (class Cookie extends Models.keyValue<
-  Record<string, any>,
-  CookieDriver
-> {
+export class Cookie extends Models.keyValue<Record<string, any>, CookieDriver> {
   constructor() {
     super({
       name: "cookie",
@@ -12,4 +9,4 @@ export default new (class Cookie extends Models.keyValue<
       driver: CookieDriver,
     });
   }
-})();
+}

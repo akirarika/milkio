@@ -1,19 +1,11 @@
-import {
-  kurimudbConfig as _kurimudbConfig,
-  auto$ as _auto$,
-  batch$ as _batch$,
-} from "kurimudb";
-import _db from "./db";
-import _local from "./local";
-import _memory from "./memory";
-import _cookie from "./cookie";
+import { Cookie } from "./cookie";
+import { Db } from "./db";
+import { Local } from "./local";
+import { Memory } from "./memory";
 
-export const kurimudbConfig = _kurimudbConfig;
+export { auto$, batch$, kurimudbConfig } from "kurimudb";
 
-export const auto$ = _auto$;
-export const batch$ = _batch$;
-
-export const db = _db;
-export const local = _local;
-export const memory = _memory;
-export const cookie = _cookie;
+export const db = new Db();
+export const local = new Local();
+export const memory = new Memory();
+export const cookie = new Cookie();
