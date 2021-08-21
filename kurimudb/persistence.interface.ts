@@ -1,3 +1,6 @@
+/**
+ * Interface of the drivers.
+ */
 export interface PersistenceInterface {
   all(): Array<any> | Promise<Array<any>>;
   insert(
