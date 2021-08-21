@@ -1,6 +1,7 @@
 {
-  "name": "kurimudb-devp",
+  "name": "kurimudb",
   "version": "0.0.0",
+  "private": true,
   "scripts": {
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
@@ -9,25 +10,17 @@
     "tsc": "tsc",
     "publish": "node publish.js"
   },
-  "dependencies": {
-    "@tarojs/taro": "^2.2.17",
-    "@types/react": "^17.0.5",
-    "dexie": "^3.0.3",
-    "highlight.js": "^10.7.2",
-    "kurimudb": "file:kurimudb",
-    "kurimudb-driver-cookie": "^3.0.0",
-    "kurimudb-driver-dexie": "^3.0.0",
-    "kurimudb-driver-localstorage": "^3.0.0",
-    "remixicon": "^2.5.0",
-    "rxjs": "^6.6.6",
-    "vue": "^3.0.5"
-  },
+  "workspaces": [
+    "packages\\kurimudb",
+    "packages\\kurimudb-driver-cookie",
+    "packages\\kurimudb-driver-dexie",
+    "packages\\kurimudb-driver-localstorage",
+    "packages\\kurimudb-driver-nodejson",
+    "packages\\kurimudb-driver-taro",
+    "packages\\kurimudb-zero-config"
+  ],
   "devDependencies": {
-    "@vitejs/plugin-vue": "^1.1.5",
-    "@vue/compiler-sfc": "^3.0.5",
-    "typescript": "^4.1.3",
-    "vite": "^2.1.0",
-    "vitepress": "^0.13",
-    "vue-tsc": "^0.0.8"
+    "typescript": "^4.3.5",
+    "vitepress": "^0.13"
   }
 }
