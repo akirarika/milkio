@@ -1,6 +1,6 @@
 import { Table } from "dexie";
 
-const intrinsicTypes = [
+const INSTRINSIC_TYPES = [
   "Boolean",
   "String",
   "Date",
@@ -14,7 +14,7 @@ const intrinsicTypes = [
   "ImageData",
   "Map",
   "Set",
-];
+] as const;
 
 export class DexieDriver {
   model;
@@ -102,11 +102,11 @@ export class DexieDriver {
       //       '".'
       //   );
       if (void 0 !== key) value[this.model.options.primary] = key;
-      return this.model.deepClone(value, intrinsicTypes);
+      return this.model.deepClone(value, INSTRINSIC_TYPES);
     } else {
       const object: any = { $__value: value };
       if (void 0 !== key) object[this.model.options.primary] = key;
-      return this.model.deepClone(object, intrinsicTypes);
+      return this.model.deepClone(object, INSTRINSIC_TYPES);
     }
   }
 

@@ -4,5 +4,11 @@
   "description": "",
   "main": "./dist/index.js",
   "author": "akirarika",
-  "license": "MIT"
+  "license": "MIT",
+  "peerDependencies": {
+    "dexie": "^3.0.3"
+  },
+  "devDependencies": {
+    "dexie": "^3.0.3"
+  }
 }
