@@ -18,7 +18,7 @@ export class BaseModel<DataInterface, Driver> {
   $: SubscribeInterface<string>;
 
   constructor(options: ModelOptionsInterface) {
-    this.options = this._checkOptions(options);
+    this.options = this.checkOptions(options);
     this.cache = new Cache(this);
     this.changed = this.cache.createCacheItem<string>("", this.options.name);
     this.$ = this.changed.subscribe;
@@ -100,12 +100,27 @@ export class BaseModel<DataInterface, Driver> {
     return newObject;
   }
 
-  /**
-   * Check options
-   * @param options
-   * @returns
-   */
-  _checkOptions(options: ModelOptionsInterface): ModelOptionsInterface {
+  getItem(key: string | number) {
+    return this.data[key];
+  }
+
+  setItem(key: string | number, value: any) {
+    (this.data as any)[key] = value;
+  }
+
+  removeItem(key: string | number) {
+    delete this.data[key];
+  }
+
+  subscribeItem(
+    key: string | number,
+    closFunc: Function,
+    config: SubscribeConfigInterface = {}
+  ) {
+    return this.data[`${key}$`](closFunc, config);
+  }
+
+  private checkOptions(options: ModelOptionsInterface): ModelOptionsInterface {
     if (!("name" in options)) throw new Error(`The model name does not exist.`);
     if (!("primary" in options)) options.primary = "_id";
     if (!("async" in options)) options.async = false;
@@ -130,25 +145,5 @@ export class BaseModel<DataInterface, Driver> {
       ];
 
     return options;
-  }
-
-  getItem(key: string | number) {
-    return this.data[key];
-  }
-
-  setItem(key: string | number, value: any) {
-    (this.data as any)[key] = value;
-  }
-
-  removeItem(key: string | number) {
-    delete this.data[key];
-  }
-
-  subscribeItem(
-    key: string | number,
-    closFunc: Function,
-    config: SubscribeConfigInterface = {}
-  ) {
-    return this.data[`${key}$`](closFunc, config);
   }
 }
