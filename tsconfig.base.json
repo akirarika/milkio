@@ -14,6 +14,5 @@
     "lib": ["esnext", "dom"],
     "importHelpers": true,
     "skipLibCheck": true
-  },
-  "include": ["**/*.ts", "**/*.d.ts", "**/*.tsx", "**/*.vue"]
+  }
 }
