@@ -11,7 +11,8 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "noImplicitAny": false,
-    "lib": ["esnext", "dom"]
+    "lib": ["esnext", "dom"],
+    "importHelpers": true
   },
   "include": ["**/*.ts", "**/*.d.ts", "**/*.tsx", "**/*.vue"]
 }
