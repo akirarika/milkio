@@ -1,16 +1,12 @@
 {
-  "compilerOptions": {
-    "target": "es2015",
-    "module": "esnext",
-    "moduleResolution": "node",
-    "strict": true,
-    "jsx": "preserve",
-    "sourceMap": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "noImplicitAny": false,
-    "lib": ["esnext", "dom"],
-    "types": ["vite/client"]
-  },
-  "include": ["**/*.ts", "**/*.d.ts", "**/*.tsx", "**/*.vue"]
+  "references": [
+    { "path": "./packages/kurimudb" },
+    { "path": "./packages/kurimudb-driver-cookie" },
+    { "path": "./packages/kurimudb-driver-dexie" },
+    { "path": "./packages/kurimudb-driver-localstorage" },
+    { "path": "./packages/kurimudb-driver-nodejson" },
+    { "path": "./packages/kurimudb-driver-taro" },
+    { "path": "./packages/kurimudb-zero-config" }
+  ],
+  "files": []
 }
