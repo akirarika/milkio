@@ -4,10 +4,6 @@
   "description": "⚓Kurimudb 零配置",
   "main": "./dist/index.js",
   "license": "MIT",
-  "scripts": {
-    "dev": "tsc --watch",
-    "build": "tsc --build"
-  },
   "author": "akirarika",
   "dependencies": {
     "dexie": "^3.0.3",

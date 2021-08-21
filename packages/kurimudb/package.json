@@ -1,9 +1,7 @@
 {
   "name": "kurimudb",
   "version": "4.1.1",
-  "scripts": {
-    "tsc": "tsc"
-  },
+  "scripts": {},
   "description": "",
   "main": "./dist/index.js",
   "author": "akirarika",
