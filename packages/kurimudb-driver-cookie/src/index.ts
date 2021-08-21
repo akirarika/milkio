@@ -1,41 +1,3 @@
-function setCookie(name: string | number, value: any) {
-  document.cookie =
-    name +
-    "=" +
-    encodeURIComponent(
-      "object" === typeof value ? JSON.stringify(value) : value
-    ) +
-    ";max-age=" +
-    31525459200 +
-    ";path=/";
-}
-
-function getCookie(name: string | number) {
-  if (document.cookie.length > 0) {
-    let end;
-    let start = document.cookie.indexOf(name + "=");
-
-    if (start != -1) {
-      start = start + String(name).length + 1;
-      end = document.cookie.indexOf(";", start);
-      if (end == -1) end = document.cookie.length;
-      let value = decodeURIComponent(document.cookie.substring(start, end));
-      try {
-        value = JSON.parse(value);
-      } catch (error) {}
-      return value;
-    }
-  }
-  return null;
-}
-
-function delCookie(name: string | number) {
-  let exp = new Date();
-  exp.setTime(exp.getTime() - 1);
-  let cval = getCookie(name);
-  if (cval != null) document.cookie = name + "=" + cval + ";max-age=0";
-}
-
 export class CookieDriver {
   model;
 
@@ -75,9 +37,45 @@ export class CookieDriver {
     throw new Error(`The cookie driver cannot use the 'seeding' method.`);
   }
 
-  all() {
+  all(): never {
     throw new Error(`The cookie driver cannot use the 'all' method.`);
-
-    return [];
   }
+}
+
+function setCookie(name: string | number, value: any) {
+  document.cookie =
+    name +
+    "=" +
+    encodeURIComponent(
+      "object" === typeof value ? JSON.stringify(value) : value
+    ) +
+    ";max-age=" +
+    31525459200 +
+    ";path=/";
+}
+
+function getCookie(name: string | number) {
+  if (document.cookie.length > 0) {
+    let end: number;
+    let start = document.cookie.indexOf(name + "=");
+
+    if (start != -1) {
+      start = start + String(name).length + 1;
+      end = document.cookie.indexOf(";", start);
+      if (end == -1) end = document.cookie.length;
+      let value = decodeURIComponent(document.cookie.substring(start, end));
+      try {
+        value = JSON.parse(value);
+      } catch (error) {}
+      return value;
+    }
+  }
+  return null;
+}
+
+function delCookie(name: string | number) {
+  let exp = new Date();
+  exp.setTime(exp.getTime() - 1);
+  let cval = getCookie(name);
+  if (cval != null) document.cookie = name + "=" + cval + ";max-age=0";
 }
