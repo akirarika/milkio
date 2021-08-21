@@ -12,7 +12,8 @@
     "esModuleInterop": true,
     "noImplicitAny": false,
     "lib": ["esnext", "dom"],
-    "importHelpers": true
+    "importHelpers": true,
+    "skipLibCheck": true
   },
   "include": ["**/*.ts", "**/*.d.ts", "**/*.tsx", "**/*.vue"]
 }
