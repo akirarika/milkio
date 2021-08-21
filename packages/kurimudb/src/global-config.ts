@@ -1,6 +1,5 @@
-/**
- * Kurimudb global config
- */
-export const globalConfig = new (class KurimudbConfig {
+class KurimuConfig {
   autoUnsubscribe: false | Function = false;
-})();
+}
+
+export const globalConfig = new KurimuConfig();
