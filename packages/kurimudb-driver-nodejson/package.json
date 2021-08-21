@@ -4,8 +4,5 @@
   "description": "",
   "main": "./dist/index.js",
   "author": "nekosu",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^15.0.1"
-  }
+  "license": "MIT"
 }

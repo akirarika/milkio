@@ -15,8 +15,5 @@
     "kurimudb-driver-cookie": "^4.0.0",
     "kurimudb-driver-dexie": "^4.0.0",
     "kurimudb-driver-localstorage": "^4.0.0"
-  },
-  "devDependencies": {
-    "typescript": "^4.2.3"
   }
 }

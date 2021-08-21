@@ -4,9 +4,6 @@
   "scripts": {
     "tsc": "tsc"
   },
-  "devDependencies": {
-    "typescript": "^4.1.3"
-  },
   "description": "",
   "main": "./dist/index.js",
   "author": "akirarika",
