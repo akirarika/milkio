@@ -29,7 +29,7 @@ export class BaseModel<DataInterface, Driver> {
   }
 
   /**
-   * Determine whether this model can be persistenced.
+   * Determine whether this model can be persisted.
    */
   isPersistence(): boolean {
     return "driver" in this.options;
