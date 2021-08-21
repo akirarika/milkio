@@ -1,16 +1,7 @@
-import _config from "./config";
-import _models from "./models";
-import _batch$ from "./helpers/batch$";
-import _auto$ from "./helpers/auto$";
-
-export const kurimudbConfig = _config;
-
-// model base class
-export const Models = _models;
-
-// helper functions
-export const batch$ = _batch$;
-export const auto$ = _auto$;
+export { default as kurimudbConfig } from "./config";
+export { default as auto$ } from "./helpers/auto$";
+export { default as batch$ } from "./helpers/batch$";
+export { default as Models } from "./models";
 
 // interfaces
 export interface ModelOptionsInterface {
