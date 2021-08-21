@@ -1,4 +1,4 @@
-export interface Persistence {
+export interface PersistenceInterface {
   all(): Array<any> | Promise<Array<any>>;
   insert(
     value: any,

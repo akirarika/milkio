@@ -1,4 +1,4 @@
-export interface SubscribeConfig {
+export interface SubscribeConfigInterface {
   immediate?: boolean;
   autoUnsubscribe?: boolean;
 }

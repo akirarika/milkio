@@ -1,30 +1,30 @@
 import { Cache } from "../cache/cache.class";
 import { Item } from "../cache/item.class";
-import { SubscribeConfig } from "../cache/subscribe-config.interface";
-import { Subscribe } from "../cache/subscribe.interface";
+import { SubscribeConfigInterface } from "../cache/subscribe-config.interface";
+import { SubscribeInterface } from "../cache/subscribe.interface";
 import { Data } from "../data.class";
-import { ModelOptions } from "./model-options.interface";
+import { ModelOptionsInterface } from "./model-options.interface";
 
 type DataType<T> = T & {
   [others: string]: any;
 };
 
-export class BaseModel<DataInterface, driver> {
-  options: ModelOptions;
+export class BaseModel<DataInterface, Driver> {
+  options: ModelOptionsInterface;
   cache: Cache;
   data: DataType<DataInterface>;
-  storage: driver;
+  storage: Driver;
   changed: Item<any>;
-  $: Subscribe<string>;
+  $: SubscribeInterface<string>;
 
-  constructor(options: ModelOptions) {
+  constructor(options: ModelOptionsInterface) {
     this.options = this._checkOptions(options);
     this.cache = new Cache(this);
     this.changed = this.cache.createCacheItem<string>("", this.options.name);
     this.$ = this.changed.subscribe;
     if (this.isPersistence())
-      this.storage = new this.options.driver(this) as driver;
-    else this.storage = void 0 as unknown as driver;
+      this.storage = new this.options.driver(this) as Driver;
+    else this.storage = void 0 as unknown as Driver;
     this.data = new Data(this) as DataType<DataInterface>;
   }
 
@@ -105,7 +105,7 @@ export class BaseModel<DataInterface, driver> {
    * @param options
    * @returns
    */
-  _checkOptions(options: ModelOptions): ModelOptions {
+  _checkOptions(options: ModelOptionsInterface): ModelOptionsInterface {
     if (!("name" in options)) throw new Error(`The model name does not exist.`);
     if (!("primary" in options)) options.primary = "_id";
     if (!("async" in options)) options.async = false;
@@ -147,7 +147,7 @@ export class BaseModel<DataInterface, driver> {
   subscribeItem(
     key: string | number,
     closFunc: Function,
-    config: SubscribeConfig = {}
+    config: SubscribeConfigInterface = {}
   ) {
     return this.data[`${key}$`](closFunc, config);
   }

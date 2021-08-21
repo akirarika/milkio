@@ -1,9 +1,4 @@
-interface RuntimeInterface {
-  readItemDependencies: Array<any>;
-  collectingReadItemDependencies: boolean;
-}
-
-export const runtime: RuntimeInterface = {
-  readItemDependencies: [],
+export const runtime = {
+  readItemDependencies: [] as any[],
   collectingReadItemDependencies: false,
 };

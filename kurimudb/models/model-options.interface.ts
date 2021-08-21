@@ -1,4 +1,4 @@
-export interface ModelOptions {
+export interface ModelOptionsInterface {
   name?: string;
   type?: "string" | "number";
   modelType?: "keyValue" | "collection";

@@ -1,7 +1,7 @@
 import { globalConfig } from "../global-config";
 import { runtime } from "../runtime";
-import { SubscribeConfig } from "./subscribe-config.interface";
-import { Subscribe } from "./subscribe.interface";
+import { SubscribeConfigInterface } from "./subscribe-config.interface";
+import { SubscribeInterface } from "./subscribe.interface";
 
 let counter = 0;
 
@@ -44,11 +44,11 @@ export class Item<T = any> {
     return Promise.all(arr);
   }
 
-  subscribe: Subscribe<T> = (
+  subscribe: SubscribeInterface<T> = (
     closFunc: any,
-    config: SubscribeConfig = {}
+    config: SubscribeConfigInterface = {}
   ): Function => {
-    const conf: SubscribeConfig = {
+    const conf: SubscribeConfigInterface = {
       immediate: true,
       autoUnsubscribe: true,
       ...config,

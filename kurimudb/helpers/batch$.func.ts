@@ -1,9 +1,9 @@
-import { SubscribeConfig } from "../cache/subscribe-config.interface";
+import { SubscribeConfigInterface } from "../cache/subscribe-config.interface";
 
 export function batch$(
   subscibeFuncArr: any[],
   closFunc: Function,
-  config: SubscribeConfig = {}
+  config: SubscribeConfigInterface = {}
 ) {
   const unsubscribeFuncArr = subscibeFuncArr.map((subscribeFunc) =>
     subscribeFunc(closFunc, config)

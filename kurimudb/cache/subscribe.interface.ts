@@ -1,5 +1,5 @@
-import { SubscribeConfig } from "./subscribe-config.interface";
+import { SubscribeConfigInterface } from "./subscribe-config.interface";
 
-export interface Subscribe<T> {
-  (closFunc: any, config?: SubscribeConfig): Function;
+export interface SubscribeInterface<T> {
+  (closFunc: any, config?: SubscribeConfigInterface): Function;
 }

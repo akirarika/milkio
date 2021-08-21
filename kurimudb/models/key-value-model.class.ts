@@ -1,11 +1,11 @@
 import { BaseModel } from "./base-model.class";
-import { ModelOptions } from "./model-options.interface";
+import { ModelOptionsInterface } from "./model-options.interface";
 
 export class KeyValueModel<
   DataInterface = Record<string | number, any>,
   driver = any
 > extends BaseModel<DataInterface, driver> {
-  constructor(options: ModelOptions = {}) {
+  constructor(options: ModelOptionsInterface = {}) {
     super(
       (() => {
         options.modelType = "keyValue";
