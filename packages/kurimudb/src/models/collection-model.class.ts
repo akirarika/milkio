@@ -1,20 +1,23 @@
+import { AbstractDriver } from "../abstract-driver.class";
 import { BaseModel } from "./base-model.class";
 import { ModelOptionsInterface } from "./model-options.interface";
 
 export class CollectionModel<
-  DataItemInterface = Record<string | number, any>,
-  driver = any
-> extends BaseModel<DataItemInterface[], driver> {
-  private __INCREMENT = 0; // 模型自增的主键，仅在未持久化时使用
+  Data extends Record<string | number, any> = Record<string | number, any>,
+  Driver extends AbstractDriver = AbstractDriver
+> extends BaseModel<Data[], Driver> {
+  // TODO: use a memory driver by default
+  /**
+   * The primary key used when the driver is not specified.
+   */
+  private nextPrimaryKey = 1;
 
   constructor(options: ModelOptionsInterface = {}) {
-    super(
-      (() => {
-        options.modelType = "collection";
-        if (!("type" in options)) options.type = "number";
-        return options;
-      })()
-    );
+    super({
+      ...options,
+      modelType: "collection",
+      type: options.type ?? "number",
+    });
   }
 
   /**
@@ -23,9 +26,9 @@ export class CollectionModel<
    * the primary key of this data will be automatically incremented.
    *
    * @param value
-   * @returns 新数据的id
+   * @returns - The primary key of the new data.
    */
-  insert(value: DataItemInterface): number | Promise<number> {
+  insert(value: Data): number | Promise<number> {
     if (this?.storage) {
       if (this.options.async)
         return (async () => {
@@ -43,7 +46,7 @@ export class CollectionModel<
         return key;
       }
     } else {
-      const key = ++this["__INCREMENT"];
+      const key = this.nextPrimaryKey++;
       this.cache.add(key, value);
       this.changed.set(key);
       return key;

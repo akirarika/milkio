@@ -1,3 +1,4 @@
+import { AbstractDriver } from "../abstract-driver.class";
 import { CacheItem } from "../cache/cache-item.class";
 import { Cache } from "../cache/cache.class";
 import { SubscribeConfigInterface } from "../cache/subscribe-config.interface";
@@ -9,10 +10,13 @@ type DataType<T> = T & {
   [others: string]: any;
 };
 
-export class BaseModel<DataInterface, Driver> {
+export class BaseModel<
+  Data = any,
+  Driver extends AbstractDriver = AbstractDriver
+> {
   options: ModelOptionsInterface;
   cache: Cache;
-  data: DataType<DataInterface>;
+  data: DataType<Data>;
   storage: Driver;
   changed: CacheItem<any>;
   $: SubscribeInterface<string>;
@@ -25,7 +29,7 @@ export class BaseModel<DataInterface, Driver> {
     if (this.isPersistence())
       this.storage = new this.options.driver(this) as Driver;
     else this.storage = void 0 as unknown as Driver;
-    this.data = new ModelData(this) as DataType<DataInterface>;
+    this.data = new ModelData(this) as DataType<Data>;
   }
 
   /**

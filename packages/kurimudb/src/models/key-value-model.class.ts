@@ -1,18 +1,17 @@
+import { AbstractDriver } from "../abstract-driver.class";
 import { BaseModel } from "./base-model.class";
 import { ModelOptionsInterface } from "./model-options.interface";
 
 export class KeyValueModel<
-  DataInterface = Record<string | number, any>,
-  driver = any
-> extends BaseModel<DataInterface, driver> {
+  Data extends Record<string | number, any> = Record<string | number, any>,
+  Driver extends AbstractDriver = AbstractDriver
+> extends BaseModel<Data, Driver> {
   constructor(options: ModelOptionsInterface = {}) {
-    super(
-      (() => {
-        options.modelType = "keyValue";
-        if (!("type" in options)) options.type = "string";
-        return options;
-      })()
-    );
+    super({
+      ...options,
+      modelType: "keyValue",
+      type: options.type ?? "string",
+    });
   }
 
   /**
