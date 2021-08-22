@@ -126,27 +126,26 @@ export class BaseModel<
 
   private checkOptions(options: ModelOptionsInterface): ModelOptionsInterface {
     if (!("name" in options)) throw new Error(`The model name does not exist.`);
-    if (!("primary" in options)) options.primary = "_id";
-    if (!("async" in options)) options.async = false;
-    if ("methods" in options) Object.assign(this, options.methods);
-    if (!("intrinsicTypes" in options))
-      options.intrinsicTypes = [
-        "Boolean",
-        "String",
-        "Date",
-        "RegExp",
-        "Blob",
-        "File",
-        "FileList",
-        "ArrayBuffer",
-        "DataView",
-        "Uint8ClampedArray",
-        "ImageData",
-        "Map",
-        "Set",
-        "Symbol",
-        "HTMLDivElement",
-      ];
+    options.primary = options.primary ?? "_id";
+    options.async = options.async ?? false;
+    if (options.methods) Object.assign(this, options.methods);
+    options.intrinsicTypes = options.intrinsicTypes ?? [
+      "Boolean",
+      "String",
+      "Date",
+      "RegExp",
+      "Blob",
+      "File",
+      "FileList",
+      "ArrayBuffer",
+      "DataView",
+      "Uint8ClampedArray",
+      "ImageData",
+      "Map",
+      "Set",
+      "Symbol",
+      "HTMLDivElement",
+    ];
 
     return options;
   }
