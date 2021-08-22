@@ -1,5 +1,5 @@
 export abstract class AbstractDriver {
-  abstract all(): Array<unknown> | Promise<Array<unknown>>;
+  abstract all(): unknown[] | Promise<unknown[]>;
   abstract insert(
     value: unknown,
     key?: string | number

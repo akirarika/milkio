@@ -5,7 +5,7 @@ export interface ModelOptionsInterface {
   primary?: string;
   driver?: any;
   methods?: Record<string, any>;
-  intrinsicTypes?: Array<string> | false;
+  intrinsicTypes?: string[] | false;
   async?: boolean;
   [others: string]: any;
 }

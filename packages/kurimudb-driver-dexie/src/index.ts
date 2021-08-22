@@ -135,9 +135,7 @@ export class DexieDriver {
    * 获取数组形式的结果
    * @param query
    */
-  async getArrayResults<T>(
-    query: Array<T> | Promise<Array<T>>
-  ): Promise<Array<T>> {
+  async getArrayResults<T>(query: T[] | Promise<T[]>): Promise<T[]> {
     return await this.getResults(query, []);
   }
 
@@ -145,7 +143,7 @@ export class DexieDriver {
    * 获取对象形式的结果
    */
   async getObjectResults<T>(
-    query: Array<T> | Promise<Array<T>>
+    query: T[] | Promise<T[]>
   ): Promise<Record<number | string, T>> {
     return await this.getResults(query, new Object());
   }
@@ -156,8 +154,8 @@ export class DexieDriver {
    * @param initialResult
    */
   async getResults<T>(
-    query: Array<any> | Promise<Array<any>>,
-    initialResult: Record<string | number, any> | Array<any> = new Object()
+    query: any[] | Promise<any[]>,
+    initialResult: Record<string | number, any> | any[] = new Object()
   ): Promise<T> {
     query = await query;
     if (!(query instanceof Array))
