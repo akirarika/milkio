@@ -1,8 +1,8 @@
-import { Cache } from "../cache/cache.class";
 import { CacheItem } from "../cache/cache-item.class";
+import { Cache } from "../cache/cache.class";
 import { SubscribeConfigInterface } from "../cache/subscribe-config.interface";
 import { SubscribeInterface } from "../cache/subscribe.interface";
-import { Data } from "../data.class";
+import { ModelData } from "./model-data.class";
 import { ModelOptionsInterface } from "./model-options.interface";
 
 type DataType<T> = T & {
@@ -25,7 +25,7 @@ export class BaseModel<DataInterface, Driver> {
     if (this.isPersistence())
       this.storage = new this.options.driver(this) as Driver;
     else this.storage = void 0 as unknown as Driver;
-    this.data = new Data(this) as DataType<DataInterface>;
+    this.data = new ModelData(this) as DataType<DataInterface>;
   }
 
   /**

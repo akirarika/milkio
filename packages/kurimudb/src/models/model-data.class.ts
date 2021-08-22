@@ -1,4 +1,4 @@
-export class Data {
+export class ModelData {
   constructor(model) {
     return new Proxy(function () {}, {
       set: (target, key, value, proxy) => {
