@@ -87,7 +87,7 @@ export class DexieDriver {
    * @param value
    * @param key
    */
-  encode(value: any, key: any = void 0): object {
+  encode(value: any, key: any = undefined): object {
     if (this._isPlainObject(value)) {
       // if (this.primary in value)
       //   throw new Error(
@@ -101,11 +101,11 @@ export class DexieDriver {
       //       this.primary +
       //       '".'
       //   );
-      if (void 0 !== key) value[this.model.options.primary] = key;
+      if (undefined !== key) value[this.model.options.primary] = key;
       return this.model.deepClone(value, INSTRINSIC_TYPES);
     } else {
       const object: any = { $__value: value };
-      if (void 0 !== key) object[this.model.options.primary] = key;
+      if (undefined !== key) object[this.model.options.primary] = key;
       return this.model.deepClone(object, INSTRINSIC_TYPES);
     }
   }
@@ -116,7 +116,7 @@ export class DexieDriver {
    * @param value
    */
   decode(value: any): any {
-    if (void 0 === value || null === value) return null;
+    if (undefined === value || null === value) return null;
     if ("object" === typeof value && "$__value" in value)
       return value["$__value"];
     return value;
@@ -188,7 +188,7 @@ export class DexieDriver {
    */
   async getResult<T>(query: T | Promise<T>): Promise<T | null> {
     const item: any = await query;
-    if (void 0 === item || null === item) return null;
+    if (undefined === item || null === item) return null;
     if (!this._isPlainObject(item))
       throw new Error(
         `The query result is not a single Object. If it's an Array, please use 'getresults' instead.`

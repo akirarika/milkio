@@ -16,11 +16,11 @@ export class Cache {
 
   subscribe(key) {
     if (this.value.has(key)) return this.value.get(key)?.subscribe;
-    this.value.set(key, this.createCacheItem(void 0, key));
+    this.value.set(key, this.createCacheItem(undefined, key));
     return this.value.get(key)?.subscribe;
   }
 
-  get(key, def = void 0) {
+  get(key, def = undefined) {
     if (!this.value.has(key)) {
       this.value.set(key, this.createCacheItem(def, key));
     }

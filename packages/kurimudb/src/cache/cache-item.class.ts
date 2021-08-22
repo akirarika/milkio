@@ -29,7 +29,7 @@ export class CacheItem<T = any> {
   }
 
   forget(): void {
-    this.value = void 0 as any;
+    this.value = undefined as any;
   }
 
   publish() {
@@ -37,7 +37,7 @@ export class CacheItem<T = any> {
     const key = this.key;
     const arr: any[] = [];
 
-    if (void 0 === value) return;
+    if (undefined === value) return;
 
     this.subscribers.forEach((job) => arr.push(job(value, key)));
 

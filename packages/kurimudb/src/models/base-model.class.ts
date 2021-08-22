@@ -28,7 +28,7 @@ export class BaseModel<
     this.$ = this.changed.subscribe;
     if (this.isPersistence())
       this.storage = new this.options.driver(this) as Driver;
-    else this.storage = void 0 as unknown as Driver;
+    else this.storage = undefined as unknown as Driver;
     this.data = new ModelData(this) as DataType<Data>;
   }
 

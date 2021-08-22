@@ -25,7 +25,7 @@ export class ModelData {
               // 值不存在，持久化，异步方式
               (async () => {
                 const value = await model.storage.select(key);
-                if (void 0 !== value) model.cache.put(key, value);
+                if (undefined !== value) model.cache.put(key, value);
               })();
               const result = model.cache.subscribe(key);
               return result;
@@ -42,13 +42,13 @@ export class ModelData {
             if (!model.options.async) {
               // 持久化，同步
               const result = model.cache.get(key);
-              if (void 0 !== result) return result;
+              if (undefined !== result) return result;
               return model.storage.select(key);
             } else {
               return (async () => {
                 // 持久化，异步
                 const result = model.cache.get(key);
-                if (void 0 !== result) return result;
+                if (undefined !== result) return result;
                 return await model.storage.select(key);
               })();
             }
@@ -66,13 +66,13 @@ export class ModelData {
           );
         return model.cache.has(key);
       },
-      // construct: async (target, [value, key = void 0]) => {
+      // construct: async (target, [value, key = undefined]) => {
       //   // 此函数必须是异步的，因为 construct 函数只可以返回对象，
       //   // 所以需要利用异步函数来返回一个 Promise 对象，然后 await
       //   // 返回的结果，就可以拿到 number string 等类型的值了。
       //   switch (model.options.type) {
       //     case 'string':
-      //       if (void 0 === key) throw new Error(`Your model type is "string", the key cannot be undefined.`);
+      //       if (undefined === key) throw new Error(`Your model type is "string", the key cannot be undefined.`);
       //       key = model.checkPrimary(key);
       //       if (model.isPersistence()) {
       //         // 字符串类型，持久化
