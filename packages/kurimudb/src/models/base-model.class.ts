@@ -1,5 +1,5 @@
 import { Cache } from "../cache/cache.class";
-import { Item } from "../cache/item.class";
+import { CacheItem } from "../cache/cache-item.class";
 import { SubscribeConfigInterface } from "../cache/subscribe-config.interface";
 import { SubscribeInterface } from "../cache/subscribe.interface";
 import { Data } from "../data.class";
@@ -14,7 +14,7 @@ export class BaseModel<DataInterface, Driver> {
   cache: Cache;
   data: DataType<DataInterface>;
   storage: Driver;
-  changed: Item<any>;
+  changed: CacheItem<any>;
   $: SubscribeInterface<string>;
 
   constructor(options: ModelOptionsInterface) {

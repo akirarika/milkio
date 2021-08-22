@@ -1,8 +1,8 @@
-import { Item } from "./item.class";
+import { CacheItem } from "./cache-item.class";
 
 export class Cache {
   private model;
-  public value: Map<string | number, Item> = new Map();
+  public value: Map<string | number, CacheItem> = new Map();
 
   constructor(model) {
     this.model = model;
@@ -57,6 +57,6 @@ export class Cache {
   }
 
   createCacheItem<T = any>(value, key) {
-    return new Item<T>(value, key);
+    return new CacheItem<T>(value, key);
   }
 }

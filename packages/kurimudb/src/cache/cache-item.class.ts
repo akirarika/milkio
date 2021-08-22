@@ -5,7 +5,7 @@ import { SubscribeInterface } from "./subscribe.interface";
 
 let counter = 0;
 
-export class Item<T = any> {
+export class CacheItem<T = any> {
   value: T;
   key: string | number;
   subscribers: Map<number, any>;
