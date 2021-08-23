@@ -13,7 +13,7 @@ type DataType<T> = T & {
 export class BaseModel<
   Data = any,
   Driver extends AbstractDriver = AbstractDriver
-> {
+  > {
   options: ModelOptionsInterface;
   cache: Cache;
   data: DataType<Data>;
@@ -36,7 +36,7 @@ export class BaseModel<
    * Determine whether this model can be persisted.
    */
   isPersistence(): boolean {
-    return "driver" in this.options;
+    return !!this.options.driver;
   }
 
   /**
@@ -64,8 +64,7 @@ export class BaseModel<
       return Number(key);
     if (this.options.type !== typeof key)
       throw new Error(
-        `The model primary type needs to be ${
-          this.options.type
+        `The model primary type needs to be ${this.options.type
         }, not ${typeof key}: ${key}`
       );
     return key;
@@ -81,7 +80,7 @@ export class BaseModel<
     if (!oldObject || typeof oldObject !== "object") return oldObject;
 
     if (null === intrinsicTypes) {
-      if (!("intrinsicTypes" in this.options)) intrinsicTypes = [];
+      if (!this.options.intrinsicTypes) intrinsicTypes = [];
       else if (false === this.options.intrinsicTypes) return oldObject;
       else intrinsicTypes = this.options.intrinsicTypes as string[];
     }
@@ -125,7 +124,7 @@ export class BaseModel<
   }
 
   private checkOptions(options: ModelOptionsInterface): ModelOptionsInterface {
-    if (!("name" in options)) throw new Error(`The model name does not exist.`);
+    if (!options.name) throw new Error(`The model name does not exist.`);
     options.primary = options.primary ?? "_id";
     options.async = options.async ?? false;
     if (options.methods) Object.assign(this, options.methods);
