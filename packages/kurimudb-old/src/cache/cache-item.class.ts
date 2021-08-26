@@ -1,5 +1,5 @@
-import { globalConfig } from "../providers";
-import { cacheFactory } from "../providers";
+import { globalConfig } from "../global-config";
+import { runtime } from "../runtime";
 import { SubscribeConfigInterface } from "./subscribe-config.interface";
 import { SubscribeInterface } from "./subscribe.interface";
 
@@ -22,8 +22,8 @@ export class CacheItem<T = any> {
   }
 
   get(): T {
-    if (cacheFactory.collectingReadItemDependencies) {
-      cacheFactory.readItemDependencies.push(this);
+    if (runtime.collectingReadItemDependencies) {
+      runtime.readItemDependencies.push(this);
     }
     return this.value;
   }
@@ -44,7 +44,7 @@ export class CacheItem<T = any> {
     return Promise.all(arr);
   }
 
-  subscribe: SubscribeInterface = (
+  subscribe: SubscribeInterface<T> = (
     closFunc: any,
     config: SubscribeConfigInterface = {}
   ): Function => {

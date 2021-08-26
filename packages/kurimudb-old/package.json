@@ -5,6 +5,5 @@
   "description": "",
   "main": "./dist/index.js",
   "author": "akirarika",
-  "license": "MIT",
-  "devDependencies": {}
+  "license": "MIT"
 }
