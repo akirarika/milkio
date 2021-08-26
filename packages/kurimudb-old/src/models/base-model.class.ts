@@ -13,7 +13,7 @@ type DataType<T> = T & {
 export class BaseModel<
   Data = any,
   Driver extends AbstractDriver = AbstractDriver
-  > {
+> {
   options: ModelOptionsInterface;
   cache: Cache;
   data: DataType<Data>;
@@ -64,7 +64,8 @@ export class BaseModel<
       return Number(key);
     if (this.options.type !== typeof key)
       throw new Error(
-        `The model primary type needs to be ${this.options.type
+        `The model primary type needs to be ${
+          this.options.type
         }, not ${typeof key}: ${key}`
       );
     return key;
@@ -81,7 +82,8 @@ export class BaseModel<
 
     if (null === intrinsicTypes) {
       if (!this.options.intrinsicTypes) intrinsicTypes = [];
-      else if (false === this.options.intrinsicTypes) return oldObject;
+      else if (false === (this.options.intrinsicTypes as unknown as boolean))
+        return oldObject;
       else intrinsicTypes = this.options.intrinsicTypes as string[];
     }
 
