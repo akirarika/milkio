@@ -3,8 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "test:open": "peeky open",
-    "test": "peeky run",
+    "test": "jest",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "build": "tsc -b",
@@ -22,7 +21,10 @@
   ],
   "devDependencies": {
     "@peeky/cli": "^0.3.3",
+    "@types/jest": "^27.0.1",
     "@types/node": "^16.7.1",
+    "jest": "^27.0.6",
+    "ts-jest": "^27.0.5",
     "tslib": "^2.3.1",
     "typescript": "^4.3.5",
     "vitepress": "^0.13"
