@@ -16,6 +16,16 @@ export class DataFactory {
   make<DataType, DriverType extends AbstractDriver>(
     model: BaseModel<DataType, DriverType>
   ) {
-    return new Proxy({} as DataProxyType<DataType>, {});
+    return new Proxy({} as DataProxyType<DataType>, {
+      set: (target, key, value, proxy) => {
+        key = String(key);
+        model.cache.put(key, value);
+        // if (model.isPersistence())
+        //   (async () =>
+        //     await model.storage.insertOrUpdate(key, model.cache.get(key)))();
+        // model.changed.set(key);
+        return true;
+      },
+    });
   }
 }

@@ -1,9 +1,10 @@
 {
-  "name": "kurimudb",
+  "name": "kurimudb-repos",
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "test": "jest",
+    "test:open": "peeky open",
+    "test": "peeky run",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "build": "tsc -b",
@@ -20,9 +21,8 @@
     "packages\\kurimudb-zero-config"
   ],
   "devDependencies": {
-    "@types/jest": "^27.0.1",
+    "@peeky/cli": "^0.3.3",
     "@types/node": "^16.7.1",
-    "jest": "^27.0.6",
     "tslib": "^2.3.1",
     "typescript": "^4.3.5",
     "vitepress": "^0.13"

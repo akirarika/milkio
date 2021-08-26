@@ -16,6 +16,11 @@ export class BaseModel<DataType, DriverType extends AbstractDriver> {
 
   private checkOptions(options: ModelOptionsInterface): ModelOptionsInterface {
     if (!options.name) throw new Error(`The model name does not exist.`);
+    if (!options.ioType || !options.modelType) {
+      throw new Error(
+        `The model ioType or modelType does not exist. Do you inherit BaseModel? Please don't do that.`
+      );
+    }
 
     options.primary = options.primary ?? "_id";
     options.async = options.async ?? false;

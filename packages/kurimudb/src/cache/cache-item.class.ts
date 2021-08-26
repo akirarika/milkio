@@ -5,23 +5,23 @@ import { SubscribeInterface } from "./subscribe.interface";
 
 let counter = 0;
 
-export class CacheItem<T = any> {
-  value: T;
+export class CacheItem {
+  value: unknown;
   key: string | number;
-  subscribers: Map<number, any>;
+  subscribers: Map<number, Function>;
 
-  constructor(value: T, key: string | number) {
+  constructor(value: unknown, key: string | number) {
     this.value = value;
     this.key = key;
     this.subscribers = new Map();
   }
 
-  set(value: T): void {
+  set(value: unknown): void {
     this.value = value;
     this.publish();
   }
 
-  get(): T {
+  get(): unknown {
     if (cacheFactory.collectingReadItemDependencies) {
       cacheFactory.readItemDependencies.push(this);
     }
@@ -29,7 +29,7 @@ export class CacheItem<T = any> {
   }
 
   forget(): void {
-    this.value = undefined as any;
+    this.value = undefined;
   }
 
   publish() {
@@ -53,11 +53,11 @@ export class CacheItem<T = any> {
       autoUnsubscribe: true,
       ...config,
     };
-    // 追加订阅队列
+
     this.subscribers.set(++counter, closFunc);
     const id = counter;
     if (conf.immediate) this.publish();
-    // 生成此订阅的退订函数
+
     const unsubscribe = () => this.subscribers.delete(id);
     if (conf.autoUnsubscribe) {
       if (false !== globalConfig.autoUnsubscribe)

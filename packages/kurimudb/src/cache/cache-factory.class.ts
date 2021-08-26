@@ -13,16 +13,40 @@ export class CacheFactory {
   ) {
     return {
       get: (key: string, def = undefined) => {
-        const res = this.get(model.options.name, key);
+        const res = this.get(model.options.name, String(key));
 
         if (undefined === res) return def;
         return res;
+      },
+      put: (key: string, value: unknown) => {
+        return this.put(model.options.name, String(key), value);
       },
     };
   }
 
   get(modelName: string, key: string) {
     const modelCache = this.getModelCache(modelName);
+  }
+
+  put(modelName: string, key: string, value: unknown) {
+    const modelCache = this.getModelCache(modelName);
+
+    if (modelCache.has(key)) {
+      const cacheItem = modelCache.get(key);
+      cacheItem?.set(value);
+    } else {
+      modelCache.set(key, this.createCacheItem(value, key));
+    }
+  }
+
+  has(modelName: string, key: string) {
+    const modelCache = this.getModelCache(modelName);
+
+    return modelCache.has(key);
+  }
+
+  private createCacheItem(value: unknown, key: string) {
+    return new CacheItem(value, key);
   }
 
   private getModelCache(modelName: string) {
