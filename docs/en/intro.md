@@ -2,15 +2,15 @@
 
 ## What is Kurimudb
 
-Kurimudb is a progressive **Web Front-end local persistence library**.It can save your data to LocalStorage, IndexedDB, Cookie, and so on. Also, support subscribing the mutating of data.
+Kurimudb is a progressive **Web Front-end local persistence library**. It can save your data to LocalStorage, IndexedDB, Cookie, and so on. Also, support subscribing to the mutating of data.
 
 In addition to persistent data, Kurimudb can be [Model layer](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel#Components_of_MVVM_pattern) of your application if your want, then take the responsibility of state management in your application to make your app “Single source of truth” really.
 
-Kurimudb's persistence feature is driver-oriented. It means you can replace the implementation without changing code. We build several common driver. If these are not for you, you can build your own driver.
+Kurimudb's persistence feature is driver-oriented. It means you can replace the implementation without changing the code. We build several common drivers. If these are not for you, you can build your own driver.
 
 ## Quick Start
 
-`kurimudb-zero-config` is the library that allow using Kurimudb with no config. Run following config to install it:
+`kurimudb-zero-config` is the library that allows using Kurimudb with no config. Run the following config to install it:
 
 ```bash
 npm i kurimudb-zero-config@4
@@ -57,7 +57,7 @@ delete memory.data.say; // deleting..
 
 ### Db
 
-By operating the `db` object, the data can be stored in IndexedDB. IndexedDB can stored JavaScript Object such as File and Blob. Its maximum data capacity depends on the available hard disk size of the user's disk.  
+By operating the `db` object, the data can be stored in IndexedDB. IndexedDB can store JavaScript Objects such as File and Blob. Its maximum data capacity depends on the available hard disk size of the user's disk.  
 
 It is worth noting that IndexedDB's API is asynchronous so that the return values of APIs related to `db` and reading are all [Promise object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise).
 
@@ -72,7 +72,7 @@ await db.has("say"); // checking exist, return value will be a Promise..
 
 ### Subscribing Data Mutation
 
-Kurimudb also provides the feature of Subscribing Data Mutation. All things you need to do is adding `$` to the end of the value, then you can do something after it mutating.
+Kurimudb also provides the feature of Subscribing Data Mutation. All things you need to do is adding `$` to the end of the value, then you can make something after it mutating.
 
 ```js
 local.data.say$((val) => {
@@ -93,4 +93,4 @@ local.data.say$(
 
 ## Are You Ready?
 
-We have just introduced the core usages of Kurimudb, but these are only a small part of Kurimudb. So, please read the entire tutorial!
+We just get to the start point of using Kurimudb. Let's carry on to get know it better in next chapters! Be ready for it!
