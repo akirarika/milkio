@@ -72,7 +72,7 @@ await db.has("say"); // checking exist, return value will be a Promise..
 
 ### Subscribing Data Mutation
 
-Kurimudb also provides the feature of Subscribing Data Mutation. All things you need to do is adding `$` to the end of the value, then you can do something after it mutating.
+Kurimudb also provides the feature of Subscribing Data Mutation. All things you need to do is adding `$` to the end of the value, then you can make something after it mutating.
 
 ```js
 local.data.say$((val) => {
@@ -93,4 +93,4 @@ local.data.say$(
 
 ## Are You Ready?
 
-We have just introduced the core usages of Kurimudb, but it is only a small part of Kurimudb. So, please read the entire tutorial!
+We just get to the start point of using Kurimudb. Let's carry on to get know it better in next chapters! Be ready for it!
