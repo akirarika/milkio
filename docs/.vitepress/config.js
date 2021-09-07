@@ -40,7 +40,8 @@ module.exports = {
             ],
           },
           {
-            text: "驱动", children: [
+            text: "驱动",
+            children: [
               {
                 text: "浏览器驱动",
                 children: [
@@ -54,7 +55,7 @@ module.exports = {
                 children: [{ text: "Taro", link: "/drivers/taro" }],
               },
               { text: "自定义驱动", link: "/drivers/custom-driver" },
-            ]
+            ],
           },
           {
             text: "迁移",
@@ -78,24 +79,24 @@ module.exports = {
           {
             text: "Documents",
             children: [
-              { text: "Getting Started", link: "/intro" },
-              { text: "Model", link: "/model" },
-              { text: "持久化", link: "/persistence" },
+              { text: "Getting Started", link: "en/intro" },
+              { text: "Model", link: "en/model" },
+              { text: "Persistence", link: "en/persistence" },
               {
-                text: "驱动",
+                text: "Driver",
                 children: [
                   { text: "LocalStorage", link: "/drivers/localstorage" },
                   { text: "Cookie", link: "/drivers/cookie" },
                   { text: "Dexie (IndexedDB)", link: "/drivers/dexie" },
-                  { text: "自定义驱动", link: "/drivers/custom-driver" },
+                  { text: "Customized Driver", link: "/drivers/custom-driver" },
                 ],
               },
-              { text: "订阅变更", link: "/subscribe" },
-              { text: "TypeScript", link: "/typescript" },
+              { text: "Subscription Changes", link: "en/subscribe" },
+              { text: "TypeScript", link: "en/typescript" },
             ],
           },
-          { text: "最佳实践", link: "/bestPractices" },
-          { text: "模型生成器", link: "/modelCodeMaker" },
+          { text: "Great Practices", link: "en/bestPractices" },
+          { text: "Model Maker", link: "en/modelCodeMaker" },
         ],
       },
     },
