@@ -1,8 +1,8 @@
-# 订阅变更
+# Subscription Changes
 
-## 订阅
+## Subscription
 
-Kurimudb 中，`$` 符号代表 `subscribe` 的简写。你可以在一个值后加上 `$` 符号来订阅它的变更：
+In Kurimudb，`$` stands for `subscribe`。You can add a `$` after a value to suscribe its changes：
 
 ```js
 configState.data.foo$((value, key) => {
@@ -10,7 +10,7 @@ configState.data.foo$((value, key) => {
 });
 ```
 
-默认情况下，闭包函数会立即执行一次，方便你为你视图中的响应式变量赋初始值。如果你不希望这么做，而是只在后续值变更时执行，那么如下即可：
+By default, the closure function will be executed immediately, so that you can assign initial values to the reactive variables in your view. If you don't want to do so, but only want to execute it when the subsequent value changes, then the following can be done:
 
 ```js {5}
 configState.data.foo$(
@@ -21,15 +21,15 @@ configState.data.foo$(
 );
 ```
 
-你也可以使用[类 Storage Api](/model.html#%E7%B1%BB-storage-api) 的形式进行订阅：
+You can also use in form of [类 Storage Api](/model.html#%E7%B1%BB-storage-api) to suscribe：
 
 ```js
 configState.subscribeItem(key, closFunc, config);
 ```
 
-## 批量订阅
+## Bulk Suscription
 
-如果你想一次订阅多个值的变更，可以使用 `batch$` 函数：
+If you want to subscribe to changes of multiple values at once, you can use function `batch$`: 
 
 ```js
 import { batch$ } from "kurimudb";
@@ -39,9 +39,9 @@ batch$([configState.data.foo$, configState.data.bar$], (value, key) => {
 });
 ```
 
-## 自动订阅
+## Auto Subscription
 
-手动声明要订阅的值可能会有些繁琐，我们还提供了一种便捷的方式。当你在闭包中所使用的值有任一被更改时，都会触发一次订阅：
+It may be a bit cumbersome to manually declare the value to be subscribed, so we also provide a more convenient way. When any of the values you use in the closure is changed, a subscription will be triggered: 
 
 ```js
 import { auto$ } from "kurimudb";
@@ -51,18 +51,17 @@ auto$(() => {
   console.log(configState.data.bar);
 });
 ```
+Kurimudb collects which values are read and then subscribes to them. Therefore, the closure function must be **synchronized**.
 
-在闭包函数的首次执行过程时，Kurimudb 会收集其中哪些值被读取，随后订阅它们，因此，闭包函数**必须是同步的**。
+> 📜 You need to use this function in version (^3.1.1).
 
-> 📜 使用此功能需要 (^3.1.1) 版本。
+## Subscribe Models
 
-## 订阅模型
+You can also subscribe to changes in the entire model. When any value in the model changes, the closure function will be triggered.
 
-你还可以订阅整个模型的变更，当模型中有任一值变更时，闭包函数都会触发。
+This is usually used in scenarios where you don't know which value you want to subscribe to, such as **the collection model**. A common example: a collection model for storing drafts. The view needs to change immediately when the user saves, adds or deletes drafts. This will come in handy here.
 
-这通常用于你不知道要订阅的是哪个值的场景，如**集合模型**上。一个常见的例子：存储草稿的集合模型，视图需要在用户保存/新增/删除草稿时即时变化，这时就派上用场啦。
-
-想要订阅模型的变更，只需要调用 `yourModel.$` 函数即可：
+If you want to subscribe to the changes of models, just call the function `yourModel.$`.
 
 ```js {3,4,5}
 ref: currentDraftData = [];
@@ -80,8 +79,7 @@ draftList.insert({
 
 ## Cancel Subscriptions
 
-When you execute subscription function, the return value will be a cancelling subscription function. The subscription will be unsubscribed after you execute it.
-当你执行了订阅函数后，返回值将是一个退订函数，执行它，会将此订阅退订：
+When you execute subscription function, the return value will be a cancelling subscription function. The subscription will be unsubscribed after you execute it:
 
 ```js
 const unsubscribe = configState.data.foo$((value, key) => {
@@ -92,7 +90,7 @@ const unsubscribe = configState.data.foo$((value, key) => {
 unsubscribe();
 ```
 
-## Automatically Cancel Subscriptions
+## Auto Unubscriptions
 
 If you are using Vue/React or other frameworks, you probably hope to see all subscriptions generated in the components will be automatically unsubscribed when the components are destroyed.
 
@@ -115,7 +113,7 @@ To be continued... 🐸
 
 ### Ignore Automatic Unsubscriptions
 
-如果你使用了自动退订功能，却又不希望部分场景下自动退订，如下即可：
+If you don't want it to be automatically unsubscribed automatically in several scenarios when enable auto unsubscriptions, you can do it like this as following:
 
 ```js {5}
 configState.data.foo$(
