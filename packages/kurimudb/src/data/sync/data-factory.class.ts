@@ -1,29 +1,41 @@
-import { AbstractDriver } from "../../abstract-driver.class";
+import { SyncAbstractDriver } from "../../drivers/sync-abstract-driver.class";
 import { SubscribeInterface } from "../../cache/subscribe.interface";
 import { BaseModel } from "../../models/sync/base-model.class";
 
-type DataKeys<Origin extends Record<string, any>> = {
+export type DataKeysType<Origin extends Record<string, any>> = {
   [Key in string & keyof Origin]: Key | `${Key}$`;
 }[string & keyof Origin];
 
-type DataProxyType<Origin extends Record<string, any>> = {
-  [Key in DataKeys<Origin>]: Key extends `${string}$`
+export type DataProxyType<Origin extends Record<string, any>> = {
+  [Key in DataKeysType<Origin>]: Key extends `${string}$`
     ? SubscribeInterface
     : Origin[Key];
 };
 
 export class DataFactory {
-  make<DataType, DriverType extends AbstractDriver>(
+  make<DataType, DriverType extends SyncAbstractDriver>(
     model: BaseModel<DataType, DriverType>
   ) {
     return new Proxy({} as DataProxyType<DataType>, {
-      set: (target, key, value, proxy) => {
-        key = String(key);
-        model.cache.put(key, value);
-        // if (model.isPersistence())
-        //   (async () =>
-        //     await model.storage.insertOrUpdate(key, model.cache.get(key)))();
-        // model.changed.set(key);
+      get: (target, key: any, receiver) => {
+        key = `${key}`;
+        if (key.endsWith("$")) {
+          // subscribe
+          key = key.substring(0, key.length - 1);
+          return model.subscribeItem(key);
+        } else {
+          return model.getItem(key);
+        }
+      },
+      set: (target, key: any, value: unknown) => {
+        model.setItem(key, value);
+        return true;
+      },
+      has: (target, key: any) => {
+        return model.hasItem(key);
+      },
+      deleteProperty: (target, key: any) => {
+        model.removeItem(key);
         return true;
       },
     });

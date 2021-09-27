@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "test": "jest",
+    "test": "jest --no-cache && jest",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "build": "tsc -b",

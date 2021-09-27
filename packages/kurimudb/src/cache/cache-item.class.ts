@@ -1,4 +1,4 @@
-import { globalConfig } from "../providers";
+import { globalConfig, runtime } from "../providers";
 import { cacheFactory } from "../providers";
 import { SubscribeConfigInterface } from "./subscribe-config.interface";
 import { SubscribeInterface } from "./subscribe.interface";
@@ -22,8 +22,8 @@ export class CacheItem {
   }
 
   get(): unknown {
-    if (cacheFactory.collectingReadItemDependencies) {
-      cacheFactory.readItemDependencies.push(this);
+    if (runtime.collectingReadItemDependencies) {
+      runtime.readItemDependencies.push(this);
     }
     return this.value;
   }
@@ -35,7 +35,7 @@ export class CacheItem {
   publish() {
     const value = this.value;
     const key = this.key;
-    const arr: any[] = [];
+    const arr: unknown[] = [];
 
     if (undefined === value) return;
 
@@ -45,9 +45,9 @@ export class CacheItem {
   }
 
   subscribe: SubscribeInterface = (
-    closFunc: any,
+    closFunc,
     config: SubscribeConfigInterface = {}
-  ): Function => {
+  ) => {
     const conf: SubscribeConfigInterface = {
       immediate: true,
       autoUnsubscribe: true,
