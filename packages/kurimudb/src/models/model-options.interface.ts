@@ -1,9 +1,11 @@
+import { SyncAbstractDriver } from "../drivers/sync-abstract-driver.class";
+
 export interface ModelOptionsInterface {
   name: string;
   modelType?: "keyValue" | "collection";
-  ioType: "sync" | "async";
+  ioType?: "sync" | "async";
   primary?: string;
-  driver?: any;
+  driver?: SyncAbstractDriver;
   intrinsicTypes?: string[] | false;
-  [others: string]: any;
+  [others: string]: unknown;
 }
