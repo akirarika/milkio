@@ -30,3 +30,9 @@ test("bread", () => {
   expect(syncList.data[2]).toBe("hello");
   expect(syncList.data[3]).toBe("world");
 });
+
+test("bread (bulk)", () => {
+  syncList.bulkInsertItem(["hello", "world"]);
+  expect(syncList.data[4]).toBe("hello");
+  expect(syncList.data[5]).toBe("world");
+});

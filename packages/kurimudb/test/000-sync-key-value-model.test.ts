@@ -14,6 +14,8 @@ class SyncState extends SyncModels.keyValue<
     hello6: string;
     hello7: string;
     hello8: string;
+    hello9: string;
+    "9": string;
   },
   TestSyncDriverInterface
 > {
@@ -110,4 +112,36 @@ test("subscribe (auto)", () => {
 
   syncState.data.hello8 = "hello";
   syncState.data.hello8 = "hello8";
+});
+
+test("bread (bulk)", () => {
+  // set
+  expect(
+    syncState.bulkSetItem({
+      "9": "hello",
+      "hello2": "world",
+    })
+  ).toBe(true);
+
+  // get
+  const res = syncState.bulkGetItem(["hello1", "9", "hello2", "hello3", "hello4"]);
+
+  let i = 0;
+  for (const key in res) {
+    if (0 === i) expect(key).toBe("hello1");
+    if (1 === i) expect(key).toBe("9");
+    if (2 === i) expect(key).toBe("hello2");
+    if (3 === i) expect(key).toBe("hello3");
+    if (4 === i) expect(key).toBe("hello4");
+    i++;
+  }
+
+  // remove
+  expect(
+    syncState.bulkRemoveItem(["9", "hello2", "hello3", "hello4"])
+  ).toBe(true);
+  expect(syncState.data["9"]).toBe(undefined);
+  expect(syncState.data["hello2"]).toBe(undefined);
+  expect(syncState.data["hello3"]).toBe(undefined);
+  expect(syncState.data["hello4"]).toBe(undefined);
 });

@@ -8,8 +8,8 @@ export type DataKeysType<Origin extends Record<string, any>> = {
 
 export type DataProxyType<Origin extends Record<string, any>> = {
   [Key in DataKeysType<Origin>]: Key extends `${string}$`
-    ? SubscribeInterface
-    : Origin[Key];
+  ? SubscribeInterface
+  : Origin[Key];
 };
 
 export class DataFactory {
@@ -27,7 +27,7 @@ export class DataFactory {
           return model.getItem(key);
         }
       },
-      set: (target, key: any, value: unknown) => {
+      set: (target, key: any, value: any) => {
         model.setItem(key, value);
         return true;
       },

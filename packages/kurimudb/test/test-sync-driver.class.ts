@@ -1,22 +1,23 @@
-import { SyncAbstractDriver } from "../src";
+import { makeKurimudbMap, SyncAbstractDriver } from "../src";
 import { SyncAbstractDriverStorageInterface } from "../src/drivers/sync-abstract-driver.class";
+import { KurimudbMap } from "../src/helpers/make-kurimudb-map.func";
 import { BaseModel } from "../src/models/sync/base-model.class";
 
 let nextPrimaryKey = 1;
 
-const data: Record<string, Record<string, unknown>> = {};
+const data: KurimudbMap<KurimudbMap<unknown>> = makeKurimudbMap<KurimudbMap<unknown>>();
 
-export interface TestSyncDriverInterface extends SyncAbstractDriver {}
+export interface TestSyncDriverInterface extends SyncAbstractDriver { }
 
 export const TestSyncDriver: TestSyncDriverInterface = {
   make<DataType, DriverType extends SyncAbstractDriver>(
     model: BaseModel<DataType, DriverType>
   ): SyncAbstractDriverStorageInterface {
     const options = model.options;
-    data[options.name] = {};
+    data[options.name] = makeKurimudbMap<unknown>();
 
     const product: SyncAbstractDriverStorageInterface = {
-      all(): Record<string, unknown> {
+      all(): KurimudbMap<unknown> {
         return data[options.name];
       },
 
@@ -42,11 +43,11 @@ export const TestSyncDriver: TestSyncDriverInterface = {
         return true;
       },
 
-      insertOrUpdate(key: string, value: unknown): void {
+      insertOrUpdate(key: string, value: unknown): boolean {
         if (key in data[options.name]) {
-          return this.update(key, value);
+          return product.update(key, value);
         } else {
-          return this.insert(key, value);
+          return product.insert(key, value);
         }
       },
 
@@ -112,17 +113,20 @@ export const TestSyncDriver: TestSyncDriverInterface = {
         return true;
       },
 
-      bulkInsertOrUpdate(items: Record<string, unknown>): void {
+      bulkInsertOrUpdate(items: Record<string, unknown>): boolean {
         // It is necessary to ensure that batch data processing will succeed before operation.
         // or you can roll back the data after an error occurs (the latter is more recommended for indexeddb).
         for (const key in items) {
           data[options.name][key] = items[key];
         }
+
+        return true;
       },
 
-      bulkSelect(keys: Array<string>): Record<string, unknown | undefined> {
-        const results: Record<string, unknown | undefined> = {};
+      bulkSelect(keys: Array<string>): KurimudbMap<unknown> {
+        const results: KurimudbMap<unknown> = makeKurimudbMap<unknown>();
         for (const key of keys) {
+
           results[key] = product.select(key);
         }
         return results;
@@ -131,7 +135,11 @@ export const TestSyncDriver: TestSyncDriverInterface = {
       bulkDelete(keys: Array<string>): boolean {
         // It is necessary to ensure that batch data processing will succeed before operation.
         // or you can roll back the data after an error occurs (the latter is more recommended for indexeddb).
+        console.log(data[options.name]);
+
         for (const key of keys) {
+          console.log(key, key in data[options.name]);
+
           if (!(key in data[options.name])) return false;
         }
         for (const key of keys) {

@@ -5,7 +5,7 @@ import { ModelOptionsInterface } from "../model-options.interface";
 export class KeyValueModel<
   DataType extends Record<string, any> = Record<string, any>,
   DriverType extends SyncAbstractDriver = SyncAbstractDriver
-> extends BaseModel<DataType, DriverType> {
+  > extends BaseModel<DataType, DriverType> {
   constructor(options: ModelOptionsInterface) {
     super({
       ...options,
@@ -26,7 +26,7 @@ export class KeyValueModel<
     } else if ("object" === typeof seed && !(seed instanceof Array)) {
       seedFunc = () => {
         this.seeded = true;
-        for (const key in seed) this.setItem(key, seed[key]);
+        for (const key in seed) this.setItem(key, seed[key] as any);
       };
     } else {
       throw new Error(
