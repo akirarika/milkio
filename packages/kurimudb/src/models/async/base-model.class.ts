@@ -1,9 +1,6 @@
-import {
-  SyncAbstractDriverInterface,
-  SyncAbstractDriverFactory
-} from "../../drivers/sync-abstract-driver.class";
+import { SyncAbstractDriverInterface, AsyncAbstractDriverInterface, AsyncAbstractDriverFactory } from "../..";
 import { ModelOptionsInterface } from "./model-options.interface";
-import { cacheFactory, syncDataFactory } from "../../providers";
+import { cacheFactory, asyncDataFactory } from "../../providers";
 import { DataProxyType } from "../../data/sync/data-factory.class";
 import { SubscribeInterface } from "../../cache/subscribe.interface";
 import { KurimudbMap, makeKurimudbMap } from "../../helpers/make-kurimudb-map.func";
@@ -11,7 +8,7 @@ import { CacheInterface } from "../../cache/cache-factory.class";
 
 export class BaseModel<
   DataType extends Record<string, any>,
-  DriverType extends SyncAbstractDriverInterface | undefined = undefined
+  DriverType extends SyncAbstractDriverInterface | AsyncAbstractDriverInterface | undefined = undefined
   > {
   public options: ModelOptionsInterface;
   public cache: CacheInterface;
@@ -24,10 +21,10 @@ export class BaseModel<
 
     this.cache = cacheFactory.make<DataType>(this);
     this.$ = this.cache.changed.subscribe;
-    this.data = syncDataFactory.make<DataType, DriverType>(this);
+    this.data = asyncDataFactory.make<DataType, DriverType>(this);
 
     if (undefined !== options.driver) {
-      this.storage = options.driver.make<DataType, DriverType>(this) as DriverType;
+      this.storage = (options.driver as AsyncAbstractDriverFactory).make<DataType, DriverType>(this) as DriverType;
     } else {
       this.storage = undefined as DriverType;
     }
@@ -105,7 +102,6 @@ export class BaseModel<
 
     return true;
   }
-
 
   setItem<Key extends keyof DataType>(key: Key, value: DataType[Key]): void {
     const skey = String(key);

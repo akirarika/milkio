@@ -1,27 +1,27 @@
-import { makeKurimudbMap, SyncAbstractDriverFactory, SyncAbstractDriverInterface } from "../src";
+import { makeKurimudbMap, AsyncAbstractDriver } from "../src";
+import { AsyncAbstractDriverStorageInterface } from "../src/drivers/async-abstract-driver.class";
 import { KurimudbMap } from "../src/helpers/make-kurimudb-map.func";
-import { BaseModel } from "../src/models/sync/base-model.class";
+import { BaseModel } from "../src/models/async/base-model.class";
 
 let nextPrimaryKey = 1;
 
 const data: KurimudbMap<KurimudbMap<unknown>> = makeKurimudbMap<KurimudbMap<unknown>>();
 
-export interface TestSyncDriver extends SyncAbstractDriverInterface {
-}
+export interface TestAsyncDriverInterface extends AsyncAbstractDriver { }
 
-class TestSyncDriverFactory extends SyncAbstractDriverFactory {
-  make<DataType>(
-    model: BaseModel<DataType, TestSyncDriver | undefined>
-  ): TestSyncDriver {
+export const TestAsyncDriver: TestAsyncDriverInterface = {
+  make<DataType, DriverType extends AsyncAbstractDriver>(
+    model: BaseModel<DataType, DriverType>
+  ): AsyncAbstractDriverStorageInterface {
     const options = model.options;
     data[options.name] = makeKurimudbMap<unknown>();
 
-    const product: SyncAbstractDriverInterface = {
+    const product: AsyncAbstractDriverStorageInterface = {
       all(): KurimudbMap<unknown> {
         return data[options.name];
       },
 
-      insert(key: string, value: unknown): boolean {
+      async insert(key: string, value: unknown): Promise<boolean> {
         if (key in data[options.name]) {
           // Primary key exists.
           return false;
@@ -32,7 +32,7 @@ class TestSyncDriverFactory extends SyncAbstractDriverFactory {
         return true;
       },
 
-      update(key: string, value: unknown): boolean {
+      async update(key: string, value: unknown): Promise<boolean> {
         if (!(key in data[options.name])) {
           // Primary key does not exist.
           return false;
@@ -43,17 +43,17 @@ class TestSyncDriverFactory extends SyncAbstractDriverFactory {
         return true;
       },
 
-      insertOrUpdate(key: string, value: unknown): void {
+      async insertOrUpdate(key: string, value: unknown): Promise<void> {
         if (key in data[options.name]) {
-          product.update(key, value);
+          await product.update(key, value);
           return;
         } else {
-          product.insert(key, value);
+          await product.insert(key, value);
           return;
         }
       },
 
-      insertAutoIncrement(value: unknown): string {
+      async insertAutoIncrement(value: unknown): Promise<string> {
         const primaryKey = String(nextPrimaryKey++);
         if (primaryKey in data[options.name]) {
           throw new Error(`Primary key exists.`);
@@ -63,15 +63,15 @@ class TestSyncDriverFactory extends SyncAbstractDriverFactory {
         return primaryKey;
       },
 
-      select(key: string): unknown | undefined {
+      async select(key: string): Promise<unknown | undefined> {
         return data[options.name][key];
       },
 
-      exists(key: string): boolean {
+      async exists(key: string): Promise<boolean> {
         return key in data[options.name];
       },
 
-      delete(key: string): boolean {
+      async delete(key: string): Promise<boolean> {
         if (!(key in data[options.name])) {
           // Primary key does not exist.
           return false;
@@ -81,7 +81,7 @@ class TestSyncDriverFactory extends SyncAbstractDriverFactory {
         return true;
       },
 
-      bulkInsert(items: Record<string, unknown>): boolean {
+      async bulkInsert(items: Record<string, unknown>): Promise<boolean> {
         // It is necessary to ensure that batch data processing will succeed before operation.
         // or you can roll back the data after an error occurs (the latter is more recommended for indexeddb).
         for (const key in items) {
@@ -93,17 +93,17 @@ class TestSyncDriverFactory extends SyncAbstractDriverFactory {
         return true;
       },
 
-      bulkInsertAutoIncrement(items: Array<unknown>): Array<string> {
+      async bulkInsertAutoIncrement(items: Array<unknown>): Promise<Array<string>> {
         // It is necessary to ensure that batch data processing will succeed before operation.
         // or you can roll back the data after an error occurs (the latter is more recommended for indexeddb).
         const results: Array<string> = [];
         for (const item of items) {
-          results.push(product.insertAutoIncrement(item));
+          results.push(await product.insertAutoIncrement(item));
         }
         return results;
       },
 
-      bulkUpdate(items: Record<string, unknown>): boolean {
+      async bulkUpdate(items: Record<string, unknown>): Promise<boolean> {
         // It is necessary to ensure that batch data processing will succeed before operation.
         // or you can roll back the data after an error occurs (the latter is more recommended for indexeddb).
         for (const key in items) {
@@ -115,7 +115,7 @@ class TestSyncDriverFactory extends SyncAbstractDriverFactory {
         return true;
       },
 
-      bulkInsertOrUpdate(items: Record<string, unknown>): boolean {
+      async bulkInsertOrUpdate(items: Record<string, unknown>): Promise<boolean> {
         // It is necessary to ensure that batch data processing will succeed before operation.
         // or you can roll back the data after an error occurs (the latter is more recommended for indexeddb).
         for (const key in items) {
@@ -125,16 +125,16 @@ class TestSyncDriverFactory extends SyncAbstractDriverFactory {
         return true;
       },
 
-      bulkSelect(keys: Array<string>): KurimudbMap<unknown> {
+      async bulkSelect(keys: Array<string>): Promise<KurimudbMap<unknown>> {
         const results: KurimudbMap<unknown> = makeKurimudbMap<unknown>();
         for (const key of keys) {
 
-          results[key] = product.select(key);
+          results[key] = await product.select(key);
         }
         return results;
       },
 
-      bulkDelete(keys: Array<string>): boolean {
+      async bulkDelete(keys: Array<string>): Promise<boolean> {
         // It is necessary to ensure that batch data processing will succeed before operation.
         // or you can roll back the data after an error occurs (the latter is more recommended for indexeddb).
         for (const key of keys) {
@@ -146,17 +146,15 @@ class TestSyncDriverFactory extends SyncAbstractDriverFactory {
         return true;
       },
 
-      seeding(seeding: Function): void {
-        seeding();
+      async seeding(seeding: Function): Promise<void> {
+        await seeding();
       },
 
-      clone(value: unknown): unknown {
+      async clone(value: unknown): Promise<unknown> {
         return value;
       },
     };
 
     return product;
-  }
-}
-
-export const testSyncDriverFactory = new TestSyncDriverFactory();
+  },
+};

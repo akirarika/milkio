@@ -1,7 +1,7 @@
 import { KurimudbMap } from "../helpers/make-kurimudb-map.func";
 import { BaseModel } from "../models/sync/base-model.class";
 
-export interface SyncAbstractDriverStorageInterface {
+export interface SyncAbstractDriverInterface {
   all(): KurimudbMap<unknown>;
   insert(key: string, value: unknown): boolean;
   insertAutoIncrement(value: unknown): string;
@@ -20,8 +20,8 @@ export interface SyncAbstractDriverStorageInterface {
   clone(value: unknown): unknown;
 }
 
-export abstract class SyncAbstractDriver {
-  abstract make<DataType, DriverType extends SyncAbstractDriver>(
+export abstract class SyncAbstractDriverFactory {
+  abstract make<DataType, DriverType extends SyncAbstractDriverInterface | undefined>(
     model: BaseModel<DataType, DriverType>
-  ): SyncAbstractDriverStorageInterface;
+  ): SyncAbstractDriverInterface;
 }

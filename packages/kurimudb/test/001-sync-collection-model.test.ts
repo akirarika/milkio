@@ -1,14 +1,14 @@
 import { SyncModels } from "../src";
 import {
   TestSyncDriver,
-  TestSyncDriverInterface,
+  testSyncDriverFactory,
 } from "./test-sync-driver.class";
 
-class SyncList extends SyncModels.collection<any, TestSyncDriverInterface> {
+class SyncList extends SyncModels.collection<any, TestSyncDriver> {
   constructor() {
     super({
       name: "SyncCollectionModel",
-      driver: TestSyncDriver,
+      driver: testSyncDriverFactory,
     });
   }
 }

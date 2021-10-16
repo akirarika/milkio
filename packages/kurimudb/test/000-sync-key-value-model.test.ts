@@ -1,7 +1,7 @@
 import { auto$, batch$, SyncModels } from "../src";
 import {
   TestSyncDriver,
-  TestSyncDriverInterface,
+  testSyncDriverFactory,
 } from "./test-sync-driver.class";
 
 class SyncState extends SyncModels.keyValue<
@@ -17,12 +17,12 @@ class SyncState extends SyncModels.keyValue<
     hello9: string;
     "9": string;
   },
-  TestSyncDriverInterface
+  TestSyncDriver
 > {
   constructor() {
     super({
       name: "SyncKeyValueModel",
-      driver: TestSyncDriver,
+      driver: testSyncDriverFactory,
     });
   }
 }

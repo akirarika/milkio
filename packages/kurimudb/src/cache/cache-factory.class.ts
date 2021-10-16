@@ -1,18 +1,29 @@
-import { SyncAbstractDriver } from "../drivers/sync-abstract-driver.class";
-import { BaseModel } from "../models/sync/base-model.class";
+import { SyncAbstractDriverInterface, AsyncAbstractDriverInterface } from "..";
+import { BaseModel as SyncBaseModel } from "../models/sync/base-model.class";
+import { BaseModel as AsyncBaseModel } from "../models/async/base-model.class";
 import { CacheItem } from "./cache-item.class";
+import { SubscribeInterface } from "./subscribe.interface";
 
 const value: Record<string, Map<string, CacheItem>> = {};
 
+export interface CacheInterface {
+  changed: CacheItem;
+  get(key: string, def?: unknown): unknown;
+  put(key: string, value: unknown): unknown;
+  has(key: string): boolean;
+  subscribe(key: string): SubscribeInterface;
+  forget(key: string): void;
+}
+
 export class CacheFactory {
-  make<DataType, DriverType extends SyncAbstractDriver>(
-    model: BaseModel<DataType, DriverType>
+  make<DataType>(
+    model: SyncBaseModel<DataType, SyncAbstractDriverInterface | undefined> | AsyncBaseModel<DataType, SyncAbstractDriverInterface | AsyncAbstractDriverInterface | undefined>
   ) {
     const changed = this.createCacheItem("", model.options.name);
 
-    return {
+    const cache: CacheInterface = {
       changed: changed,
-      get: (key: string, def = undefined) => {
+      get: (key: string, def: unknown = undefined) => {
         const res = this.get(model.options.name, String(key));
 
         if (undefined === res) return def;
@@ -38,6 +49,8 @@ export class CacheFactory {
         this.forget(model.options.name, skey);
       },
     };
+
+    return cache;
   }
 
   get(modelName: string, key: string) {
@@ -70,9 +83,9 @@ export class CacheFactory {
     const modelCache = this.getModelCache(modelName);
 
     if (modelCache.has(key)) {
-      const cacheItem = modelCache.get(key);
+      const cacheItem = modelCache.get(key) as CacheItem;
 
-      return cacheItem?.subscribe;
+      return cacheItem.subscribe;
     }
 
     const cacheItem = this.createCacheItem(undefined, key);

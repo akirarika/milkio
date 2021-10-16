@@ -1,6 +1,6 @@
-import { SyncAbstractDriverInterface } from "../../drivers/sync-abstract-driver.class";
+import { AsyncAbstractDriverInterface, SyncAbstractDriverInterface } from "../..";
 import { SubscribeInterface } from "../../cache/subscribe.interface";
-import { BaseModel } from "../../models/sync/base-model.class";
+import { BaseModel } from "../../models/async/base-model.class";
 
 export type DataKeysType<Origin extends Record<string, any>> = {
   [Key in string & keyof Origin]: Key | `${Key}$`;
@@ -13,7 +13,7 @@ export type DataProxyType<Origin extends Record<string, any>> = {
 };
 
 export class DataFactory {
-  make<DataType, DriverType extends SyncAbstractDriverInterface | undefined>(
+  make<DataType, DriverType extends SyncAbstractDriverInterface | AsyncAbstractDriverInterface | undefined>(
     model: BaseModel<DataType, DriverType>
   ) {
     return new Proxy({} as DataProxyType<DataType>, {

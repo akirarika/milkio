@@ -1,15 +1,15 @@
-import { SyncAbstractDriverInterface } from "../../drivers/sync-abstract-driver.class";
+import { SyncAbstractDriverInterface, AsyncAbstractDriverInterface } from "../..";
 import { BaseModel } from "./base-model.class";
 import { ModelOptionsInterface } from "./model-options.interface";
 
 export class CollectionModel<
   DataType = any,
-  DriverType extends SyncAbstractDriverInterface | undefined = undefined
+  DriverType extends SyncAbstractDriverInterface | AsyncAbstractDriverInterface = AsyncAbstractDriverInterface
   > extends BaseModel<Record<string, DataType>, DriverType> {
   constructor(options: Partial<ModelOptionsInterface>) {
     super({
       ...options,
-      ioType: "sync",
+      ioType: "async",
       modelType: "collection",
     });
   }
@@ -71,8 +71,9 @@ export class CollectionModel<
 
     if (undefined === this.storage) {
       seedFunc();
-    } else {
-      this.storage.seeding(seedFunc);
+      return;
     }
+    const storage = this.storage;
+    storage.seeding(seedFunc);
   }
 }
