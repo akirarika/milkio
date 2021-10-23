@@ -5,7 +5,8 @@ export interface ModelOptionsInterface {
   modelType: "keyValue" | "collection";
   ioType: "sync";
   primary: string;
-  driver: SyncAbstractDriverFactory | undefined;
   intrinsicTypes: string[] | false;
+  driver?: SyncAbstractDriverFactory;
+  autoIncrementHandler?: (options: ModelOptionsInterface) => string;
   [others: string]: unknown;
 }

@@ -1,4 +1,4 @@
-export function makeKurimudbMap<ValueType>() {
+export function makeKMap<ValueType>() {
     return new Proxy(new Map<string, unknown>(), {
         get: (target, key: string, receiver) => target.get(key),
         set: (target, key: string, value) => (target.set(key, value), true),
@@ -6,10 +6,10 @@ export function makeKurimudbMap<ValueType>() {
         deleteProperty: (target, key: string) => target.delete(key),
         ownKeys: (target) => [...target.keys()],
         getOwnPropertyDescriptor: (target, key: string) => ({ enumerable: true, configurable: true, value: target.get(key) }),
-    }) as unknown as KurimudbMap<ValueType>;
+    }) as unknown as KMap<ValueType>;
 }
 
 /**
- * KurimudbMap is a collection of like objects, the difference is that it will be traversed in strict insertion order.
+ * KMap is a collection of like objects, the difference is that it will be traversed in strict insertion order.
  */
-export type KurimudbMap<T> = Record<string, T>;
+export type KMap<T> = Record<string, T>;

@@ -11,8 +11,11 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "noImplicitAny": true,
-    "lib": ["esnext", "dom"],
-    "importHelpers": true,
-    "skipLibCheck": true
+    "lib": [
+      "esnext",
+      "dom"
+    ],
+    "importHelpers": false,
+    "skipLibCheck": true,
   }
 }

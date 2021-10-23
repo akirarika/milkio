@@ -3,8 +3,10 @@ export { AsyncAbstractDriverFactory, AsyncAbstractDriverInterface } from "./driv
 
 export { SyncModels } from "./models";
 export { AsyncModels } from "./models";
+export { BaseModel as SyncBaseModel } from "./models/sync/base-model.class";
+export { BaseModel as AsyncBaseModel } from "./models/async/base-model.class";
 
 export { auto$ } from "./helpers/auto$.func";
 export { batch$ } from "./helpers/batch$.func";
-
-export { makeKurimudbMap } from "./helpers/make-kurimudb-map.func";
+export { clone } from "./helpers/clone.func";
+export { makeKMap, KMap } from "./helpers/make-kurimudb-map.func";

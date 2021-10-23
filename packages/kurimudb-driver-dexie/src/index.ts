@@ -1,207 +1,256 @@
-import { Table } from "dexie";
+import Dexie, { DexieError, Table } from "dexie";
+import {
+  makeKMap,
+  AsyncAbstractDriverFactory,
+  AsyncAbstractDriverInterface,
+  KMap,
+  AsyncBaseModel,
+  clone,
+  SyncAbstractDriverInterface,
+} from "kurimudb";
 
-const INSTRINSIC_TYPES = [
-  "Boolean",
-  "String",
-  "Date",
-  "RegExp",
-  "Blob",
-  "File",
-  "FileList",
-  "ArrayBuffer",
-  "DataView",
-  "Uint8ClampedArray",
-  "ImageData",
-  "Map",
-  "Set",
-] as const;
+export interface DexieDriver extends AsyncAbstractDriverInterface {
+  query(): Table;
+  getPrimaryName(): string;
+  restorePrimaryType(key: string): number | string;
+  all(): Promise<KMap<any>>;
+  getLength(): Promise<number>;
+}
 
-export class DexieDriver {
-  model;
-
-  constructor(model) {
-    this.model = model;
-    this.model.options.async = true;
-    if (!("db" in this.model.options))
+class DexieDriverFactory extends AsyncAbstractDriverFactory {
+  make<
+    DataType,
+    DriverType extends
+      | AsyncAbstractDriverInterface
+      | SyncAbstractDriverInterface
+      | undefined
+  >(model: AsyncBaseModel<DataType, DriverType>) {
+    const options = model.options;
+    if (undefined === options?.db)
       throw new Error(
-        `"db" does not exist in options of the model, pass it a dexie object.`
-      );
-  }
-
-  async insert(value: any, key?: string | number): Promise<string | number> {
-    return (await this.table().add(this.encode(value))) as string | number;
-  }
-
-  async insertOrUpdate(key: string | number, value: any): Promise<void> {
-    await this.table().put(this.encode(value, key));
-  }
-
-  async update(key: string | number, value: any): Promise<void> {
-    await this.table().put(this.encode(value, key));
-  }
-
-  async select(key: string | number): Promise<any> {
-    return this.decode(await this.table().get(key));
-  }
-
-  async exists(key: string | number): Promise<boolean> {
-    return Boolean(
-      await this.table().where(this.model.options.primary).equals(key).count()
-    );
-  }
-
-  async delete(key: string | number): Promise<void> {
-    await this.table().delete(key);
-  }
-
-  async seeding(seedingFunc: Function, model) {
-    const table = this.model.options.db["_seed"];
-    if (await table.get(`${this.model.options.name}_is_seeded`)) return;
-
-    await table.add({
-      _id: `${this.model.options.name}_is_seeded`,
-      value: `true`,
-    });
-    await seedingFunc(model);
-  }
-
-  all() {
-    return this.getArrayResults(this.table().toArray());
-  }
-
-  /**
-   * 获取当前表对象
-   * @returns
-   */
-  table(): Table {
-    const table = this.model.options?.db[this.model.options.name];
-    if (table) return table;
-    throw new Error(
-      `table "${this.model.options.name}" does not exist in the database. did you forget to add the new version?`
-    );
-  }
-
-  /**
-   * 编码
-   * 将原数据封装为适合直接存储到 indexeddb 的对象格式
-   * @param value
-   * @param key
-   */
-  encode(value: any, key: any = undefined): object {
-    if (this._isPlainObject(value)) {
-      // if (this.primary in value)
-      //   throw new Error(
-      //     'The object you want to store contains the attribute with the value of "' +
-      //       this.primary +
-      //       '", ' +
-      //       "which is the same as the primary key name specified in your model. " +
-      //       'Consider changing this value to a different name, such as "' +
-      //       this.config.name +
-      //       "_" +
-      //       this.primary +
-      //       '".'
-      //   );
-      if (undefined !== key) value[this.model.options.primary] = key;
-      return this.model.deepClone(value, INSTRINSIC_TYPES);
-    } else {
-      const object: any = { $__value: value };
-      if (undefined !== key) object[this.model.options.primary] = key;
-      return this.model.deepClone(object, INSTRINSIC_TYPES);
-    }
-  }
-
-  /**
-   * 解码
-   * 将 indexeddb 的对象格式还原为原来的数据
-   * @param value
-   */
-  decode(value: any): any {
-    if (undefined === value || null === value) return null;
-    if ("object" === typeof value && "$__value" in value)
-      return value["$__value"];
-    return value;
-  }
-
-  /**
-   * 查询 (一般用于 indexeddb)
-   * 可用于实现了 query 功能的持久化驱动
-   * 一般返回一个由驱动实现的，可链式调用的查询对象
-   */
-  query(): Table {
-    return this.table();
-  }
-
-  /**
-   * 获取数组形式的结果
-   * @param query
-   */
-  async getArrayResults<T>(query: T[] | Promise<T[]>): Promise<T[]> {
-    return await this.getResults(query, []);
-  }
-
-  /**
-   * 获取对象形式的结果
-   */
-  async getObjectResults<T>(
-    query: T[] | Promise<T[]>
-  ): Promise<Record<number | string, T>> {
-    return await this.getResults(query, new Object());
-  }
-
-  /**
-   * 获取结果
-   * @param query
-   * @param initialResult
-   */
-  async getResults<T>(
-    query: any[] | Promise<any[]>,
-    initialResult: Record<string | number, any> | any[] = new Object()
-  ): Promise<T> {
-    query = await query;
-    if (!(query instanceof Array))
-      throw new Error(
-        `The query result is not a single object. If it's an array, please use 'getResult' instead.`
+        `[Kurimudb] The "db" parameter was not passed in the Model constructor, this param is required when using DexieDriver.`
       );
 
-    const setResult = (key: any, value: any) => {
-      if (initialResult instanceof Array) initialResult.push(value);
-      else initialResult[key] = value;
+    const db = options.db as Dexie;
+
+    const encode = (value: unknown): Record<string, unknown> => {
+      let proto = value;
+      while (Object.getPrototypeOf(proto) !== null) {
+        proto = Object.getPrototypeOf(proto);
+      }
+      if (Object.getPrototypeOf(value) === proto) {
+        return value as Record<string, unknown>;
+      } else {
+        const data = Object.create(null);
+
+        return {
+          $__value: value,
+        };
+      }
     };
 
-    for (const item of query) {
-      const key = item[this.model.options.primary];
-      if (this.model.cache.has(key)) setResult(key, this.model.cache.get(key));
-      else {
-        setResult(key, this.decode(item));
-        this.model.cache.add(key, this.decode(item));
+    const decode = (value: Record<string, unknown>) => {
+      if ("object" === typeof value && "$__value" in value) {
+        value;
+        return value["$__value"];
+      } else {
+        return value;
       }
-    }
-    return initialResult as T;
-  }
+    };
 
-  /**
-   * 获取单个结果
-   * @param query
-   * @param initialResult
-   */
-  async getResult<T>(query: T | Promise<T>): Promise<T | null> {
-    const item: any = await query;
-    if (undefined === item || null === item) return null;
-    if (!this._isPlainObject(item))
-      throw new Error(
-        `The query result is not a single Object. If it's an Array, please use 'getresults' instead.`
-      );
-    const key = item[this.model.options.primary];
-    if (this.model.cache.has(key)) return this.model.cache.get(key);
-    else {
-      const initialResult = this.decode(item);
-      this.model.cache.add(key, initialResult);
-      return initialResult;
-    }
-  }
+    const product: DexieDriver = {
+      query(): Table {
+        return db.table(options.name);
+      },
 
-  _isPlainObject(object: any): boolean {
-    if ("Object" !== object?.constructor?.name) return false;
-    return true;
+      getPrimaryName(): string {
+        return this.query().schema.primKey.name;
+      },
+
+      restorePrimaryType(key: string): number | string {
+        let rkey: string | number = Number(key);
+        if (isNaN(rkey)) rkey = key;
+        return rkey;
+      },
+
+      insert(key: string, value: unknown): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+          this.query()
+            .add(encode(value), this.restorePrimaryType(key))
+            .then(() => resolve(true))
+            .catch((error) => {
+              if ("ConstraintError" === error?.name) resolve(false);
+              else reject(error);
+            });
+        });
+      },
+
+      async update(key: string, value: unknown): Promise<boolean> {
+        return (
+          1 ===
+          (await this.query().update(
+            this.restorePrimaryType(key),
+            encode(value)
+          ))
+        );
+      },
+
+      async insertOrUpdate(key: string, value: unknown): Promise<void> {
+        const data = encode(value);
+        data[this.getPrimaryName()] = this.restorePrimaryType(key);
+        await this.query().put(data);
+      },
+
+      async insertAutoIncrement(value: unknown): Promise<string> {
+        return String(await this.query().add(encode(value)));
+      },
+
+      async select(key: string): Promise<unknown | undefined> {
+        return decode(await this.query().get(this.restorePrimaryType(key)));
+      },
+
+      async exists(key: string): Promise<boolean> {
+        return (
+          (await this.query()
+            .where(this.getPrimaryName())
+            .equals(this.restorePrimaryType(key))
+            .count()) > 0
+        );
+      },
+
+      async delete(key: string): Promise<boolean> {
+        await this.query().delete(key);
+
+        return true;
+      },
+
+      bulkInsert(items: Record<string, unknown>): Promise<boolean> {
+        const itemsArr: Array<unknown> = [];
+        for (const key in items) {
+          const item = encode(items[key]);
+          item[this.getPrimaryName()] = this.restorePrimaryType(key);
+          itemsArr.push(item);
+        }
+
+        return new Promise((resolve, reject) => {
+          db.transaction("rw", this.query(), async () => {
+            await this.query().bulkAdd(itemsArr);
+            resolve(true);
+          }).catch((error) => {
+            if ("BulkError" !== error?.name) throw error;
+          });
+        });
+      },
+
+      bulkInsertAutoIncrement(items: Array<unknown>): Promise<Array<string>> {
+        const itemsArr: Array<unknown> = [];
+        for (const key in items) {
+          const item = encode(items[key]);
+          itemsArr.push(item);
+        }
+
+        return new Promise((resolve, reject) => {
+          db.transaction("rw", this.query(), async () => {
+            resolve(
+              (await this.query().bulkAdd(itemsArr, { allKeys: true })).map(
+                (v) => String(v)
+              )
+            );
+          }).catch((error) => {
+            if ("BulkError" !== error?.name) throw error;
+          });
+        });
+      },
+
+      async bulkUpdate(items: Record<string, unknown>): Promise<boolean> {
+        const itemsArr: Array<unknown> = [];
+        for (const key in items) {
+          const item = encode(items[key]);
+          item[this.getPrimaryName()] = this.restorePrimaryType(key);
+          itemsArr.push(item);
+        }
+
+        return new Promise((resolve, reject) => {
+          db.transaction("rw", this.query(), async () => {
+            await this.query().bulkPut(itemsArr);
+            resolve(true);
+          }).catch((error) => {
+            if ("BulkError" !== error?.name) throw error;
+          });
+        });
+      },
+
+      async bulkInsertOrUpdate(
+        items: Record<string, unknown>
+      ): Promise<boolean> {
+        const itemsArr: Array<unknown> = [];
+        for (const key in items) {
+          const item = encode(items[key]);
+          item[this.getPrimaryName()] = this.restorePrimaryType(key);
+          itemsArr.push(item);
+        }
+
+        return new Promise((resolve, reject) => {
+          db.transaction("rw", this.query(), async () => {
+            await this.query().bulkPut(itemsArr);
+            resolve(true);
+          }).catch((error) => {
+            if ("BulkError" !== error?.name) throw error;
+          });
+        });
+      },
+
+      async bulkSelect(keys: Array<string>): Promise<KMap<unknown>> {
+        const res = await this.query().bulkGet(
+          keys.map((v) => this.restorePrimaryType(v))
+        );
+
+        const data = makeKMap();
+        for (let index = 0; index < keys.length; index++) {
+          data[keys[index]] = decode(res[index]);
+        }
+
+        return data;
+      },
+
+      async bulkDelete(keys: Array<string>): Promise<boolean> {
+        await this.query().bulkDelete(
+          keys.map((v) => this.restorePrimaryType(v))
+        );
+
+        return true;
+      },
+
+      async seeding(seeding: Function): Promise<void> {
+        const table = db.table("_seed");
+        if (await table.get(`${options.name}_is_seeded`)) return;
+
+        await table.add({
+          _id: `${options.name}_is_seeded`,
+          value: `true`,
+        });
+        await seeding(model);
+      },
+
+      async clone(value: unknown): Promise<unknown> {
+        return clone(value);
+      },
+
+      async all(): Promise<KMap<any>> {
+        const res = makeKMap();
+        (await this.query().toArray()).forEach((value) => {
+          res[value[this.getPrimaryName()]] = decode(value);
+        });
+        return res;
+      },
+
+      async getLength(): Promise<number> {
+        return this.query().count();
+      },
+    };
+
+    return product;
   }
 }
+
+export const dexieDriverFactory = new DexieDriverFactory();

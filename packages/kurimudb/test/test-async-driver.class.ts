@@ -1,27 +1,27 @@
-import { makeKurimudbMap, AsyncAbstractDriver } from "../src";
-import { AsyncAbstractDriverStorageInterface } from "../src/drivers/async-abstract-driver.class";
-import { KurimudbMap } from "../src/helpers/make-kurimudb-map.func";
+import { makeKMap, AsyncAbstractDriverFactory, AsyncAbstractDriverInterface, SyncAbstractDriverInterface } from "../src";
+import { KMap } from "../src/helpers/make-kurimudb-map.func";
 import { BaseModel } from "../src/models/async/base-model.class";
 
 let nextPrimaryKey = 1;
 
-const data: KurimudbMap<KurimudbMap<unknown>> = makeKurimudbMap<KurimudbMap<unknown>>();
+const data: KMap<KMap<unknown>> = makeKMap<KMap<unknown>>();
 
-export interface TestAsyncDriverInterface extends AsyncAbstractDriver { }
+export interface TestAsyncDriver extends AsyncAbstractDriverInterface {
+}
 
-export const TestAsyncDriver: TestAsyncDriverInterface = {
-  make<DataType, DriverType extends AsyncAbstractDriver>(
+const delay = (val?: any): Promise<any> => new Promise((r) => setTimeout(() => r(val), Math.floor(10 * Math.random())));
+
+class TestAsyncDriverFactory extends AsyncAbstractDriverFactory {
+  make<DataType, DriverType extends SyncAbstractDriverInterface | AsyncAbstractDriverInterface | undefined>(
     model: BaseModel<DataType, DriverType>
-  ): AsyncAbstractDriverStorageInterface {
+  ): AsyncAbstractDriverInterface {
     const options = model.options;
-    data[options.name] = makeKurimudbMap<unknown>();
+    data[options.name] = makeKMap<unknown>();
 
-    const product: AsyncAbstractDriverStorageInterface = {
-      all(): KurimudbMap<unknown> {
-        return data[options.name];
-      },
-
+    const product: AsyncAbstractDriverInterface = {
       async insert(key: string, value: unknown): Promise<boolean> {
+        await delay();
+
         if (key in data[options.name]) {
           // Primary key exists.
           return false;
@@ -33,6 +33,8 @@ export const TestAsyncDriver: TestAsyncDriverInterface = {
       },
 
       async update(key: string, value: unknown): Promise<boolean> {
+        await delay();
+
         if (!(key in data[options.name])) {
           // Primary key does not exist.
           return false;
@@ -44,6 +46,8 @@ export const TestAsyncDriver: TestAsyncDriverInterface = {
       },
 
       async insertOrUpdate(key: string, value: unknown): Promise<void> {
+        await delay();
+
         if (key in data[options.name]) {
           await product.update(key, value);
           return;
@@ -54,6 +58,8 @@ export const TestAsyncDriver: TestAsyncDriverInterface = {
       },
 
       async insertAutoIncrement(value: unknown): Promise<string> {
+        await delay();
+
         const primaryKey = String(nextPrimaryKey++);
         if (primaryKey in data[options.name]) {
           throw new Error(`Primary key exists.`);
@@ -64,14 +70,20 @@ export const TestAsyncDriver: TestAsyncDriverInterface = {
       },
 
       async select(key: string): Promise<unknown | undefined> {
+        await delay();
+
         return data[options.name][key];
       },
 
       async exists(key: string): Promise<boolean> {
+        await delay();
+
         return key in data[options.name];
       },
 
       async delete(key: string): Promise<boolean> {
+        await delay();
+
         if (!(key in data[options.name])) {
           // Primary key does not exist.
           return false;
@@ -82,6 +94,8 @@ export const TestAsyncDriver: TestAsyncDriverInterface = {
       },
 
       async bulkInsert(items: Record<string, unknown>): Promise<boolean> {
+        await delay();
+
         // It is necessary to ensure that batch data processing will succeed before operation.
         // or you can roll back the data after an error occurs (the latter is more recommended for indexeddb).
         for (const key in items) {
@@ -94,6 +108,8 @@ export const TestAsyncDriver: TestAsyncDriverInterface = {
       },
 
       async bulkInsertAutoIncrement(items: Array<unknown>): Promise<Array<string>> {
+        await delay();
+
         // It is necessary to ensure that batch data processing will succeed before operation.
         // or you can roll back the data after an error occurs (the latter is more recommended for indexeddb).
         const results: Array<string> = [];
@@ -104,6 +120,8 @@ export const TestAsyncDriver: TestAsyncDriverInterface = {
       },
 
       async bulkUpdate(items: Record<string, unknown>): Promise<boolean> {
+        await delay();
+
         // It is necessary to ensure that batch data processing will succeed before operation.
         // or you can roll back the data after an error occurs (the latter is more recommended for indexeddb).
         for (const key in items) {
@@ -116,6 +134,8 @@ export const TestAsyncDriver: TestAsyncDriverInterface = {
       },
 
       async bulkInsertOrUpdate(items: Record<string, unknown>): Promise<boolean> {
+        await delay();
+
         // It is necessary to ensure that batch data processing will succeed before operation.
         // or you can roll back the data after an error occurs (the latter is more recommended for indexeddb).
         for (const key in items) {
@@ -125,8 +145,10 @@ export const TestAsyncDriver: TestAsyncDriverInterface = {
         return true;
       },
 
-      async bulkSelect(keys: Array<string>): Promise<KurimudbMap<unknown>> {
-        const results: KurimudbMap<unknown> = makeKurimudbMap<unknown>();
+      async bulkSelect(keys: Array<string>): Promise<KMap<unknown>> {
+        await delay();
+
+        const results: KMap<unknown> = makeKMap<unknown>();
         for (const key of keys) {
 
           results[key] = await product.select(key);
@@ -135,6 +157,8 @@ export const TestAsyncDriver: TestAsyncDriverInterface = {
       },
 
       async bulkDelete(keys: Array<string>): Promise<boolean> {
+        await delay();
+
         // It is necessary to ensure that batch data processing will succeed before operation.
         // or you can roll back the data after an error occurs (the latter is more recommended for indexeddb).
         for (const key of keys) {
@@ -147,14 +171,20 @@ export const TestAsyncDriver: TestAsyncDriverInterface = {
       },
 
       async seeding(seeding: Function): Promise<void> {
+        await delay();
+
         await seeding();
       },
 
       async clone(value: unknown): Promise<unknown> {
+        await delay();
+
         return value;
       },
     };
 
     return product;
-  },
-};
+  }
+}
+
+export const testAsyncDriverFactory = new TestAsyncDriverFactory();

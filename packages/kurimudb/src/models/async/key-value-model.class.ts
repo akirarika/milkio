@@ -16,31 +16,31 @@ export class KeyValueModel<
 
   seeded = false;
 
-  seed(seed: Function | Partial<DataType>) {
+  async seed(seed: Function | Partial<DataType>): Promise<void> {
     let seedFunc;
     if ("function" === typeof seed) {
-      seedFunc = () => {
+      seedFunc = async () => {
         this.seeded = true;
-        seed();
+        await seed();
       };
     } else if ("object" === typeof seed && !(seed instanceof Array)) {
-      seedFunc = () => {
+      seedFunc = async () => {
         this.seeded = true;
-        for (const key in seed) this.setItem(key, seed[key] as any);
+        for (const key in seed) await this.setItem(key, seed[key] as any);
       };
     } else {
       throw new Error(
-        `In "keyValue" model, the argument to the seed function must be "Function" or "Object".`
+        `[Kurimudb] In "keyValue" model, the argument to the seed function must be "Function" or "Object".`
       );
     }
 
     if (this.seeded) return;
 
     if (undefined === this.storage) {
-      seedFunc();
+      await seedFunc();
       return;
     }
     const storage = this.storage;
-    storage.seeding(seedFunc);
+    await storage.seeding(seedFunc);
   }
 }

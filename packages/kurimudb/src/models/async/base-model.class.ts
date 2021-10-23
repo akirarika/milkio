@@ -1,14 +1,22 @@
 import { SyncAbstractDriverInterface, AsyncAbstractDriverInterface, AsyncAbstractDriverFactory } from "../..";
 import { ModelOptionsInterface } from "./model-options.interface";
-import { cacheFactory, asyncDataFactory } from "../../providers";
-import { DataProxyType } from "../../data/sync/data-factory.class";
-import { SubscribeInterface } from "../../cache/subscribe.interface";
-import { KurimudbMap, makeKurimudbMap } from "../../helpers/make-kurimudb-map.func";
+import { cacheFactory, asyncDataFactory, runtime } from "../../providers";
+import { DataProxyType } from "../../data/async/data-factory.class";
+import { SubscribeInterface, UnsubscribeInterface } from "../../cache/subscribe.interface";
+import { KMap, makeKMap } from "../../helpers/make-kurimudb-map.func";
 import { CacheInterface } from "../../cache/cache-factory.class";
+import { SubscribeConfigInterface } from "../../cache/subscribe-config.interface";
+import { clone } from "../../helpers/clone.func";
+
+let auto$nextId = 0;
+
+interface AutoSubscribeClosureFunctionInterface {
+  (): Promise<void>;
+}
 
 export class BaseModel<
   DataType extends Record<string, any>,
-  DriverType extends SyncAbstractDriverInterface | AsyncAbstractDriverInterface | undefined = undefined
+  DriverType extends AsyncAbstractDriverInterface | SyncAbstractDriverInterface | undefined = undefined
   > {
   public options: ModelOptionsInterface;
   public cache: CacheInterface;
@@ -31,10 +39,10 @@ export class BaseModel<
   }
 
   private checkOptions(options: Partial<ModelOptionsInterface>): ModelOptionsInterface {
-    if (!options.name) throw new Error(`The model "name" does not exist.`);
+    if (!options.name) throw new Error(`[Kurimudb] The model "name" does not exist.`);
     if (!options.ioType || !options.modelType) {
       throw new Error(
-        `The model "ioType" or "modelType" does not exist. Do you inherit "BaseModel"? Please don't do that.`
+        `[Kurimudb] The model "ioType" or "modelType" does not exist. Do you inherit "CollectionModel" or "KeyValueModel"?`
       );
     }
 
@@ -44,26 +52,26 @@ export class BaseModel<
     return options as ModelOptionsInterface;
   }
 
-  getItem<Key extends keyof DataType>(key: Key): DataType[Key] | undefined {
+  async getItem<Key extends keyof DataType>(key: Key): Promise<DataType[Key] | undefined> {
     const skey = String(key);
     const result = this.cache.get(skey);
     if (undefined !== result) return result as DataType[Key];
     if (undefined === this.storage) return undefined;
-    return this.storage.select(skey) as DataType[Key];
+    return await this.storage.select(skey) as DataType[Key];
   }
 
-  bulkGetItem<Key extends keyof DataType>(
+  async bulkGetItem<Key extends keyof DataType>(
     keys: Array<Key>
-  ): Record<string, DataType[Key]> {
+  ): Promise<Record<string, DataType[Key]>> {
     if (undefined === this.storage) {
-      const results = makeKurimudbMap<DataType[Key]>();
+      const results = makeKMap<DataType[Key]>();
       for (const key of keys) {
         const skey = String(key);
         results[skey] = this.cache.get(skey) as DataType[Key];
       }
       return results;
     } else {
-      const results = makeKurimudbMap<DataType[Key]>();
+      const results = makeKMap<DataType[Key]>();
       const storageQueryItems: Array<string> = [];
       for (const key of keys) {
         const skey = String(key);
@@ -71,7 +79,7 @@ export class BaseModel<
         if (undefined === results[skey]) storageQueryItems.push(skey);
       }
 
-      const data = this.storage.bulkSelect(storageQueryItems);
+      const data = await this.storage.bulkSelect(storageQueryItems);
       for (const skey in data) {
         results[skey] = data[skey] as DataType[Key];
       }
@@ -79,21 +87,23 @@ export class BaseModel<
     }
   }
 
-  addItem<Key extends keyof DataType>(key: Key, value: DataType[Key]): boolean {
+  async addItem<Key extends keyof DataType>(key: Key, value: DataType[Key]): Promise<boolean> {
+    value = await this.clone(value);
     const skey = String(key);
     if (undefined !== this.storage) {
-      if (false === this.storage.insert(skey, value)) return false;
+      if (false === await this.storage.insert(skey, value)) return false;
     }
     this.cache.put(skey, value);
     return true;
   }
 
-  bulkAddItem<Key extends keyof DataType>(items: Record<Key, DataType[Key]>): boolean {
-    const skeyItems = makeKurimudbMap<unknown>();
+  async bulkAddItem<Key extends keyof DataType>(items: Record<Key, DataType[Key]>): Promise<boolean> {
+    items = await this.clone(items);
+    const skeyItems = makeKMap<unknown>();
     for (const key in items) skeyItems[String(key)] = items[key];
 
     if (undefined !== this.storage) {
-      if (false === this.storage.bulkInsert(skeyItems)) return false;
+      if (false === await this.storage.bulkInsert(skeyItems)) return false;
     }
 
     for (const skey in skeyItems) {
@@ -103,19 +113,21 @@ export class BaseModel<
     return true;
   }
 
-  setItem<Key extends keyof DataType>(key: Key, value: DataType[Key]): void {
+  async setItem<Key extends keyof DataType>(key: Key, value: DataType[Key]): Promise<void> {
+    value = await this.clone(value);
     const skey = String(key);
     this.cache.put(skey, value);
     if (undefined === this.storage) return;
-    this.storage.insertOrUpdate(skey, value);
+    return await this.storage.insertOrUpdate(skey, value);
   }
 
-  bulkSetItem<Key extends keyof DataType>(items: Record<Key, DataType[Key]>): boolean {
-    const skeyItems = makeKurimudbMap<unknown>();
+  async bulkSetItem<Key extends keyof DataType>(items: Record<Key, DataType[Key]>): Promise<boolean> {
+    items = await this.clone(items);
+    const skeyItems = makeKMap<unknown>();
     for (const key in items) skeyItems[String(key)] = items[key];
 
     if (undefined !== this.storage) {
-      if (false === this.storage.bulkInsertOrUpdate(skeyItems)) return false;
+      if (false === await this.storage.bulkInsertOrUpdate(skeyItems)) return false;
     }
 
     for (const skey in skeyItems) {
@@ -125,30 +137,60 @@ export class BaseModel<
     return true;
   }
 
-  hasItem<Key extends keyof DataType>(key: Key): boolean {
+  async hasItem<Key extends keyof DataType>(key: Key): Promise<boolean> {
     const skey = String(key);
     if (this.cache.has(skey)) return true;
     if (undefined === this.storage) return false;
-    return this.storage.exists(skey);
+    return await this.storage.exists(skey);
   }
 
-  removeItem<Key extends keyof DataType>(key: Key): void {
+  async removeItem<Key extends keyof DataType>(key: Key): Promise<void> {
     const skey = String(key);
     this.cache.forget(skey);
     if (undefined === this.storage) return;
-    this.storage.delete(skey);
+    return await this.storage.delete(skey) as unknown as Promise<void>;
   }
 
-  bulkRemoveItem<Key extends keyof DataType>(keys: Array<Key>): boolean {
+  async bulkRemoveItem<Key extends keyof DataType>(keys: Array<Key>): Promise<boolean> {
     if (undefined !== this.storage) {
-      if (false === this.storage.bulkDelete(keys.map((k) => String(k)))) return false;
+      if (false === await this.storage.bulkDelete(keys.map((k) => String(k)))) return false;
     }
     for (const key of keys) this.cache.forget(String(key));
     return true;
   }
 
-  subscribeItem<Key extends keyof DataType>(key: Key) {
+  subscribeItem<Key extends keyof DataType>(key: Key): SubscribeInterface {
     const skey = String(key);
     return this.cache.subscribe(skey);
+  }
+
+  async clone<T>(value: T): Promise<T> {
+    if (undefined === this.storage) {
+      return clone(value);
+    } else {
+      return await this.storage.clone(value) as T;
+    }
+  }
+
+  async auto$(
+    subClosFunc: AutoSubscribeClosureFunctionInterface,
+    config: SubscribeConfigInterface = {}
+  ): Promise<UnsubscribeInterface> {
+    config.immediate = false; // 所有用 auto$ 进行的订阅，均不主动触发首次订阅，由队列函数去主动触发
+    if (undefined === runtime.readModelInternalItemDependencies[this.options.name]) {
+      runtime.readModelInternalItemDependencies[this.options.name] = {};
+    }
+    const id = auto$nextId++;
+    runtime.readModelInternalItemDependencies[this.options.name][id] = [];
+
+    await subClosFunc();
+
+    const unsubscribeFuncArr = runtime.readModelInternalItemDependencies[this.options.name][id].map((item) => {
+      return item.subscribe(subClosFunc, config);
+    });
+    delete runtime.readModelInternalItemDependencies[this.options.name][id];
+    return () => {
+      unsubscribeFuncArr.forEach((unsubscribe) => unsubscribe());
+    };
   }
 }

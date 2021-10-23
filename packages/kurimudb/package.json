@@ -1,10 +1,14 @@
 {
   "name": "kurimudb",
-  "version": "4.1.1",
+  "version": "5.0.0-alpha.7",
   "scripts": {},
-  "description": "",
+  "description": "⚓ Simple enough web storage solution",
   "main": "./dist/index.js",
   "author": "akirarika",
   "license": "MIT",
-  "devDependencies": {}
+  "devDependencies": {},
+  "files": [
+    "/dist",
+    "/LICENSE"
+  ]
 }

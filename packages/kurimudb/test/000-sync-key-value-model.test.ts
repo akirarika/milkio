@@ -13,7 +13,7 @@ class SyncState extends SyncModels.keyValue<
     hello5: string;
     hello6: string;
     hello7: string;
-    hello8: string;
+    hello8?: string;
     hello9: string;
     "9": string;
   },
@@ -110,6 +110,17 @@ test("subscribe (auto)", () => {
     if (3 === i) expect(syncState.data.hello8).toBe("hello8");
   });
 
+  syncState.data.hello8 = "hello";
+  syncState.data.hello8 = "hello8";
+
+  i = 0;
+  delete syncState.data.hello8;
+  syncState.auto$(() => {
+    i++;
+    if (1 === i) expect(syncState.data.hello8).toBe(undefined);
+    if (2 === i) expect(syncState.data.hello8).toBe("hello");
+    if (3 === i) expect(syncState.data.hello8).toBe("hello8");
+  });
   syncState.data.hello8 = "hello";
   syncState.data.hello8 = "hello8";
 });

@@ -8,5 +8,4 @@ export const runtime = new Runtime();
 export const cacheFactory = new CacheFactory();
 export const syncDataFactory = new SyncDataFactory();
 export const asyncDataFactory = new AsyncDataFactory();
-// export const asyncDataFactory = new AsyncDataFactory();
 export const globalConfig = new GlobalConfig();

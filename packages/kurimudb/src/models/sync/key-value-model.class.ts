@@ -30,7 +30,7 @@ export class KeyValueModel<
       };
     } else {
       throw new Error(
-        `In "keyValue" model, the argument to the seed function must be "Function" or "Object".`
+        `[Kurimudb] In "keyValue" model, the argument to the seed function must be "Function" or "Object".`
       );
     }
 

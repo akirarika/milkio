@@ -1,9 +1,8 @@
 import { SyncAbstractDriverFactory, SyncAbstractDriverInterface } from "..";
-import { KurimudbMap } from "../helpers/make-kurimudb-map.func";
+import { KMap } from "../helpers/make-kurimudb-map.func";
 import { BaseModel } from "../models/async/base-model.class";
 
 export interface AsyncAbstractDriverInterface {
-  all(): KurimudbMap<unknown>;
   insert(key: string, value: unknown): Promise<boolean>;
   insertAutoIncrement(value: unknown): Promise<string>;
   update(key: string, value: unknown): Promise<boolean>;
@@ -15,7 +14,7 @@ export interface AsyncAbstractDriverInterface {
   bulkInsertAutoIncrement(items: Array<unknown>): Promise<Array<string>>;
   bulkUpdate(items: Record<string, unknown>): Promise<boolean>;
   bulkInsertOrUpdate(items: Record<string, unknown>): Promise<boolean>;
-  bulkSelect(keys: Array<string>): Promise<KurimudbMap<unknown>>;
+  bulkSelect(keys: Array<string>): Promise<KMap<unknown>>;
   bulkDelete(keys: Array<string>): Promise<boolean>;
   seeding(seeding: Function): Promise<void>;
   clone(value: unknown): Promise<unknown>;

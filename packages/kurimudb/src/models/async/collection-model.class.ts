@@ -1,13 +1,20 @@
-import { SyncAbstractDriverInterface, AsyncAbstractDriverInterface } from "../..";
+import {
+  SyncAbstractDriverInterface,
+  AsyncAbstractDriverInterface,
+} from "../..";
+import { globalConfig } from "../../providers";
 import { BaseModel } from "./base-model.class";
 import { ModelOptionsInterface } from "./model-options.interface";
 
 export class CollectionModel<
   DataType = any,
-  DriverType extends SyncAbstractDriverInterface | AsyncAbstractDriverInterface = AsyncAbstractDriverInterface
-  > extends BaseModel<Record<string, DataType>, DriverType> {
+  DriverType extends
+    | SyncAbstractDriverInterface
+    | AsyncAbstractDriverInterface = AsyncAbstractDriverInterface
+> extends BaseModel<Record<string, DataType>, DriverType> {
   constructor(options: Partial<ModelOptionsInterface>) {
     super({
+      autoIncrementHandler: globalConfig.asyncAutoIncrementHandler,
       ...options,
       ioType: "async",
       modelType: "collection",
@@ -17,19 +24,22 @@ export class CollectionModel<
   private nextPrimaryKey = 1;
   public seeded = false;
 
-  insertItem(item: DataType): string {
+  async insertItem(item: DataType): Promise<string> {
     if (undefined === this.storage) {
-      const skey = String(this.nextPrimaryKey++);
+      let skey: string;
+      if (undefined === this.options.autoIncrementHandler)
+        skey = String(this.nextPrimaryKey++);
+      else skey = await this.options.autoIncrementHandler(this.options);
       this.cache.put(skey, item);
 
       return skey;
     } else {
-      const skey = this.storage.insertAutoIncrement(item);
+      const skey = await this.storage.insertAutoIncrement(item);
       return skey;
     }
   }
 
-  bulkInsertItem(items: Array<DataType>): Array<string> {
+  async bulkInsertItem(items: Array<DataType>): Promise<Array<string>> {
     if (undefined === this.storage) {
       const keys: Array<string> = [];
       for (const key in items) {
@@ -40,13 +50,13 @@ export class CollectionModel<
 
       return keys;
     } else {
-      const keys = this.storage.bulkInsertAutoIncrement(items.map((v) => String(v)));
+      const keys = await this.storage.bulkInsertAutoIncrement(items);
 
       return keys;
     }
   }
 
-  seed(seed: Function | Partial<Array<DataType>>) {
+  async seed(seed: Function | Array<DataType>): Promise<void> {
     let seedFunc;
 
     if ("function" === typeof seed) {
@@ -57,23 +67,21 @@ export class CollectionModel<
     } else if (seed instanceof Array) {
       seedFunc = () => {
         this.seeded = true;
-        for (const item of seed) {
-          if (item) this.insertItem(item);
-        }
+        this.bulkInsertItem(seed);
       };
     } else {
       throw new Error(
-        `In "keyValue" model, the argument to the seed function must be "Function" or "Array".`
+        `[Kurimudb] In "keyValue" model, the argument to the seed function must be "Function" or "Array".`
       );
     }
 
     if (this.seeded) return;
 
     if (undefined === this.storage) {
-      seedFunc();
+      await seedFunc();
       return;
     }
     const storage = this.storage;
-    storage.seeding(seedFunc);
+    await storage.seeding(seedFunc);
   }
 }

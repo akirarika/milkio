@@ -8,11 +8,13 @@ let counter = 0;
 export class CacheItem {
   value: unknown;
   key: string | number;
+  modelName: string;
   subscribers: Map<number, Function>;
 
-  constructor(value: unknown, key: string | number) {
+  constructor(value: unknown, key: string | number, modelName: string) {
     this.value = value;
     this.key = key;
+    this.modelName = modelName;
     this.subscribers = new Map();
   }
 
@@ -22,8 +24,13 @@ export class CacheItem {
   }
 
   get(): unknown {
-    if (runtime.collectingReadItemDependencies) {
+    if (undefined !== runtime.readItemDependencies) {
       runtime.readItemDependencies.push(this);
+    }
+    if (this.modelName in runtime.readModelInternalItemDependencies) {
+      for (const id in runtime.readModelInternalItemDependencies[this.modelName]) {
+        runtime.readModelInternalItemDependencies[this.modelName][id].push(this);
+      }
     }
     return this.value;
   }

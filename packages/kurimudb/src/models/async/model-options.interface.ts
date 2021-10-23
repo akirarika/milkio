@@ -5,7 +5,10 @@ export interface ModelOptionsInterface {
   modelType: "keyValue" | "collection";
   ioType: "async";
   primary: string;
-  driver: SyncAbstractDriverFactory | AsyncAbstractDriverFactory | undefined;
   intrinsicTypes: string[] | false;
+  driver?: SyncAbstractDriverFactory | AsyncAbstractDriverFactory;
+  autoIncrementHandler?: (
+    options: ModelOptionsInterface
+  ) => string | Promise<string>;
   [others: string]: unknown;
 }

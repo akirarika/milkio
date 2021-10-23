@@ -1,13 +1,15 @@
 import { SyncAbstractDriverInterface } from "../../drivers/sync-abstract-driver.class";
+import { globalConfig } from "../../providers";
 import { BaseModel } from "./base-model.class";
 import { ModelOptionsInterface } from "./model-options.interface";
 
 export class CollectionModel<
   DataType = any,
   DriverType extends SyncAbstractDriverInterface | undefined = undefined
-  > extends BaseModel<Record<string, DataType>, DriverType> {
+> extends BaseModel<Record<string, DataType>, DriverType> {
   constructor(options: Partial<ModelOptionsInterface>) {
     super({
+      autoIncrementHandler: globalConfig.syncAutoIncrementHandler,
       ...options,
       ioType: "sync",
       modelType: "collection",
@@ -19,7 +21,10 @@ export class CollectionModel<
 
   insertItem(item: DataType): string {
     if (undefined === this.storage) {
-      const skey = String(this.nextPrimaryKey++);
+      let skey: string;
+      if (undefined === this.options.autoIncrementHandler)
+        skey = String(this.nextPrimaryKey++);
+      else skey = this.options.autoIncrementHandler(this.options);
       this.cache.put(skey, item);
 
       return skey;
@@ -40,13 +45,13 @@ export class CollectionModel<
 
       return keys;
     } else {
-      const keys = this.storage.bulkInsertAutoIncrement(items.map((v) => String(v)));
+      const keys = this.storage.bulkInsertAutoIncrement(items);
 
       return keys;
     }
   }
 
-  seed(seed: Function | Partial<Array<DataType>>) {
+  seed(seed: Function | Array<DataType>) {
     let seedFunc;
 
     if ("function" === typeof seed) {
@@ -57,13 +62,11 @@ export class CollectionModel<
     } else if (seed instanceof Array) {
       seedFunc = () => {
         this.seeded = true;
-        for (const item of seed) {
-          if (item) this.insertItem(item);
-        }
+        this.bulkInsertItem(seed);
       };
     } else {
       throw new Error(
-        `In "keyValue" model, the argument to the seed function must be "Function" or "Array".`
+        `[Kurimudb] In "keyValue" model, the argument to the seed function must be "Function" or "Array".`
       );
     }
 

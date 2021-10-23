@@ -1,6 +1,6 @@
 {
   "name": "kurimudb-driver-localstorage",
-  "version": "4.0.0",
+  "version": "5.0.0-alpha.2",
   "description": "",
   "main": "./dist/index.js",
   "author": "akirarika",

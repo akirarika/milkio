@@ -19,7 +19,7 @@ export class CacheFactory {
   make<DataType>(
     model: SyncBaseModel<DataType, SyncAbstractDriverInterface | undefined> | AsyncBaseModel<DataType, SyncAbstractDriverInterface | AsyncAbstractDriverInterface | undefined>
   ) {
-    const changed = this.createCacheItem("", model.options.name);
+    const changed = this.createCacheItem(model.options.name, "", model.options.name);
 
     const cache: CacheInterface = {
       changed: changed,
@@ -56,8 +56,11 @@ export class CacheFactory {
   get(modelName: string, key: string) {
     const modelCache = this.getModelCache(modelName);
 
-    const cacheItem = modelCache.get(key);
-    if (undefined === cacheItem) return undefined;
+    let cacheItem = modelCache.get(key);
+    if (undefined === cacheItem) {
+      cacheItem = this.createCacheItem(modelName, undefined, key);
+      modelCache.set(key, cacheItem);
+    }
 
     return cacheItem.get();
   }
@@ -69,7 +72,7 @@ export class CacheFactory {
       const cacheItem = modelCache.get(key);
       cacheItem?.set(value);
     } else {
-      modelCache.set(key, this.createCacheItem(value, key));
+      modelCache.set(key, this.createCacheItem(modelName, value, key));
     }
   }
 
@@ -88,7 +91,7 @@ export class CacheFactory {
       return cacheItem.subscribe;
     }
 
-    const cacheItem = this.createCacheItem(undefined, key);
+    const cacheItem = this.createCacheItem(modelName, undefined, key);
     modelCache.set(key, cacheItem);
     return cacheItem.subscribe;
   }
@@ -100,11 +103,11 @@ export class CacheFactory {
     modelCache.delete(key);
   }
 
-  private createCacheItem(value: unknown, key: string) {
-    return new CacheItem(value, key);
+  private createCacheItem(modelName: string, value: unknown, key: string) {
+    return new CacheItem(value, key, modelName);
   }
 
-  private getModelCache(modelName: string) {
+  private getModelCache(modelName: string): Map<string, CacheItem> {
     if (modelName in value) return value[modelName];
 
     value[modelName] = new Map();

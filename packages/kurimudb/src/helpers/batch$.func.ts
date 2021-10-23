@@ -9,7 +9,7 @@ export function batch$(
   subscibeFuncArr: SubscribeInterface[],
   subClosFunc: SubscribeClosureInterface,
   config: SubscribeConfigInterface = {}
-) {
+): UnsubscribeInterface {
   const unsubscribeFuncArr = subscibeFuncArr.map((subscribeFunc) =>
     subscribeFunc(subClosFunc, config)
   );

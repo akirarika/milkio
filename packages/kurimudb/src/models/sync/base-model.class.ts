@@ -3,11 +3,19 @@ import {
   SyncAbstractDriverFactory
 } from "../../drivers/sync-abstract-driver.class";
 import { ModelOptionsInterface } from "./model-options.interface";
-import { cacheFactory, syncDataFactory } from "../../providers";
+import { cacheFactory, runtime, syncDataFactory } from "../../providers";
 import { DataProxyType } from "../../data/sync/data-factory.class";
-import { SubscribeInterface } from "../../cache/subscribe.interface";
-import { KurimudbMap, makeKurimudbMap } from "../../helpers/make-kurimudb-map.func";
+import { SubscribeInterface, UnsubscribeInterface } from "../../cache/subscribe.interface";
+import { makeKMap } from "../../helpers/make-kurimudb-map.func";
 import { CacheInterface } from "../../cache/cache-factory.class";
+import { SubscribeConfigInterface } from "../../cache/subscribe-config.interface";
+import { clone } from "../../helpers/clone.func";
+
+let auto$nextId = 0;
+
+interface AutoSubscribeClosureFunctionInterface {
+  (): void | Promise<void>;
+}
 
 export class BaseModel<
   DataType extends Record<string, any>,
@@ -34,10 +42,10 @@ export class BaseModel<
   }
 
   private checkOptions(options: Partial<ModelOptionsInterface>): ModelOptionsInterface {
-    if (!options.name) throw new Error(`The model "name" does not exist.`);
+    if (!options.name) throw new Error(`[Kurimudb] The model "name" does not exist.`);
     if (!options.ioType || !options.modelType) {
       throw new Error(
-        `The model "ioType" or "modelType" does not exist. Do you inherit "BaseModel"? Please don't do that.`
+        `[Kurimudb] The model "ioType" or "modelType" does not exist. Do you inherit "CollectionModel" or "KeyValueModel"? Please don't do that.`
       );
     }
 
@@ -59,14 +67,14 @@ export class BaseModel<
     keys: Array<Key>
   ): Record<string, DataType[Key]> {
     if (undefined === this.storage) {
-      const results = makeKurimudbMap<DataType[Key]>();
+      const results = makeKMap<DataType[Key]>();
       for (const key of keys) {
         const skey = String(key);
         results[skey] = this.cache.get(skey) as DataType[Key];
       }
       return results;
     } else {
-      const results = makeKurimudbMap<DataType[Key]>();
+      const results = makeKMap<DataType[Key]>();
       const storageQueryItems: Array<string> = [];
       for (const key of keys) {
         const skey = String(key);
@@ -83,6 +91,7 @@ export class BaseModel<
   }
 
   addItem<Key extends keyof DataType>(key: Key, value: DataType[Key]): boolean {
+    value = this.clone(value);
     const skey = String(key);
     if (undefined !== this.storage) {
       if (false === this.storage.insert(skey, value)) return false;
@@ -92,7 +101,8 @@ export class BaseModel<
   }
 
   bulkAddItem<Key extends keyof DataType>(items: Record<Key, DataType[Key]>): boolean {
-    const skeyItems = makeKurimudbMap<unknown>();
+    items = this.clone(items);
+    const skeyItems = makeKMap<unknown>();
     for (const key in items) skeyItems[String(key)] = items[key];
 
     if (undefined !== this.storage) {
@@ -108,6 +118,7 @@ export class BaseModel<
 
 
   setItem<Key extends keyof DataType>(key: Key, value: DataType[Key]): void {
+    value = this.clone(value);
     const skey = String(key);
     this.cache.put(skey, value);
     if (undefined === this.storage) return;
@@ -115,7 +126,8 @@ export class BaseModel<
   }
 
   bulkSetItem<Key extends keyof DataType>(items: Record<Key, DataType[Key]>): boolean {
-    const skeyItems = makeKurimudbMap<unknown>();
+    items = this.clone(items);
+    const skeyItems = makeKMap<unknown>();
     for (const key in items) skeyItems[String(key)] = items[key];
 
     if (undefined !== this.storage) {
@@ -151,8 +163,47 @@ export class BaseModel<
     return true;
   }
 
-  subscribeItem<Key extends keyof DataType>(key: Key) {
+  subscribeItem<Key extends keyof DataType>(key: Key): SubscribeInterface {
     const skey = String(key);
     return this.cache.subscribe(skey);
+  }
+
+  clone<T>(value: T): T {
+    if (undefined === this.storage) {
+      return clone(value);
+    } else {
+      return this.storage.clone(value) as T;
+    }
+  }
+
+  auto$(
+    subClosFunc: AutoSubscribeClosureFunctionInterface,
+    config: SubscribeConfigInterface = {}
+  ): UnsubscribeInterface | Promise<UnsubscribeInterface> {
+    config.immediate = false; // 所有用 auto$ 进行的订阅，均不主动触发首次订阅，由队列函数去主动触发
+    if (undefined === runtime.readModelInternalItemDependencies[this.options.name]) {
+      runtime.readModelInternalItemDependencies[this.options.name] = {};
+    }
+    const id = auto$nextId++;
+    runtime.readModelInternalItemDependencies[this.options.name][id] = [];
+
+    const r = subClosFunc();
+    const subscribe = () => {
+      const unsubscribeFuncArr = runtime.readModelInternalItemDependencies[this.options.name][id].map((item) => {
+        return item.subscribe(subClosFunc, config);
+      });
+      delete runtime.readModelInternalItemDependencies[this.options.name][id];
+      return () => {
+        unsubscribeFuncArr.forEach((unsubscribe) => unsubscribe());
+      };
+    }
+    if ("function" !== typeof r?.then) {
+      return subscribe();
+    } else {
+      return (async () => {
+        await r;
+        return subscribe();
+      })();
+    }
   }
 }

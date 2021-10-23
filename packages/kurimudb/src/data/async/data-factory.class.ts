@@ -9,7 +9,7 @@ export type DataKeysType<Origin extends Record<string, any>> = {
 export type DataProxyType<Origin extends Record<string, any>> = {
   [Key in DataKeysType<Origin>]: Key extends `${string}$`
   ? SubscribeInterface
-  : Origin[Key];
+  : Promise<Origin[Key]> | Origin[Key];
 };
 
 export class DataFactory {
@@ -28,15 +28,16 @@ export class DataFactory {
         }
       },
       set: (target, key: any, value: any) => {
-        model.setItem(key, value);
-        return true;
+        throw new Error(`[Kurimudb] Like "${model.options.name}.data.${key} = ${JSON.stringify(value)}" cannot be used on the Async Model because of JavaScript limitations. Please use "await ${model.options.name}.setItem('${key}')"`);
+        return false;
       },
       has: (target, key: any) => {
-        return model.hasItem(key);
+        throw new Error(`[Kurimudb] Like "'${key}' in ${model.options.name}.data" cannot be used on the Async Model because of JavaScript limitations. Please use "await ${model.options.name}.has('${key}')"`);
+        return false;
       },
       deleteProperty: (target, key: any) => {
-        model.removeItem(key);
-        return true;
+        throw new Error(`[Kurimudb] Like "delete ${model.options.name}.data.${key}" cannot be used on the Async Model because of JavaScript limitations. Please use "await ${model.options.name}.removeItem('${key}')"`);
+        return false;
       },
     });
   }

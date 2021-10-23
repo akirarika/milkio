@@ -1,26 +1,22 @@
-import { makeKurimudbMap, SyncAbstractDriverFactory, SyncAbstractDriverInterface } from "../src";
-import { KurimudbMap } from "../src/helpers/make-kurimudb-map.func";
+import { makeKMap, SyncAbstractDriverFactory, SyncAbstractDriverInterface } from "../src";
+import { KMap } from "../src/helpers/make-kurimudb-map.func";
 import { BaseModel } from "../src/models/sync/base-model.class";
 
 let nextPrimaryKey = 1;
 
-const data: KurimudbMap<KurimudbMap<unknown>> = makeKurimudbMap<KurimudbMap<unknown>>();
+const data: KMap<KMap<unknown>> = makeKMap<KMap<unknown>>();
 
 export interface TestSyncDriver extends SyncAbstractDriverInterface {
 }
 
 class TestSyncDriverFactory extends SyncAbstractDriverFactory {
-  make<DataType>(
-    model: BaseModel<DataType, TestSyncDriver | undefined>
+  make<DataType, DriverType extends SyncAbstractDriverInterface | undefined>(
+    model: BaseModel<DataType, DriverType>
   ): TestSyncDriver {
     const options = model.options;
-    data[options.name] = makeKurimudbMap<unknown>();
+    data[options.name] = makeKMap<unknown>();
 
     const product: SyncAbstractDriverInterface = {
-      all(): KurimudbMap<unknown> {
-        return data[options.name];
-      },
-
       insert(key: string, value: unknown): boolean {
         if (key in data[options.name]) {
           // Primary key exists.
@@ -125,8 +121,8 @@ class TestSyncDriverFactory extends SyncAbstractDriverFactory {
         return true;
       },
 
-      bulkSelect(keys: Array<string>): KurimudbMap<unknown> {
-        const results: KurimudbMap<unknown> = makeKurimudbMap<unknown>();
+      bulkSelect(keys: Array<string>): KMap<unknown> {
+        const results: KMap<unknown> = makeKMap<unknown>();
         for (const key of keys) {
 
           results[key] = product.select(key);

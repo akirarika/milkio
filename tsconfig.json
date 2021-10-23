@@ -1,6 +1,17 @@
 {
   "references": [
-    { "path": "./packages/kurimudb" },
+    {
+      "path": "./packages/kurimudb"
+    },
+    {
+      "path": "./packages/kurimudb-driver-localstorage"
+    },
+    {
+      "path": "./packages/kurimudb-driver-cookie"
+    },
+    {
+      "path": "./packages/kurimudb-driver-dexie"
+    },
   ],
   "files": []
 }

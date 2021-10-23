@@ -1,9 +1,0 @@
-{
-  "name": "kurimudb-old",
-  "version": "4.1.1",
-  "scripts": {},
-  "description": "",
-  "main": "./dist/index.js",
-  "author": "akirarika",
-  "license": "MIT"
-}
