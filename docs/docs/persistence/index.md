@@ -9,7 +9,7 @@
 下面让我们为模型添加 `LocalStorage` 驱动，安装驱动：
 
 ```sh
-npm i kurimudb-driver-localstorage@4
+npm i kurimudb-driver-localstorage@5
 ```
 
 在模型上，声明我们要使用的驱动即可：
@@ -17,16 +17,16 @@ npm i kurimudb-driver-localstorage@4
 ```js {4,9}
 // /models/configState.js
 
-import { Models } from "kurimudb";
-import { LocalStorageDriver } from "kurimudb-driver-localstorage";
+import { SyncModels } from 'kurimudb';
+import { localStorageDriverFactory } from 'kurimudb-driver-localstorage';
 
-export default new class ConfigState extends Models.keyValue {
+export default new (class ConfigState extends SyncModels.keyValue {
   constructor() {
     super({
-      driver: LocalStorageDriver,
+      driver: localStorageDriverFactory,
     });
   }
-}
+})();
 ```
 
 现在再试试看，数据会不会丢失？后面的驱动章节，我们将会为你详细介绍 Kurimudb 提供的各种驱动，和教你如何编写自己的驱动，来完全掌控数据存储的逻辑。

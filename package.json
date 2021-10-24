@@ -4,11 +4,23 @@
   "private": true,
   "scripts": {
     "test": "jest --no-cache && jest",
+    "dev": "tsc -b -w",
+    "build": "tsc -b",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "build": "tsc -b",
-    "watch": "tsc -b -w",
-    "publish": "node publish.js"
+    "docs:serve": "vitepress serve docs",
+    "prettier": "prettier --write \"**/*.{js,jsx,tsx,ts,less,md,json}\""
+  },
+  "gitHooks": {
+    "pre-commit": "lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,jsx,less,md,json}": [
+      "prettier --write"
+    ],
+    "*.ts?(x)": [
+      "prettier --parser=typescript --write"
+    ]
   },
   "workspaces": [
     "packages\\demo",
@@ -21,13 +33,17 @@
     "packages\\kurimudb-zero-config"
   ],
   "devDependencies": {
-    "@peeky/cli": "^0.3.3",
     "@types/jest": "^27.0.1",
     "@types/node": "^16.7.1",
     "jest": "^27.0.6",
+    "lint-staged": "^10.0.7",
+    "prettier": "^2.2.1",
     "ts-jest": "^27.0.5",
     "tslib": "^2.3.1",
     "typescript": "^4.4.4",
-    "vitepress": "^0.13"
+    "vitepress": "^0.20.0"
+  },
+  "dependencies": {
+    "remixicon": "^2.5.0"
   }
 }

@@ -17,7 +17,7 @@ configState.data.foo$(
   (value, key) => {
     console.log(value, key);
   },
-  { immediate: false }
+  { immediate: false },
 );
 ```
 
@@ -32,7 +32,7 @@ configState.subscribeItem(key, closFunc, config);
 如果你想一次订阅多个值的变更，可以使用 `batch$` 函数：
 
 ```js
-import { batch$ } from "kurimudb";
+import { batch$ } from 'kurimudb';
 
 batch$([configState.data.foo$, configState.data.bar$], (value, key) => {
   console.log(value, key);
@@ -44,9 +44,7 @@ batch$([configState.data.foo$, configState.data.bar$], (value, key) => {
 手动声明要订阅的值可能会有些繁琐，我们还提供了一种便捷的方式。当你在闭包中所使用的值有任一被更改时，都会触发一次订阅：
 
 ```js
-import { auto$ } from "kurimudb";
-
-auto$(() => {
+configState.auto$(() => {
   console.log(configState.data.foo);
   console.log(configState.data.bar);
 });
@@ -54,7 +52,24 @@ auto$(() => {
 
 在闭包函数的首次执行过程时，Kurimudb 会收集其中哪些值被读取，随后订阅它们，因此，闭包函数**必须是同步的**。
 
-> 📜 使用此功能需要 (^3.1.1) 版本。
+## 全局自动订阅
+
+前文自动订阅功能的范围是你的模型，如果你在其中读取了外部模型的数据，是不会被订阅的。如果你想自动订阅任一模型的数据，你可以使用全局自动订阅：
+
+```js
+import { auto$ } from 'kurimudb';
+
+auto$(() => {
+  console.log(fooState.data.foo);
+  console.log(barState.data.bar);
+});
+```
+
+::: warning 注意事项
+
+和自动订阅功能不同，由于 JavaScript 的限制，全局自动订阅功能不适用于**异步模型**。我们想到了一种变通的方式，来实现支持异步模型的全局自动订阅功能，但是此功能还在开发中。
+
+:::
 
 ## 订阅模型
 
@@ -100,8 +115,8 @@ unsubscribe();
 ### Vue3
 
 ```js
-import { onBeforeUnmount } from "vue";
-import { kurimudbConfig } from "kurimudb";
+import { onBeforeUnmount } from 'vue';
+import { kurimudbConfig } from 'kurimudb';
 
 kurimudbConfig.autoUnsubscribe = (unsubscribe) => {
   onBeforeUnmount(() => unsubscribe());
@@ -121,6 +136,6 @@ configState.data.foo$(
   (value, key) => {
     console.log(value, key);
   },
-  { autoUnsubscribe: false }
+  { autoUnsubscribe: false },
 );
 ```
