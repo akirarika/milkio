@@ -179,7 +179,7 @@ export default new (class NoteList extends SyncModels.collection {
 
 ::: warning 注意事项
 
-- 在同步模型中，它**必须为一个同步函数**，如果需要它是一个异步函数，请使用异步模式。
+- 在同步模型中，它**必须为一个同步函数**，如果需要它是一个异步函数，请使用异步模型。
 
 - 它的返回值必须为 `string` 类型。因为 JavaScript 中 `number` 可以精确表示的最大整数是 `2^53-1`，这对于常见的纯数字分布式算法来说，将存在精度问题。
 
