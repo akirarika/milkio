@@ -7,7 +7,7 @@ In addition to persistent data, Kurimudb can be [Model layer](https://en.wikiped
 
 Kurimudb's persistence feature is driver-oriented. It means you can replace the implementation without changing the code. We build several common drivers. If these are not for you, you can build your own driver.
 
-## Development Document
+## Developer Document
 
 You can [click here](https://kurimudb.nito.ink/) to read the document.
 
