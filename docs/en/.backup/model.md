@@ -6,7 +6,7 @@ sidebarDepth: 2
 
 In the preamble, we introduced the basic usage and used the zero config library, `kurimudb-zero-config`. Normally, this would have already satisfied our needs.
 
-However, if we are currently developing a complex single-page application, do we really want to save various kinds of data messily in a single object? This is not a good idea. 
+However, if we are currently developing a complex single-page application, do we really want to save various kinds of data messily in a single object? This is not a good idea.
 
 This is the time for **Model feature** to make its grand debut！ 🎉
 
@@ -14,7 +14,7 @@ This is the time for **Model feature** to make its grand debut！ 🎉
 
 Models are the core of saving and managing your data. The `memory`、`local`、`cookie` and `db` objects we previously used in our zero config library are actually all models!
 
-Before we continue, let's install Kurimudb: 
+Before we continue, let's install Kurimudb:
 
 ```bash
 npm i kurimudb@4
@@ -27,20 +27,20 @@ Creating a model is actually very simple. You only need to inherit the Kurimudb'
 ```js
 // Create a /models/configState.js file
 // We can use it to store data related to user configuration.
-import { Models } from "kurimudb";
+import { Models } from 'kurimudb';
 
 export default new (class ConfigState extends Models.keyValue {})();
 ```
 
-Just like this, you will have a `ConfigState` model. `ConfigState` is a **Key-Value Pair** model and using it is even simpler: 
+Just like this, you will have a `ConfigState` model. `ConfigState` is a **Key-Value Pair** model and using it is even simpler:
 
 ```js
-import configState from "./models/configState.js";
+import configState from './models/configState.js';
 
-configState.data.say = "hello world"; // Writing..
+configState.data.say = 'hello world'; // Writing..
 console.log(configState.data.say); // Reading..
 delete configState.data.say; // Deleting..
-"say" in configState; // Determining whether it exists..
+'say' in configState; // Determining whether it exists..
 ```
 
 Through the constructor, you can self-define the options for the model:
@@ -48,17 +48,17 @@ Through the constructor, you can self-define the options for the model:
 ```js
 // /models/configState.js
 
-import { Models } from "kurimudb";
+import { Models } from 'kurimudb';
 
 export default new (class ConfigState extends Models.keyValue {
   constructor() {
     super({
       // The name of the model must be unique globally
       // If undefined, the class name of such classes will be used
-      name: "OurModel",
-      // The primary type of the model 
-      // If undefined, the key-value pair model will use "string", while the set model will use "number"
-      type: "number",
+      name: 'OurModel',
+      // The primary type of the model
+      // If undefined, the key-value model will use "string", while the set model will use "number"
+      type: 'number',
     });
   }
 })();
@@ -66,11 +66,11 @@ export default new (class ConfigState extends Models.keyValue {
 
 ## Model Methods
 
-We can add **any methods** in the model class! Just like: 
+We can add **any methods** in the model class! Just like:
 
 ```js
 // /models/configState.js
-import { Models } from "kurimudb";
+import { Models } from 'kurimudb';
 
 class ConfigState extends Models.keyValue {
   // ..
@@ -94,7 +94,7 @@ export default new ConfigState();
 We can directly call the methods when using it.
 
 ```js
-import configState from "./models/configState.js";
+import configState from './models/configState.js';
 
 configState.setFoo();
 await configState.calcBar();
@@ -116,11 +116,11 @@ configState.data[700];
 
 The primary use cases for set models are various lists, such as caching the list of videos, list of user drafts etc……Next, suppose we are currently developing a notes application, and we need to save the user's notes locally.
 
-Let's create a  `NoteList` model:
+Let's create a `NoteList` model:
 
 ```js {5}
 // Create a /models/noteList.js file
-import { Models } from "kurimudb";
+import { Models } from 'kurimudb';
 
 // Inherit Models.collection to make it become a set model
 export default new (class NoteList extends Models.collection {
@@ -131,10 +131,10 @@ export default new (class NoteList extends Models.collection {
 When using it, the primary key of data created through `insert` method will be auto incremented:
 
 ```js
-import noteList from "@/models/noteList";
+import noteList from '@/models/noteList';
 
-const note1 = noteList.insert("This is the content of note 1");
-const note2 = noteList.insert("This is the content of note 2");
+const note1 = noteList.insert('This is the content of note 1');
+const note2 = noteList.insert('This is the content of note 2');
 console.log(noteList.data[1]); // echo "This is the content of note 1"
 console.log(noteList.data[2]); // echo "This is the content of note 2"
 ```
@@ -161,42 +161,42 @@ In this case, we can use the `seed` method in the constructor method to populate
 
 ```js {8,9,10,11}
 // /models/configState.js
-import { Models } from "kurimudb";
+import { Models } from 'kurimudb';
 
 class ConfigState extends Models.keyValue {
   constructor() {
     // ..
 
     this.seed(() => {
-      this.data.foo = "foo";
-      this.data.bar = "bar";
+      this.data.foo = 'foo';
+      this.data.bar = 'bar';
     });
   }
 }
 ```
 
-For **Key-Value Pair Model**，you can pass in an object to simplify the population of the model：
+For **key-value model**，you can pass in an object to simplify the population of the model：
 
 ```js
 this.seed({
-  foo: "bar",
-  baz: "qux",
+  foo: 'bar',
+  baz: 'qux',
 });
 // Equivalent to：
 this.seed(() => {
-  this.data.foo = "bar";
-  this.data.baz = "qux";
+  this.data.foo = 'bar';
+  this.data.baz = 'qux';
 });
 ```
 
 For **Set Model**，you can pass in an array to simplify the population process：
 
 ```js
-this.seed(["foo", "bar"]);
+this.seed(['foo', 'bar']);
 // Equivalent to：
 this.seed(() => {
-  this.insert("foo");
-  this.insert("bar");
+  this.insert('foo');
+  this.insert('bar');
 });
 ```
 
@@ -250,26 +250,29 @@ Therefore, we provided a whitelist. If your data or internals contains such obje
 If you wish to overwrite this whitelist, you can:
 
 ```js {8}
-import { Models } from "kurimudb";
+import { Models } from 'kurimudb';
 
 class ConfigState extends Models.keyValue {
   constructor() {
     super({
-      intrinsicTypes: ["File", "FileList"],
+      intrinsicTypes: ['File', 'FileList'],
     });
   }
 }
 ```
+
 If you want to deep clone all objects, you can directly pass in an empty array:
 
 ```js
 intrinsicTypes: [];
 ```
-If you do not want to deep clone any of the objects, you can pass in `false`: 
+
+If you do not want to deep clone any of the objects, you can pass in `false`:
 
 ```js
 intrinsicTypes: false;
 ```
+
 If you wish to manually perform deep clone, you can use the `deepClone` function of the model object.
 
 ```js

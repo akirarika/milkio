@@ -13,10 +13,10 @@ In addition to making it easier for us to reuse code in the future, it can also 
 ```js
 // Bad ✖ Reason: Modify the value of the model directly in the view component.
 configState.data.themeSize = 16;
-configState.data.themeColor = "#ffffff";
+configState.data.themeColor = '#ffffff';
 
 // Good ✔ Reason: Write the operation as a method or a view component to call.
-configState.setTheme(16, "#ffffff");
+configState.setTheme(16, '#ffffff');
 ```
 
 ### Only modify your own model
@@ -47,16 +47,16 @@ class ConfigState extends Models.keyValue {
 When you save an object or array, if you want to modify its property value, you may intuitively write the following code:
 
 ```js
-local.data.theme = { color: "blue", mode: "white" };
-local.data.theme.color = "red";
+local.data.theme = { color: 'blue', mode: 'white' };
+local.data.theme.color = 'red';
 ```
 
 But writing in this way **cannot persist data**. The reason is that you took out the value of the `theme` object, but did not save the changed result. The above code is essentially equivalent to:
 
 ```js {4}
-local.data.theme = { color: "blue", mode: "white" };
+local.data.theme = { color: 'blue', mode: 'white' };
 const theme = local.data.theme;
-theme.color = "red";
+theme.color = 'red';
 // you also need: local.data.theme = theme;
 ```
 
@@ -64,15 +64,15 @@ Due to the different design of Kurimudb, we do not recommend storing a set of st
 
 ```js
 // bad ✖ Reason: It stores relevant data in an object.
-configState.data.theme = { color: "blue", mode: "white" };
+configState.data.theme = { color: 'blue', mode: 'white' };
 
 // good ✔ Reason: Use variable names to distinguish categories.
-configState.data.themeColor = "blue";
-configState.data.themeMode = "white";
+configState.data.themeColor = 'blue';
+configState.data.themeMode = 'white';
 
 // good ✔ Reason: Build a model to store this type of data.
-themeState.data.color = "blue";
-themeState.data.mode = "white";
+themeState.data.color = 'blue';
+themeState.data.mode = 'white';
 ```
 
 If you want to store a set of data, we also recommend using the **collection model** instead of the array:
@@ -81,16 +81,16 @@ If you want to store a set of data, we also recommend using the **collection mod
 // bad ✖ Reason: Save the data as an array and store it in key-value pairs.
 configState.data.drafts = [];
 const drafts = configState.data.drafts;
-drafts.push({ title: "foo", content: "bar" });
+drafts.push({ title: 'foo', content: 'bar' });
 configState.data.drafts = drafts;
 
 // good ✔ Reason: Build a collection model to store this type of data.
-draftModel.insert({ title: "foo", content: "bar" });
+draftModel.insert({ title: 'foo', content: 'bar' });
 ```
 
 ## Model Naming
 
-We recommend using `noun + State` as the name of the key-value pair model and `noun + List` as the name of the collection model. In this way, through the name, we can easily distinguish what type of model it is.
+We recommend using `noun + State` as the name of the key-value model and `noun + List` as the name of the collection model. In this way, through the name, we can easily distinguish what type of model it is.
 
 ```js
 // bad ✖ Reason: Directly use `noun` or `noun + Model` as the model name.
@@ -102,11 +102,11 @@ class TabState extends Models.keyValue ...
 class TabList extends Models.collection ...
 ```
 
-Take an actual scenario as an example, suppose we want to make a tab page function for the middle and back-end system, we need to build the following two models: 
+Take an actual scenario as an example, suppose we want to make a tab page function for the middle and back-end system, we need to build the following two models:
 
 - **`tabList` Model:** is a collection model, which stores the opened tabs. Each item in it includes fields such as name, icon, URL, order, etc...
 
-- **`tabState` Model:** is a key-value pair model, which stores the tab display form, the currently activated tab id...
+- **`tabState` Model:** is a key-value model, which stores the tab display form, the currently activated tab id...
 
 If `tabState` directly uses `tab` as the model name, it is difficult to name it accurately if `tabList` is needed. Moreover, naming with single nouns is also prone to conflicts: for example, in the view code related to the tab page, it is easy to use `tab` as the variable name, but since it is the same as the model name you have to change the name.
 

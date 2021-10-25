@@ -208,7 +208,7 @@ class ConfigState extends SyncModels.keyValue {
 }
 ```
 
-For the **key-value pair model**, you can pass in an object to simplify model padding:
+For the **key-value model**, you can pass in an object to simplify model padding:
 
 ```js
 this.seed({
