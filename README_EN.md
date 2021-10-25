@@ -1,4 +1,4 @@
-* [中文版](./README.md)
+### [中文版](./README.md)
 ## Introduction to Kurimudb
 
 Kurimudb is a progressive **Web front-end local persistence library**. It can save your data to LocalStorage, IndexedDB, Cookie, and elsewhere. Also, support subscribing to the mutating of data.

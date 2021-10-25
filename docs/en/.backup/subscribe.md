@@ -21,15 +21,15 @@ configState.data.foo$(
 );
 ```
 
-You can also use in form of [类 Storage Api](/model.html#%E7%B1%BB-storage-api) to suscribe：
+You can also use in form of [Api similar to Storage Object](/model.html#%E7%B1%BB-storage-api) to subscribe：
 
 ```js
 configState.subscribeItem(key, closFunc, config);
 ```
 
-## Bulk Suscription
+## Batch Suscription
 
-If you want to subscribe to changes of multiple values at once, you can use function `batch$`: 
+If you want to subscribe to changes of multiple values at once, you can use function `batch$`:
 
 ```js
 import { batch$ } from "kurimudb";

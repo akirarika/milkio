@@ -1,8 +1,8 @@
 # TypeScript
 
-Kurimudb 支持 TypeScript，除了为你带来代码提示以外，还可以依靠泛型，限制存入数据的格式和类型。
+Kurimudb supports TypeScript. In addition to bringing you code hints, you can also rely on generics to limit the format and type of data stored.
 
-## 键值对模型
+## Key-value Model
 
 ```ts
 import { SyncModels } from 'kurimudb';
@@ -18,8 +18,8 @@ interface ThemeInterface {
 }
 
 export default new (class ThemeState extends SyncModels.keyValue<
-  ThemeInterface, // 限制模型中可存入的数据的格式
-  LocalStorageDriver // 若传入驱动的接口，可获得驱动专有函数的代码提示
+  ThemeInterface, // restrict the data format of the model, namely the form of `themeState.data`
+  LocalStorageDriver // if you pass in the driver, you can get the code hint of the driver's proprietary Api
 > {
   constructor() {
     super({
@@ -29,7 +29,7 @@ export default new (class ThemeState extends SyncModels.keyValue<
 })();
 ```
 
-## 集合模型
+## Collection Model
 
 ```ts
 import { SyncModels } from 'kurimudb';
@@ -44,8 +44,8 @@ interface NoteItemInterface {
 }
 
 export default new (class NoteList extends SyncModels.collection<
-  NoteItemInterface, // 限制集合模型中每个条目的格式
-  LocalStorageDriver // 若传入驱动的接口，可获得驱动专有 Api 的代码提示
+  NoteItemInterface, // restrict the format of each sub-item in the collection model
+  LocalStorageDriver // if you pass in the driver, you can get the code hint of the driver's proprietary Api
 > {
   constructor() {
     super({
@@ -55,9 +55,9 @@ export default new (class NoteList extends SyncModels.collection<
 })();
 ```
 
-## 存入额外数据
+## Store Additional Data
 
-如果希望一个键值对模型，可以存入非约定键以外的数据，可以这么做：
+If you want a key-value pair model that can store data other than non-conventional keys, you can write like this:
 
 ```ts {11}
 import { SyncModels } from 'kurimudb';
@@ -74,8 +74,8 @@ interface ThemeInterface {
 }
 
 export default new (class ThemeState extends SyncModels.keyValue<
-  ThemeInterface, // 限制模型中可存入的数据的格式
-  LocalStorageDriver // 若传入驱动的接口，可获得驱动专有函数的代码提示
+  ThemeInterface, // restrict the format of each sub-item in the collection model
+  LocalStorageDriver // if you pass in the driver, you can get the code hint of the driver's proprietary Api
 > {
   constructor() {
     super({

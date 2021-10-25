@@ -46,7 +46,7 @@ delete configState.data.say; // deleting..
 'say' in configState; // check existence..
 ```
 
-## (API) Interface Similar to the Storage Object
+## API Similar to the Storage Object
 
 If you have used `localStorage`, you will be familiar with this method:
 
@@ -158,11 +158,11 @@ console.log(keys); // echo ["3", "4"]
 
 :::
 
-### 分布式主键
+### Key Generator
 
-我们可能会希望用户的数据能够在云端同步。在集合模型中，如果主键是逐个自增的，用户使用多个客户端时就会出现同步问题。
+We may hope that user data can be synchronized in the cloud. In the collection model, if the primary keys are incremented one by one, there will be synchronization problems when users use multiple clients.
 
-为此，我们可以在模型选项中，添加 `autoIncrementHandler` 属性来自定义主键生成方式，代替默认的自增模式。例如，我们可以采用 [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)、[Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) 等方式，来生成一个全局唯一的分布式 ID。
+To this end, we can add the `autoIncrementHandler` attribute to the model options to customize the primary key generation method, instead of the default auto-increment mode. For example, we can use [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier), [Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) to generate a global unique distributed ID.
 
 ```js {5,6,7}
 export default new (class NoteList extends SyncModels.collection {
@@ -177,11 +177,11 @@ export default new (class NoteList extends SyncModels.collection {
 })();
 ```
 
-::: warning 注意事项
+::: Warning Tips
 
-- 在同步模型中，它**必须为一个同步函数**，如果需要它是一个异步函数，请使用异步模型。
+- In the synchronous model, it **must be a synchronous function**. If you need it to be an asynchronous function, please use the asynchronous model.
 
-- 它的返回值必须为 `string` 类型。因为 JavaScript 中 `number` 可以精确表示的最大整数是 `2^53-1`，这对于常见的纯数字分布式算法来说，将存在精度问题。
+- Its return value must be of type `string`. Because the largest integer that can be accurately represented by `number` in JavaScript is `2^53-1`, this will have precision problems for common purely digital distributed algorithms.
 
 :::
 
