@@ -48,9 +48,11 @@ export default new (class NoteList extends SyncModels.collection<
   LocalStorageDriver // 若传入驱动的接口，可获得驱动专有 Api 的代码提示
 > {
   constructor() {
+  constructor() {
     super({
       driver: localStorageDriverFactory,
     });
+  }
   }
 })();
 ```

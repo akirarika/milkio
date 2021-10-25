@@ -2,7 +2,7 @@
 
 In the preamble, we introduced the basic usage and used the zero config library, `kurimudb-zero-config`. Normally, this would have already satisfied our needs.
 
-However, if we are currently developing a complex single-page application, do we really want to save various kinds of data messily in a single object? This is not a good idea. 
+However, if we are currently developing a complex single-page application, do we really want to save various kinds of data messily in a single object? This is not a good idea.
 
 This is the time for **Model feature** to make its grand debut！ 🎉
 
@@ -23,14 +23,16 @@ Creating a model is actually very simple. You only need to inherit the Kurimudb'
 ```js
 // create a file /models/configState.js
 // we can use it to store data related to user configuration
-import { SyncModels } from "kurimudb";
+import { SyncModels } from 'kurimudb';
 
-export default new class ConfigState extends SyncModels.keyValue {
-  super({
-    // model name is required; must be globally unique
-    name: "ConfigState",
-  });
-}
+export default new (class ConfigState extends SyncModels.keyValue {
+  constructor() {
+    super({
+      // model name is required; must be globally unique
+      name: 'ConfigState',
+    });
+  }
+})();
 ```
 
 Just like this, you will have a `ConfigState` model. You can read and write the data inside it like an ordinary object:
@@ -127,9 +129,11 @@ import { SyncModels } from 'kurimudb';
 
 // inherit SyncModels.collection to make it a set model
 export default new (class NoteList extends SyncModels.collection {
-  super({
-    name: "NoteList",
-  });
+  constructor() {
+    super({
+      name: 'NoteList',
+    });
+  }
 })();
 ```
 

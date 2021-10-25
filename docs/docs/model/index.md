@@ -23,14 +23,16 @@ npm i kurimudb@5
 ```js
 // 创建一个 /models/configState.js 文件
 // 我们可以拿它来存和用户配置有关的数据
-import { SyncModels } from "kurimudb";
+import { SyncModels } from 'kurimudb';
 
-export default new class ConfigState extends SyncModels.keyValue {
-  super({
-    // 模型名称，必填，须全局唯一
-    name: "ConfigState",
-  });
-}
+export default new (class ConfigState extends SyncModels.keyValue {
+  constructor() {
+    super({
+      // 模型名称，必填，须全局唯一
+      name: 'ConfigState',
+    });
+  }
+})();
 ```
 
 是的，只要新建一个这样的 `js` 文件，我们就拥有了一个模型。我们可以像操作普通对象一样，来读写它内部的数据：
@@ -127,9 +129,11 @@ import { SyncModels } from 'kurimudb';
 
 // 继承 SyncModels.collection 来让它变成一个集合模型
 export default new (class NoteList extends SyncModels.collection {
-  super({
-    name: "NoteList",
-  });
+  constructor() {
+    super({
+      name: 'NoteList',
+    });
+  }
 })();
 ```
 
