@@ -158,6 +158,33 @@ console.log(keys); // echo ["3", "4"]
 
 :::
 
+### 分布式主键
+
+我们可能会希望用户的数据能够在云端同步。在集合模型中，如果主键是逐个自增的，用户使用多个客户端时就会出现同步问题。
+
+为此，我们可以在模型选项中，添加 `autoIncrementHandler` 属性来自定义主键生成方式，代替默认的自增模式。例如，我们可以采用 [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)、[Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) 等方式，来生成一个全局唯一的分布式 ID。
+
+```js {5,6,7}
+export default new (class NoteList extends SyncModels.collection {
+  constructor() {
+    super({
+      name: 'NoteList',
+      autoIncrementHandler() {
+        return new Date().getTime().toString(36);
+      },
+    });
+  }
+})();
+```
+
+::: warning 注意事项
+
+- 在同步模型中，它**必须为一个同步函数**，如果需要它是一个异步函数，请使用异步模式。
+
+- 它的返回值必须为 `string` 类型。因为 JavaScript 中 `number` 可以精确表示的最大整数是 `2^53-1`，这对于常见的纯数字分布式算法来说，将存在精度问题。
+
+:::
+
 ## 模型填充
 
 我们可能想为一些模型填充初始值。例如，我们在做一个电子书应用，希望在用户首次使用时，为他指定一个默认的字体大小、主题、翻页模式……

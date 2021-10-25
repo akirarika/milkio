@@ -105,7 +105,7 @@ await configState.calcBar();
 
 We recommend that write the changes to the model data **all in the method inside the model**. The external only changes the data of the model by calling these methods. Following this simple agreement, in addition to making it easier to reuse code, it can also effectively decouple our applications and make it easier for you to track changes in data flow. Moreover, the changes to the model data are gathered in one place. When reading the code, it is easy to understand how the data changes.
 
-## Set Model
+## Collection Model
 
 The models are divided into **Key Value Model** and **Collection Model**。Previously, the models that we used were all key-value values model, which acts like an object when used.
 
@@ -158,7 +158,34 @@ console.log(keys); // echo ["3", "4"]
 
 :::
 
-## Model Padding
+### 分布式主键
+
+我们可能会希望用户的数据能够在云端同步。在集合模型中，如果主键是逐个自增的，用户使用多个客户端时就会出现同步问题。
+
+为此，我们可以在模型选项中，添加 `autoIncrementHandler` 属性来自定义主键生成方式，代替默认的自增模式。例如，我们可以采用 [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)、[Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) 等方式，来生成一个全局唯一的分布式 ID。
+
+```js {5,6,7}
+export default new (class NoteList extends SyncModels.collection {
+  constructor() {
+    super({
+      name: 'NoteList',
+      autoIncrementHandler() {
+        return new Date().getTime().toString(36);
+      },
+    });
+  }
+})();
+```
+
+::: warning 注意事项
+
+- 在同步模型中，它**必须为一个同步函数**，如果需要它是一个异步函数，请使用异步模式。
+
+- 它的返回值必须为 `string` 类型。因为 JavaScript 中 `number` 可以精确表示的最大整数是 `2^53-1`，这对于常见的纯数字分布式算法来说，将存在精度问题。
+
+:::
+
+## Model Seeding
 
 We may want to pad initial values for some models. For example, we are working on an e-book application, and we hope to specify a default font size, theme, page turning mode for the user when he uses it for the first time...
 
