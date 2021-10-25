@@ -1,3 +1,4 @@
+* [English Version](./README_EN.md)
 ## Kurimudb 是什么
 
 Kurimudb 是一款渐进式的 **Web 端本地存储库**，可将数据保存到 LocalStorage、IndexedDB、Cookie 等地方，和订阅值的变更。
