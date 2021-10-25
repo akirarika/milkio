@@ -1,16 +1,16 @@
-# 入门
+# Getting Started
 
-## Kurimudb 是什么
+## Introduction to Kurimudb
 
-Kurimudb 是一款渐进式的 **Web 端本地存储库**，可将数据保存到 LocalStorage、IndexedDB、Cookie 等地方，和订阅值的变更。
+Kurimudb is a progressive **Web front-end local persistence library**. It can save your data to LocalStorage, IndexedDB, Cookie, and elsewhere. Also, support subscribing to the mutating of data.
 
-除了持久化数据之外，若你愿意，Kurimudb 还能成为你应用的 [Model 层](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel#Components_of_MVVM_pattern)抽象，接任你应用中状态管理库的职责 (如 Vuex、Redux、Mobx)，使你应用真正拥有单一数据来源。
+In addition to persistent data, Kurimudb can be [Model layer](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel#Components_of_MVVM_pattern) of your application if your want, then take the responsibility of state management in your application (i.e., Vuex, Redux and Mobx) to make your app “single source of truth” really.
 
-Kurimudb 的数据存储功能是驱动化的，这意味着你可以在不更改代码的情况下更换具体实现，我们制作了几个常用的驱动，如果不满足需求的话，你也可以编写属于自己的驱动。
+Kurimudb's persistence feature is driver-oriented. It means you can replace the implementation without changing the code. We build several common drivers. If these are not for you, you can build your own driver.
 
-## 体验
+## Getting Started
 
-`kurimudb-zero-config` 是 Kurimudb 的零配置包，执行下面命令来安装它：
+`kurimudb-zero-config` is Kurimudb's zero configuration package, execute the following command to install it:
 
 ```bash
 npm i kurimudb-zero-config@5
@@ -18,65 +18,65 @@ npm i kurimudb-zero-config@5
 
 ### Local
 
-操作 `local` 对象，可以把数据存储在 LocalStorage 中。即使页面刷新，数据还会在哒！可以存储约 5M 数据。
+By operating the `local` object, the data can be stored in LocalStorage. Even if the page is refreshed, the data will still be there! It can store about 5M data in LocalStorage.
 
 ```js
 import { local } from "kurimudb-zero-config";
 
-local.data.say = "hello world"; // 写入..
-let say = local.data.say; // 读取..
-delete local.data.say; // 删除..
-if ("say" in local.data) { ... } // 判断是否存在..
+local.data.say = "hello world"; // writing..
+let say = local.data.say; // reading..
+delete local.data.say; // deleting..
+if ("say" in local.data) { ... } // checking existence..
 ```
 
 ### Cookie
 
-操作 `cookie` 对象，可以把数据存储在 Cookie 中，其中存储的数据应当尽量的少，因为浏览器一般会在每次请求时，将你的 Cookie 都发送给服务端~
+By operating the `cookie` object, the data can be stored in Cookie. The data stored in Cookie should be less as possible because all data in Cookie will send to the server-side automatically by the browser when making the request.
 
 ```js
 import { cookie } from "kurimudb-zero-config";
 
-cookie.data.say = "hello world"; // 写入..
-let say = cookie.data.say; // 读取..
-delete cookie.data.say; // 删除..
-if ("say" in cookie.data) { ... } // 判断是否存在..
+cookie.data.say = "hello world"; // writing..
+let say = cookie.data.say; // reading..
+delete cookie.data.say; // deleting..
+if ("say" in cookie.data) { ... } // checking existence..
 ```
 
 ### Memory
 
-操作 `memory` 对象，可以把数据存储在 Memory 中，当页面刷新时，数据就被清空啦。
+By operating the `memory` object, data can be stored in Memory. When the page is refreshed, the data will be cleared.
 
 ```js
 import { memory } from "kurimudb-zero-config";
 
-memory.data.say = "hello world"; // 写入..
-let say = memory.data.say; // 读取..
-delete memory.data.say; // 删除..
-if ("say" in memory.data) { ... } // 判断是否存在..
+memory.data.say = "hello world"; // writing..
+let say = memory.data.say; // reading..
+delete memory.data.say; // deleting..
+if ("say" in memory.data) { ... } // checking existence..
 ```
 
 ### Db
 
-操作 `db` 对象，可以把数据存储在 IndexedDB 中，IndexedDB 可以保存诸如 File、Blob 等 JavaScript 对象，其最大数据容量，基于用户设备的可用硬盘大小。
+By operating the `db` object, the data can be stored in IndexedDB. IndexedDB can store JavaScript Objects such as File and Blob. Its maximum data capacity depends on the available hard disk size of the user's disk.
 
-::: warning 注意事项
+::: Warning Tips:
 
-由于 IndexedDB 的 Api 是异步的，因此 `db` 和读有关的 Api 返回值都是 [Promise 对象](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)。
+It is worth noting that IndexedDB's API is asynchronous so that the return values of APIs related to `db` and reading are all [Promise Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise).
 
 :::
 
 ```js
 import { db } from "kurimudb-zero-config";
 
-db.setItem("say", "hello world"); // 写入..
-let say = await db.getItem("say"); // 读取，返回值将是 Promise..
-await db.removeItem("say"); // 删除..
-if (await db.hasItem("say")) { ... } // 判断是否存在..
+db.setItem("say", "hello world"); // writing..
+let say = await db.getItem("say"); // reading, return value will be a Promise Object..
+await db.removeItem("say"); // deleting..
+if (await db.hasItem("say")) { ... } // checking existence..
 ```
 
-### 订阅变更
+### Subscribing Data Mutation
 
-Kurimudb 还提供了订阅值变化的功能，只需在值后加上 `$` 符号，就能在它被改变时做点什么：
+Kurimudb also provides the feature of Subscribing Data Mutation. All things you need to do is adding `$` to the end of the value, then you can make something after it mutates.
 
 ```js
 local.data.say$((val) => {
@@ -84,7 +84,7 @@ local.data.say$((val) => {
 });
 ```
 
-或者使用**自动订阅功能**，当闭包中用到的值，有任一被更改时，都会触发订阅，重新执行此闭包：
+Or use the **automatic subscription function**, when any of the values used in the closure is changed, the subscription will be triggered, and the closure will be executed again:
 
 ```js
 import { auto$ } from 'kurimudb-zero-config';
@@ -95,8 +95,8 @@ auto$(() => {
 });
 ```
 
-关于订阅，还有更多的高级用法噢！请阅读[订阅变更](/subscribe)章节。
+Regarding subscriptions, there are more advanced usages! Please read the [Subscription Changes](/subscribe) chapter.
 
-## 准备好了吗？
+## Are You Ready?
 
-我们刚刚介绍了 Kurimudb 的核心用法——但这只是 Kurimudb 功能的很小一部分，所以，请务必读完整个教程！
+We just get to the start point of using Kurimudb. Let's carry on to get know it better in next chapters!

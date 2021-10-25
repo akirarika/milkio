@@ -1,73 +1,73 @@
-# 模型
+# Model
 
-在前文中，我们介绍了基础用法，并使用了 `kurimudb-zero-config` 这个零配置包。通常来说，这已经能满足我们的需求啦。
+In the preamble, we introduced the basic usage and used the zero config library, `kurimudb-zero-config`. Normally, this would have already satisfied our needs.
 
-可如果我们正在开发一个复杂的单页应用的话，想象一下：我们真的要，把各种数据都乱糟糟地塞在一个对象里吗？这可不是什么好办法。
+However, if we are currently developing a complex single-page application, do we really want to save various kinds of data messily in a single object? This is not a good idea. 
 
-这个时候，就该**模型 (Model) 功能**闪亮登场啦！ 🎉
+This is the time for **Model feature** to make its grand debut！ 🎉
 
-## 起步
+## Getting Started
 
-模型是存储和管理你应用数据的中心，之前我们使用的零配置包中，`memory`、`local`、`cookie` 和 `db` 对象，其实都是模型哦！
+Models are the core of saving and managing your data. The `memory`、`local`、`cookie` and `db` objects we previously used in our zero config library are actually all models!
 
-继续之前，我们先安装 Kurimudb 本体吧：
+Before we continue, let's install Kurimudb:
 
 ```bash
 npm i kurimudb@5
 ```
 
-## 创建模型
+## Create a Model
 
-创建一个模型其实很简单，我们只需要继承 Kurimudb 的模型类即可：
+Creating a model is actually very simple. You only need to inherit the Kurimudb's Model class.
 
 ```js
-// 创建一个 /models/configState.js 文件
-// 我们可以拿它来存和用户配置有关的数据
+// create a file /models/configState.js
+// we can use it to store data related to user configuration
 import { SyncModels } from "kurimudb";
 
 export default new class ConfigState extends SyncModels.keyValue {
   super({
-    // 模型名称，必填，须全局唯一
+    // model name is required; must be globally unique
     name: "ConfigState",
   });
 }
 ```
 
-是的，只要新建一个这样的 `js` 文件，我们就拥有了一个模型。我们可以像操作普通对象一样，来读写它内部的数据：
+Just like this, you will have a `ConfigState` model. You can read and write the data inside it like an ordinary object:
 
 ```js
 import configState from './models/configState.js';
 
-configState.data.say = 'hello world'; // 写入..
-console.log(configState.data.say); // 读取..
-delete configState.data.say; // 删除..
-'say' in configState; // 判断是否存在..
+configState.data.say = 'hello world'; // writing..
+console.log(configState.data.say); // reading..
+delete configState.data.say; // deleting..
+'say' in configState; // check existence..
 ```
 
-## 类 Storage Api
+## Class Storage Api
 
-如果你使用过 `localStorage` 的话，一定会很熟悉这种方式：
+If you have used `localStorage`, you will be familiar with this method:
 
 ```js
-local.setItem('say', 'hello'); // 设置
-let say = local.getItem('say'); // 获取
-local.removeItem('say'); // 删除
-local.subscribeItem('say', (val) => { ... }); // 订阅变更
+local.setItem('say', 'hello'); // setting
+let say = local.getItem('say'); // obtaining
+local.removeItem('say'); // deleting
+local.subscribeItem('say', (val) => { ... }); // subscription data mutating
 local.bulkSetItem({
   say: 'hello',
   then: 'goodbye',
-}); // 批量设置
-local.bulkGetItem(['say', 'then']); // 批量获取
-local.bulkRemoveItem(['say', 'then']); // 批量删除
+}); // batch setting
+local.bulkGetItem(['say', 'then']); // batch obtaining
+local.bulkRemoveItem(['say', 'then']); // batch deleting
 ```
 
-其中的批量操作的函数都是具有原子性的，如果对其中某些值的操作失败了，会自动回滚之前已成功的值。
+The functions of the batch operation are all **atomic**. If the operation on some of the values fails, the previously successful value will be automatically rolled back.
 
-比起前文通过 `data` 对象来操作数据，我们其实**更推荐**你使用类 Storeage Api。显式的调用函数可读性更高，并且不容易和普通对象混淆，而造成 bug。
+Instead of manipulating data through the `data` object in the previous article, we actually **prefer** you to use the class Storeage Api. Explicitly called functions are more readable, and are not easily confused with ordinary objects and cause bugs.
 
-## 模型方法
+## Model Methods
 
-在模型类上，我们还可以添加**任何方法**哦！就像：
+We can add **any methods** in the model class! Just like:
 
 ```js
 // /models/configState.js
@@ -76,14 +76,14 @@ import { Models } from 'kurimudb';
 class ConfigState extends Models.keyValue {
   // ..
 
-  // 添加一个模型方法
+  // add a model method
   setFoo(bar, foo) {
-    // 各种逻辑..
+    // various logic..
     this.data.foo = foo;
     this.data.bar = bar;
   }
 
-  // 模型的方法也可以是异步的
+  // the method can also be asychronous
   async calcBar() {
     // ..
   }
@@ -92,7 +92,7 @@ class ConfigState extends Models.keyValue {
 export default new ConfigState();
 ```
 
-使用时，直接在模型上调用即可：
+Directly call the method when using it：
 
 ```js
 import configState from './models/configState.js';
@@ -101,31 +101,31 @@ configState.setFoo();
 await configState.calcBar();
 ```
 
-我们推荐你将对模型数据的更改，**都写在模型内部的方法中**。外部只通过调用这些方法，来变更模型的数据。遵守这个简单的约定，除了更方便复用代码，还能有效解耦我们的应用，也方便你追踪数据流的变化。并且，将对模型数据的更改都聚集到一处，阅读代码时，也能很轻易的理解数据是如何改变的。
+We recommend that write the changes to the model data **all in the method inside the model**. The external only changes the data of the model by calling these methods. Following this simple agreement, in addition to making it easier to reuse code, it can also effectively decouple our applications and make it easier for you to track changes in data flow. Moreover, the changes to the model data are gathered in one place. When reading the code, it is easy to understand how the data changes.
 
-## 集合模型
+## Set Model
 
-模型分为**键值对模型 (Key Value Model)** 和**集合模型 (Collection Model)**。在前文中，我们的模型都是**键值对模型**。它们用起来，就像对象那样：
+The models are divided into **Key Value Model** and **Collection Model**。Previously, the models that we used were all key-value values model, which acts like an object when used.
 
 ```js
 state.data.foo;
 ```
 
-我们也有时，可能也需要一个以集合的方式、添加数据时主键会自动递增的模型，有些类似数组：
+Sometimes, we may need need a model in which the primary key is automatically incremented when adding data in a collective manner, somewhat similar to an array:
 
 ```js
 list.data[700];
 ```
 
-集合模型常见的应用场景是各种列表，比如缓存的视频列表、用户的草稿箱列表…… 接下来，假设我们正在开发一个便签应用，需要在本地存储用户写的便签。
+The common application scenarios of the collection model are various lists, such as the cached video list, the user's draft box list... Next, suppose we are developing a sticky note application and need to store the sticky notes written by the user locally.
 
-让我们来新建一个 `NoteList` 模型：
+Let's create a `NoteList` model：
 
 ```js
-// 创建一个 /models/noteList.js 文件
+// create a file /models/noteList.js
 import { SyncModels } from 'kurimudb';
 
-// 继承 SyncModels.collection 来让它变成一个集合模型
+// inherit SyncModels.collection to make it a set model
 export default new (class NoteList extends SyncModels.collection {
   super({
     name: "NoteList",
@@ -133,7 +133,7 @@ export default new (class NoteList extends SyncModels.collection {
 })();
 ```
 
-使用时，通过 `insertItem` 方法来创建的数据，主键会自增：
+When using it, the primary key of data created through `insert` method will be auto incremented:
 
 ```js
 import noteList from '@/models/noteList';
@@ -147,18 +147,18 @@ const keys = noteList.bulkInsertItem(['note3', 'note4']);
 console.log(keys); // echo ["3", "4"]
 ```
 
-::: warning 注意事项
+::: Warning Tips:
 
-- 集合模型的主键是从 `1` 开始递增的，这和数组不同。这么设计是为了更好的兼容 IndexedDB，因为 IndexedDB 是从 `1` 开始的。
-- 集合模型中，删除任意值，不会导致其他值的主键变动。也就是说，集合模型的键可以视为唯一且不变的。
+- The primary key of the collection model is incremented from `1`, which is different from arrays. This design is for better compatibility with IndexedDB, because IndexedDB starts from `1`.
+- In the collection model, deleting any value will not cause the primary key of other values to change. In other words, the keys of the collection model can be regarded as unique and unchanging.
 
 :::
 
-## 模型填充
+## Model Padding
 
-我们可能想为一些模型填充初始值。例如，我们在做一个电子书应用，希望在用户首次使用时，为他指定一个默认的字体大小、主题、翻页模式……
+We may want to pad initial values for some models. For example, we are working on an e-book application, and we hope to specify a default font size, theme, page turning mode for the user when he uses it for the first time...
 
-我们可以在模型中的构造方法中，调用 `seed` 方法，来填充初始值：
+We can call the `seed` method in the construction method of the model to pad the initial value:
 
 ```js {8,9,10,11}
 // /models/configState.js
@@ -177,29 +177,29 @@ class ConfigState extends SyncModels.keyValue {
 }
 ```
 
-对于**键值对模型**，你可以传入一个对象来简化模型填充：
+For the **key-value pair model**, you can pass in an object to simplify model padding:
 
 ```js
 this.seed({
   foo: 'bar',
   baz: 'qux',
 });
-// 相当于：
+// equivalent to：
 this.seed(() => {
   this.data.foo = 'bar';
   this.data.baz = 'qux';
 });
 ```
 
-对于**集合模型**，你可以传入一个数组来简化模型填充：
+For the **collection model**, you can pass in an array to simplify model padding:
 
 ```js
 this.seed(['foo', 'bar']);
-// 相当于：
+// equivalent to：
 this.seed(() => {
   this.insert('foo');
   this.insert('bar');
 });
 ```
 
-默认情况下，每次运行你的网页，都会填充一次数据。如果模型配置了[存储驱动](/docs/persistence/)，那么只有在用户首次运行你的网页时，才会进行数据填充。
+By default, every time you run your web page, data will be populated once. If the model is configured with [Storage Drive](/docs/persistence/), then data will only be padded when the user runs your web page for the first time.

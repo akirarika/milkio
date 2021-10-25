@@ -2,9 +2,9 @@
 
 ## What is Kurimudb
 
-Kurimudb is a progressive **Web Front-end local persistence library**. It can save your data to LocalStorage, IndexedDB, Cookie, and so on. Also, support subscribing to the mutating of data.
+Kurimudb is a progressive **Web Front-end local persistence library**. It can save your data to LocalStorage, IndexedDB, Cookie, and elsewhere. Also, support subscribing to the mutating of data.
 
-In addition to persistent data, Kurimudb can be [Model layer](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel#Components_of_MVVM_pattern) of your application if your want, then take the responsibility of state management in your application to make your app “Single source of truth” really.
+In addition to persistent data, Kurimudb can be [Model layer](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel#Components_of_MVVM_pattern) of your application if your want, then take the responsibility of state management in your application (i.e., Vuex, Redux and Mobx) to make your app “single source of truth” really.
 
 Kurimudb's persistence feature is driver-oriented. It means you can replace the implementation without changing the code. We build several common drivers. If these are not for you, you can build your own driver.
 
