@@ -44,7 +44,7 @@ delete configState.data.say; // deleting..
 'say' in configState; // check existence..
 ```
 
-## Class Storage Api
+## (API) Interface Similar to the Storage Object
 
 If you have used `localStorage`, you will be familiar with this method:
 
@@ -63,7 +63,7 @@ local.bulkRemoveItem(['say', 'then']); // batch deleting
 
 The functions of the batch operation are all **atomic**. If the operation on some of the values fails, the previously successful value will be automatically rolled back.
 
-Instead of manipulating data through the `data` object in the previous article, we actually **prefer** you to use the class Storeage Api. Explicitly called functions are more readable, and are not easily confused with ordinary objects and cause bugs.
+Instead of manipulating data through the `data` object in the previous article, we actually **prefer** you to use the API similar to storage object. Explicitly called functions are more readable, and are not easily confused with ordinary objects and cause bugs.
 
 ## Model Methods
 
