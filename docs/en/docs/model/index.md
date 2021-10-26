@@ -2,7 +2,7 @@
 
 In the preamble, we introduced the basic usage and used the zero config library, `kurimudb-zero-config`. Normally, this would have already satisfied our needs.
 
-However, if we are currently developing a complex single-page application, do we really want to save various kinds of data messily in a single object? This is not a good idea. 
+However, if we are currently developing a complex single-page application, do we really want to save various kinds of data messily in a single object? This is not a good idea.
 
 This is the time for **Model feature** to make its grand debut！ 🎉
 
@@ -23,14 +23,16 @@ Creating a model is actually very simple. You only need to inherit the Kurimudb'
 ```js
 // create a file /models/configState.js
 // we can use it to store data related to user configuration
-import { SyncModels } from "kurimudb";
+import { SyncModels } from 'kurimudb';
 
-export default new class ConfigState extends SyncModels.keyValue {
-  super({
-    // model name is required; must be globally unique
-    name: "ConfigState",
-  });
-}
+export default new (class ConfigState extends SyncModels.keyValue {
+  constructor() {
+    super({
+      // model name is required; must be globally unique
+      name: 'ConfigState',
+    });
+  }
+})();
 ```
 
 Just like this, you will have a `ConfigState` model. You can read and write the data inside it like an ordinary object:
@@ -44,7 +46,7 @@ delete configState.data.say; // deleting..
 'say' in configState; // check existence..
 ```
 
-## (API) Interface Similar to the Storage Object
+## API Similar to the Storage Object
 
 If you have used `localStorage`, you will be familiar with this method:
 
@@ -103,7 +105,7 @@ await configState.calcBar();
 
 We recommend that write the changes to the model data **all in the method inside the model**. The external only changes the data of the model by calling these methods. Following this simple agreement, in addition to making it easier to reuse code, it can also effectively decouple our applications and make it easier for you to track changes in data flow. Moreover, the changes to the model data are gathered in one place. When reading the code, it is easy to understand how the data changes.
 
-## Set Model
+## Collection Model
 
 The models are divided into **Key Value Model** and **Collection Model**。Previously, the models that we used were all key-value values model, which acts like an object when used.
 
@@ -127,9 +129,11 @@ import { SyncModels } from 'kurimudb';
 
 // inherit SyncModels.collection to make it a set model
 export default new (class NoteList extends SyncModels.collection {
-  super({
-    name: "NoteList",
-  });
+  constructor() {
+    super({
+      name: 'NoteList',
+    });
+  }
 })();
 ```
 
@@ -154,7 +158,34 @@ console.log(keys); // echo ["3", "4"]
 
 :::
 
-## Model Padding
+### Key Generator
+
+We may hope that user data can be synchronized in the cloud. In the collection model, if the primary keys are incremented one by one, there will be synchronization problems when users use multiple clients.
+
+To this end, we can add the `autoIncrementHandler` attribute to the model options to customize the primary key generation method, instead of the default auto-increment mode. For example, we can use [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier), [Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) to generate a global unique distributed ID.
+
+```js {5,6,7}
+export default new (class NoteList extends SyncModels.collection {
+  constructor() {
+    super({
+      name: 'NoteList',
+      autoIncrementHandler() {
+        return new Date().getTime().toString(36);
+      },
+    });
+  }
+})();
+```
+
+::: Warning Tips
+
+- In the synchronous model, it **must be a synchronous function**. If you need it to be an asynchronous function, please use the asynchronous model.
+
+- Its return value must be of type `string`. Because the largest integer that can be accurately represented by `number` in JavaScript is `2^53-1`, this will have precision problems for common purely digital distributed algorithms.
+
+:::
+
+## Model Seeding
 
 We may want to pad initial values for some models. For example, we are working on an e-book application, and we hope to specify a default font size, theme, page turning mode for the user when he uses it for the first time...
 
@@ -177,7 +208,7 @@ class ConfigState extends SyncModels.keyValue {
 }
 ```
 
-For the **key-value pair model**, you can pass in an object to simplify model padding:
+For the **key-value model**, you can pass in an object to simplify model seeding:
 
 ```js
 this.seed({
@@ -191,7 +222,7 @@ this.seed(() => {
 });
 ```
 
-For the **collection model**, you can pass in an array to simplify model padding:
+For the **collection model**, you can pass in an array to simplify model seeding:
 
 ```js
 this.seed(['foo', 'bar']);

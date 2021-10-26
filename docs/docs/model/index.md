@@ -23,14 +23,16 @@ npm i kurimudb@5
 ```js
 // 创建一个 /models/configState.js 文件
 // 我们可以拿它来存和用户配置有关的数据
-import { SyncModels } from "kurimudb";
+import { SyncModels } from 'kurimudb';
 
-export default new class ConfigState extends SyncModels.keyValue {
-  super({
-    // 模型名称，必填，须全局唯一
-    name: "ConfigState",
-  });
-}
+export default new (class ConfigState extends SyncModels.keyValue {
+  constructor() {
+    super({
+      // 模型名称，必填，须全局唯一
+      name: 'ConfigState',
+    });
+  }
+})();
 ```
 
 是的，只要新建一个这样的 `js` 文件，我们就拥有了一个模型。我们可以像操作普通对象一样，来读写它内部的数据：
@@ -127,9 +129,11 @@ import { SyncModels } from 'kurimudb';
 
 // 继承 SyncModels.collection 来让它变成一个集合模型
 export default new (class NoteList extends SyncModels.collection {
-  super({
-    name: "NoteList",
-  });
+  constructor() {
+    super({
+      name: 'NoteList',
+    });
+  }
 })();
 ```
 
@@ -151,6 +155,33 @@ console.log(keys); // echo ["3", "4"]
 
 - 集合模型的主键是从 `1` 开始递增的，这和数组不同。这么设计是为了更好的兼容 IndexedDB，因为 IndexedDB 是从 `1` 开始的。
 - 集合模型中，删除任意值，不会导致其他值的主键变动。也就是说，集合模型的键可以视为唯一且不变的。
+
+:::
+
+### 分布式主键
+
+我们可能会希望用户的数据能够在云端同步。在集合模型中，如果主键是逐个自增的，用户使用多个客户端时就会出现同步问题。
+
+为此，我们可以在模型选项中，添加 `autoIncrementHandler` 属性来自定义主键生成方式，代替默认的自增模式。例如，我们可以采用 [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)、[Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) 等方式，来生成一个全局唯一的分布式 ID。
+
+```js {5,6,7}
+export default new (class NoteList extends SyncModels.collection {
+  constructor() {
+    super({
+      name: 'NoteList',
+      autoIncrementHandler() {
+        return new Date().getTime().toString(36);
+      },
+    });
+  }
+})();
+```
+
+::: warning 注意事项
+
+- 在同步模型中，它**必须为一个同步函数**，如果需要它是一个异步函数，请使用异步模型。
+
+- 它的返回值必须为 `string` 类型。因为 JavaScript 中 `number` 可以精确表示的最大整数是 `2^53-1`，这对于常见的纯数字分布式算法来说，将存在精度问题。
 
 :::
 
