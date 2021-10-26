@@ -12,6 +12,9 @@
     {
       "path": "./packages/kurimudb-driver-dexie"
     },
+    {
+      "path": "./packages/kurimudb-driver-taro"
+    },
   ],
   "files": []
 }

@@ -4,3 +4,5 @@ dist
 dist-ssr
 *.local
 packages/demo
+packages/myApp
+packages/uni-app

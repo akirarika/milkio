@@ -1,0 +1,14 @@
+{
+  "name": "kurimudb-driver-taro",
+  "version": "3.0.0",
+  "description": "a kurimudb driver for Taro",
+  "main": "./dist/index.js",
+  "author": "polichan",
+  "license": "MIT",
+  "peerDependencies": {
+    "@tarojs/taro": "^3.3.3"
+  },
+  "devDependencies": {
+    "@tarojs/taro": "^3.3.3"
+  }
+}

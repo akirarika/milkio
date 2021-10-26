@@ -12,24 +12,49 @@ Taro 驱动会对存入的数据进行 `JSON.stringify`，所以，请勿存入�
 
 ## 安装
 
+使用 npm 或者 yarn 进行安装
+
 ```bash
-# 敬请期待
+npm i kurimudb-driver-taro -S
+
+yarn add kurimudb-driver-taro
 ```
 
 ## 示例
 
-```js {2,8}
-import { Models } from "kurimudb";
-import { TaroDriver } from "kurimudb-driver-taro";
+```js
+import { View, Text } from '@tarojs/components'
+import { useEffect } from 'react'
+import { SyncModels } from 'kurimudb'
+import { TaroDriver, taroDriverFactory } from 'kurimudb-driver-taro'
 
-export default new class TaroState extends Models.keyValue {
-  constructor() {
+class Model extends SyncModels.collection<
+  string,
+  TaroDriver
+> {
+  constructor () {
     super({
-      name: "TaroState",
-      driver: TaroDriver,
-    });
+      name: 'model',
+      driver: taroDriverFactory,
+    })
   }
 }
+
+const model = new Modal()
+
+export default function Index () {
+  useEffect(() => {
+    model.setItem('key', 'value') // set 值
+    model.getItem('key')) // 获取值
+  }, [])
+
+  return (
+    <View className='index'>
+      <Text>Hello</Text>
+    </View>
+  )
+}
+
 ```
 
 > 📜 感谢 [polichan](https://github.com/polichan) 贡献的本驱动 [PR](https://github.com/akirarika/kurimudb/pull/12)。
