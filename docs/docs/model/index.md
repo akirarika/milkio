@@ -160,9 +160,9 @@ console.log(keys); // echo ["3", "4"]
 
 ### 分布式主键
 
-我们可能会希望用户的数据能够在云端同步。在集合模型中，如果主键是逐个自增的，用户使用多个客户端时就会出现同步问题。
+我们可能会希望用户的数据能够在云端同步。在集合模型中，如果主键是逐个自增的，用户在使用多个设备时，就会出现同步问题。
 
-为此，我们可以在模型选项中，添加 `autoIncrementHandler` 属性来自定义主键生成方式，代替默认的自增模式。例如，我们可以采用 [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)、[Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) 等方式，来生成一个全局唯一的分布式 ID。
+为此，我们可以在模型选项中，添加 `autoIncrementHandler` 属性来自定义主键生成方式，代替默认的自增模式。
 
 ```js {5,6,7}
 export default new (class NoteList extends SyncModels.collection {
@@ -170,7 +170,8 @@ export default new (class NoteList extends SyncModels.collection {
     super({
       name: 'NoteList',
       autoIncrementHandler() {
-        return new Date().getTime().toString(36);
+        // 返回一个全局唯一的分布式 ID
+        return '9cac24ea-fe09-4280-927e-e378943d4aca';
       },
     });
   }
@@ -184,6 +185,18 @@ export default new (class NoteList extends SyncModels.collection {
 - 它的返回值必须为 `string` 类型。因为 JavaScript 中 `number` 可以精确表示的最大整数是 `2^53-1`，这对于常见的纯数字分布式算法来说，将存在精度问题。
 
 :::
+
+### NUID
+
+我们可以采用例如 [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)、[Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) 等算法来生成主键。同时，我们设计了一种**较为通用的**、**适合前端业务中使用**的分布式 ID 算法，我们称作 **NUID**：
+
+```js
+`${当前毫秒级时间戳}-${用户id}-${随机数(0, 9999)}`;
+```
+
+此算法中，只有当前账号的用户、在同一毫秒内，生成多条数据才有可能重复，重复概率是 `(1/10000)^2` ，亿分之一。
+
+一般来说，正常用户几乎不可能在同一毫秒新增多条数据，所以，在实际应用中重复的概率极低。主要可能重复的场景是在同一客户端，批量新增数据时产生。解决方案是，我们可以尝试在生成同一毫秒生成的 NUID 中，添加主动规避生成相同 ID 的逻辑。
 
 ## 模型填充
 

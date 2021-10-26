@@ -160,7 +160,9 @@ console.log(keys); // echo ["3", "4"]
 
 ### Key Generator
 
-We may hope that user data can be synchronized in the cloud. In the collection model, if the primary keys are incremented one by one, there will be synchronization problems when users use multiple clients.
+<!-- We may hope that user data can be synchronized in the cloud. In the collection model, if the primary keys are incremented one by one, there will be synchronization problems when users use multiple clients. -->
+
+我们可能会希望用户的数据能够在云端同步。在集合模型中，如果主键是逐个自增的，用户在使用多个设备时，就会出现同步问题。
 
 To this end, we can add the `autoIncrementHandler` attribute to the model options to customize the primary key generation method, instead of the default auto-increment mode. For example, we can use [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier), [Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) to generate a global unique distributed ID.
 
@@ -170,7 +172,8 @@ export default new (class NoteList extends SyncModels.collection {
     super({
       name: 'NoteList',
       autoIncrementHandler() {
-        return new Date().getTime().toString(36);
+        // 返回一个全局唯一的分布式 ID
+        return '9cac24ea-fe09-4280-927e-e378943d4aca';
       },
     });
   }
@@ -184,6 +187,18 @@ export default new (class NoteList extends SyncModels.collection {
 - Its return value must be of type `string`. Because the largest integer that can be accurately represented by `number` in JavaScript is `2^53-1`, this will have precision problems for common purely digital distributed algorithms.
 
 :::
+
+### NUID
+
+我们可以采用例如 [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)、[Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) 等算法来生成主键。同时，我们设计了一种**较为通用的**、**适合前端业务中使用**的分布式 ID 算法，我们称作 **NUID**：
+
+```js
+`${当前毫秒级时间戳}-${用户id}-${随机数(0, 9999)}`;
+```
+
+此算法中，只有当前账号的用户、在同一毫秒内，生成多条数据才有可能重复，重复概率是 `(1/10000)^2` ，亿分之一。
+
+一般来说，正常用户几乎不可能在同一毫秒新增多条数据，所以，在实际应用中重复的概率极低。主要可能重复的场景是在同一客户端，批量新增数据时产生。解决方案是，我们可以尝试在生成同一毫秒生成的 NUID 中，添加主动规避生成相同 ID 的逻辑。
 
 ## Model Seeding
 
