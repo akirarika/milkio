@@ -164,7 +164,9 @@ console.log(keys); // echo ["3", "4"]
 
 我们可能会希望用户的数据能够在云端同步。在集合模型中，如果主键是逐个自增的，用户在使用多个设备时，就会出现同步问题。
 
-To this end, we can add the `autoIncrementHandler` attribute to the model options to customize the primary key generation method, instead of the default auto-increment mode. For example, we can use [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier), [Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) to generate a global unique distributed ID.
+<!-- To this end, we can add the `autoIncrementHandler` attribute to the model options to customize the primary key generation method, instead of the default auto-increment mode. For example, we can use [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier), [Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) to generate a global unique distributed ID. -->
+
+为此，我们可以在模型选项中，添加 `autoIncrementHandler` 属性来自定义主键生成方式，代替默认的自增模式。
 
 ```js {5,6,7}
 export default new (class NoteList extends SyncModels.collection {
