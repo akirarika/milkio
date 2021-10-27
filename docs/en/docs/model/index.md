@@ -160,13 +160,9 @@ console.log(keys); // echo ["3", "4"]
 
 ### Key Generator
 
-<!-- We may hope that user data can be synchronized in the cloud. In the collection model, if the primary keys are incremented one by one, there will be synchronization problems when users use multiple clients. -->
+We may hope that the user's data can be synchronized in the cloud, the user creates the data locally when the user is offline, and synchronizes with the cloud when the network is restored. In the collection model, if the primary key is incremented one by one, the user will have synchronization problems when using multiple devices.
 
-我们可能会希望用户的数据能够在云端同步，用户离线时在本地创建数据，网络恢复时向云端同步。在集合模型中，如果主键是逐个自增的，用户在使用多个设备时，就会出现同步问题。
-
-<!-- To this end, we can add the `autoIncrementHandler` attribute to the model options to customize the primary key generation method, instead of the default auto-increment mode. For example, we can use [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier), [Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) to generate a global unique distributed ID. -->
-
-为此，我们可以在模型选项中，添加 `autoIncrementHandler` 属性来自定义主键生成方式，代替默认的自增模式。
+To this end, we can add the `autoIncrementHandler` attribute to the model options to customize the primary key generation method, instead of the default auto-increment mode.
 
 ```js {5,6,7}
 export default new (class NoteList extends SyncModels.collection {
@@ -174,7 +170,7 @@ export default new (class NoteList extends SyncModels.collection {
     super({
       name: 'NoteList',
       autoIncrementHandler() {
-        // 返回一个全局唯一的分布式 ID
+        // return a globally unique distributed ID
         return '9cac24ea-fe09-4280-927e-e378943d4aca';
       },
     });
@@ -192,15 +188,15 @@ export default new (class NoteList extends SyncModels.collection {
 
 ### NUID
 
-我们可以采用例如 [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)、[Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) 等算法来生成主键。同时，我们设计了一种**较为通用的**、**适合前端业务中使用**的分布式 ID 算法，我们称作 **NUID**：
+We can use algorithms such as [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier), [Snowflake ID](https://en.wikipedia.org/wiki/Snowflake_ID) to generate the primary key. At the same time, we have designed a **more general** and distributed ID algorithm that is **suitable for use in front-end business**, which we call **NUID**:
 
 ```js
-`${当前毫秒级时间戳}-${用户id}-${随机数(0, 9999)}`;
+`${current millisecond timestamp}-${user id}-${random number(0, 9999)}`;
 ```
 
-此算法中，只有当前账号的用户、在同一毫秒内，生成多条数据才有可能重复，两条数据重复几率是 `(1/10000)^2` ，亿分之一。
+In this algorithm, only the user of the current account generates multiple pieces of data within the same millisecond, and the probability of repetition of two pieces of data is `(1/10000)^2`, one in 100 million.
 
-一般来说，正常用户几乎不可能在同一毫秒新增多条数据，所以，在实际应用中重复的几率极低。主要可能重复的场景是在同一客户端，批量新增数据时产生。解决方案是，我们可以尝试在生成同一毫秒生成的 NUID 中，添加主动规避生成相同 ID 的逻辑。
+Generally speaking, it is almost impossible for a normal user to add multiple pieces of data in the same millisecond, so the chance of duplication in practical applications is extremely low. The main repetitive scenarios are generated when adding data in batches on the same client. The solution is that we can try to add logic to actively avoid generating the same ID in the NUID generated in the same millisecond.
 
 ## Model Seeding
 
