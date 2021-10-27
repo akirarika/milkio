@@ -54,7 +54,7 @@ During the first execution of the closure function, Kurimudb collects which valu
 
 ## Global Automatic Subscription
 
-The scope of the automatic subscription function mentioned above is your model. If you read the data of an external model in it, you will not be subscribed. If you want to automatically subscribe to the data of any model, you can use the global automatic subscription:
+The scope of the automatic subscription function **mentioned above is your model**. If you read the data of an external model in it, you will not be subscribed. If you want to automatically subscribe to the data of any model, you can use the global automatic subscription:
 
 ```js
 import { auto$ } from 'kurimudb';

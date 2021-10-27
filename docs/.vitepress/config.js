@@ -60,8 +60,8 @@ module.exports = {
           {
             text: '迁移',
             children: [
-              { text: '从 v3 迁移', link: '/migrations/v3' },
               { text: '从 v4 迁移', link: '/migrations/v4' },
+              { text: '从 v3 迁移', link: '/migrations/v3' },
             ],
           },
           { text: '最佳实践', link: '/bestPractices/' },
@@ -118,8 +118,8 @@ module.exports = {
           {
             text: '迁移(English)',
             children: [
-              { text: '从 v3 迁移(English)', link: '/en/migrations/v3' },
               { text: '从 v4 迁移(English)', link: '/en/migrations/v4' },
+              { text: '从 v3 迁移(English)', link: '/en/migrations/v3' },
             ],
           },
           { text: '最佳实践(English)', link: '/en/bestPractices/' },
