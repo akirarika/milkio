@@ -1,6 +1,6 @@
 {
   "name": "kurimudb-driver-cookie",
-  "version": "5.0.0-alpha.0",
+  "version": "5.0.1",
   "description": "",
   "main": "./dist/index.js",
   "author": "akirarika",

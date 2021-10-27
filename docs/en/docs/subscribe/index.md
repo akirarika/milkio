@@ -21,7 +21,7 @@ configState.data.foo$(
 );
 ```
 
-You can also use in form of [Api Similar to the Storage Object](/model.html#%E7%B1%BB-storage-api) to subscribe：
+You can also use in form of [API Similar to the Storage Object](/en/docs/model/#api-similar-to-the-storage-object) to subscribe：
 
 ```js
 configState.subscribeItem(key, closFunc, config);

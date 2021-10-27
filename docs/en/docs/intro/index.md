@@ -95,7 +95,7 @@ auto$(() => {
 });
 ```
 
-Regarding subscriptions, there are more advanced usages! Please read the [Subscription Changes](/subscribe) chapter.
+Regarding subscriptions, there are more advanced usages! Please read the [Subscription Changes](/en/docs/subscribe/) chapter.
 
 ## Are You Ready?
 

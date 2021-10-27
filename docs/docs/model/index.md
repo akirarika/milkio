@@ -180,7 +180,7 @@ export default new (class NoteList extends SyncModels.collection {
 
 ::: warning 注意事项
 
-- 在同步模型中，它**必须为一个同步函数**，如果需要它是一个异步函数，请使用异步模型。
+- 在同步模型中，它**必须为一个同步函数**，如果需要它是一个异步函数，请使用[异步模型](#异步模型)。
 
 - 它的返回值必须为 `string` 类型。因为 JavaScript 中 `number` 可以精确表示的最大整数是 `2^53-1`，这对于常见的纯数字分布式算法来说，将存在精度问题。
 
@@ -196,7 +196,7 @@ export default new (class NoteList extends SyncModels.collection {
 
 此算法中，只有当前账号的用户、在同一毫秒内，生成多条数据才有可能重复，两条数据重复几率是 `(1/10000)^2` ，亿分之一。
 
-一般来说，正常用户几乎不可能在同一毫秒新增多条数据，所以，在实际应用中重复的几率极低。主要可能重复的场景是在同一客户端，批量新增数据时产生。解决方案是，我们可以尝试在生成同一毫秒生成的 NUID 中，添加主动规避生成相同 ID 的逻辑。
+一般来说，正常用户几乎不可能在同一毫秒新增多条数据，所以，在实际应用中重复的几率极低。主要可能重复的场景是在同一客户端，批量新增数据时产生。我们可以尝试在生成同一毫秒生成的 NUID 中，添加主动规避生成相同 ID 的逻辑。
 
 ## 模型填充
 
@@ -247,3 +247,43 @@ this.seed(() => {
 ```
 
 默认情况下，每次运行你的网页，都会填充一次数据。如果模型配置了[存储驱动](/docs/persistence/)，那么只有在用户首次运行你的网页时，才会进行数据填充。
+
+## 异步模型
+
+我们前文中的模型继承了 `SyncModels`，因此，他们都是同步模型。若继承 `AsyncModels`，则此模型将变为异步模型。部分存储驱动是异步的(如 IndexedDB)，想要使用他们就只能使用异步模型，异步模型的**所有方法**返回值都是 [Promise 对象](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy)。
+
+```js {3,4,5}
+// 创建一个 /models/configState.js 文件
+// 我们可以拿它来存和用户配置有关的数据
+import { AsyncModels } from 'kurimudb';
+
+export default new (class ConfigState extends AsyncModels.keyValue {
+  constructor() {
+    super({
+      name: 'ConfigState',
+    });
+  }
+})();
+```
+
+由于 JavaScript 中 [Proxy](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy) 只支持同步操作，因此异步模型中 `data` 对象是**只读的**，读取的结果将是 **Promise 对象**，你可以在其前加上 `await` 关键字以等待其返回结果。
+
+```js
+// 读取
+let say = await configState.data.say; // 由于返回的是 Promise 对象，因此需要加 await 关键字
+let say = await configState.getItem("say"); // 或者，我们也可以使用 getItem 方法
+
+// 删除
+// 异步模型中，data 是只读的，删除请使用 removeItem 方法代替
+// delete indexedDbState.data.say; // 我们不能这么做
+await configState.removeItem("say");
+
+// 设置
+// indexedDbState.data.say = "hello"; // 我们不能这么做
+await configState.setItem("say", "hello");
+
+// 判断是否存在
+if (await configState.hasItem("say")) { ... }
+```
+
+使用异步模型后，我们就可以使用**异步存储驱动** (如 IndexedDB 驱动等)，当然，我们也可以在异步模型中，使用同步存储驱动。

@@ -5,45 +5,51 @@ import {
   KMap,
   SyncBaseModel,
   clone,
-} from "kurimudb";
-import { CookieAttributes } from "./cookie-attributes.interface";
-import Cookies from "js-cookie";
+} from 'kurimudb';
+import { CookieAttributes } from './cookie-attributes.interface';
+import Cookies from 'js-cookie';
 
 export interface CookieDriver extends SyncAbstractDriverInterface {
   set(key: string, value: unknown, attributes?: CookieAttributes): void;
   get(
-    key: string
+    key: string,
   ): Array<any> | Record<string | number, any> | string | undefined;
   remove(key: string, options?: CookieAttributes): void;
 }
 
+const defaultExpires = 1157;
+
 class CookieDriverFactory extends SyncAbstractDriverFactory {
   make<DataType, DriverType extends SyncAbstractDriverInterface | undefined>(
-    model: SyncBaseModel<DataType, DriverType>
+    model: SyncBaseModel<DataType, DriverType>,
   ) {
     const options = model.options;
-    if ("collection" === options.modelType) {
+    if ('collection' === options.modelType) {
       throw new Error(
-        `[Kurimudb] The CookieDriver is not applicable to the CollectionModel. Try to replace another driver, such as LocalStorageDriver`
+        `[Kurimudb] The CookieDriver is not applicable to the CollectionModel. Try to replace another driver, such as LocalStorageDriver`,
       );
     }
 
     const product: CookieDriver = {
       set(key: string, value: unknown, options?: CookieAttributes): void {
-        value = "object" === typeof value ? JSON.stringify(value) : value;
+        value = 'object' === typeof value ? JSON.stringify(value) : value;
         if (undefined === options) options = {};
-        if (undefined === options?.expires) options.expires = 1157;
 
         Cookies.set(key, `${value}`, options);
       },
 
       get(
-        key: string
+        key: string,
       ): Array<any> | Record<string | number, any> | string | undefined {
         let value = Cookies.get(key);
         if (undefined === value) return undefined;
-        else if (value.startsWith('"')) return JSON.parse(value);
-        else return value;
+        try {
+          if (value.startsWith('{')) return JSON.parse(value);
+          if (value.startsWith('[')) return JSON.parse(value);
+        } catch (error) {
+          return value;
+        }
+        return value;
       },
 
       remove(key: string, options?: CookieAttributes): void {
@@ -52,23 +58,23 @@ class CookieDriverFactory extends SyncAbstractDriverFactory {
 
       insert(key: string, value: unknown): boolean {
         if (undefined === product.get(key)) return false;
-        product.set(key, value);
+        product.set(key, value, { expires: defaultExpires });
         return true;
       },
 
       update(key: string, value: unknown): boolean {
         if (undefined !== product.get(key)) return false;
-        product.set(key, value);
+        product.set(key, value, { expires: defaultExpires });
         return true;
       },
 
       insertOrUpdate(key: string, value: unknown): void {
-        product.set(key, value);
+        product.set(key, value, { expires: defaultExpires });
       },
 
       insertAutoIncrement(value: unknown): string {
         throw new Error(
-          `[Kurimudb] The CookieDriver is not applicable to the CollectionModel. Try to replace another driver, such as LocalStorageDriver`
+          `[Kurimudb] The CookieDriver is not applicable to the CollectionModel. Try to replace another driver, such as LocalStorageDriver`,
         );
       },
 
@@ -90,14 +96,14 @@ class CookieDriverFactory extends SyncAbstractDriverFactory {
           if (null !== product.exists(key)) return false;
         }
         for (const key in items) {
-          product.set(key, items[key]);
+          product.set(key, items[key], { expires: defaultExpires });
         }
         return true;
       },
 
       bulkInsertAutoIncrement(items: Array<unknown>): Array<string> {
         throw new Error(
-          `[Kurimudb] The CookieDriver is not applicable to the CollectionModel. Try to replace another driver, such as LocalStorageDriver`
+          `[Kurimudb] The CookieDriver is not applicable to the CollectionModel. Try to replace another driver, such as LocalStorageDriver`,
         );
       },
 
@@ -106,14 +112,14 @@ class CookieDriverFactory extends SyncAbstractDriverFactory {
           if (null === product.exists(key)) return false;
         }
         for (const key in items) {
-          product.set(key, items[key]);
+          product.set(key, items[key], { expires: defaultExpires });
         }
         return true;
       },
 
       bulkInsertOrUpdate(items: Record<string, unknown>): boolean {
         for (const key in items) {
-          product.set(key, items[key]);
+          product.set(key, items[key], { expires: defaultExpires });
         }
         return true;
       },
@@ -139,14 +145,14 @@ class CookieDriverFactory extends SyncAbstractDriverFactory {
 
       seeding(seeding: Function): void {
         throw new Error(
-          `[Kurimudb] The CookieDriver is not applicable to the seed function. Try to replace another driver, such as LocalStorageDriver`
+          `[Kurimudb] The CookieDriver is not applicable to the seed function. Try to replace another driver, such as LocalStorageDriver`,
         );
       },
 
       clone(value: unknown): unknown {
         return clone(value, (data: any) => {
           throw new Error(
-            `${data.constructor.name} cannot be stored in localStorage, only objects that can be serialized by JSON can be stored.`
+            `${data.constructor.name} cannot be stored in localStorage, only objects that can be serialized by JSON can be stored.`,
           );
         });
       },

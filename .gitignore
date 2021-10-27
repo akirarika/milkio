@@ -3,6 +3,4 @@ node_modules
 dist
 dist-ssr
 *.local
-packages/demo
-packages/myApp
-packages/uni-app
+!/docs/.vitepress/dist

@@ -59,7 +59,10 @@ module.exports = {
           },
           {
             text: '迁移',
-            children: [{ text: '从 v3 迁移', link: '/migrations/v3' }],
+            children: [
+              { text: '从 v3 迁移', link: '/migrations/v3' },
+              { text: '从 v4 迁移', link: '/migrations/v4' },
+            ],
           },
           { text: '最佳实践', link: '/bestPractices/' },
         ],
@@ -76,26 +79,50 @@ module.exports = {
         ],
         sidebar: [
           {
-            text: 'Documents',
+            text: '文档(English)',
             children: [
-              { text: 'Getting Started', link: 'en/intro' },
-              { text: 'Model', link: 'en/model' },
-              { text: 'Persistence', link: 'en/persistence' },
-              {
-                text: 'Driver',
-                children: [
-                  { text: 'LocalStorage', link: '/drivers/localstorage' },
-                  { text: 'Cookie', link: '/drivers/cookie' },
-                  { text: 'Dexie (IndexedDB)', link: '/drivers/dexie' },
-                  { text: 'Customized Driver', link: '/drivers/custom-driver' },
-                ],
-              },
-              { text: 'Subscription Changes', link: 'en/subscribe' },
-              { text: 'TypeScript', link: 'en/typescript' },
+              { text: '入门(English)', link: '/en/docs/intro/' },
+              { text: '模型(English)', link: '/en/docs/model/' },
+              { text: '持久化(English)', link: '/en/docs/persistence/' },
+              { text: '订阅变更(English)', link: '/en/docs/subscribe/' },
+              { text: 'TypeScript(English)', link: '/en/docs/typescript/' },
             ],
           },
-          { text: 'Great Practices', link: 'en/bestPractices' },
-          { text: 'Model Maker', link: 'en/modelCodeMaker' },
+          {
+            text: '驱动(English)',
+            children: [
+              {
+                text: '浏览器驱动(English)',
+                children: [
+                  {
+                    text: 'LocalStorage(English)',
+                    link: '/en/drivers/localstorage',
+                  },
+                  { text: 'Cookie(English)', link: '/en/drivers/cookie' },
+                  {
+                    text: 'Dexie (IndexedDB)(English)',
+                    link: '/en/drivers/dexie',
+                  },
+                ],
+              },
+              {
+                text: '其他驱动(English)',
+                children: [{ text: 'Taro(English)', link: '/en/drivers/taro' }],
+              },
+              {
+                text: '自定义驱动(English)',
+                link: '/en/drivers/custom-driver',
+              },
+            ],
+          },
+          {
+            text: '迁移(English)',
+            children: [
+              { text: '从 v3 迁移(English)', link: '/en/migrations/v3' },
+              { text: '从 v4 迁移(English)', link: '/en/migrations/v4' },
+            ],
+          },
+          { text: '最佳实践(English)', link: '/en/bestPractices/' },
         ],
       },
     },
