@@ -1,12 +1,13 @@
-import { Models } from "kurimudb";
-import { CookieDriver } from "kurimudb-driver-cookie";
+import { SyncModels } from 'kurimudb';
+import { CookieDriver, cookieDriverFactory } from 'kurimudb-driver-cookie';
 
-export class Cookie extends Models.keyValue<Record<string, any>, CookieDriver> {
+class Cookie extends SyncModels.keyValue<Record<string, any>, CookieDriver> {
   constructor() {
     super({
-      name: "cookie",
-      type: "string",
-      driver: CookieDriver,
+      name: 'cookie',
+      driver: cookieDriverFactory,
     });
   }
 }
+
+export const cookie = new Cookie();

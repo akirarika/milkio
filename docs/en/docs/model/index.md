@@ -197,10 +197,11 @@ We can use algorithms such as [UUID](https://en.wikipedia.org/wiki/Universally_u
 In this algorithm, only the user of the current account generates multiple pieces of data within the same millisecond, and the probability of repetition of two pieces of data is `(1/10000)^2`, one in 100 million.
 
 <<<<<<< HEAD
-一般来说，正常用户几乎不可能在同一毫秒新增多条数据，所以，在实际应用中重复的几率极低。主要可能重复的场景是在同一客户端，批量新增数据时产生。我们可以尝试在生成同一毫秒生成的 NUID 中，添加主动规避生成相同 ID 的逻辑。
+一般来说，正常用户很难在同一毫秒新增多条数据，所以，在实际应用中重复的几率极低。主要可能重复的场景是在同一客户端，批量新增数据时产生。我们可以尝试在生成同一毫秒生成的 NUID 中，添加主动规避生成相同 ID 的逻辑。
 =======
 Generally speaking, it is almost impossible for a normal user to add multiple pieces of data in the same millisecond, so the chance of duplication in practical applications is extremely low. The main repetitive scenarios are generated when adding data in batches on the same client. The solution is that we can try to add logic to actively avoid generating the same ID in the NUID generated in the same millisecond.
->>>>>>> da15f2179061787723092e2f5e825f2776e1eb24
+
+> > > > > > > da15f2179061787723092e2f5e825f2776e1eb24
 
 ## Model Seeding
 

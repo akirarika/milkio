@@ -1,15 +1,19 @@
-import { Models } from "kurimudb";
-import { LocalStorageDriver } from "kurimudb-driver-localstorage";
+import { SyncModels } from 'kurimudb';
+import {
+  LocalStorageDriver,
+  localStorageDriverFactory,
+} from 'kurimudb-driver-localstorage';
 
-export class Local extends Models.keyValue<
+class Local extends SyncModels.keyValue<
   Record<string, any>,
   LocalStorageDriver
 > {
   constructor() {
     super({
-      name: "local",
-      type: "string",
-      driver: LocalStorageDriver,
+      name: 'local',
+      driver: localStorageDriverFactory,
     });
   }
 }
+
+export const local = new Local();

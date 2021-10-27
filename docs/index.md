@@ -12,6 +12,9 @@ local.data.say = 'hello'; // create it
 let say = local.data.say; // retrieve it
 'say' in local.data; // does it exist
 delete local.data.say; // delete it
+local.data.say$((val) => {
+  console.log(val);
+}); // subscribe to its changes
 ```
 
 </IndexComponent>

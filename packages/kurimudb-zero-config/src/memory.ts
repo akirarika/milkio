@@ -1,10 +1,11 @@
-import { Models } from "kurimudb";
+import { SyncModels } from 'kurimudb';
 
-export class Memory extends Models.keyValue<Record<string, any>, null> {
+class Memory extends SyncModels.keyValue<Record<string, any>> {
   constructor() {
     super({
-      name: "memory",
-      type: "string",
+      name: 'memory',
     });
   }
 }
+
+export const memory = new Memory();

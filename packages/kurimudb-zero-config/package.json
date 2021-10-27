@@ -1,15 +1,15 @@
 {
   "name": "kurimudb-zero-config",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "description": "⚓Kurimudb 零配置",
   "main": "./dist/index.js",
   "license": "MIT",
   "author": "akirarika",
   "dependencies": {
     "dexie": "^3.0.3",
-    "kurimudb": "^4.0.1",
-    "kurimudb-driver-cookie": "^4.0.0",
-    "kurimudb-driver-dexie": "^4.0.0",
-    "kurimudb-driver-localstorage": "^4.0.0"
+    "kurimudb": "^5.0.1",
+    "kurimudb-driver-cookie": "^5.0.1",
+    "kurimudb-driver-dexie": "^5.0.1",
+    "kurimudb-driver-localstorage": "^5.0.1"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "kurimudb",
-  "version": "5.0.1",
+  "version": "5.0.2",
   "scripts": {},
   "description": "⚓ Simple enough web storage solution",
   "main": "./dist/index.js",

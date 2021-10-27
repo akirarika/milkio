@@ -1,14 +1,15 @@
-import { Models } from "kurimudb";
-import { DexieDriver } from "kurimudb-driver-dexie";
-import db from "./_migrations";
+import { AsyncModels } from 'kurimudb';
+import { DexieDriver, dexieDriverFactory } from 'kurimudb-driver-dexie';
+import migrations from './_migrations';
 
-export class Db extends Models.keyValue<Record<string, any>, DexieDriver> {
+class DB extends AsyncModels.keyValue<Record<string, any>, DexieDriver> {
   constructor() {
     super({
-      name: "db",
-      type: "string",
-      db: db,
-      driver: DexieDriver,
+      name: 'db',
+      driver: dexieDriverFactory,
+      db: migrations,
     });
   }
 }
+
+export const db = new DB();

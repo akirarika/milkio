@@ -112,20 +112,37 @@ If you are using Vue/React or other frameworks, you probably hope to see all sub
 
 You can mount a function to `kurimudbConfig.autoUnsubscribe`. This function will be executed every time the subscription function is executed. You can use it in conjunction with the lifecycle APIs of the framework to realize automatic unsubscriptions.
 
-### Vue 3
+### Vue3
 
 ```js
-import { onBeforeUnmount } from 'vue';
-import { kurimudbConfig } from 'kurimudb';
+// 你可以把这些代码，写在你项目的 index.js 里
+// 在你任何 vue 组件被实例化之前执行
 
-kurimudbConfig.autoUnsubscribe = (unsubscribe) => {
+import { onBeforeUnmount } from 'vue';
+import { globalConfig } from 'kurimudb';
+
+globalConfig.setAutoUnsubscribe((unsubscribe) => {
   onBeforeUnmount(() => unsubscribe());
-};
+});
 ```
 
 ### React
 
-To be continued... 🐸
+```js
+// 你可以把这些代码，写在你项目的 index.js 里
+// 在你任何 react 组件被实例化之前执行
+
+import { onBeforeUnmount } from 'vue';
+import { globalConfig } from 'kurimudb';
+
+globalConfig.setAutoUnsubscribe((unsubscribe) => {
+  useEffect(() => {
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+});
+```
 
 ### Ignore Automatic Unsubscriptions
 

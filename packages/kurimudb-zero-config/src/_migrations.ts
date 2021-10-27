@@ -1,10 +1,10 @@
-import Dexie from "dexie";
+import Dexie from 'dexie';
 
-const db = new Dexie("Kurimudb");
+const migrations = new Dexie('Kurimudb');
 
-db.version(1).stores({
-  db: "_id",
-  _seed: "_id",
+migrations.version(1).stores({
+  db: '_id',
+  _seed: '_id',
 });
 
-export default db;
+export default migrations;

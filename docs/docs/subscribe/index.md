@@ -110,22 +110,39 @@ unsubscribe();
 
 如果你正在使用 Vue/React 等框架，你可能会希望，在组件被销毁时，自动退订此组件中产生的所有订阅。
 
-你可以向 `kurimudbConfig.autoUnsubscribe` 上挂载一个函数，此函数会在每次执行订阅函数时执行，你可以利用它结合所使用框架的生命周期 Api，来实现自动退订。
+你可以向 `globalConfig.autoUnsubscribe` 上挂载一个函数，此函数会在每次执行订阅函数时执行，你可以利用它结合所使用框架的生命周期 Api，来实现自动退订。
 
 ### Vue3
 
 ```js
-import { onBeforeUnmount } from 'vue';
-import { kurimudbConfig } from 'kurimudb';
+// 你可以把这些代码，写在你项目的 index.js 里
+// 在你任何 vue 组件被实例化之前执行
 
-kurimudbConfig.autoUnsubscribe = (unsubscribe) => {
+import { onBeforeUnmount } from 'vue';
+import { globalConfig } from 'kurimudb';
+
+globalConfig.setAutoUnsubscribe((unsubscribe) => {
   onBeforeUnmount(() => unsubscribe());
-};
+});
 ```
 
 ### React
 
-待续 🐸
+```js
+// 你可以把这些代码，写在你项目的 index.js 里
+// 在你任何 react 组件被实例化之前执行
+
+import { onBeforeUnmount } from 'vue';
+import { globalConfig } from 'kurimudb';
+
+globalConfig.setAutoUnsubscribe((unsubscribe) => {
+  useEffect(() => {
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+});
+```
 
 ### 忽略自动退订
 
