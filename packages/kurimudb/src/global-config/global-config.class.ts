@@ -1,20 +1,20 @@
-import { ModelOptionsInterface as SyncModelOptionsInterface } from "../models/sync/model-options.interface";
-import { ModelOptionsInterface as AsyncModelOptionsInterface } from "../models/async/model-options.interface";
+import * as async from "../models/async/model-options.interface";
+import * as sync from "../models/sync/model-options.interface";
 
 export class GlobalConfig {
   autoUnsubscribe: false | Function = false;
-  syncAutoIncrementHandler?: (options: SyncModelOptionsInterface) => string = undefined;
-  asyncAutoIncrementHandler?: (options: AsyncModelOptionsInterface) => Promise<string> = undefined;
+  syncAutoIncrementHandler?: (options: sync.ModelOptionsInterface) => string = undefined;
+  asyncAutoIncrementHandler?: (options: async.ModelOptionsInterface) => Promise<string> = undefined;
 
   setAutoUnsubscribe(val: false | Function) {
     this.autoUnsubscribe = val;
   }
 
-  setSyncAutoIncrementHander(hander: (options: SyncModelOptionsInterface) => string) {
-    this.syncAutoIncrementHandler = hander;
+  setSyncAutoIncrementHandler(handler: (options: sync.ModelOptionsInterface) => string) {
+    this.syncAutoIncrementHandler = handler;
   }
 
-  setAsyncAutoIncrementHander(hander: (options: AsyncModelOptionsInterface) => Promise<string>) {
-    this.asyncAutoIncrementHandler = hander;
+  setAsyncAutoIncrementHandler(handler: (options: async.ModelOptionsInterface) => Promise<string>) {
+    this.asyncAutoIncrementHandler = handler;
   }
 }
