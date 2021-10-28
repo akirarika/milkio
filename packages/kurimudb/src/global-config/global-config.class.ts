@@ -6,15 +6,15 @@ export class GlobalConfig {
   syncAutoIncrementHandler?: (options: sync.ModelOptionsInterface) => string = undefined;
   asyncAutoIncrementHandler?: (options: async.ModelOptionsInterface) => Promise<string> = undefined;
 
-  setAutoUnsubscribe(val: false | Function) {
+  setAutoUnsubscribe(val: this['autoUnsubscribe']) {
     this.autoUnsubscribe = val;
   }
 
-  setSyncAutoIncrementHandler(handler: (options: sync.ModelOptionsInterface) => string) {
+  setSyncAutoIncrementHandler(handler: NonNullable<this['syncAutoIncrementHandler']>) {
     this.syncAutoIncrementHandler = handler;
   }
 
-  setAsyncAutoIncrementHandler(handler: (options: async.ModelOptionsInterface) => Promise<string>) {
+  setAsyncAutoIncrementHandler(handler: NonNullable<this['asyncAutoIncrementHandler']>) {
     this.asyncAutoIncrementHandler = handler;
   }
 }
