@@ -22,13 +22,13 @@ npm i kurimudb-driver-cookie@5
 
 ```js {2,8}
 import { SyncModels } from 'kurimudb';
-import { CookieDriver } from 'kurimudb-driver-cookie';
+import { cookieDriverFactory } from 'kurimudb-driver-cookie';
 
 export default new (class CookieState extends SyncModels.keyValue {
   constructor() {
     super({
       name: 'CookieState',
-      driver: CookieDriver,
+      driver: cookieDriverFactory,
     });
   }
 })();

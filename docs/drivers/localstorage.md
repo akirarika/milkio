@@ -18,13 +18,13 @@ npm i kurimudb-driver-localstorage@5
 
 ```js {2,8}
 import { SyncModels } from 'kurimudb';
-import { LocalStorageDriver } from 'kurimudb-driver-localstorage';
+import { localStorageDriverFactory } from 'kurimudb-driver-localstorage';
 
 export default new (class LocalStorageState extends SyncModels.keyValue {
   constructor() {
     super({
       name: 'LocalStorageState',
-      driver: LocalStorageDriver,
+      driver: localStorageDriverFactory,
     });
   }
 })();
