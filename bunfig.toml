@@ -1,0 +1,4 @@
+smol = true
+
+[test]
+preload = ["./src/test.ts"]

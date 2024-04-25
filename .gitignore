@@ -1,0 +1,4 @@
+node_modules
+/app
+/tmp
+.DS_Store

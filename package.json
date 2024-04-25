@@ -1,0 +1,41 @@
+{
+  "name": "milkio-repo",
+  "type": "module",
+  "private": true,
+  "version": "0.0.0",
+  "module": "index.ts",
+  "scripts": {
+    "start": "bun run ./run-serve.ts",
+    "dev": "bun run --inspect ./run-serve.ts",
+    "api-test": "bun run ./run-api-test.ts",
+    "command": "bun run ./run-command.ts",
+    "build": "bun build ./run-command.ts --compile --minify --sourcemap --outfile app --target bun",
+    "database:migrate": "bun run ./drizzle.migrate.ts",
+    "milkio": "./node_modules/milkio/c.ts"
+  },
+  "trustedDependencies": [],
+  "dependencies": {
+    "@hattip/adapter-node": "^0.0.44",
+    "@paralleldrive/cuid2": "^2.2.2",
+    "@southern-aurora/tson": "2.0.2",
+    "cli-progress": "^3.12.0",
+    "cuid": "^3.0.0",
+    "drizzle-orm": "^0.30.1",
+    "client": "file:./packages/client",
+    "milkio": "file:./packages/milkio",
+    "milkio-drizzle": "file:./packages/milkio-drizzle",
+    "milkio-redis": "file:./packages/milkio-redis",
+    "milkio-client": "file:./packages/milkio-client",
+    "mysql2": "^3.9.2",
+    "typia": "^6.0.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@typescript-eslint/eslint-plugin": "^7.3.1",
+    "@typescript-eslint/parser": "^7.3.1",
+    "eslint": "^8.57.0",
+    "drizzle-kit": "^0.20.14",
+    "typescript": "^5.4.0",
+    "vitepress": "^1.0.0-rc.45"
+  }
+}

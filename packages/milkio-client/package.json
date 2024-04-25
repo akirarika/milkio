@@ -1,0 +1,20 @@
+{
+  "name": "milkio-client",
+  "version": "0.0.5",
+  "module": "index.ts",
+  "type": "module",
+  "files": [
+    "/index.ts",
+    "/LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc && bun build ./index.ts --outdir ./build --target browser"
+  },
+  "devDependencies": {
+    "typescript": "*",
+    "@types/bun": "latest"
+  },
+  "dependencies": {
+    "@southern-aurora/tson": "*"
+  }
+}

@@ -1,0 +1,37 @@
+# name: milkio-generator
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       packageVersion:
+#         description: 'Package Version'
+#         required: true
+# env:
+#   ACTION_VERSION: linux-x64
+# jobs:
+#   my-job:
+#     name: my-job
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: oven-sh/setup-bun@v1
+#         with:
+#           bun-version: "1.0.7"
+#           registry-url: "https://registry.npmjs.org/"
+#       - name: Publish
+#         env:
+#           NPM_PACKAGE_VERSION: ${{ github.event.inputs.packageVersion }}
+#           BUN_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+#         run: >-
+#           mkdir -r ./packages/milkio-generator/publish/$ACTION_VERSION/app
+#           && cd ./packages/milkio-generator
+#           && echo $ACTION_VERSION
+#           && echo $BUN_AUTH_TOKEN
+#           && echo "//registry.npmjs.org/:_authToken=$BUN_AUTH_TOKEN"
+#           && pwd && ls
+#           && bun install --frozen-lockfile
+#           && bun build ./index.ts --compile --outfile 
+#           "./publish/$ACTION_VERSION/app"
+#           --target bun
+#           && cd "./publish/$ACTION_VERSION"
+#           && npm set "//registry.npmjs.org/:_authToken=$BUN_AUTH_TOKEN"
+#           && npm publish --new-version "$NPM_PACKAGE_VERSION"

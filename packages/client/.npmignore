@@ -1,0 +1,9 @@
+project/src/bootstraps
+project/src/config
+project/src/databases
+project/src/middlewares
+project/src/uses
+project/src/cibtext.d.ts
+project/src/api-test.d.ts
+project/src/logger.d.ts
+project/src/router.d.ts

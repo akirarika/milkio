@@ -1,0 +1,8 @@
+[generate]
+significant = ['./node_modules/milkio-drizzle/g.ts']
+insignificant = []
+
+[menubar]
+commands = [
+  { name = 'Test All APIs', script = 'bun run ./index.ts --run-mode:API_TEST', icon = 'beaker' },
+]

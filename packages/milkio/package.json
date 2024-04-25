@@ -1,0 +1,26 @@
+{
+  "name": "milkio",
+  "type": "module",
+  "module": "index.ts",
+  "version": "0.0.37",
+  "peerDependencies": {
+    "typescript": "^5.4.2"
+  },
+  "bin": {
+    "milkio": "./c.ts"
+  },
+  "dependencies": {
+    "@poech/camel-hump-under": "^1.1.0",
+    "@southern-aurora/tson": "2.0.2",
+    "ulidx": "^2.3.0",
+    "typia": "5.5.5",
+    "ejs": "^3.1.9"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/ejs": "^3.1.5",
+    "@types/js-beautify": "^1.14.3",
+    "ts-patch": "^3.1.2",
+    "typescript": "^5.3.3"
+  }
+}
