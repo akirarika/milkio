@@ -2,7 +2,7 @@
   "name": "milkio",
   "type": "module",
   "module": "index.ts",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "peerDependencies": {
     "typescript": "^5.4.2"
   },

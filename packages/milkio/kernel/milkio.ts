@@ -5,10 +5,11 @@ import type { Context } from "../../../src/context"
 import { failCode } from "../../../src/fail-code"
 import type { MilkioContext } from "./context"
 import { headerToPlainObject } from "../utils/header-to-plain-object"
-import { type Mixin, type ExecuteId, type Fail, type FailEnumerates, loggerPushTags, loggerSubmit, runtime, TSON, type Logger, useLogger } from ".."
+import { type Mixin, type ExecuteId, type Fail, type FailEnumerates, loggerPushTags, loggerSubmit, runtime, TSON, type Logger, useLogger, reject } from ".."
 import { hanldeCatchError } from "../utils/handle-catch-error"
 import { createUlid } from "../utils/create-ulid"
 import { _validate } from "./validate"
+import { exit } from "node:process"
 
 export type MilkioAppOptions = {
   /**
@@ -162,10 +163,13 @@ async function _executeCore<Path extends keyof (typeof schema)["apiMethodsTypeSc
     // before execute middleware
     await MiddlewareEvent.handle("beforeExecute", [context])
 
+    let fn: any
     // check type
     // @ts-ignore
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    params = _validate(await (await schema.apiValidator.validate[path]()).validateParams(params))
+    try { fn = await schema.apiValidator.validate[path]() } catch (error) { throw reject('BUSINESS_FAIL', 'This is the new API, which takes effect after restarting the server or saving any changes. It will be fixed in the future.') }
+  
+    params = _validate(await fn.validateParams(params))
 
     // execute api
     let api: any
@@ -199,13 +203,17 @@ async function _executeCore<Path extends keyof (typeof schema)["apiMethodsTypeSc
 
 async function _executeToJson<Path extends keyof (typeof schema)["apiMethodsTypeSchema"]>(path: Path, params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string, headersInit: Record<string, string> | Headers = {}, options?: ExecuteOptions): Promise<string> {
   const resultsRaw = await _execute(path, params, headersInit, options)
-  const results = await (await schema.apiValidator.validate[path]()).validateResults(TSON.encode(resultsRaw))
+  let fn: any
+  try { fn = await schema.apiValidator.validate[path]() } catch (error) { throw reject('BUSINESS_FAIL', 'This is the new API, which takes effect after restarting the server or saving any changes. It will be fixed in the future.') }
+  const results = await fn.validateResults(TSON.encode(resultsRaw))
   return results
 }
 
 async function _executeCoreToJson<Path extends keyof (typeof schema)["apiMethodsTypeSchema"]>(path: Path, params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string, headersInit: Record<string, string> | Headers = {}, options: ExecuteCoreOptions): Promise<string> {
   const resultsRaw = await _executeCore(path, params, headersInit, options)
-  const results = await (await schema.apiValidator.validate[path]()).validateResults(TSON.encode(resultsRaw))
+  let fn: any
+  try { fn = await schema.apiValidator.validate[path]() } catch (error) { throw reject('BUSINESS_FAIL', 'This is the new API, which takes effect after restarting the server or saving any changes. It will be fixed in the future.') }
+  const results = await fn.validateResults(TSON.encode(resultsRaw))
   return results
 }
 
