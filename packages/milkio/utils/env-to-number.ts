@@ -1,5 +1,5 @@
 export function envToNumber(value: string | undefined, defaultValue: number) {
-  if (value === undefined) return defaultValue
+	if (value === undefined) return defaultValue;
 
-  return Number.parseInt(value, 10)
+	return Number.parseInt(value, 10);
 }

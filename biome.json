@@ -9,7 +9,18 @@
 		"rules": {
 			"recommended": true,
 			"style": {
-				"noUnusedTemplateLiteral": "off"
+				"noParameterAssign": "off",
+				"noNonNullAssertion": "off",
+				"noUnusedTemplateLiteral": "off",
+				"useDefaultParameterLast": "off"
+			},
+			"suspicious": {
+				"noExplicitAny": "off",
+				"noImplicitAnyLet": "off"
+			},
+			"complexity": {
+				"noForEach": "off",
+				"noBannedTypes": "off"
 			}
 		}
 	},

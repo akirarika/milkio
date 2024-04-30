@@ -1,5 +1,5 @@
-import { monotonicFactory } from "ulidx"
+import { monotonicFactory } from "ulidx";
 
-const ulid = monotonicFactory()
+const ulid = monotonicFactory();
 
-export const createUlid = () => ulid()
+export const createUlid = () => ulid();

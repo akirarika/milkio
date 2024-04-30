@@ -1,9 +1,9 @@
-import { type MiddlewareOptions } from ".."
+import type { MiddlewareOptions } from "..";
 
 export function defineMiddleware(options: MiddlewareOptions): () => MiddlewareOptions {
-  return () => ({
-    ...options,
-    // @ts-ignore
-    isMiddleware: true
-  })
+	return () => ({
+		...options,
+		// @ts-ignore
+		isMiddleware: true,
+	});
 }

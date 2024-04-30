@@ -1,11 +1,11 @@
-import { type ExecuteId } from ".."
+import type { ExecuteId } from "..";
 
 export const runtime = {
-  execute: {
-    executeIds: new Set<ExecuteId>()
-  },
-  maxRunningTimeout: {
-    enable: false,
-    expectedEndedAt: 0
-  }
-}
+	execute: {
+		executeIds: new Set<ExecuteId>(),
+	},
+	maxRunningTimeout: {
+		enable: false,
+		expectedEndedAt: 0,
+	},
+};

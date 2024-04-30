@@ -1,3 +1,3 @@
-import { TSON as _TSON } from "@southern-aurora/tson"
+import { TSON as _TSON } from "@southern-aurora/tson";
 
-export const TSON = _TSON
+export const TSON = _TSON;
