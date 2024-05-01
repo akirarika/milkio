@@ -21,6 +21,9 @@
 			"complexity": {
 				"noForEach": "off",
 				"noBannedTypes": "off"
+			},
+			"correctness": {
+				"noUnnecessaryContinue": "off"
 			}
 		}
 	},

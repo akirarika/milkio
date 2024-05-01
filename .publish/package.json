@@ -1,9 +1,16 @@
 {
-  "name": ".publish",
+  "name": "milkio-publish",
+  "private": true,
   "module": "index.ts",
   "type": "module",
   "devDependencies": {
     "@types/bun": "latest"
+  },
+  "dependencies": {
+    "@octokit/core": "^6.1.2",
+    "@poech/camel-hump-under": "^1.1.0",
+    "dayjs": "^1.11.10",
+    "enquirer": "^2.4.1"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
