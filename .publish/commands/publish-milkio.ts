@@ -49,13 +49,12 @@ export default async function () {
 		let releaseGithubNote: string;
 
 		while (true) {
-			console.clear();
 			console.log(`/.publish/releases/${newVersion}.md`);
 			if ((await interactiveCli.select("\n编辑好了吗？", ["否", "是"])) === "是") break;
+			console.clear();
 		}
 
 		while (true) {
-			console.clear();
 			console.log(`/.publish/releases/${newVersion}.md`);
 			releaseNote = await readFile(join(".publish", "releases", `${newVersion}.md`), "utf8");
 			if (releaseNote.includes("...更新内容...")) {
@@ -73,13 +72,13 @@ export default async function () {
 				alert("按回车以继续");
 				continue;
 			}
+			console.clear();
 			break;
 		}
 
 		const minimax = await useMinimax();
 
 		while (true) {
-			console.clear();
 			console.log("发行说明翻译中..");
 			releaseGithubNote = await minimax.translateDoc(releaseNote, "中文");
 			const releaseGithubNoteTranslated = await minimax.translateDoc(releaseGithubNote, "英文");
@@ -90,6 +89,7 @@ export default async function () {
 			console.log(`/.publish/releases-github/${newVersion}.md`);
 			if ((await interactiveCli.select("\n检查完毕并继续吗？", ["否，重新翻译", "是，继续"])) === "是，继续") break;
 			console.log("好的，即将重新翻译..");
+			console.clear();
 		}
 
 		while (true) {
