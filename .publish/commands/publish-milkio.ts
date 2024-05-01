@@ -8,6 +8,7 @@ import { exists, readdir, readFile, writeFile } from "node:fs/promises";
 import { config } from "../config";
 
 export default async function () {
+	const npmPackage = "milkio";
 	const owner = "akirarika";
 	const repo = "milkio";
 
@@ -26,10 +27,14 @@ export default async function () {
 		return console.log("错误的版本号，未能满足正则表达式的校验");
 	}
 
-	const packageJson = await readFile(join("packages", "milkio", "package.json"), "utf8");
-	await writeFile(join("packages", "milkio", "package.json"), packageJson.replace(/"version": ".*"/, `"version": "${newVersion}"`));
-
-	await $`cd ${join("packages", "milkio")} && npm publish --access public`;
+	try {
+		await $`npm view ${npmPackage}@${newVersion} --json`.quiet();
+		console.log("该版本已存在，不进行 npm 发布");
+	} catch (error) {
+		const packageJson = await readFile(join("packages", "milkio", "package.json"), "utf8");
+		await writeFile(join("packages", "milkio", "package.json"), packageJson.replace(/"version": ".*"/, `"version": "${newVersion}"`));
+		await $`cd ${join("packages", "milkio")} && npm publish --access public`;
+	}
 
 	console.clear();
 	console.log("🧊 如果版本是修复 bug 版本 (仅最小版本号增加) 则无需编写发行说明");
