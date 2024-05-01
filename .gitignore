@@ -2,3 +2,11 @@ node_modules
 /app
 /tmp
 **/.DS_Store
+/generated
+/packages/client/dist
+/packages/client/project
+/src/apps
+!/src/apps/cookbook.ts
+/src/databases
+!/src/apps/README.md
+/src/databases
