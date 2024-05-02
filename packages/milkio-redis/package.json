@@ -1,18 +1,16 @@
 {
-  "name": "milkio-redis",
-  "module": "index.ts",
-  "type": "module",
-  "version": "0.0.2",
-  "devDependencies": {
-    "typescript": "*",
-    "@types/bun": "latest"
-  },
-  "files": [
-    "index.ts",
-    "LICENSE"
-  ],
-  "dependencies": {
-    "@southern-aurora/tson": "*",
-    "redis": "*"
-  }
+	"name": "milkio-redis",
+	"module": "index.ts",
+	"type": "module",
+	"version": "0.0.2",
+	"devDependencies": {
+		"typescript": "*",
+		"@types/bun": "latest"
+	},
+	"files": ["index.ts", "LICENSE"],
+	"dependencies": {
+		"milkio": "*",
+		"@southern-aurora/tson": "*",
+		"redis": "*"
+	}
 }

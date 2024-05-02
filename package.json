@@ -28,6 +28,7 @@
 		"milkio-client": "file:./packages/milkio-client",
 		"milkio-drizzle": "file:./packages/milkio-drizzle",
 		"milkio-redis": "file:./packages/milkio-redis",
+		"milkio-static": "file:./packages/milkio-static",
 		"mysql2": "^3.9.2",
 		"typia": "^6.0.3"
 	},

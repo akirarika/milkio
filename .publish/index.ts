@@ -6,6 +6,7 @@ import { useInteractiveCli } from "./uses/interactive-cli";
 
 export const commands: Record<string, () => any> = {
 	"Publish: Milkio": () => import("./commands/publish-milkio"),
+	"Publish: Milkio Static": () => import("./commands/publish-static"),
 };
 
 console.log("----------------");

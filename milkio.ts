@@ -1,7 +1,7 @@
 import { createMilkioApp } from "milkio";
-import { httpIOConsoleLog } from "./src/middlewares/http-io-console-log";
+import { milkioStatic } from "milkio-static";
 
 export const milkio = createMilkioApp({
 	bootstraps: () => [],
-	middlewares: () => [httpIOConsoleLog()],
+	middlewares: () => [milkioStatic()],
 });
