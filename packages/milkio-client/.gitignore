@@ -177,3 +177,5 @@ dist
 /.old
 /build
 .co.toml
+package-lock.json
+bun.lockb

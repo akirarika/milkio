@@ -1,7 +1,5 @@
 #!/usr/bin/env bun
 
-/* eslint-disable no-console */
-
 import ejs from "ejs";
 import { join } from "node:path";
 import { existsSync, mkdirSync } from "node:fs";

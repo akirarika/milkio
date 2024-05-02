@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { runtime, type ExecuteId } from "..";
 import { loggerOptions } from "../../../src/logger";
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env bun
 
-/* eslint-disable no-constant-condition, @typescript-eslint/no-misused-promises, no-console, @typescript-eslint/no-explicit-any */
-
 import { argv, exit } from "node:process";
 import { $ } from "bun";
 

@@ -1,5 +1,3 @@
-/* eslint-disable no-constant-condition, @typescript-eslint/no-unsafe-argument, no-console, @typescript-eslint/no-explicit-any */
-
 import schema from "../../../generated/api-schema";
 import { useLogger, type MilkioApp } from "..";
 

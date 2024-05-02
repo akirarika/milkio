@@ -1,0 +1,16 @@
+{
+	"name": "milkio-static",
+	"module": "index.ts",
+	"type": "module",
+	"version": "0.0.1",
+	"devDependencies": {
+		"typescript": "*",
+		"@types/bun": "latest"
+	},
+	"files": ["index.ts", "LICENSE"],
+	"dependencies": {
+		"milkio": "*",
+		"@southern-aurora/tson": "*",
+		"redis": "*"
+	}
+}

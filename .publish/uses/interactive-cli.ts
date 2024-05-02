@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable no-console */
 // @ts-ignore
 import Enquirer from "enquirer";
 

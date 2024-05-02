@@ -1,20 +1,21 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-constraint, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument */
-
 import type { Context } from "../../../src/context";
-import type { FrameworkHTTPDetail } from "./context";
+import type { FrameworkHttpDetail } from "./context";
 import type { MilkioApp } from "milkio";
 
 export type BootstrapMiddleware = (milkio: MilkioApp) => Promise<void> | void;
 export type BeforeExecuteMiddleware = (context: Context) => Promise<void> | void;
 export type AfterExecuteMiddleware = (context: Context, response: { value: unknown }) => Promise<void> | void;
-export type AfterHTTPRequestMiddleware = (headers: Headers, detail: FrameworkHTTPDetail) => Promise<void> | void;
-export type BeforeHTTPResponseMiddleware = (response: { value: string }, detail: FrameworkHTTPDetail) => Promise<void> | void;
+export type AfterHttpRequestMiddleware = (headers: Headers, detail: FrameworkHttpDetail) => Promise<void> | void;
+export type BeforeHttpResponseMiddleware = (response: { value: string }, detail: FrameworkHttpDetail) => Promise<void> | void;
+export type HttpNotFoundMiddleware = (detail: FrameworkHttpDetail) => Promise<void> | void;
+
 export type MiddlewareOptions = {
 	bootstrap?: BootstrapMiddleware;
 	beforeExecute?: BeforeExecuteMiddleware;
 	afterExecute?: AfterExecuteMiddleware;
-	afterHTTPRequest?: AfterHTTPRequestMiddleware;
-	beforeHTTPResponse?: BeforeHTTPResponseMiddleware;
+	afterHttpRequest?: AfterHttpRequestMiddleware;
+	beforeHttpResponse?: BeforeHttpResponseMiddleware;
+	httpNotFound?: HttpNotFoundMiddleware;
 } & Record<string, (...args: Array<any>) => Promise<void> | void>;
 export type MiddlewareFn = (...args: Array<any>) => Promise<void> | void;
 export type MiddlewareT<T extends MiddlewareFn = MiddlewareFn> = { id: string; index: number; middleware: T };

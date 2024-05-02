@@ -16,7 +16,8 @@
 			},
 			"suspicious": {
 				"noExplicitAny": "off",
-				"noImplicitAnyLet": "off"
+				"noImplicitAnyLet": "off",
+				"noConfusingVoidType": "off"
 			},
 			"complexity": {
 				"noForEach": "off",

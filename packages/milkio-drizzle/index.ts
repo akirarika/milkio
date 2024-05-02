@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/ban-types */
-
 export type DB<Table extends { $inferInsert: Record<string, unknown> }> = Table["$inferInsert"];
 
 export type DBInsert<Table extends { $inferInsert: Record<string, unknown> }> = Table["$inferInsert"];

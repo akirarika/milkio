@@ -1,5 +1,3 @@
-/* eslint-disable no-console, @typescript-eslint/no-dynamic-delete */
-
 import { $ } from "bun";
 import { join } from "node:path";
 import { cwd } from "node:process";

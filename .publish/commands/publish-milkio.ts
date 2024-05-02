@@ -27,6 +27,8 @@ export default async function () {
 		return console.log("错误的版本号，未能满足正则表达式的校验");
 	}
 
+	console.clear();
+
 	try {
 		await $`npm view ${npmPackage}@${newVersion} --json`.quiet();
 		console.log("该版本已存在，不进行 npm 发布");
@@ -36,7 +38,6 @@ export default async function () {
 		await $`cd ${join("packages", "milkio")} && npm publish --access public`;
 	}
 
-	console.clear();
 	console.log("🧊 如果版本是修复 bug 版本 (仅最小版本号增加) 则无需编写发行说明");
 	if ((await interactiveCli.select("是修复 bug 版本吗？", ["是", "否"])) === "否") {
 		console.clear();
@@ -142,7 +143,12 @@ export default async function () {
 				return body;
 			})(),
 		});
+
+		await $`git add --all && git commit -m "🎉 release: v${newVersion}"`;
 	}
 
-	console.log("🎉 发布成功");
+	console.log("\n\n🎉 发布成功\n");
+	console.log(`- npm: https://www.npmjs.com/package/${npmPackage}/v/${newVersion}`);
+	console.log(`- gitee: https://gitee.com/${owner}/${repo}/releases/tag/v${newVersion}`);
+	console.log(`- github: https://github.com/${owner}/${repo}/releases/tag/v${newVersion}`);
 }

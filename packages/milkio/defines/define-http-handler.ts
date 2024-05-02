@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { loggerPushTags, loggerSubmit, useLogger, runtime, MiddlewareEvent } from "..";
 import type { ExecuteId, MilkioApp, Mixin } from "..";
 import { hanldeCatchError } from "../utils/handle-catch-error";
@@ -22,7 +21,7 @@ export type ExecuteHttpServerOptions = {
 };
 
 export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOptions = {}) {
-	const fetch = async (request: MilkioHTTPRequest) => {
+	const fetch = async (request: MilkioHttpRequest) => {
 		const fullurl = new URL(request.request.url, `http://${request.request.headers.get("host") ?? "localhost"}`);
 		const executeId = (options?.executeIdGenerator ? await options.executeIdGenerator(request.request) : createUlid()) as ExecuteId;
 		runtime.execute.executeIds.add(executeId);
@@ -40,7 +39,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 			timein: new Date().getTime(),
 		});
 
-		const response: MilkioHTTPResponse = {
+		const response: MilkioHttpResponse = {
 			body: "",
 			status: 200,
 			headers: {
@@ -74,35 +73,6 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 
 			let pathstr = path.join("/") as keyof (typeof schema)["apiMethodsSchema"];
 
-			// Special processing: do not run middleware when encountering 404 and return quickly
-			if (!(pathstr in schema.apiMethodsSchema) || pathstr.startsWith("$/")) {
-				// @ts-ignore
-				const redirectPath = await routerHandler(pathstr, fullurl);
-				if (!redirectPath) {
-					const rawbody = await request.request.text();
-					loggerPushTags(executeId, {
-						body: rawbody || "no body",
-					});
-					if (!response.body) response.body = `{"executeId":"${executeId}","success":false,"fail":{"code":"NOT_FOUND","message":${JSON.stringify(failCode.NOT_FOUND())}}}`;
-
-					loggerPushTags(executeId, {
-						status: response.status,
-						responseHeaders: response.headers,
-						timeout: new Date().getTime(),
-					});
-
-					await loggerSubmit(executeId);
-					runtime.execute.executeIds.delete(executeId);
-
-					return new Response(response.body, response);
-				}
-				pathstr = redirectPath as typeof pathstr;
-			}
-
-			loggerPushTags(executeId, {
-				path: pathstr,
-			});
-
 			const detail = {
 				path: pathstr,
 				ip,
@@ -112,9 +82,41 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 				response,
 			};
 
+			// Special processing: do not run middleware when encountering 404 and return quickly
+			if (!(pathstr in schema.apiMethodsSchema) || pathstr.startsWith("$/")) {
+				// @ts-ignore
+				const redirectPath = await routerHandler(pathstr, fullurl);
+				if (!redirectPath) {
+					const rawbody = await request.request.text();
+					loggerPushTags(executeId, {
+						body: rawbody || "no body",
+					});
+
+					await MiddlewareEvent.handle("httpNotFound", [detail]);
+					if (!detail.response.body) detail.response.body = `{"executeId":"${executeId}","success":false,"fail":{"code":"NOT_FOUND","message":${JSON.stringify(failCode.NOT_FOUND())}}}`;
+
+					loggerPushTags(executeId, {
+						status: detail.response.status,
+						responseHeaders: detail.response.headers,
+						timeout: new Date().getTime(),
+					});
+
+					await loggerSubmit(executeId);
+					runtime.execute.executeIds.delete(executeId);
+
+					return new Response(detail.response.body, detail.response);
+				}
+
+				pathstr = redirectPath as typeof pathstr;
+			}
+
+			loggerPushTags(executeId, {
+				path: pathstr,
+			});
+
 			// execute api
 			// after request middleware
-			await MiddlewareEvent.handle("afterHTTPRequest", [headers, detail]);
+			await MiddlewareEvent.handle("afterHttpRequest", [headers, detail]);
 
 			const rawbody = await request.request.text();
 			loggerPushTags(executeId, {
@@ -149,15 +151,15 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 
 			// @ts-ignore
 			// eslint-disable-next-line @typescript-eslint/no-confusing-void-expression, @typescript-eslint/no-explicit-any
-			if (!response.body) response.body = result;
+			if (!detail.response.body) detail.response.body = result;
 
 			// before response middleware
 			const middlewareResponse = {
-				value: response.body,
+				value: detail.response.body,
 			};
-			await MiddlewareEvent.handle("beforeHTTPResponse", [middlewareResponse, detail]);
+			await MiddlewareEvent.handle("beforeHttpResponse", [middlewareResponse, detail]);
 
-			if (!response.body) response.body = middlewareResponse.value;
+			if (!detail.response.body) detail.response.body = middlewareResponse.value;
 		} catch (error) {
 			const result = hanldeCatchError(error, executeId);
 			if (!response.body) response.body = TSON.stringify(result);
@@ -180,11 +182,11 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 	return fetch;
 }
 
-export type MilkioHTTPRequest = {
+export type MilkioHttpRequest = {
 	request: Request;
 };
 
-export type MilkioHTTPResponse = Mixin<
+export type MilkioHttpResponse = Mixin<
 	ResponseInit,
 	{
 		body: string | BodyInit;

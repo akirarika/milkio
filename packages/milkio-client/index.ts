@@ -1,5 +1,3 @@
-/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
-
 import { TSON } from "@southern-aurora/tson";
 
 export type MilkioClientOptions = {

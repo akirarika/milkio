@@ -1,4 +1,3 @@
-/* eslint-disable no-console, @typescript-eslint/no-invalid-void-type, @typescript-eslint/await-thenable, @typescript-eslint/ban-types, @typescript-eslint/no-explicit-any */
 import { type MiddlewareOptions, _middlewares, MiddlewareEvent } from "./middleware";
 import schema from "../../../generated/api-schema";
 import type { Context } from "../../../src/context";
@@ -9,7 +8,6 @@ import { type Mixin, type ExecuteId, type Fail, type FailEnumerates, loggerPushT
 import { hanldeCatchError } from "../utils/handle-catch-error";
 import { createUlid } from "../utils/create-ulid";
 import { _validate } from "./validate";
-import { exit } from "node:process";
 
 export type MilkioAppOptions = {
 	/**
@@ -62,8 +60,9 @@ export async function createMilkioApp(MilkioAppOptions: MilkioAppOptions = {}) {
 		MiddlewareEvent.define("bootstrap", (a, b) => a.index - b.index);
 		MiddlewareEvent.define("beforeExecute", (a, b) => a.index - b.index);
 		MiddlewareEvent.define("afterExecute", (a, b) => b.index - a.index);
-		MiddlewareEvent.define("afterHTTPRequest", (a, b) => a.index - b.index);
-		MiddlewareEvent.define("beforeHTTPResponse", (a, b) => b.index - a.index);
+		MiddlewareEvent.define("afterHttpRequest", (a, b) => a.index - b.index);
+		MiddlewareEvent.define("beforeHttpResponse", (a, b) => b.index - a.index);
+		MiddlewareEvent.define("httpNotFound", (a, b) => a.index - b.index);
 
 		const middlewares = MilkioAppOptions.middlewares();
 
@@ -272,7 +271,7 @@ export type ExecuteOptions = {
 	executeId?: string;
 	/**
 	 * Additional information about the request
-	 * These are usually only fully implemented when called by an HTTP server
+	 * These are usually only fully implemented when called by an Http server
 	 * During testing or when calling between microservices, some or all of the values may be undefined
 	 */
 	detail?: MilkioContext["detail"];

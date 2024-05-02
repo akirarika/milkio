@@ -174,3 +174,5 @@ dist
 # Finder (MacOS) folder config
 .DS_Store
 .co.toml
+package-lock.json
+bun.lockb

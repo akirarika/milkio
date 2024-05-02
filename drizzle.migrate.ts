@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
 import { exit } from "node:process";
 
-/* eslint-disable no-console */
 console.log("Drizzle Migrating..");
 
 // load config and schema

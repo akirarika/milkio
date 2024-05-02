@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { config } from "../config.ts";
 
 export const useMinimax = () => {
@@ -21,7 +19,7 @@ export const useMinimax = () => {
 		},
 		async translate(message: string) {
 			const response = await minimax.fetch({
-				model: "abab5.5-chat",
+				model: "abab6.5-chat",
 				tokens_to_generate: 4096,
 				reply_constraints: { sender_type: "BOT", sender_name: "翻译助手" },
 				messages: [{ sender_type: "USER", sender_name: "用户", text: message }],
@@ -37,7 +35,7 @@ export const useMinimax = () => {
 		},
 		async translateToEnglish(message: string) {
 			const response = await minimax.fetch({
-				model: "abab5.5-chat",
+				model: "abab6.5-chat",
 				tokens_to_generate: 4096,
 				reply_constraints: { sender_type: "BOT", sender_name: "翻译助手" },
 				messages: [{ sender_type: "USER", sender_name: "用户", text: message }],
