@@ -8,7 +8,5 @@
 		"@types/bun": "latest"
 	},
 	"files": ["index.ts", "LICENSE"],
-	"dependencies": {
-		"milkio": "*"
-	}
+	"dependencies": {}
 }

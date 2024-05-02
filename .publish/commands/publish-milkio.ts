@@ -28,6 +28,7 @@ export default async function () {
 	}
 
 	console.clear();
+	console.log("开始发布..");
 
 	try {
 		await $`npm view ${npmPackage}@${newVersion} --json`.quiet();
@@ -151,4 +152,5 @@ export default async function () {
 	console.log(`- npm: https://www.npmjs.com/package/${npmPackage}/v/${newVersion}`);
 	console.log(`- gitee: https://gitee.com/${owner}/${repo}/releases/tag/v${newVersion}`);
 	console.log(`- github: https://github.com/${owner}/${repo}/releases/tag/v${newVersion}`);
+	console.log(`- 安装命令: bun i ${npmPackage}@${newVersion}`);
 }

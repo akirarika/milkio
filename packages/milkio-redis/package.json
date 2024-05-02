@@ -9,7 +9,6 @@
 	},
 	"files": ["index.ts", "LICENSE"],
 	"dependencies": {
-		"milkio": "*",
 		"@southern-aurora/tson": "*",
 		"redis": "*"
 	}
