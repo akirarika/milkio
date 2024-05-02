@@ -32,4 +32,5 @@ export default async function () {
 
 	console.log("\n\n🎉 发布成功\n");
 	console.log(`- npm: https://www.npmjs.com/package/${npmPackage}/v/${newVersion}`);
+	console.log(`- 安装命令: bun i ${npmPackage}@${newVersion}`);
 }
