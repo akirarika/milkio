@@ -1,5 +1,4 @@
 import { $ } from "bun";
-import dayjs from "dayjs";
 import { join } from "node:path";
 import { Octokit } from "@octokit/core";
 import { useMinimax } from "../uses/minimax";

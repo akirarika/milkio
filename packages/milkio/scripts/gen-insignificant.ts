@@ -246,6 +246,7 @@ export default async () => {
 		minify: true,
 	});
 	await copyFile(join(cwd(), "src", "fail-code.ts"), join(cwd(), "packages", "client", "project", "src", "fail-code.ts"));
+	await $`bun i`.cwd(join(cwd(), "packages", "client"));
 	console.timeEnd(`Client Stage`);
 	console.log(``);
 
