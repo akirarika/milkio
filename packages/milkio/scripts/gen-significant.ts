@@ -49,8 +49,9 @@ export default async () => {
 
 	console.time(`File Stage`);
 
-	for (const path of appFiles) {
-		if (!path.endsWith(".ts")) continue;
+	for (const pathRaw of appFiles) {
+		if (!pathRaw.endsWith(".ts")) continue;
+		const path = pathRaw.replaceAll("\\", "/");
 		const module = await import(/* @vite-ignore */ join(cwd(), "src", "apps", path));
 
 		if (module?.api?.isApi === true) {
