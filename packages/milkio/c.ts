@@ -25,7 +25,7 @@ const commands = {
 	},
 	async EAR(commandBase64ed: string) {
 		try {
-			await $`clear`;
+			console.clear();
 		} catch (e) {}
 		const command = Buffer.from(commandBase64ed, "base64").toString("utf-8");
 		console.log("\x1B[2m%s\x1B[0m", `$ ${command}`);
