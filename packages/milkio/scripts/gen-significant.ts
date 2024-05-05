@@ -1,5 +1,5 @@
 import ejs from "ejs";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { existsSync, mkdirSync } from "node:fs";
 import { cwd, exit } from "node:process";
 import { unlink, writeFile } from "node:fs/promises";
@@ -99,6 +99,7 @@ export const randParams = async () => typia.random<ParamsT>();
 `.trim();
 			// export const paramsSchema = typia.json.application<[{ data: ParamsT }], "swagger">();
 
+			if (!existsSync(dirname(filePath))) mkdirSync(dirname(filePath), { recursive: true });
 			await writeFile(filePath, ejs.render(template, { ...templateVars, path }));
 		}
 	}
