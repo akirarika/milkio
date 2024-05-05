@@ -17,7 +17,8 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 	const apiTestHooks = await import("../../../src/api-test.ts");
 	await apiTestHooks.default.onBootstrap();
 
-	for (let path of pathArr) {
+	for (const pathRaw of pathArr) {
+		let path = pathRaw.replaceAll("\\", "/");
 		if (path.startsWith("/")) path = path.slice(1) as Path[number];
 
 		tests.push(
