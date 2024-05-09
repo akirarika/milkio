@@ -21,6 +21,7 @@ export const useMinimax = () => {
 			const response = await minimax.fetch({
 				model: "abab6.5-chat",
 				tokens_to_generate: 4096,
+				mask_sensitive_info: false,
 				reply_constraints: { sender_type: "BOT", sender_name: "翻译助手" },
 				messages: [{ sender_type: "USER", sender_name: "用户", text: message }],
 				bot_setting: [
@@ -37,6 +38,7 @@ export const useMinimax = () => {
 			const response = await minimax.fetch({
 				model: "abab6.5-chat",
 				tokens_to_generate: 4096,
+				mask_sensitive_info: false,
 				reply_constraints: { sender_type: "BOT", sender_name: "翻译助手" },
 				messages: [{ sender_type: "USER", sender_name: "用户", text: message }],
 				bot_setting: [
@@ -54,6 +56,7 @@ export const useMinimax = () => {
 			const response = await minimax.fetch({
 				model: "abab6-chat",
 				tokens_to_generate: 1024,
+				mask_sensitive_info: false,
 				reply_constraints: { sender_type: "BOT", sender_name: "翻译助手" },
 				messages: [{ sender_type: "USER", sender_name: "用户", text: message }],
 				bot_setting: [

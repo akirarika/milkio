@@ -42,6 +42,7 @@ export type MilkioConfig = {
 		significant?: Array<string>;
 		insignificant?: Array<string>;
 	};
+	exists?: Record<string, { path: string; content: string }>;
 	menubar?: {
 		commands?: Array<{ name?: string; script?: string; icon?: string }>;
 	};
