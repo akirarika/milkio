@@ -64,7 +64,7 @@ export default async () => {
 			(async () => {
 				const path = pathRaw.replaceAll("\\", "/");
 				// const module = await import(/* @vite-ignore */ join(cwd(), "src", "apps", path));
-				const moduleCode = await readFile(pathRaw, "utf-8");
+				const moduleCode = await readFile(join(cwd(), "src", "apps", pathRaw), "utf-8");
 
 				if (/\nexport const api( )*\=( )*defineApi\(\{/.test(moduleCode)) {
 					// Exclude disallowed characters
