@@ -23,7 +23,7 @@ export default async () => {
 
 	for (const key in milkioConfig.exists) {
 		const file = milkioConfig.exists[key];
-		if (!existsSync(join(file.path))) await writeFile(join(file.path), file.content ?? "");
+		if (!existsSync(join(cwd(), file.path))) await writeFile(join(cwd(), file.path), file.content ?? "");
 	}
 
 	if (!existsSync(join("generated", "README.md"))) {

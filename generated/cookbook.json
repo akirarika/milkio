@@ -1,1 +1,1 @@
-{"cookbook":{"cookbook":{"params":"string & typia.tags.MinLength<3> & typia.tags.MaxLength<16>","cases":[]}},"readme":"# 你好世界\n\nHello world\n\n```sh\n世界你好 # enenen\n```\n\n","indexes":{"(root)":["cookbook"]},"folderIndexes":{"(root)":[]},"generatedAt":"t!Date:2024-05-09T09:39:38.571Z"}
+{"cookbook":{"cookbook":{"params":"string & typia.tags.MinLength<3> & typia.tags.MaxLength<16>","cases":[]}},"readme":"# 你好世界\n\nHello world\n\n```sh\n世界你好 # enenen\n```\n\n","indexes":{"(root)":["cookbook"]},"folderIndexes":{"(root)":[]},"generatedAt":"t!Date:2024-05-09T09:42:18.368Z"}
