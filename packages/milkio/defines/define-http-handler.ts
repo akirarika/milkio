@@ -92,7 +92,11 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 						body: rawbody || "no body",
 					});
 
-					if (!detail.response.body) detail.response.body = `{"executeId":"${executeId}","success":false,"fail":{"code":"NOT_FOUND","message":${JSON.stringify(failCode.NOT_FOUND())}}}`;
+					if (!detail.response.body) {
+						if (!detail.response.headers["Content-Type"]) detail.response.headers["Content-Type"] = "application/json";
+						if (!detail.response.headers["Cache-Control"]) detail.response.headers["Cache-Control"] = "no-cache";
+						detail.response.body = `{"executeId":"${executeId}","success":false,"fail":{"code":"NOT_FOUND","message":"${failCode.NOT_FOUND()}"}}`;
+					}
 					await MiddlewareEvent.handle("httpNotFound", [detail]);
 
 					loggerPushTags(executeId, {
@@ -159,10 +163,12 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 			};
 			await MiddlewareEvent.handle("beforeHttpResponse", [middlewareResponse, detail]);
 
+			if (!detail.response.headers["Content-Type"]) detail.response.headers["Content-Type"] = "application/json";
 			if (!detail.response.headers["Cache-Control"]) detail.response.headers["Cache-Control"] = "no-cache";
 			if (!detail.response.body) detail.response.body = middlewareResponse.value;
 		} catch (error) {
 			const result = hanldeCatchError(error, executeId);
+			if (!response.headers["Content-Type"]) response.headers["Content-Type"] = "application/json";
 			if (!response.headers["Cache-Control"]) response.headers["Cache-Control"] = "no-cache";
 			if (!response.body) response.body = TSON.stringify(result);
 		}
