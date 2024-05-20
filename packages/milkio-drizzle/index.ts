@@ -1,15 +1,3 @@
-export const DBCleaner = {
-	tables: [] as string[],
-	addTable(name: string) {
-		DBCleaner.tables.push(name);
-	},
-	cleanSQL() {
-		const queries: Array<string> = [];
-		for (const table of DBCleaner.tables) `DROP TABLE IF EXISTS \`${table}\`;`;
-		return queries;
-	},
-};
-
 export type DB<Table extends { $inferInsert: Record<string, unknown> }> = Table["$inferInsert"];
 export type DBInsert<Table extends { $inferInsert: Record<string, unknown> }> = Table["$inferInsert"];
 export type DBSelect<Table extends { $inferSelect: Record<string, unknown> }> = Table["$inferSelect"];
