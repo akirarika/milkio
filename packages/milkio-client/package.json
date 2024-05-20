@@ -1,13 +1,15 @@
 {
 	"name": "milkio-client",
-	"version": "0.0.6",
-	"module": "index.ts",
+	"version": "0.1.0",
+	"module": "./dist/index.js",
+	"typings": "./dist/index.d.ts",
 	"type": "module",
-	"files": ["/index.ts", "/LICENSE"],
+	"files": ["/dist", "/LICENSE"],
 	"scripts": {
-		"build": "tsc && bun build ./index.ts --outdir ./build --target browser"
+		"build": "bun build ./index.ts --outdir ./dist --target browser --minify --sourcemap && tsc"
 	},
 	"devDependencies": {
+		"bun-plugin-dts": "^0.2.3",
 		"typescript": "*"
 	},
 	"dependencies": {
