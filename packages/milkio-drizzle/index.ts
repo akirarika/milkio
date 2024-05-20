@@ -5,8 +5,10 @@ export const DBCleaner = {
 	addTable(name: string) {
 		DBCleaner.tables.push(name);
 	},
-	async clean<DrizzleT extends { execute: (args: any) => any }>(drizzle: DrizzleT) {
-		for (const table of DBCleaner.tables) await drizzle.execute(sql.raw(`DROP TABLE IF EXISTS \`${table}\`;`));
+	async cleanSQL<DrizzleT extends { execute: (args: any) => any }>(drizzle: DrizzleT) {
+		const queries: Array<string> = [];
+		for (const table of DBCleaner.tables) `DROP TABLE IF EXISTS \`${table}\`;`;
+		return queries;
 	},
 };
 
