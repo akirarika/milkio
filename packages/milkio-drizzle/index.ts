@@ -1,5 +1,3 @@
-import { sql } from "drizzle-orm";
-
 export const DBCleaner = {
 	tables: [] as string[],
 	addTable(name: string) {
