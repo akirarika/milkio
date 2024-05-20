@@ -5,7 +5,7 @@ export const DBCleaner = {
 	addTable(name: string) {
 		DBCleaner.tables.push(name);
 	},
-	async cleanSQL<DrizzleT extends { execute: (args: any) => any }>() {
+	cleanSQL() {
 		const queries: Array<string> = [];
 		for (const table of DBCleaner.tables) `DROP TABLE IF EXISTS \`${table}\`;`;
 		return queries;
