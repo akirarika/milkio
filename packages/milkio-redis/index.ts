@@ -95,7 +95,7 @@ export function defineResultCache<GetResult extends () => unknown | Promise<unkn
 
 async function createRedisClient(options: RedisClientOptions) {
 	const NodeRedis = await import("redis");
-	const redisClient = await NodeRedis.createClient(options).connect();
+	const redisClient = await NodeRedis.default.createClient(options).connect();
 
 	return redisClient;
 }
