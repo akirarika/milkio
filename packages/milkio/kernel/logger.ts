@@ -23,10 +23,10 @@ export type Logger = {
 };
 
 export const loggerController = (() => {
-	const logs = new Map<ExecuteId, { __LOG_DEATIL__: Array<LoggerItem>; [key: string]: any }>();
+	const logs = new Map<ExecuteId, { __LOG_DETAIL__: Array<LoggerItem>; [key: string]: any }>();
 
 	const loggerPushTags = (executeId: ExecuteId, tags: Record<string, any>) => {
-		if (!logs.has(executeId)) logs.set(executeId, { __LOG_DEATIL__: [] });
+		if (!logs.has(executeId)) logs.set(executeId, { __LOG_DETAIL__: [] });
 		const logItem = logs.get(executeId);
 		for (const key in tags) {
 			logItem![key] = tags[key];
@@ -41,11 +41,11 @@ export const loggerController = (() => {
 		};
 		const log = logs.get(executeId)!;
 		for (const key in log) {
-			if (key === "__LOG_DEATIL__") continue;
+			if (key === "__LOG_DETAIL__") continue;
 			loggerSubmitOptions[key] = log[key];
 		}
 		logs.delete(executeId);
-		loggerOptions.onSubmit(loggerSubmitOptions, log.__LOG_DEATIL__);
+		loggerOptions.onSubmit(loggerSubmitOptions, log.__LOG_DETAIL__);
 	};
 
 	const loggerSubmitAll = async () => {
@@ -63,7 +63,7 @@ export const loggerController = (() => {
 		}
 
 		for (const executeId of executeIds) {
-			if (!logs.has(executeId as ExecuteId)) logs.set(executeId as ExecuteId, { __LOG_DEATIL__: [] });
+			if (!logs.has(executeId as ExecuteId)) logs.set(executeId as ExecuteId, { __LOG_DETAIL__: [] });
 			const loggerItem = {
 				executeId: executeId as ExecuteId,
 				loggerLevel: level,
@@ -71,7 +71,7 @@ export const loggerController = (() => {
 				params,
 			} satisfies LoggerItem;
 			if (!loggerOptions.onInsert(loggerItem)) return;
-			logs.get(executeId as ExecuteId)!.__LOG_DEATIL__.push(loggerItem);
+			logs.get(executeId as ExecuteId)!.__LOG_DETAIL__.push(loggerItem);
 		}
 	};
 

@@ -18,6 +18,7 @@ export type ExecuteHttpServerOptions = {
 	 * @returns
 	 */
 	executeIdGenerator?: (request: Request) => string | Promise<string>;
+	getRealIp?: (request: Request) => string;
 };
 
 export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOptions = {}) {
@@ -26,7 +27,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 		const executeId = (options?.executeIdGenerator ? await options.executeIdGenerator(request.request) : createUlid()) as ExecuteId;
 		runtime.execute.executeIds.add(executeId);
 		const logger = useLogger(executeId);
-		const ip = (request.request.headers.get("x-forwarded-for") as string | undefined)?.split(",")[0] ?? "0.0.0.0";
+		const ip = options.getRealIp ? options.getRealIp(request.request) : (request.request.headers.get("X-Forwarded-For") as string | undefined)?.split(",")[0] ?? "0.0.0.0";
 		const headers = request.request.headers;
 
 		loggerPushTags(executeId, {
