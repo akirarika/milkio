@@ -1,6 +1,6 @@
-import { loggerPushTags, loggerSubmit, useLogger, runtime, MiddlewareEvent } from "..";
+import { loggerPushTags, loggerSubmit, useLogger, runtime, MiddlewareEvent, reject } from "..";
 import type { ExecuteId, MilkioApp, Mixin } from "..";
-import { hanldeCatchError } from "../utils/handle-catch-error";
+import { handleCatchError } from "../utils/handle-catch-error";
 import { routerHandler } from "../../../src/router";
 import schema from "../../../generated/api-schema";
 import { failCode } from "../../../src/fail-code";
@@ -122,13 +122,13 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 			// execute api
 			// after request middleware
 			await MiddlewareEvent.handle("afterHttpRequest", [headers, detail]);
+			const mode = headers.get("Accept") === "text/event-stream" ? "stream" : "execute";
 
 			const rawbody = await request.request.text();
 			loggerPushTags(executeId, {
 				body: rawbody || "no body",
 			});
 
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			let params: any;
 			if (rawbody === "") {
 				params = undefined;
@@ -146,29 +146,94 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 				params,
 			});
 
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-			// @ts-ignore
-			const result = await app._executeCoreToJson(pathstr, params, headers, {
-				executeId,
-				logger,
-				detail,
-			});
+			const resultsRaw = await app._call(mode, pathstr, params, headers, { executeId, logger, detail });
 
-			// @ts-ignore
-			// eslint-disable-next-line @typescript-eslint/no-confusing-void-expression, @typescript-eslint/no-explicit-any
-			if (!detail.response.body) detail.response.body = result;
+			let fn: any;
+			try {
+				fn = await schema.apiValidator.validate[pathstr]();
+			} catch (error) {
+				throw reject("BUSINESS_FAIL", "This is the new API, which takes effect after restarting the server or saving any changes. It will be fixed in the future.");
+			}
 
-			// before response middleware
-			const middlewareResponse = {
-				value: detail.response.body,
-			};
-			await MiddlewareEvent.handle("beforeHttpResponse", [middlewareResponse, detail]);
+			if (mode === "execute") {
+				const result: string = await fn.validateResults(TSON.encode(resultsRaw.$result));
+				if (!detail.response.body) detail.response.body = result;
 
-			if (!detail.response.headers["Content-Type"]) detail.response.headers["Content-Type"] = "application/json";
-			if (!detail.response.headers["Cache-Control"]) detail.response.headers["Cache-Control"] = "no-cache";
-			if (!detail.response.body) detail.response.body = middlewareResponse.value;
+				// before response middleware
+				const middlewareResponse = {
+					value: detail.response.body,
+				};
+				await MiddlewareEvent.handle("beforeHttpResponse", [middlewareResponse, detail]);
+
+				if (!detail.response.headers["Content-Type"]) detail.response.headers["Content-Type"] = "application/json";
+				if (!detail.response.headers["Cache-Control"]) detail.response.headers["Cache-Control"] = "no-cache";
+				if (!detail.response.body) detail.response.body = middlewareResponse.value;
+			}
+
+			if (mode === "stream") {
+				const generator = (resultsRaw as any).$generator as AsyncGenerator;
+				let stream: ReadableStream;
+				let control: ReadableStreamDirectController | ReadableStreamDefaultController;
+				// SSE has a default timeout, which helps prevent memory leaks, especially when you are writing code with a while (true) loop
+
+				if (global?.Bun) {
+					// bun
+					stream = new ReadableStream({
+						type: "direct",
+						async pull(controller: ReadableStreamDirectController) {
+							control = controller;
+							try {
+								for await (const value of generator) {
+									if (!request.request.signal.aborted) {
+										const result: string = JSON.stringify(TSON.encode(value));
+										controller.write(`data:${result}\n\n`);
+									} else {
+										generator.return(undefined);
+										controller.close();
+									}
+								}
+							} catch (error) {
+								controller.close();
+								throw error;
+							}
+							controller.close();
+						},
+						cancel() {
+							control.close();
+						},
+					} as unknown as UnderlyingByteSource);
+				} else {
+					// node.js or others
+					stream = new ReadableStream({
+						async pull(controller) {
+							control = controller;
+							try {
+								for await (const value of generator) {
+									if (!request.request.signal.aborted) {
+										const result: string = JSON.stringify(TSON.encode(value));
+										controller.enqueue(`data:${result}\n\n`);
+									} else {
+										generator.return(undefined);
+										controller.close();
+									}
+								}
+							} catch (error) {
+								controller.close();
+								throw error;
+							}
+							controller.close();
+						},
+						cancel() {
+							control.close();
+						},
+					});
+				}
+				detail.response.headers["Content-Type"] = "text/event-stream";
+				detail.response.headers["Cache-Control"] = "no-cache";
+				detail.response.body = stream;
+			}
 		} catch (error) {
-			const result = hanldeCatchError(error, executeId);
+			const result = handleCatchError(error, executeId);
 			if (!response.headers["Content-Type"]) response.headers["Content-Type"] = "application/json";
 			if (!response.headers["Cache-Control"]) response.headers["Cache-Control"] = "no-cache";
 			if (!response.body) response.body = TSON.stringify(result);
@@ -177,7 +242,6 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 		loggerPushTags(executeId, {
 			status: response.status,
 			responseHeaders: response.headers,
-			// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 			body: response.body?.toString() ?? "",
 			timeout: new Date().getTime(),
 		});

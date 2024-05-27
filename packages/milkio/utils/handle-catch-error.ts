@@ -3,7 +3,7 @@ import { useLogger, type ExecuteId, type ExecuteResult } from "..";
 import { configMilkio } from "../../../src/config/milkio";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function hanldeCatchError(error: any, executeId: ExecuteId): ExecuteResult<any> {
+export function handleCatchError(error: any, executeId: ExecuteId): ExecuteResult<any> {
 	const logger = useLogger(executeId);
 
 	if (configMilkio.debug === true) {

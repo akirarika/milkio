@@ -12,7 +12,8 @@
 				"noParameterAssign": "off",
 				"noNonNullAssertion": "off",
 				"noUnusedTemplateLiteral": "off",
-				"useDefaultParameterLast": "off"
+				"useDefaultParameterLast": "off",
+				"noUselessElse": "off"
 			},
 			"suspicious": {
 				"noExplicitAny": "off",

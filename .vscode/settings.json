@@ -7,5 +7,8 @@
   },
   "editor.tabSize": 2,
   "editor.formatOnSave": true,
-  "editor.detectIndentation": true
+  "editor.detectIndentation": true,
+  "cSpell.words": [
+    "TSON"
+  ]
 }

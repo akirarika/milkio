@@ -5,8 +5,8 @@ export type MilkioClientOptions = {
 	logs?: boolean;
 	timeout?: number;
 	middlewares?: () => Array<MiddlewareOptions & { isMiddleware: true }>;
-	handler: (url: string, body: string, headers: Record<string, string>) => Promise<string>;
-	storage: {
+	handler?: (url: string, body: string, headers: Record<string, string>) => Promise<string>;
+	storage?: {
 		getItem: (key: string) => string | null | Promise<string | null>;
 		setItem: (key: string, value: string) => void | Promise<void>;
 		removeItem: (key: string) => void | Promise<void>;
@@ -30,6 +30,15 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 			index: number;
 			middleware: AfterExecuteMiddleware;
 		}> = [];
+
+		if (!options.storage) {
+			options.storage = localStorage;
+		}
+		if (!options.handler) {
+			options.handler = async (url: string, body: string, headers: Record<string, string>) => {
+				return await (await fetch(url, { method: "POST", body, headers })).text();
+			};
+		}
 
 		const bootstrap = async () => {
 			let baseUrl = options.baseUrl;
@@ -90,8 +99,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 						const timer = setTimeout(() => {
 							reject(defineClientFail("execute-timeout", `Execute timeout after ${timeout}ms.`));
 						}, timeout);
-						options
-							.handler(url as string, body, headers!)
+						options.handler!(url as string, body, headers!)
 							.then((value) => {
 								clearTimeout(timer);
 								resolve(value);
@@ -116,6 +124,66 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 					}
 					throw error;
 				}
+			},
+			async addEventListener<Path extends keyof ApiSchema["apiMethodsTypeSchema"], Params extends ExecuteParams<Path>>(
+				path: Path,
+				subscribeOptions: {
+					params: Params;
+					headers?: Record<string, string>;
+					delay?: number;
+					onEvent: (event: MilkioEvent<Path>) => Promise<void> | void;
+					onError: (error: any) => Promise<void | false> | void | false;
+				},
+			): Promise<() => void> {
+				let abortController: undefined | AbortController;
+				if (subscribeOptions.delay === undefined) subscribeOptions.delay = 3000;
+				let loop = true;
+				setTimeout(async () => {
+					abortController = new AbortController();
+					const url = (await baseUrl) + (path as string);
+					while (loop) {
+						try {
+							const response = await fetch(url, {
+								method: "POST",
+								body: TSON.stringify(subscribeOptions.params) ?? "",
+								headers: subscribeOptions.headers ?? {},
+								signal: abortController.signal,
+							});
+							const reader = response.body!.getReader();
+							const onChunk = async (result) => {
+								if (!result.done) {
+									try {
+										const decoder = new TextDecoder();
+										const receivedString = decoder.decode(result.value, { stream: true });
+										subscribeOptions.onEvent(TSON.parse(receivedString));
+										return onChunk(await reader.read());
+									} catch (error) {
+										abortController!.abort();
+										if ((await subscribeOptions.onError(error)) === false) {
+											loop = false;
+											return;
+										}
+										if (subscribeOptions.delay! >= 0) await new Promise((resolve) => setTimeout(resolve, subscribeOptions.delay));
+									}
+								} else {
+									if (subscribeOptions.delay! >= 0) await new Promise((resolve) => setTimeout(resolve, subscribeOptions.delay));
+								}
+							};
+							onChunk(await reader.read());
+						} catch (error) {
+							abortController.abort();
+							if ((await subscribeOptions.onError(error)) === false) {
+								loop = false;
+								return;
+							}
+							if (subscribeOptions.delay! >= 0) await new Promise((resolve) => setTimeout(resolve, subscribeOptions.delay));
+						}
+					}
+				}, 0);
+
+				return () => {
+					if (abortController) abortController.abort();
+				};
 			},
 		};
 
@@ -142,6 +210,8 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 						data: any;
 					};
 			  };
+		type MilkioEventResult<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> = Awaited<ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>>;
+		type MilkioEvent<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> = Awaited<GeneratorGeneric<ExecuteResultSuccess<MilkioEventResult<Path>>["data"] extends { $type: any } ? ExecuteResultSuccess<MilkioEventResult<Path>>["data"]["$type"] : never>>;
 
 		return client;
 	};
@@ -197,3 +267,11 @@ export type ClientStorage = {
 	setItem: (key: string, value: string) => Promise<void>;
 	removeItem: (key: string) => Promise<void>;
 };
+
+export type ExecuteResultSuccess<Result> = {
+	executeId: string;
+	success: true;
+	data: Result;
+};
+
+export type GeneratorGeneric<T> = T extends AsyncGenerator<infer I> ? I : never;
