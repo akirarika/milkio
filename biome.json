@@ -13,7 +13,8 @@
 				"noNonNullAssertion": "off",
 				"noUnusedTemplateLiteral": "off",
 				"useDefaultParameterLast": "off",
-				"noUselessElse": "off"
+				"noUselessElse": "off",
+				"useLiteralKeys": "off"
 			},
 			"suspicious": {
 				"noExplicitAny": "off",

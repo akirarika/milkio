@@ -88,6 +88,9 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 				if (headers === undefined) headers = {};
 				const url = (await baseUrl) + (path as string);
 
+				if (headers["Accept"] === undefined) headers["Accept"] = "application/json";
+				if (headers["Content-Type"] === undefined) headers["Content-Type"] = "application/json";
+
 				try {
 					for (const m of _beforeExecuteMiddlewares) {
 						await m.middleware({ path: path as string, params, headers, storage: options.storage as ClientStorage });
@@ -127,91 +130,52 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 			},
 			async addEventListener<Path extends keyof ApiSchema["apiMethodsTypeSchema"], Params extends ExecuteParams<Path>>(
 				path: Path,
-				subscribeOptions: {
+				eventOptions: {
 					params: Params;
 					headers?: Record<string, string>;
 					delay?: number;
+					once?: boolean;
 					onEvent: (event: MilkioEvent<Path>) => Promise<void> | void;
-					onError: (error: any) => Promise<void | false> | void | false;
+					onError?: (event: Event) => any;
 				},
-			): Promise<() => void> {
-				let abortController: undefined | AbortController;
-				if (subscribeOptions.delay === undefined) subscribeOptions.delay = 3000;
-				let loop = true;
-				setTimeout(async () => {
-					abortController = new AbortController();
-					const url = (await baseUrl) + (path as string);
-					while (loop) {
-						try {
-							const response = await fetch(url, {
-								method: "POST",
-								body: TSON.stringify(subscribeOptions.params) ?? "",
-								headers: subscribeOptions.headers ?? {},
-								signal: abortController.signal,
-							});
-							const reader = response.body!.getReader();
-							const onChunk = async (result) => {
-								if (!result.done) {
-									try {
-										const decoder = new TextDecoder();
-										const receivedString = decoder.decode(result.value, { stream: true });
-										subscribeOptions.onEvent(TSON.parse(receivedString));
-										return onChunk(await reader.read());
-									} catch (error) {
-										abortController!.abort();
-										if ((await subscribeOptions.onError(error)) === false) {
-											loop = false;
-											return;
-										}
-										if (subscribeOptions.delay! >= 0) await new Promise((resolve) => setTimeout(resolve, subscribeOptions.delay));
-									}
-								} else {
-									if (subscribeOptions.delay! >= 0) await new Promise((resolve) => setTimeout(resolve, subscribeOptions.delay));
-								}
-							};
-							onChunk(await reader.read());
-						} catch (error) {
-							abortController.abort();
-							if ((await subscribeOptions.onError(error)) === false) {
-								loop = false;
-								return;
-							}
-							if (subscribeOptions.delay! >= 0) await new Promise((resolve) => setTimeout(resolve, subscribeOptions.delay));
-						}
-					}
-				}, 0);
+			): Promise<EventSource> {
+				const url = (await baseUrl) + (path as string) + (`?params=${encodeURIComponent(TSON.stringify(eventOptions.params))}`);
+				const source = new EventSource(url);
+				const onMessage = (event: MessageEvent) => {
+					eventOptions.onEvent(TSON.parse(event.data));
+				}
+				source.addEventListener('message', onMessage, false);
+				if (eventOptions.onError) source.addEventListener('error', eventOptions.onError, false);
 
-				return () => {
-					if (abortController) abortController.abort();
-				};
+				return source;
 			},
 		};
 
 		type ExecuteParams<Path extends keyof ApiSchema["apiMethodsSchema"]> = Awaited<Parameters<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>[0]>;
 		type ExecuteResult<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> =
 			| {
-					success: true;
-					data: Awaited<ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>>;
-			  }
+				success: true;
+				data: Awaited<ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>>;
+			}
 			| {
-					success: false;
-					fail: {
-						code: FailCode;
-						message: string;
-						data: Parameters<FailCode[keyof FailCode]>[0];
-					};
-			  }
+				success: false;
+				fail: {
+					code: FailCode;
+					message: string;
+					data: Parameters<FailCode[keyof FailCode]>[0];
+				};
+			}
 			| {
-					success: false;
-					fail: {
-						fromClient: true;
-						code: string;
-						message: string;
-						data: any;
-					};
-			  };
+				success: false;
+				fail: {
+					fromClient: true;
+					code: string;
+					message: string;
+					data: any;
+				};
+			};
 		type MilkioEventResult<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> = Awaited<ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>>;
-		type MilkioEvent<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> = Awaited<GeneratorGeneric<ExecuteResultSuccess<MilkioEventResult<Path>>["data"] extends { $type: any } ? ExecuteResultSuccess<MilkioEventResult<Path>>["data"]["$type"] : never>>;
+		type MilkioEvent<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> = Awaited<GeneratorGeneric<MilkioEventResult<Path>>>;
 
 		return client;
 	};

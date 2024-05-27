@@ -122,7 +122,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 			// execute api
 			// after request middleware
 			await MiddlewareEvent.handle("afterHttpRequest", [headers, detail]);
-			const mode = headers.get("Accept") === "text/event-stream" ? "stream" : "execute";
+			const mode = (headers.get("Accept")) === "text/event-stream" ? "stream" : "execute";
 
 			const rawbody = await request.request.text();
 			loggerPushTags(executeId, {
@@ -130,16 +130,17 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 			});
 
 			let params: any;
-			if (rawbody === "") {
-				params = undefined;
-			} else {
-				try {
-					params = JSON.parse(rawbody);
-				} catch (error) {
-					const logger = useLogger(executeId);
-					logger.log("TIP: body is not json, the content is not empty, but the content is not in a valid JSON format. The original content value can be retrieved via request.request.text()");
+			try {
+				if (rawbody) params = JSON.parse(rawbody);
+				else if (request.request.method === 'GET' && fullurl.searchParams.get('params')) {
+					params = JSON.parse(decodeURIComponent(fullurl.searchParams.get('params')!));
+				} else {
 					params = undefined;
 				}
+			} catch (error) {
+				const logger = useLogger(executeId);
+				logger.log("TIP: body is not json, the content is not empty, but the content is not in a valid JSON format. The original content value can be retrieved via request.request.text()");
+				params = undefined;
 			}
 
 			loggerPushTags(executeId, {
