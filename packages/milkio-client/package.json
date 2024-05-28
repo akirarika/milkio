@@ -1,18 +1,18 @@
 {
-	"name": "milkio-client",
-	"version": "0.2.0",
-	"module": "./dist/index.js",
-	"typings": "./dist/index.d.ts",
-	"type": "module",
-	"files": ["/dist", "/LICENSE"],
-	"scripts": {
-		"build": "bun build ./index.ts --outdir ./dist --target browser --minify --sourcemap && tsc"
-	},
-	"devDependencies": {
-		"bun-plugin-dts": "^0.2.3",
-		"typescript": "*"
-	},
-	"dependencies": {
-		"@southern-aurora/tson": "*"
-	}
+  "name": "milkio-client",
+  "version": "0.2.1",
+  "module": "./dist/index.js",
+  "typings": "./dist/index.d.ts",
+  "type": "module",
+  "files": ["/dist", "/LICENSE"],
+  "scripts": {
+    "build": "bun build ./index.ts --outdir ./dist --target browser --minify --sourcemap && tsc"
+  },
+  "devDependencies": {
+    "bun-plugin-dts": "^0.2.3",
+    "typescript": "*"
+  },
+  "dependencies": {
+    "@southern-aurora/tson": "*"
+  }
 }

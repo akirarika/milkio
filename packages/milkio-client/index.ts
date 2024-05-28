@@ -1,11 +1,13 @@
 import { TSON } from "@southern-aurora/tson";
+import { EventSourceMessage, getBytes, getLines, getMessages } from './parse.ts';
 
 export type MilkioClientOptions = {
 	baseUrl: string | (() => string) | (() => Promise<string>);
 	logs?: boolean;
 	timeout?: number;
 	middlewares?: () => Array<MiddlewareOptions & { isMiddleware: true }>;
-	handler?: (url: string, body: string, headers: Record<string, string>) => Promise<string>;
+	fetch?: typeof fetch;
+	abort?: typeof AbortController;
 	storage?: {
 		getItem: (key: string) => string | null | Promise<string | null>;
 		setItem: (key: string, value: string) => void | Promise<void>;
@@ -15,6 +17,8 @@ export type MilkioClientOptions = {
 
 export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode extends FailCodeExtend>(builtinMiddlewares: Array<MiddlewareOptions & { isMiddleware: true }>) => {
 	return (options: MilkioClientOptions) => {
+		const $fetch = options.fetch ?? fetch;
+		const $abort = options.abort ?? AbortController;
 		const _bootstrapMiddlewares: Array<{
 			id: string;
 			index: number;
@@ -33,11 +37,6 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 
 		if (!options.storage) {
 			options.storage = localStorage;
-		}
-		if (!options.handler) {
-			options.handler = async (url: string, body: string, headers: Record<string, string>) => {
-				return await (await fetch(url, { method: "POST", body, headers })).text();
-			};
 		}
 
 		const bootstrap = async () => {
@@ -97,19 +96,19 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 					}
 
 					const body = TSON.stringify(params) ?? "";
-					const response = await new Promise<string>((resolve, reject) => {
+					const response = await new Promise<string>(async (resolve, reject) => {
 						const timeout = executeOptions?.timeout ?? options?.timeout ?? 6000;
 						const timer = setTimeout(() => {
 							reject(defineClientFail("execute-timeout", `Execute timeout after ${timeout}ms.`));
 						}, timeout);
-						options.handler!(url as string, body, headers!)
-							.then((value) => {
-								clearTimeout(timer);
-								resolve(value);
-							})
-							.catch((reason) => {
-								reject(reason);
-							});
+
+						try {
+							const value = await (await $fetch(url, { method: "POST", body, headers })).text();
+							clearTimeout(timer);
+							resolve(value);
+						} catch (error) {
+							reject(error);
+						}
 					});
 					const result = { value: TSON.parse(response) };
 
@@ -128,26 +127,102 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 					throw error;
 				}
 			},
-			async addEventListener<Path extends keyof ApiSchema["apiMethodsTypeSchema"], Params extends ExecuteParams<Path>>(
+
+			// This part of the code is based on `@microsoft/fetch-event-source` rewrite, thanks to the work of Microsoft
+			// https://github.com/Azure/fetch-event-source
+			executeStream<Path extends keyof ApiSchema["apiMethodsTypeSchema"], Params extends ExecuteParams<Path>>(
 				path: Path,
 				eventOptions: {
 					params: Params;
 					headers?: Record<string, string>;
-					delay?: number;
-					once?: boolean;
-					onEvent: (event: MilkioEvent<Path>) => Promise<void> | void;
-					onError?: (event: Event) => any;
+					onError?: (event: any) => any;
 				},
-			): Promise<EventSource> {
-				const url = (await baseUrl) + (path as string) + (`?params=${encodeURIComponent(TSON.stringify(eventOptions.params))}`);
-				const source = new EventSource(url);
-				const onMessage = (event: MessageEvent) => {
-					eventOptions.onEvent(TSON.parse(event.data));
-				}
-				source.addEventListener('message', onMessage, false);
-				if (eventOptions.onError) source.addEventListener('error', eventOptions.onError, false);
+			): AsyncGenerator<ExecuteResultStreamChunk<MilkioEvent<Path>>> {
+				if (eventOptions.headers === undefined) eventOptions.headers = {};
+				if (eventOptions.headers['Accept'] === undefined) eventOptions.headers['Accept'] = 'text/event-stream';
+				if (eventOptions.headers["Content-Type"] === undefined) eventOptions.headers["Content-Type"] = "application/json";
+				const url = async () => (await baseUrl) + (path as string) + (`?params=${encodeURIComponent(TSON.stringify(eventOptions.params))}`);
+				const body = TSON.stringify(eventOptions.params) ?? "";
 
-				return source;
+				let resolvers: {
+					promise: Promise<IteratorResult<ExecuteResultStreamChunk>>;
+					resolve: (value: IteratorResult<ExecuteResultStreamChunk>) => void;
+					reject: (reason: any) => void;
+				} | undefined;
+
+				const onmessage = (event: EventSourceMessage) => {
+					if (resolvers) resolvers.resolve({ done: false, value: { type: 'data', data: TSON.parse(event.data) } });
+				}
+
+				// make a copy of the input headers since we may modify it below:
+				const headers = { ...eventOptions.headers };
+
+				let curRequestController: AbortController;
+
+				async function create() {
+					curRequestController = new $abort();
+					curRequestController.signal.addEventListener('abort', () => {
+						if (resolvers) resolvers.resolve({ done: true, value: { type: 'close' } }); // don't waste time constructing/logging errors
+					});
+					try {
+						for (const m of _beforeExecuteMiddlewares) {
+							await m.middleware({ path: path as string, params: eventOptions.params, headers: eventOptions.headers!, storage: options.storage as ClientStorage });
+						}
+						const response = await $fetch(await url(), {
+							method: 'POST',
+							headers,
+							body: body,
+							signal: curRequestController.signal,
+						});
+
+						const contentType = response.headers.get('Content-Type');
+						if (!contentType?.startsWith('text/event-stream')) {
+							throw new Error(`Expected content-type to be ${'text/event-stream'}, Actual: ${contentType}`);
+						}
+
+						await getBytes(response.body!, getLines(getMessages(onmessage)));
+						await iterator.return();
+					} catch (err) {
+						try {
+							curRequestController.abort();
+						} catch (error) { }
+						if (resolvers) resolvers.resolve({ done: true, value: { type: 'error', error: err } });
+						await iterator.throw(err);
+					}
+				}
+
+				void create();
+
+				const iterator = {
+					...{
+						next(): Promise<IteratorResult<unknown>> {
+							resolvers = Promise.withResolvers();
+							return resolvers.promise;
+						},
+						async return(): Promise<IteratorResult<void>> {
+							try {
+								curRequestController.abort();
+							} catch (error) { }
+							if (resolvers) resolvers.resolve({ done: true, value: { type: 'close' } });
+							return { done: true, value: undefined }
+						},
+						async throw(err: any): Promise<IteratorResult<void>> {
+							try {
+								curRequestController.abort();
+							} catch (error) { }
+							if (resolvers) {
+								resolvers.resolve({ done: false, value: { type: 'error', error: err } });
+								await resolvers.promise;
+							}
+							return { done: true, value: undefined }
+						}
+					} satisfies AsyncIterator<unknown>,
+					[Symbol.asyncIterator]() {
+						return this;
+					},
+				};
+
+				return iterator as any;
 			},
 		};
 
@@ -239,3 +314,5 @@ export type ExecuteResultSuccess<Result> = {
 };
 
 export type GeneratorGeneric<T> = T extends AsyncGenerator<infer I> ? I : never;
+
+export type ExecuteResultStreamChunk<Result = any> = { type: 'data', data: Result } | { type: 'error', error: any };
