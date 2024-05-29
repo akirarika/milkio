@@ -171,62 +171,82 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 			}
 
 			if (mode === "stream") {
-				const generator = (resultsRaw as any).$generator as AsyncGenerator;
 				let stream: ReadableStream;
 				let control: ReadableStreamDirectController | ReadableStreamDefaultController;
-				// SSE has a default timeout, which helps prevent memory leaks, especially when you are writing code with a while (true) loop
 
-				if (global?.Bun) {
-					// bun
-					stream = new ReadableStream({
-						type: "direct",
-						async pull(controller: ReadableStreamDirectController) {
-							control = controller;
-							try {
-								for await (const value of generator) {
-									if (!request.request.signal.aborted) {
-										const result: string = JSON.stringify(TSON.encode(value));
-										controller.write(`data:${result}\n\n`);
-									} else {
-										generator.return(undefined);
-										controller.close();
-									}
-								}
-							} catch (error) {
-								controller.close();
-								throw error;
-							}
-							controller.close();
-						},
-						cancel() {
-							control.close();
-						},
-					} as unknown as UnderlyingByteSource);
-				} else {
-					// node.js or others
+				// Handshake failure (usually due to incorrect parameters)
+				if (resultsRaw.$type === "result" && resultsRaw.$result.success === false) {
 					stream = new ReadableStream({
 						async pull(controller) {
 							control = controller;
-							try {
-								for await (const value of generator) {
-									if (!request.request.signal.aborted) {
-										const result: string = JSON.stringify(TSON.encode(value));
-										controller.enqueue(`data:${result}\n\n`);
-									} else {
-										generator.return(undefined);
-										controller.close();
-									}
-								}
-							} catch (error) {
-								controller.close();
-								throw error;
-							}
+							controller.enqueue(`data:$MILKIO_FAIL@${JSON.stringify(TSON.encode(resultsRaw.$result))}\n\n`);
 							controller.close();
 						},
 						cancel() {
 							control.close();
 						},
 					});
+				} else {
+					// Handshake successful
+					const generator = (resultsRaw as any).$generator as AsyncGenerator;
+					// SSE has a default timeout, which helps prevent memory leaks, especially when you are writing code with a while (true) loop
+
+					if (global?.Bun) {
+						// bun
+						stream = new ReadableStream({
+							type: "direct",
+							async pull(controller: ReadableStreamDirectController) {
+								control = controller;
+								try {
+									controller.write(`data:$MILKIO_SUCC@${JSON.stringify(TSON.encode(resultsRaw.$result))}\n\n`);
+									for await (const value of generator) {
+										if (!request.request.signal.aborted) {
+											const result: string = JSON.stringify(TSON.encode(value));
+											controller.write(`data:${result}\n\n`);
+										} else {
+											generator.return(undefined);
+											controller.close();
+										}
+									}
+								} catch (error) {
+									const result = handleCatchError(error, executeId);
+									controller.write(`data:$MILKIO_FAIL@${JSON.stringify(TSON.encode(result))}\n\n`);
+									await new Promise((resolve) => setTimeout(resolve, 1));
+								}
+								controller.close();
+							},
+							cancel() {
+								control.close();
+							},
+						} as unknown as UnderlyingByteSource);
+					} else {
+						// node.js or others
+						stream = new ReadableStream({
+							async pull(controller) {
+								control = controller;
+								try {
+									controller.enqueue(`data:$MILKIO_SUCC@${JSON.stringify(TSON.encode(resultsRaw.$result))}\n\n`);
+									for await (const value of generator) {
+										if (!request.request.signal.aborted) {
+											const result: string = JSON.stringify(TSON.encode(value));
+											controller.enqueue(`data:${result}\n\n`);
+										} else {
+											generator.return(undefined);
+											controller.close();
+										}
+									}
+								} catch (error) {
+									const result = handleCatchError(error, executeId);
+									controller.enqueue(`data:$MILKIO_FAIL@${JSON.stringify(TSON.encode(result))}\n\n`);
+									await new Promise((resolve) => setTimeout(resolve, 1));
+								}
+								controller.close();
+							},
+							cancel() {
+								control.close();
+							},
+						});
+					}
 				}
 				detail.response.headers["Content-Type"] = "text/event-stream";
 				detail.response.headers["Cache-Control"] = "no-cache";

@@ -130,7 +130,22 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 				eventOptions?: {
 					onError?: (event: any) => any;
 				},
-			): { getError: () => any, stream: AsyncGenerator<MilkioEvent<Path>> } {
+			): {
+				getResult: () => {
+					success: false;
+					fail: {
+						code: FailCode;
+						message: string;
+						data: Parameters<FailCode[keyof FailCode]>[0];
+					};
+				}
+					| {
+						success: false;
+						fail: {
+							$stream: true;
+						};
+					}, stream: AsyncGenerator<MilkioEvent<Path>>
+			} {
 				if (eventOptions === undefined) eventOptions = {};
 				if (headers === undefined) headers = {};
 				headers = { ...headers };
@@ -145,9 +160,13 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 				}> = new Map();
 				let stacksIndex: number = 0;
 				let iteratorIndex: number = 0;
-				let streamError: any = undefined;
+				let streamResult: any = undefined;
 
 				const onmessage = (event: EventSourceMessage) => {
+					if (event.data.startsWith("$MILKIO_SUCC@") || event.data.startsWith("$MILKIO_FAIL@")) {
+						streamResult = TSON.parse(event.data.slice(13));
+						return;
+					}
 					const index = ++stacksIndex;
 					if (stacks.has(index)) stacks.get(index)!.resolve({ done: false, value: TSON.parse(event.data) });
 					else {
@@ -214,7 +233,15 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 							return { done: true, value: undefined }
 						},
 						async throw(err: any): Promise<IteratorResult<void>> {
-							streamError = err;
+							streamResult = {
+								success: false,
+								executeId: streamResult?.executeId ?? '',
+								fail: {
+									code: "NETWORK_ERROR",
+									message: "Network Error",
+									data: err,
+								}
+							};
 							if (!curRequestController.signal.aborted) curRequestController.abort();
 							for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined });
 							return { done: true, value: undefined }
@@ -225,7 +252,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 					},
 				};
 
-				return { getError: () => streamError, stream: iterator as any };
+				return { getResult: () => streamResult, stream: iterator as any };
 			},
 		};
 
