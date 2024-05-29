@@ -136,7 +136,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 				headers = { ...headers };
 				if (headers['Accept'] === undefined) headers['Accept'] = 'text/event-stream';
 				if (headers["Content-Type"] === undefined) headers["Content-Type"] = "application/json";
-				const url = async () => (await baseUrl) + (path as string) + (`?params=${encodeURIComponent(TSON.stringify(params))}`);
+				const url = async () => ((await baseUrl) + (path as string));
 				const body = TSON.stringify(params) ?? "";
 				const stacks: Map<number, {
 					promise: Promise<IteratorResult<any>>;
