@@ -140,10 +140,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 					};
 				}
 					| {
-						success: false;
-						fail: {
-							$stream: true;
-						};
+						success: true;
 					}, stream: AsyncGenerator<MilkioEvent<Path>>
 			} {
 				if (eventOptions === undefined) eventOptions = {};
