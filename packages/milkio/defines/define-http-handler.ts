@@ -179,7 +179,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 					stream = new ReadableStream({
 						async pull(controller) {
 							control = controller;
-							controller.enqueue(`data:$MILKIO_FAIL@${JSON.stringify(TSON.encode(resultsRaw.$result))}\n\n`);
+							controller.enqueue(`data:@${JSON.stringify(TSON.encode(resultsRaw.$result))}\n\n`);
 							controller.close();
 						},
 						cancel() {
@@ -198,7 +198,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 							async pull(controller: ReadableStreamDirectController) {
 								control = controller;
 								try {
-									controller.write(`data:$MILKIO_SUCC@${JSON.stringify(TSON.encode(resultsRaw.$result))}\n\n`);
+									controller.write(`data:@${JSON.stringify(TSON.encode(resultsRaw.$result))}\n\n`);
 									for await (const value of generator) {
 										if (!request.request.signal.aborted) {
 											const result: string = JSON.stringify(TSON.encode(value));
@@ -210,7 +210,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 									}
 								} catch (error) {
 									const result = handleCatchError(error, executeId);
-									controller.write(`data:$MILKIO_FAIL@${JSON.stringify(TSON.encode(result))}\n\n`);
+									controller.write(`data:@${JSON.stringify(TSON.encode(result))}\n\n`);
 									await new Promise((resolve) => setTimeout(resolve, 1));
 								}
 								controller.close();
@@ -225,7 +225,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 							async pull(controller) {
 								control = controller;
 								try {
-									controller.enqueue(`data:$MILKIO_SUCC@${JSON.stringify(TSON.encode(resultsRaw.$result))}\n\n`);
+									controller.enqueue(`data:@${JSON.stringify(TSON.encode(resultsRaw.$result))}\n\n`);
 									for await (const value of generator) {
 										if (!request.request.signal.aborted) {
 											const result: string = JSON.stringify(TSON.encode(value));
@@ -237,7 +237,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 									}
 								} catch (error) {
 									const result = handleCatchError(error, executeId);
-									controller.enqueue(`data:$MILKIO_FAIL@${JSON.stringify(TSON.encode(result))}\n\n`);
+									controller.enqueue(`data:@${JSON.stringify(TSON.encode(result))}\n\n`);
 									await new Promise((resolve) => setTimeout(resolve, 1));
 								}
 								controller.close();

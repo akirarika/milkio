@@ -164,8 +164,8 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 				let streamResult: any = undefined;
 
 				const onmessage = (event: EventSourceMessage) => {
-					if (event.data.startsWith("$MILKIO_SUCC@") || event.data.startsWith("$MILKIO_FAIL@")) {
-						streamResult = TSON.parse(event.data.slice(13));
+					if (event.data.startsWith("@")) {
+						streamResult = TSON.parse(event.data.slice(1));
 						return;
 					}
 					const index = ++stacksIndex;
