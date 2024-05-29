@@ -137,9 +137,9 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 					executeId: string;
 					fromClient: true | undefined,
 					fail: {
-						code: FailCode;
+						code: keyof FailCode;
 						message: string;
-						data: Parameters<FailCode[keyof FailCode]>[0];
+						data: any;
 					};
 				}
 					| {
@@ -167,13 +167,14 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 					if (event.data.startsWith("@")) {
 						streamResult = TSON.parse(event.data.slice(1));
 						return;
-					}
-					const index = ++stacksIndex;
-					if (stacks.has(index)) stacks.get(index)!.resolve({ done: false, value: TSON.parse(event.data) });
-					else {
-						const stack = Promise.withResolvers<IteratorResult<any>>();
-						stack.resolve({ done: false, value: TSON.parse(event.data) });
-						stacks.set(index, stack);
+					} else {
+						const index = ++stacksIndex;
+						if (stacks.has(index)) stacks.get(index)!.resolve({ done: false, value: TSON.parse(event.data) });
+						else {
+							const stack = Promise.withResolvers<IteratorResult<any>>();
+							stack.resolve({ done: false, value: TSON.parse(event.data) });
+							stacks.set(index, stack);
+						}
 					}
 				}
 
@@ -269,10 +270,9 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 				success: false;
 				executeId: string;
 				fail: {
-					code: FailCode;
-					fromClient: undefined | true;
+					code: keyof FailCode;
 					message: string;
-					data: Parameters<FailCode[keyof FailCode]>[0];
+					data: any;
 				};
 			};
 		type MilkioEventResult<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> = Awaited<ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>>;

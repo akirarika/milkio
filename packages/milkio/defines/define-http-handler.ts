@@ -211,8 +211,8 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 								} catch (error) {
 									const result = handleCatchError(error, executeId);
 									controller.write(`data:@${JSON.stringify(TSON.encode(result))}\n\n`);
-									await new Promise((resolve) => setTimeout(resolve, 1));
 								}
+								await new Promise((resolve) => setTimeout(resolve, 0));
 								controller.close();
 							},
 							cancel() {
@@ -238,8 +238,8 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 								} catch (error) {
 									const result = handleCatchError(error, executeId);
 									controller.enqueue(`data:@${JSON.stringify(TSON.encode(result))}\n\n`);
-									await new Promise((resolve) => setTimeout(resolve, 1));
 								}
+								await new Promise((resolve) => setTimeout(resolve, 0));
 								controller.close();
 							},
 							cancel() {
