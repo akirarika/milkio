@@ -131,9 +131,11 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 					onError?: (event: any) => any;
 				},
 			): {
-				getResult: () => {
+				stream: AsyncGenerator<MilkioEvent<Path>>,
+				getResult: () => ({
 					success: false;
 					executeId: string;
+					fromClient: true | undefined,
 					fail: {
 						code: FailCode;
 						message: string;
@@ -143,7 +145,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 					| {
 						success: true;
 						executeId: string;
-					}, stream: AsyncGenerator<MilkioEvent<Path>>
+					})
 			} {
 				if (eventOptions === undefined) eventOptions = {};
 				if (headers === undefined) headers = {};
@@ -238,6 +240,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 								fail: {
 									code: "NETWORK_ERROR",
 									message: "Network Error",
+									fromClient: true,
 									data: err,
 								}
 							};
@@ -259,23 +262,17 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 		type ExecuteResult<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> =
 			| {
 				success: true;
+				executeId: string;
 				data: Awaited<ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>>;
 			}
 			| {
 				success: false;
+				executeId: string;
 				fail: {
 					code: FailCode;
+					fromClient: undefined | true;
 					message: string;
 					data: Parameters<FailCode[keyof FailCode]>[0];
-				};
-			}
-			| {
-				success: false;
-				fail: {
-					fromClient: true;
-					code: string;
-					message: string;
-					data: any;
 				};
 			};
 		type MilkioEventResult<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> = Awaited<ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>>;
