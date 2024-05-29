@@ -133,6 +133,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 			): {
 				getResult: () => {
 					success: false;
+					executeId: string;
 					fail: {
 						code: FailCode;
 						message: string;
@@ -141,6 +142,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 				}
 					| {
 						success: true;
+						executeId: string;
 					}, stream: AsyncGenerator<MilkioEvent<Path>>
 			} {
 				if (eventOptions === undefined) eventOptions = {};
