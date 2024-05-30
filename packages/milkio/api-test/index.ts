@@ -42,8 +42,9 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 						...((await apiTestHooks.default.onBefore()) ?? {}),
 						log: (...args: Array<unknown>) => console.log(...args),
 						// @ts-ignore
-						execute: async (params: any, headers?: any, options?: any) => app.execute(path, params, headers ?? {}, options),
-						executeOther: async (path: any, params: any, headers?: any, options?: any) => app.execute(path, params, headers ?? {}, options),
+						execute: async (options?: any) => app.execute((path as any), options),
+						executeOther: async (path: any, options?: any) => app.execute((path as any), options),
+						executeStream: async (options?: any) => app.executeStream((path as any), options),
 						randParams: () => app.randParams(path as any),
 						randOtherParams: (path: any) => app.randParams(path),
 						reject: (message?: string) => {

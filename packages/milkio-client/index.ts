@@ -81,19 +81,21 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 		const baseUrl: Promise<string> = bootstrap();
 
 		const client = {
-			async execute<Path extends keyof ApiSchema["apiMethodsTypeSchema"], Params extends ExecuteParams<Path>>(path: Path, params: Params, headers?: Record<string, string>, executeOptions?: ExecuteOptions): Promise<ExecuteResult<Path>> {
-				if (headers === undefined) headers = {};
+			async execute<Path extends keyof ApiSchema["apiMethodsTypeSchema"], Params extends ExecuteParams<Path>>(path: Path, executeOptions: { params: Params } & ExecuteOptions): Promise<ExecuteResult<Path>> {
+				if (executeOptions.headers === undefined) executeOptions.headers = {};
 				const url = (await baseUrl) + (path as string);
 
-				if (headers["Accept"] === undefined) headers["Accept"] = "application/json";
-				if (headers["Content-Type"] === undefined) headers["Content-Type"] = "application/json";
+				if (executeOptions.headers["Accept"] === undefined) executeOptions.headers["Accept"] = "application/json";
+				if (executeOptions.headers["Content-Type"] === undefined) executeOptions.headers["Content-Type"] = "application/json";
 
+				for (const m of _beforeExecuteMiddlewares) {
+					await m.middleware({ path: path as string, params: executeOptions.params, headers: executeOptions.headers, storage: options.storage as ClientStorage });
+				}
+
+				const body = TSON.stringify(executeOptions.params) ?? "";
+
+				let result: { value: Record<any, any> }
 				try {
-					for (const m of _beforeExecuteMiddlewares) {
-						await m.middleware({ path: path as string, params, headers, storage: options.storage as ClientStorage });
-					}
-
-					const body = TSON.stringify(params) ?? "";
 					const response = await new Promise<string>(async (resolve, reject) => {
 						const timeout = executeOptions?.timeout ?? options?.timeout ?? 6000;
 						const timer = setTimeout(() => {
@@ -101,59 +103,77 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 						}, timeout);
 
 						try {
-							const value = await (await $fetch(url, { method: "POST", body, headers })).text();
+							const value = await (await $fetch(url, { method: "POST", body, headers: executeOptions.headers })).text();
 							clearTimeout(timer);
 							resolve(value);
 						} catch (error) {
 							reject(error);
 						}
 					});
-					const result = { value: TSON.parse(response) };
-
-					for (const m of _afterExecuteMiddlewares) {
-						await m.middleware({ path: path as string, storage: options.storage as ClientStorage, result });
+					result = { value: TSON.parse(response) };
+				} catch (error) {
+					result = {
+						value: {
+							success: false,
+							fail: {
+								fromClient: true,
+								code: 'NETWORK_ERROR',
+								message: '',
+								data: undefined,
+							},
+						}
 					}
-
-					return result.value;
-				} catch (error: any) {
-					if (error?.fail?.code === "client-fail") {
-						return error;
-					}
-					throw error;
+					return { ...result.value } as any;
 				}
+
+				for (const m of _afterExecuteMiddlewares) {
+					await m.middleware({ path: path as string, storage: options.storage as ClientStorage, result });
+				}
+
+				return { ...result.value } as any;
 			},
 
-			executeStream<Path extends keyof ApiSchema["apiMethodsTypeSchema"], Params extends ExecuteParams<Path>>(
+			executeStream<Path extends keyof ApiSchema["apiMethodsTypeSchema"], Params extends ExecuteParams<Path>, TypeSafeErrorPath extends keyof ExecuteParams<Path> = keyof ExecuteParams<Path>>(
 				path: Path,
-				params: Params,
-				headers?: Record<string, string>,
-				eventOptions?: {
-					onError?: (event: any) => any;
-				},
+				eventOptions: { params: Params } & ExecuteStreamOptions,
 			): {
 				stream: AsyncGenerator<MilkioEvent<Path>>,
-				getResult: () => ({
-					success: false;
-					executeId: string;
-					fromClient: true | undefined,
-					fail: {
-						code: keyof FailCode;
-						message: string;
-						data: any;
-					};
-				}
+				getResult: () => (
 					| {
 						success: true;
 						executeId: string;
 					})
+					| {
+						success: false;
+						executeId: string;
+						fromClient: true | undefined,
+						fail: {
+							code: Exclude<keyof FailCode, "TYPE_SAFE_ERROR">;
+							message: string;
+							data: any;
+						};
+					}
+					| {
+						success: false;
+						executeId: string;
+						fail: {
+							code: "TYPE_SAFE_ERROR";
+							fromClient: true | undefined;
+							message: string;
+							data: {
+								path: FlattenKeys<TypeSafeErrorPath> | "$input",
+								expected: string,
+								value: any
+							}
+						};
+					}
 			} {
-				if (eventOptions === undefined) eventOptions = {};
-				if (headers === undefined) headers = {};
-				headers = { ...headers };
-				if (headers['Accept'] === undefined) headers['Accept'] = 'text/event-stream';
-				if (headers["Content-Type"] === undefined) headers["Content-Type"] = "application/json";
+				if (eventOptions.headers === undefined) eventOptions.headers = {};
+				eventOptions.headers = { ...eventOptions.headers };
+				if (eventOptions.headers['Accept'] === undefined) eventOptions.headers['Accept'] = 'text/event-stream';
+				if (eventOptions.headers["Content-Type"] === undefined) eventOptions.headers["Content-Type"] = "application/json";
 				const url = async () => ((await baseUrl) + (path as string));
-				const body = TSON.stringify(params) ?? "";
+				const body = TSON.stringify(eventOptions.params) ?? "";
 				const stacks: Map<number, {
 					promise: Promise<IteratorResult<any>>;
 					resolve: (value: IteratorResult<any>) => void;
@@ -185,12 +205,12 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 					curRequestController.signal.addEventListener('abort', () => iterator.return());
 					try {
 						for (const m of _beforeExecuteMiddlewares) {
-							await m.middleware({ path: path as string, params: params, headers: headers!, storage: options.storage as ClientStorage });
+							await m.middleware({ path: path as string, params: eventOptions.params, headers: eventOptions.headers!, storage: options.storage as ClientStorage });
 						}
 
 						const response = await $fetch(await url(), {
 							method: 'POST',
-							headers,
+							headers: eventOptions.headers,
 							body: body,
 							signal: curRequestController.signal,
 						});
@@ -260,7 +280,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 		};
 
 		type ExecuteParams<Path extends keyof ApiSchema["apiMethodsSchema"]> = Awaited<Parameters<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>[0]>;
-		type ExecuteResult<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> =
+		type ExecuteResult<Path extends keyof ApiSchema["apiMethodsTypeSchema"], TypeSafeErrorPath extends ExecuteParams<Path> = ExecuteParams<Path>> =
 			| {
 				success: true;
 				executeId: string;
@@ -270,13 +290,29 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 				success: false;
 				executeId: string;
 				fail: {
-					code: keyof FailCode;
+					code: "TYPE_SAFE_ERROR";
+					fromClient: true | undefined;
+					message: string;
+					data: {
+						path: FlattenKeys<TypeSafeErrorPath> | "$input",
+						expected: string,
+						value: any
+					}
+				};
+			}
+			| {
+				success: false;
+				executeId: string;
+				fail: {
+					code: Exclude<keyof FailCode, "TYPE_SAFE_ERROR">;
+					fromClient: true | undefined;
 					message: string;
 					data: any;
 				};
 			};
 		type MilkioEventResult<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> = Awaited<ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>>;
 		type MilkioEvent<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> = Awaited<GeneratorGeneric<MilkioEventResult<Path>>>;
+
 
 		return client;
 	};
@@ -302,6 +338,12 @@ export const defineClientFail = (code: string, message: string, data?: unknown) 
 let guid = 0;
 
 export type ExecuteOptions = {
+	headers?: Record<string, string>;
+	timeout?: number;
+};
+
+export type ExecuteStreamOptions = {
+	headers?: Record<string, string>;
 	timeout?: number;
 };
 
@@ -340,6 +382,12 @@ export type ExecuteResultSuccess<Result> = {
 };
 
 export type GeneratorGeneric<T> = T extends AsyncGenerator<infer I> ? I : never;
+
+export type FlattenKeys<T extends any, Prefix extends string = ''> = {
+	[K in keyof T]: T[K] extends object
+	? FlattenKeys<T[K], `${Prefix}${Exclude<K, symbol>}.`>
+	: `$input.${Prefix}${Exclude<K, symbol>}`
+}[keyof T];
 
 // *** This part of the code is based on `@microsoft/fetch-event-source` rewrite, thanks to the work of Microsoft *** //
 // *** https://github.com/Azure/fetch-event-source/blob/main/src/parse.ts                                         *** //

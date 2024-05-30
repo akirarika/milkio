@@ -1,7 +1,7 @@
 import type { Context } from "../../../src/context";
 import { failCode } from "../../../src/fail-code";
 import schema from "../../../generated/api-schema";
-import { type ExecuteId, type ExecuteOptions, type ExecuteResult, createUlid, useLogger, runtime, loggerPushTags, headerToPlainObject, loggerSubmit, type ExecuteCoreOptions, TSON, MiddlewareEvent, reject, _validate } from "..";
+import { type ExecuteId, type ExecuteOptions, type ExecuteResult, createUlid, useLogger, runtime, loggerPushTags, headerToPlainObject, loggerSubmit, type ExecuteCoreOptions, TSON, MiddlewareEvent, reject, _validate, ExecuteStreamResult } from "..";
 import { handleCatchError } from "../utils/handle-catch-error";
 
 const apis = new Map<string, any>();
@@ -102,10 +102,12 @@ export async function _call(
 
 export async function _execute<Path extends keyof (typeof schema)["apiMethodsTypeSchema"], Result extends Awaited<ReturnType<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>>>(
 	path: Path,
-	params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string,
-	headersInit: Record<string, string> | Headers = {},
-	options?: ExecuteOptions,
+	options: {
+		params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string,
+		headers?: Record<string, string> | Headers,
+	} & ExecuteOptions,
 ): Promise<ExecuteResult<Result>> {
+	if (!options.headers) options.headers = {};
 	const executeId = (options?.executeId ?? createUlid()) as ExecuteId;
 	const logger = useLogger(executeId);
 	runtime.execute.executeIds.add(executeId);
@@ -113,11 +115,11 @@ export async function _execute<Path extends keyof (typeof schema)["apiMethodsTyp
 	loggerPushTags(executeId, {
 		from: "execute",
 		executeId,
-		params,
+		params: options.params,
 		path,
 	});
 
-	const result = await _call("execute", path, params, headersInit, {
+	const result = await _call("execute", path, options.params, options.headers, {
 		...options,
 		executeId,
 		logger,
@@ -135,8 +137,14 @@ export async function _execute<Path extends keyof (typeof schema)["apiMethodsTyp
 	return result.$result as ExecuteResult<Result>;
 }
 
-export async function _executeToJson<Path extends keyof (typeof schema)["apiMethodsTypeSchema"]>(path: Path, params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string, headersInit: Record<string, string> | Headers = {}, options?: ExecuteOptions): Promise<string> {
-	const resultsRaw = await _execute(path, params, headersInit, options);
+export async function _executeToJson<Path extends keyof (typeof schema)["apiMethodsTypeSchema"]>(
+	path: Path,
+	options: {
+		params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string,
+		headers?: Record<string, string> | Headers,
+	} & ExecuteOptions,
+): Promise<string> {
+	const resultsRaw = await _execute(path, options);
 	let fn: any;
 	try {
 		fn = await schema.apiValidator.validate[path]();
@@ -145,4 +153,43 @@ export async function _executeToJson<Path extends keyof (typeof schema)["apiMeth
 	}
 	const results = await fn.validateResults(TSON.encode(resultsRaw));
 	return results;
+}
+
+
+
+export async function _executeStream<Path extends keyof (typeof schema)["apiMethodsTypeSchema"], Result extends Awaited<ReturnType<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>>>(
+	path: Path,
+	options: {
+		params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string,
+		headers?: Record<string, string> | Headers,
+	} & ExecuteOptions,
+): Promise<ExecuteStreamResult<Path, Result>> {
+	if (!options.headers) options.headers = {};
+	const executeId = (options?.executeId ?? createUlid()) as ExecuteId;
+	const logger = useLogger(executeId);
+	runtime.execute.executeIds.add(executeId);
+
+	loggerPushTags(executeId, {
+		from: "execute",
+		executeId,
+		params: options.params,
+		path,
+	});
+
+	const result = await _call("stream", path, options.params, options.headers, {
+		...options,
+		executeId,
+		logger,
+		onAfterHeaders: (headers) => {
+			loggerPushTags(executeId, {
+				headers: headerToPlainObject(headers),
+			});
+		},
+	});
+
+	loggerPushTags(executeId, { result: result.$result });
+	await loggerSubmit(executeId);
+	runtime.execute.executeIds.delete(executeId);
+
+	return { getResult: () => result.$result, stream: (result as any).$generator } as ExecuteStreamResult<Path, Result>;
 }

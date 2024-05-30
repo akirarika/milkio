@@ -52,6 +52,11 @@ export type MilkioConfig = {
 
 export type ExecuteResult<Result> = ExecuteResultSuccess<Result> | ExecuteResultFail;
 
+export type ExecuteStreamResult<Path, Result> = {
+	getResult: () => ExecuteResultSuccess<Result> | ExecuteResultFail,
+	stream: AsyncGenerator<MilkioEvent<Path>>
+};
+
 export type ExecuteResultSuccess<Result> = {
 	executeId: ExecuteId;
 	success: true;

@@ -3,7 +3,7 @@ import schema from "../../../generated/api-schema";
 import { runtime } from "..";
 import { createUlid } from "../utils/create-ulid";
 import { _validate } from "./validate";
-import { _execute, _call, _executeToJson } from "./execute";
+import { _execute, _call, _executeToJson, _executeStream } from "./execute";
 
 export type MilkioAppOptions = {
 	/**
@@ -44,6 +44,7 @@ export async function createMilkioApp(MilkioAppOptions: MilkioAppOptions = {}) {
 		randParams: _randParams,
 		execute: _execute,
 		executeToJson: _executeToJson,
+		executeStream: _executeStream,
 		_call,
 	};
 
