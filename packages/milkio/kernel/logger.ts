@@ -18,12 +18,13 @@ export type LoggerOptions = {
 export type Logger = {
 	debug: (description: string, ...params: Array<unknown>) => void;
 	log: (description: string, ...params: Array<unknown>) => void;
+	info: (description: string, ...params: Array<unknown>) => void;
 	warn: (description: string, ...params: Array<unknown>) => void;
 	error: (description: string, ...params: Array<unknown>) => void;
 };
 
 export const loggerController = (() => {
-	const logs = new Map<ExecuteId, { __LOG_DETAIL__: Array<LoggerItem>; [key: string]: any }>();
+	const logs = new Map<ExecuteId, { __LOG_DETAIL__: Array<LoggerItem>;[key: string]: any }>();
 
 	const loggerPushTags = (executeId: ExecuteId, tags: Record<string, any>) => {
 		if (!logs.has(executeId)) logs.set(executeId, { __LOG_DETAIL__: [] });
@@ -81,6 +82,9 @@ export const loggerController = (() => {
 				insertItem(executeId, "debug", description, params);
 			},
 			log(description: string, ...params: Array<unknown>) {
+				insertItem(executeId, "log", description, params);
+			},
+			info(description: string, ...params: Array<unknown>) {
 				insertItem(executeId, "log", description, params);
 			},
 			warn(description: string, ...params: Array<unknown>) {

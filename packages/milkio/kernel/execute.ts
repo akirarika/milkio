@@ -88,8 +88,8 @@ export async function _call(
 		// after execute middleware
 		await MiddlewareEvent.handle("afterExecute", [context, result]);
 
-		if (mode === "execute" && !(result.value as AsyncGenerator)[Symbol.asyncIterator]) return { $type: "result", $result: { executeId, success: true, data: result.value } };
-		if (mode === "stream" && (result.value as AsyncGenerator)[Symbol.asyncIterator]) return { $type: "stream", $result: { executeId, success: true, data: "$" }, $generator: result.value as AsyncGenerator };
+		if (mode === "execute" && !(result.value as AsyncGenerator)?.[Symbol.asyncIterator]) return { $type: "result", $result: { executeId, success: true, data: result.value } };
+		if (mode === "stream" && (result.value as AsyncGenerator)?.[Symbol.asyncIterator]) return { $type: "stream", $result: { executeId, success: true, data: "$" }, $generator: result.value as AsyncGenerator };
 		console.log(mode);
 
 		throw reject("BUSINESS_FAIL", `It looks like you used the wrong syntax, for this API you should use "client.${mode}(...)"`);
