@@ -3,7 +3,7 @@
  */
 
 export default {
-  generatedAt: 1717323328423,
+  generatedAt: 1717335297357,
   validate: {
     'foo': () => import('./apps/foo.ts'),
     'test': () => import('./apps/test.ts'),
