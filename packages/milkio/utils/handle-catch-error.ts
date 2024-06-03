@@ -7,9 +7,9 @@ export function handleCatchError(error: any, executeId: ExecuteId): ExecuteResul
 	const logger = useLogger(executeId);
 
 	if (configMilkio.debug === true) {
-		logger.error(`\nError Data: ${JSON.stringify(error)}`);
-		if (error.stack) logger.error("\nError Stack: ", error.stack);
-		else logger.error("\nError Stack: ", error);
+		logger.error(`Error Data: ${JSON.stringify(error)}`);
+		if (error.stack) logger.error("Error Stack: ", error.stack);
+		else logger.error("Error Stack: ", error);
 	}
 
 	if (error.name !== "MilkioReject") {

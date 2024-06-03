@@ -35,7 +35,6 @@
 		"typia": "^6.0.3"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.7.3",
 		"@types/bun": "latest",
 		"drizzle-kit": "^0.20.14",
 		"typescript": "^5.4.0",

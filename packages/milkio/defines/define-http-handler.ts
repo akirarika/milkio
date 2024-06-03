@@ -148,13 +148,6 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 
 			const resultsRaw = await app._call(mode, pathstr, params, headers, { executeId, logger, detail });
 
-			if (resultsRaw.$result.success === false) {
-				if (resultsRaw.$result.fail.code === "TYPE_SAFE_ERROR") {
-					if (((resultsRaw.$result.fail.data as any).value) === undefined) (resultsRaw.$result.fail.data as any).value === "undefined";
-					if (((resultsRaw.$result.fail.data as any).value) === null) (resultsRaw.$result.fail.data as any).value === "null";
-				}
-			}
-
 			let fn: any;
 			try {
 				fn = await schema.apiValidator.validate[pathstr]();

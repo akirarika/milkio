@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { argv, exit } from "node:process";
-import { $ } from "bun";
+import { $, env } from "bun";
 
 const method = argv[2] as keyof typeof commands;
 const params = argv.slice(3) as Parameters<(typeof commands)[keyof typeof commands]>;
@@ -26,14 +26,14 @@ const commands = {
 	async EAR(commandBase64ed: string) {
 		try {
 			console.clear();
-		} catch (e) {}
+		} catch (e) { }
 		const command = Buffer.from(commandBase64ed, "base64").toString("utf-8");
 		console.log("\x1B[2m%s\x1B[0m", `$ ${command}`);
 		console.log(``);
 		try {
-			await $`${{ raw: command }}`;
-		} catch (e) {}
-		process.on("SIGINT", () => {}); // prevent users from exiting by pressing ctrl + c
+			await $`${{ raw: command }}`.env({ ...env, FORCE_COLOR: "3" });
+		} catch (e) { }
+		process.on("SIGINT", () => { }); // prevent users from exiting by pressing ctrl + c
 		while (true) await new Promise((resolve) => process.stdin.on("keypress", resolve));
 	},
 };
