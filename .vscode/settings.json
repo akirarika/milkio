@@ -10,5 +10,6 @@
   "editor.detectIndentation": true,
   "cSpell.words": [
     "TSON"
-  ]
+  ],
+  "biome.enabled": false
 }

@@ -55,7 +55,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 						);
 				};
 
-				const _middlewareHanlder = (index: number, options: MiddlewareOptions) => {
+				const _middlewareHandler = (index: number, options: MiddlewareOptions) => {
 					if (options.bootstrap) push(index, _bootstrapMiddlewares, options.bootstrap);
 					if (options.beforeExecute) push(index, _beforeExecuteMiddlewares, options.beforeExecute);
 					if (options.afterExecute) push(index, _afterExecuteMiddlewares, options.afterExecute);
@@ -63,7 +63,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 
 				for (let index = 0; index < middlewares.length; index++) {
 					const middlewareOptions = middlewares[index];
-					_middlewareHanlder(index, middlewareOptions);
+					_middlewareHandler(index, middlewareOptions);
 				}
 
 				_bootstrapMiddlewares.sort((a, b) => a.index - b.index);
@@ -359,7 +359,7 @@ export type ApiSchemaExtend = {
 
 export type FailCodeExtend = Record<any, (...args: Array<any>) => any>;
 
-type BootstrapMiddleware = (data: { storage: ClientStorage }) => Promise<void> | void;
+export type BootstrapMiddleware = (data: { storage: ClientStorage }) => Promise<void> | void;
 export type BeforeExecuteMiddleware = (data: { path: string; params: any; headers: Record<string, string>; storage: ClientStorage }) => Promise<void> | void;
 export type AfterExecuteMiddleware = (data: { path: string; result: { value: any }; storage: ClientStorage }) => Promise<void> | void;
 

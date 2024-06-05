@@ -30,7 +30,7 @@ export function defineCommandHandler(app: MilkioApp, options: CommandOptions = {
 		else params.path = `$/${argv[2]}`;
 
 		// @ts-ignore
-		const result = await app.execute(params.path as any, params);
+		const result = await app.execute(params.path as any, { params: params });
 		if (!result.success) {
 			if (result.fail.code === "NOT_FOUND") {
 				if (options.notFoundHandler) await options.notFoundHandler({ ...params, name: argv.length === 2 ? "default" : argv[2] });
