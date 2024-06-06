@@ -2,7 +2,6 @@ import { join } from "node:path";
 import { defineMiddleware } from "milkio";
 import { readFile } from "node:fs/promises";
 import { existsSync, lstatSync } from "node:fs";
-import { cwd } from "node:process";
 import mime from "mime";
 
 export type MilkioStaticOptions = {
@@ -26,16 +25,16 @@ export const milkioStatic = (options: MilkioStaticOptions = {}) => {
 
 			let file: Buffer;
 			let path: string;
-			if (existsSync(join(cwd(), options.assets!, detail.fullurl.pathname)) && lstatSync(join(cwd(), options.assets!, detail.fullurl.pathname)).isFile()) {
-				path = join(cwd(), options.assets!, detail.fullurl.pathname);
+			if (existsSync(join(options.assets!, detail.fullurl.pathname)) && lstatSync(join(options.assets!, detail.fullurl.pathname)).isFile()) {
+				path = join(options.assets!, detail.fullurl.pathname);
 				file = await readFile(path);
 			}
-			else if (existsSync(join(cwd(), options.assets!, detail.fullurl.pathname, options.index!))) {
-				path = join(cwd(), options.assets!, detail.fullurl.pathname, options.index!);
+			else if (existsSync(join(options.assets!, detail.fullurl.pathname, options.index!))) {
+				path = join(options.assets!, detail.fullurl.pathname, options.index!);
 				file = await readFile(path);
 			}
-			else if (existsSync(join(cwd(), options.assets!, options.notFound!))) {
-				path = join(cwd(), options.assets!, options.notFound!);
+			else if (existsSync(join(options.assets!, options.notFound!))) {
+				path = join(options.assets!, options.notFound!);
 				file = await readFile(path);
 			}
 			else {
