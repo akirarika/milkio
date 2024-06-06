@@ -8,5 +8,5 @@
     "@types/bun": "latest"
   },
   "files": ["index.ts", "LICENSE"],
-  "dependencies": { "file-type": "^19.0.0" }
+  "dependencies": { "mime": "^4.0.3" }
 }
