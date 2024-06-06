@@ -1,0 +1,12 @@
+{
+  "name": "milkio-static-for-node",
+  "module": "index.ts",
+  "type": "module",
+  "version": "0.0.1",
+  "devDependencies": {
+    "typescript": "*",
+    "@types/bun": "latest"
+  },
+  "files": ["index.ts", "LICENSE"],
+  "dependencies": { "file-type": "^19.0.0" }
+}

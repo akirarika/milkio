@@ -10,6 +10,7 @@ export const commands: Record<string, () => any> = {
 	"Publish: Milkio Drizzle": () => import("./commands/publish-drizzle"),
 	"Publish: Milkio Redis": () => import("./commands/publish-redis"),
 	"Publish: Milkio Static": () => import("./commands/publish-static"),
+	"Publish: Milkio Static (node)": () => import("./commands/publish-static-for-node"),
 };
 
 console.log("----------------");
