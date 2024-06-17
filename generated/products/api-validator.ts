@@ -2,10 +2,10 @@
  * ⚠️This file is generated and modifications will be overwritten
  */
 export default {
-    generatedAt: 1717659793266,
+    generatedAt: 1718607698253,
     validate: {
-        'cookbook': () => import('./apps/cookbook.ts'),
-        'foo': () => import('./apps/foo.ts'),
         'test': () => import('./apps/test.ts'),
+        'foo': () => import('./apps/foo.ts'),
+        'cookbook': () => import('./apps/cookbook.ts'),
     },
 };

@@ -1,4 +1,4 @@
-import { type LoggerOptions, type ExecuteId } from "milkio";
+import { type LoggerOptions } from "milkio";
 
 // By default, log output to the console
 // You can customize an object to implement the log output to the file, or send it to the private log center
@@ -13,3 +13,8 @@ export const loggerOptions = {
 		return true;
 	},
 } satisfies LoggerOptions;
+
+export type LoggerTags = {
+	//
+	hello: string;
+};

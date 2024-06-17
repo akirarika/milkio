@@ -1,5 +1,5 @@
-import { runtime, type ExecuteId } from "..";
-import { loggerOptions } from "../../../src/logger";
+import { ExecuteResultFail, runtime, type ExecuteId } from "..";
+import { loggerOptions, LoggerTags } from "../../../src/logger";
 
 export type LoggerItem = {
 	executeId: ExecuteId;
@@ -8,11 +8,26 @@ export type LoggerItem = {
 	params: Array<unknown>;
 };
 
-export type LoggerTags = Record<string, any>;
+export type MilkioLoggerTags = {
+	executeId: string;
+	from?: "http-server" | "execute";
+	method?: "POST" | "GET" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | string;
+	ip?: string;
+	path?: string;
+	status?: number;
+	url?: string;
+	params?: any;
+	body?: string;
+	fail?: ExecuteResultFail;
+	timein?: number;
+	timeout?: number;
+	requestHeaders?: Record<string, string>;
+	responseHeaders?: Record<string, string>;
+};
 
 export type LoggerOptions = {
 	onInsert: (options: LoggerItem) => boolean;
-	onSubmit: (tags: LoggerTags, logs: Array<LoggerItem>) => Promise<void> | void;
+	onSubmit: (tags: MilkioLoggerTags & LoggerTags, logs: Array<LoggerItem>) => Promise<void> | void;
 };
 
 export type Logger = {
@@ -26,18 +41,18 @@ export type Logger = {
 export const loggerController = (() => {
 	const logs = new Map<ExecuteId, { __LOG_DETAIL__: Array<LoggerItem>;[key: string]: any }>();
 
-	const loggerPushTags = (executeId: ExecuteId, tags: Record<string, any>) => {
+	const loggerPushTags = (executeId: ExecuteId, tags: Partial<MilkioLoggerTags & LoggerTags>) => {
 		if (!logs.has(executeId)) logs.set(executeId, { __LOG_DETAIL__: [] });
 		const logItem = logs.get(executeId);
 		for (const key in tags) {
-			logItem![key] = tags[key];
+			logItem![key] = (tags as any)[key];
 		}
 	};
 
 	const loggerSubmit = async (executeId: ExecuteId) => {
 		if (!logs.has(executeId)) return;
 		if (executeId === "global") return;
-		const loggerSubmitOptions: Record<string, string> = {
+		const loggerSubmitOptions: any = {
 			executeId,
 		};
 		const log = logs.get(executeId)!;

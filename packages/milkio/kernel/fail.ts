@@ -1,7 +1,6 @@
 import { failCode } from "../../../src/fail-code";
 
 export function reject<Code extends keyof typeof failCode, FailData extends (typeof failCode)[Code]>(code: Code, data: Parameters<FailData>[0]) {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
 	const message = failCode[code]?.(data as any) ?? "";
 	const error = {
 		name: "MilkioReject",
@@ -18,5 +17,4 @@ export function reject<Code extends keyof typeof failCode, FailData extends (typ
 
 export type MilkioReject = ReturnType<typeof reject>;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type MilkioFailCode = Record<string, (arg: any) => string>;

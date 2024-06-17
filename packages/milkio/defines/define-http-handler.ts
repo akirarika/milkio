@@ -32,7 +32,8 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 
 		loggerPushTags(executeId, {
 			from: "http-server",
-			fullUrl: fullurl.pathname,
+			url: fullurl.pathname,
+			fullurl: fullurl.pathname,
 			ip,
 			method: request.request.method,
 			// @ts-ignore

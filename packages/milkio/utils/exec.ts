@@ -13,7 +13,6 @@ export const exec = async (cwd: string, command: Array<string>, options: Partial
 		if (!("env" in options)) options.env = { ...env };
 
 		options.onExit = (proc, exitCode, signalCode, error) => {
-			// eslint-disable-next-line prefer-promise-reject-errors
 			if (exitCode !== 0) reject({ proc, exitCode, signalCode, error });
 			else resolve({ proc, exitCode, signalCode, error });
 		};
