@@ -15,7 +15,7 @@ export default async function () {
 
 	console.log("上个版本号:", JSON.parse(await readFile(join("packages", npmPackage, "package.json"), "utf8")).version);
 	const newVersion = await interactiveCli.input("要发布的新版本号是");
-	if (!/^(\d+)\.(\d+)\.(\d+)(-rc|-beta|-alpha)?$/.test(newVersion)) {
+	if (!/^(\d+)\.(\d+)\.(\d+)((-rc|-beta|-alpha)\.(\d+))?$/.test(newVersion)) {
 		return console.log("错误的版本号，未能满足正则表达式的校验");
 	}
 
