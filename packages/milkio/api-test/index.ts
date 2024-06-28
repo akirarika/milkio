@@ -1,11 +1,10 @@
 import schema from "../../../generated/api-schema";
 import { ExecuteResultFail, type MilkioApp } from "..";
-import { cwd } from "node:process";
 import chalk from "chalk";
 import { handleCatchError } from "../utils/handle-catch-error.ts";
 
 export const executeApiTests = async <Path extends Array<keyof (typeof schema)["apiTestsSchema"]>>(app: MilkioApp, path: Path | string | true | 1 | undefined) => {
-	console.log(`${chalk.hex("#81C7D4")(`🧊 test running on`)} ${chalk.hex("#999A9E").underline(cwd())}`);
+	console.log(`${chalk.hex("#81C7D4")(`🧊 test running`)}`);
 
 	let pathArr = [] as Array<string>;
 	if (!path || path === "1" || path === 1 || path === true) {
