@@ -13,13 +13,13 @@ export type CreateTemplateTools = {
 
 export type CreateTemplateFn = (tools: CreateTemplateTools) =>
 	| {
-			path: string;
-			content: string;
-	  }
+		path: string;
+		content: string;
+	}
 	| Promise<{
-			path: string;
-			content: string;
-	  }>;
+		path: string;
+		content: string;
+	}>;
 
 export async function createTemplate(fn: CreateTemplateFn) {
 	const tools = {
