@@ -30,13 +30,21 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 	} else {
 		let done = false;
 		for (let index = 0; index < 160; index++) {
-			const result = await clientPackage.execute("" as any, { params: {} });
-			if (result.success === false && result.fail.code === "NETWORK_ERROR") {
-				await new Promise((resolve) => setTimeout(resolve, 100));
-				continue;
+			let response;
+			try {
+				response = await fetch(typeof clientPackage.options.baseUrl === "string" ? clientPackage.options.baseUrl : await clientPackage.options.baseUrl(), { method: "HEAD" });
+			} catch (error: any) {
+				if (error?.status && error.status < 500) {
+					done = true;
+					break;
+				}
 			}
-			done = true;
-			break;
+			if (response?.status && response.status < 500) {
+				done = true;
+				break;
+			}
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			continue;
 		}
 		if (!done) {
 			console.log(`🚨 The server startup exceeded the maximum waiting time (1600ms).`);

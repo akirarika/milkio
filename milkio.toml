@@ -4,5 +4,5 @@ insignificant = []
 
 [menubar]
 commands = [
-  { name = 'Test All APIs', script = 'bun run ./index.ts --run-mode:API_TEST' },
+  { name = 'Test All APIs', script = 'bun run ./run-api-test.ts --run-mode:API_TEST' },
 ]
