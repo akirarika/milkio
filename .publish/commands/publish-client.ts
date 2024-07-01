@@ -27,6 +27,7 @@ export default async function () {
 	} catch (error) {
 		const packageJson = await readFile(join("packages", npmPackage, "package.json"), "utf8");
 		await writeFile(join("packages", npmPackage, "package.json"), packageJson.replace(/"version": ".*"/, `"version": "${newVersion}"`));
+		await $`cd ${join("packages", npmPackage)} && bun build`;
 		await $`cd ${join("packages", npmPackage)} && npm publish --access public`;
 	}
 

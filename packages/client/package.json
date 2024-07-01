@@ -1,15 +1,15 @@
 {
-	"name": "client",
-	"version": "0.0.0",
-	"module": "index.ts",
-	"type": "module",
-	"devDependencies": {
-		"@types/bun": "latest"
-	},
-	"peerDependencies": {
-		"typescript": "^5.0.0"
-	},
-	"dependencies": {
-		"milkio-client": "0.4.0"
-	}
+  "name": "client",
+  "version": "0.0.0",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "milkio-client": "0.7.0"
+  }
 }

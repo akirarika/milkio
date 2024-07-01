@@ -1,10 +1,8 @@
 {
   "name": "milkio-client",
-  "version": "0.4.0",
-  "module": "./dist/index.js",
-  "typings": "./dist/index.d.ts",
+  "version": "0.7.0",
+	"module": "index.ts",
   "type": "module",
-  "files": ["/dist", "/LICENSE"],
   "scripts": {
     "build": "bun build ./index.ts --outdir ./dist --target browser --minify --sourcemap && tsc"
   },

@@ -26,7 +26,7 @@
     "cuid": "^3.0.0",
     "drizzle-orm": "^0.30.1",
     "milkio": "file:./packages/milkio",
-    "milkio-client": "^0.4.0",
+    "milkio-client": "0.7.0",
     "milkio-drizzle": "file:./packages/milkio-drizzle",
     "milkio-redis": "file:./packages/milkio-redis",
     "milkio-static": "file:./packages/milkio-static",
