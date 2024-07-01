@@ -26,7 +26,7 @@
     "cuid": "^3.0.0",
     "drizzle-orm": "^0.30.1",
     "milkio": "file:./packages/milkio",
-    "milkio-client": "0.7.0",
+    "milkio-client": "0.7.1",
     "milkio-drizzle": "file:./packages/milkio-drizzle",
     "milkio-redis": "file:./packages/milkio-redis",
     "milkio-static": "file:./packages/milkio-static",
@@ -37,7 +37,7 @@
   "devDependencies": {
     "@types/bun": "latest",
     "drizzle-kit": "^0.20.14",
-    "typescript": "^5.4.0",
+    "typescript": "^5.5.0",
     "vitepress": "^1.0.0-rc.45"
   }
 }

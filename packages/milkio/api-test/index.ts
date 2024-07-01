@@ -27,12 +27,28 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 		console.log(` - Edit: \`src/api-test.ts\``);
 		console.log(` - Add: \`client: () => createClient({ baseUrl: "http://localhost:9000/", memoryStorage: true }),\``);
 		console.log(` - The \`createClient\` method is imported from your client package. If you haven't changed the name in \`packages/client/package.json\`, you can use: \`import { createClient } from 'client';\`.`);
+	} else {
+		let done = false;
+		for (let index = 0; index < 160; index++) {
+			const result = await clientPackage.execute("" as any, { params: {} });
+			if (result.success === false && result.fail.code === "NETWORK_ERROR") {
+				await new Promise((resolve) => setTimeout(resolve, 100));
+				continue;
+			}
+			done = true;
+			break;
+		}
+		if (!done) {
+			console.log(`🚨 The server startup exceeded the maximum waiting time (1600ms).`);
+			console.log(`This is likely an error encountered during the startup of the Milkio Server. Please check the 'Milkio Run & Watch' tab in your VS Code terminal panel. This is only a warning, and the tests will continue, but there is a chance they might fail due to network issues.\n`);
+		}
 	}
 
 	const client = clientPackage ? {
 		execute: async (options?: any) => clientPackage!.execute((path as any), options),
 		executeOther: async (path: any, options?: any) => clientPackage!.execute((path as any), options),
 		executeStream: async (options?: any) => clientPackage!.executeStream((path as any), options),
+		executeStreamOther: async (path: any, options?: any) => clientPackage!.executeStream((path as any), options),
 	} : undefined;
 
 	for (const pathRaw of pathArr) {
@@ -55,6 +71,7 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 					execute: async (options?: any) => app.execute((path as any), options),
 					executeOther: async (path: any, options?: any) => app.execute((path as any), options),
 					executeStream: async (options?: any) => app.executeStream((path as any), options),
+					executeStreamOther: async (path: any, options?: any) => app.executeStream((path as any), options),
 					client,
 					randParams: () => app.randParams(path as any),
 					randOtherParams: (path: any) => app.randParams(path),

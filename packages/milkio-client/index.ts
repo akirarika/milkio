@@ -95,6 +95,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 		const baseUrl: Promise<string> = bootstrap();
 
 		const client = {
+			options,
 			async execute<Path extends keyof ApiSchema["apiMethodsTypeSchema"], Params extends ExecuteParams<Path>>(path: Path, executeOptions: { params: Params } & ExecuteOptions): Promise<ExecuteResult<Path>> {
 				if (executeOptions.headers === undefined) executeOptions.headers = {};
 				const url = (await baseUrl) + (path as string);

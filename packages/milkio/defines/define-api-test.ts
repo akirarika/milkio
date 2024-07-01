@@ -25,6 +25,10 @@ export type ApiTestCases<ApiT extends Api> = {
 				getResult: () => ExecuteResult<undefined>,
 				stream: AsyncGenerator<Awaited<ReturnType<ApiT["action"]>>>
 			}>;
+			executeStreamOther: <Path extends keyof (typeof schema)["apiMethodsTypeSchema"], Result extends Awaited<ReturnType<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>>>(path: Path, options: { params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string, headers?: Record<string, string> } & ExecuteOptions) => Promise<{
+				getResult: () => ExecuteResult<undefined>,
+				stream: AsyncGenerator<Result>
+			}>;
 			client: {
 				execute: (options: { params: Parameters<ApiT["action"]>[0], headers?: Record<string, string> } & ExecuteOptions) => Promise<ExecuteResult<Awaited<ReturnType<ApiT["action"]>>>>;
 				executeOther: <Path extends keyof (typeof schema)["apiMethodsTypeSchema"], Result extends Awaited<ReturnType<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>>>(
@@ -37,6 +41,10 @@ export type ApiTestCases<ApiT extends Api> = {
 				executeStream: (options: { params: Parameters<ApiT["action"]>[0], headers?: Record<string, string> } & ExecuteOptions) => Promise<{
 					getResult: () => ExecuteResult<undefined>,
 					stream: AsyncGenerator<Awaited<ReturnType<ApiT["action"]>>>
+				}>;
+				executeStreamOther: <Path extends keyof (typeof schema)["apiMethodsTypeSchema"], Result extends Awaited<ReturnType<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>>>(path: Path, options: { params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string, headers?: Record<string, string> } & ExecuteOptions) => Promise<{
+					getResult: () => ExecuteResult<undefined>,
+					stream: AsyncGenerator<Result>
 				}>;
 			}
 			randParams: () => Promise<Parameters<ApiT["action"]>[0]>;
