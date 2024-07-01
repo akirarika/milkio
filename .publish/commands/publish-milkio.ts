@@ -11,11 +11,6 @@ export default async function () {
 	const owner = "akirarika";
 	const repo = "milkio";
 
-	const checkGitStatus = await $`git status --porcelain`.text();
-	if (checkGitStatus.trim() !== "") {
-		return console.log("请先提交所有更改，再执行此命令");
-	}
-
 	const interactiveCli = await useInteractiveCli();
 
 	const releases = await readdir(join(".publish", "releases"));
@@ -27,19 +22,35 @@ export default async function () {
 	}
 
 	console.clear();
-	console.log("开始发布..");
 
 	try {
 		await $`npm view ${npmPackage}@${newVersion} --json`.quiet();
 		console.log("该版本已存在，不进行 npm 发布");
 	} catch (error) {
-		const packageJson = await readFile(join("packages", "milkio", "package.json"), "utf8");
-		await writeFile(join("packages", "milkio", "package.json"), packageJson.replace(/"version": ".*"/, `"version": "${newVersion}"`));
-		await $`cd ${join("packages", "milkio")} && npm publish --access public`;
+		if ((await interactiveCli.select("\n提交 git 并推送至 npm 吗？", ["否，我只是想预创建版本说明", "是，继续"])) === "是，继续") {
+			const packageJson = await readFile(join("packages", "milkio", "package.json"), "utf8");
+			await writeFile(join("packages", "milkio", "package.json"), packageJson.replace(/"version": ".*"/, `"version": "${newVersion}"`));
+
+			const checkGitStatus = await $`git status --porcelain`.text();
+			if (checkGitStatus.trim() !== "") {
+				const gitUser = {
+					mail: "33272184+akirarika@users.noreply.github.com",
+					name: "akirarika",
+				}
+				await $`git config user.email ${gitUser.mail}`;
+				await $`git config user.name ${gitUser.name}`;
+				await $`git pull`;
+				await $`git add --all`;
+				await $`git commit -m "🎈 publish: v${newVersion}"`;
+				await $`git push -u origin ${(await $`git symbolic-ref --short HEAD`).text().trim()}`;
+			}
+
+			await $`cd ${join("packages", "milkio")} && npm publish --access public`;
+		}
 	}
 
 	console.log("🧊 如果版本是修复 bug 版本 (仅最小版本号增加) 则无需编写发行说明");
-	if ((await interactiveCli.select("是修复 bug 版本吗？", ["是", "否"])) === "否") {
+	if ((await interactiveCli.select("要编写发行说明吗？", ["否", "是"])) === "是") {
 		console.clear();
 		if (await exists(join(".publish", "releases", `${newVersion}.md`))) {
 			console.log("已存在该版本的发布说明文件，你可能输入了一个已经存在的版本号");
@@ -56,7 +67,7 @@ export default async function () {
 
 		while (true) {
 			console.log(`/.publish/releases/${newVersion}.md`);
-			if ((await interactiveCli.select("\n编辑好了吗？", ["否", "是"])) === "是") break;
+			if ((await interactiveCli.select("\n编辑好了吗？按 Ctrl + C 并退出，日后继续发版是安全的", ["否", "是"])) === "是") break;
 			console.clear();
 		}
 

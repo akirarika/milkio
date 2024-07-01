@@ -1,6 +1,6 @@
+import chalk from "chalk";
 import schema from "../../../generated/api-schema";
 import { ExecuteResultFail, type MilkioApp } from "..";
-import chalk from "chalk";
 import { handleCatchError } from "../utils/handle-catch-error.ts";
 
 export const executeApiTests = async <Path extends Array<keyof (typeof schema)["apiTestsSchema"]>>(app: MilkioApp, path: Path | string | true | 1 | undefined) => {
@@ -16,8 +16,24 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 	const startedAt = new Date().getTime();
 	const apiTestHooks = await import("../../../src/api-test.ts");
 	await apiTestHooks.default.onBootstrap();
+	const clientPackage = apiTestHooks.default?.client ? (await apiTestHooks.default?.client()) : undefined;
 	const results: Array<{ path: string, case: number, fail: boolean, failMessage?: string }> = [];
 	console.log(chalk.hex("#0B346E")(`₋₋₋₋₋₋₋₋`));
+
+	if (!clientPackage) {
+		console.log(`🚨 For testing purposes, if the client package does not exist, subsequent operations might result in errors.`);
+		console.log(`🚨 To disable this warning and ensure the test system runs correctly:`);
+		console.log(` - Run: \`bun i packages/client && cd packages/client && bun i milkio-client\``);
+		console.log(` - Edit: \`src/api-test.ts\``);
+		console.log(` - Add: \`client: () => createClient({ baseUrl: "http://localhost:9000/", memoryStorage: true }),\``);
+		console.log(` - The \`createClient\` method is imported from your client package. If you haven't changed the name in \`packages/client/package.json\`, you can use: \`import { createClient } from 'client';\`.`);
+	}
+
+	const client = clientPackage ? {
+		execute: async (options?: any) => clientPackage!.execute((path as any), options),
+		executeOther: async (path: any, options?: any) => clientPackage!.execute((path as any), options),
+		executeStream: async (options?: any) => clientPackage!.executeStream((path as any), options),
+	} : undefined;
 
 	for (const pathRaw of pathArr) {
 		let path = pathRaw.replaceAll("\\", "/");
@@ -36,10 +52,10 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 				await cs.handler({
 					...((await apiTestHooks.default.onBefore()) ?? {}),
 					log: (...args: Array<unknown>) => console.log(...args),
-					// @ts-ignore
 					execute: async (options?: any) => app.execute((path as any), options),
 					executeOther: async (path: any, options?: any) => app.execute((path as any), options),
 					executeStream: async (options?: any) => app.executeStream((path as any), options),
+					client,
 					randParams: () => app.randParams(path as any),
 					randOtherParams: (path: any) => app.randParams(path),
 					reject: (message?: string) => {

@@ -11,6 +11,7 @@ export type MilkioClientOptions = {
 		setItem: (key: string, value: string) => void | Promise<void>;
 		removeItem: (key: string) => void | Promise<void>;
 	};
+	memoryStorage?: boolean;
 };
 
 export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode extends FailCodeExtend>(builtinMiddlewares: Array<MiddlewareOptions & { isMiddleware: true }>) => {
@@ -33,7 +34,20 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 			middleware: AfterExecuteMiddleware;
 		}> = [];
 
-		if (!options.storage) {
+		if (options.memoryStorage === true) {
+			const mapStorage = new Map<string, string>();
+			options.storage = {
+				async getItem(key: string) {
+					return mapStorage.get(key) ?? null;
+				},
+				async setItem(key, value) {
+					mapStorage.set(key, value);
+				},
+				async removeItem(key) {
+					mapStorage.delete(key);
+				},
+			}
+		} else if (!options.storage) {
 			options.storage = localStorage;
 		}
 
