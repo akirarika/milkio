@@ -19,6 +19,7 @@ export type ExecuteHttpServerOptions = {
 	 */
 	executeIdGenerator?: (request: Request) => string | Promise<string>;
 	getRealIp?: (request: Request) => string;
+	mixin?: Record<string, unknown>;
 };
 
 export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOptions = {}) {
@@ -76,6 +77,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 			let pathstr = path.join("/") as keyof (typeof schema)["apiMethodsSchema"];
 
 			const detail = {
+				...options.mixin ?? {},
 				path: pathstr,
 				ip,
 				executeId,
