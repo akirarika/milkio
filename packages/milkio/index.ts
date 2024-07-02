@@ -7,12 +7,12 @@ export * from "./utils/create-ulid";
 export * from "./utils/env-to-string";
 export * from "./utils/env-to-number";
 export * from "./utils/env-to-boolean";
-// export * from "./utils/create-template"
 export * from "./utils/header-to-plain-object";
 
 // defines
 export * from "./defines/define-use";
 export * from "./defines/define-api";
+export * from "./defines/define-config";
 export * from "./defines/define-api-test";
 export * from "./defines/define-middleware";
 

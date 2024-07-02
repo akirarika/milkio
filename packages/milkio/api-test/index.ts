@@ -18,7 +18,6 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 	await apiTestHooks.default.onBootstrap();
 	const clientPackage = apiTestHooks.default?.client ? (await apiTestHooks.default?.client()) : undefined;
 	const results: Array<{ path: string, case: number, fail: boolean, failMessage?: string }> = [];
-	console.log(chalk.hex("#0B346E")(`₋₋₋₋₋₋₋₋`));
 
 	if (!clientPackage) {
 		console.log(`🚨 For testing purposes, if the client package does not exist, subsequent operations might result in errors.`);
@@ -58,6 +57,8 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 		executeStream: async (options?: any) => clientPackage!.executeStream((path as any), options),
 		executeStreamOther: async (path: any, options?: any) => clientPackage!.executeStream((path as any), options),
 	} : undefined;
+
+	console.log(chalk.hex("#0B346E")(`₋₋₋₋₋₋₋₋`));
 
 	for (const pathRaw of pathArr) {
 		let path = pathRaw.replaceAll("\\", "/");
