@@ -237,9 +237,11 @@ export default async () => {
 
 	console.time(`Client Stage`);
 	try {
-		if (process.platform !== "win32") await $`bun run ./node_modules/typescript/bin/tsc --outDir './packages/client/project'`.quiet();
-		else await $`powershell.exe -command "bun run ./node_modules/typescript/bin/tsc --outDir './packages/client/project'"`.quiet();
-	} catch (error) { }
+		if (process.platform !== "win32") await $`bun run ./node_modules/typescript/bin/tsc --outDir './packages/client/project'`;
+		else await $`powershell.exe -command "bun run ./node_modules/typescript/bin/tsc --outDir './packages/client/project'"`;
+	} catch (error) {
+		console.log(error);
+	}
 	await Bun.build({
 		entrypoints: ["./packages/client/index.ts"],
 		outdir: "./packages/client/dist",

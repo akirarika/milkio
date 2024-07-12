@@ -3,11 +3,11 @@
  */
 
 export default {
-  generatedAt: 1719886637468,
+  generatedAt: 1720770093623,
   validate: {
+    'test': () => import('./apps/test.ts'),
     'cookbook': () => import('./apps/cookbook.ts'),
     'foo': () => import('./apps/foo.ts'),
-    'test': () => import('./apps/test.ts'),
     
   },
 }

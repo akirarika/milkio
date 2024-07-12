@@ -93,3 +93,10 @@ export type ExecuteCoreOptions = Mixin<
 >;
 
 export type MilkioEvent<Result> = Awaited<GeneratorGeneric<ExecuteResultSuccess<Result>["data"] extends { $type: any } ? ExecuteResultSuccess<Result>["data"]["$type"] : never>>;
+
+
+export type ToEmptyObject<T> = T extends undefined | null | never
+	? {}
+	: T extends object
+	? T
+	: {};

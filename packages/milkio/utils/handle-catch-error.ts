@@ -5,7 +5,7 @@ import { configMilkio } from "../../../src/config/milkio";
 export function handleCatchError(error: any, executeId: ExecuteId): ExecuteResult<any> {
 	const logger = useLogger(executeId);
 
-	if (configMilkio.debug === true) {
+	if (configMilkio.debug !== false) {
 		logger.error(`Error Data: ${JSON.stringify(error)}`);
 		if (error.stack) logger.error("Error Stack: ", error.stack);
 		else logger.error("Error Stack: ", error);
@@ -14,7 +14,7 @@ export function handleCatchError(error: any, executeId: ExecuteId): ExecuteResul
 	let result: ExecuteResult<any>;
 
 	if (error.name !== "MilkioReject") {
-		if (configMilkio.debug === true) {
+		if (configMilkio.debug !== false) {
 			// If it is not MilkioReject, it is considered an internal server error that should not be exposed
 			logger.error(`FailCode: INTERNAL_SERVER_ERROR`);
 		}
@@ -29,7 +29,7 @@ export function handleCatchError(error: any, executeId: ExecuteId): ExecuteResul
 			},
 		};
 	} else {
-		if (configMilkio.debug === true) {
+		if (configMilkio.debug !== false) {
 			logger.error(`FailCode: ${error.code}`);
 		}
 

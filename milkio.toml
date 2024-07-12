@@ -2,6 +2,11 @@
 significant = ['./node_modules/milkio-drizzle/g.ts']
 insignificant = []
 
+[link]
+projects = [
+  { name = 'YourViteProject', cwd = '../nito-official', script = 'bun run dev' },
+]
+
 [menubar]
 commands = [
   { name = 'Test All APIs', script = 'bun run ./run-api-test.ts --run-mode:API_TEST' },

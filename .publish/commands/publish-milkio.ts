@@ -40,7 +40,7 @@ export default async function () {
 				await $`git config user.email ${gitUser.mail}`;
 				await $`git config user.name ${gitUser.name}`;
 				await $`git add --all`;
-				await $`git commit -m "🎈 publish: v${newVersion}"`;
+				await $`${{ raw: `git commit -m "🎈 publish: v${newVersion}"` }}`;
 				await $`git push -u origin ${(await $`git symbolic-ref --short HEAD`).text().trim()}`;
 			}
 
