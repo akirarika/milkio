@@ -1,7 +1,7 @@
 import type { Context } from "../../../src/context";
 import { failCode } from "../../../src/fail-code";
 import schema from "../../../generated/api-schema";
-import { type ExecuteId, type ExecuteOptions, type ExecuteResult, createUlid, useLogger, runtime, loggerPushTags, headerToPlainObject, loggerSubmit, type ExecuteCoreOptions, TSON, MiddlewareEvent, reject, _validate, ExecuteStreamResult, createSteps } from "..";
+import { type ExecuteId, type ExecuteOptions, type ExecuteResult, createUlid, useLogger, runtime, loggerPushTags, headerToPlainObject, loggerSubmit, type ExecuteCoreOptions, TSON, MiddlewareEvent, reject, _validate, ExecuteStreamResult, createStep } from "..";
 import { handleCatchError } from "../utils/handle-catch-error";
 
 const apis = new Map<string, any>();
@@ -56,7 +56,7 @@ export async function _call(
 		headers,
 		logger: options.logger,
 		detail: options?.detail ?? {} as any,
-		steps: createSteps(),
+		step: createStep(),
 	};
 
 	let result: { value: unknown };
