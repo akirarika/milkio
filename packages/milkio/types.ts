@@ -101,6 +101,6 @@ export type ToEmptyObject<T> = T extends undefined | null | never
 	? T
 	: {};
 
-type Remove$<T> = {
+export type Remove$<T> = {
 	[K in keyof T as K extends `$${string}` ? never : K]: T[K];
 };
