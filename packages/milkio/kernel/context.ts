@@ -1,4 +1,4 @@
-import type { ExecuteId, Logger, MilkioHttpResponse, Mixin, ToEmptyObject } from "..";
+import type { ExecuteId, Logger, MilkioHttpResponse, Mixin, ToEmptyObject, Remove$ } from "..";
 
 export type MilkioContext = {
 	path: string;
@@ -25,7 +25,8 @@ export type FrameworkHttpDetail = {
 
 export type Steps<StageT extends Record<any, any>> = {
 	step: StepFunction<StageT>,
-	run: <HandlerT extends (stage: StageT) => Record<any, any> | Promise<Record<any, any>>>(handler: HandlerT) => Promise<Awaited<ReturnType<HandlerT>>>,
+	// run: <HandlerT extends (stage: StageT) => Record<any, any> | Promise<Record<any, any>>>(handler: HandlerT) => Promise<Awaited<ReturnType<HandlerT>>>,
+	run: () => Promise<Remove$<StageT>>
 }
 
 type StepFunction<StageT extends Record<any, any>> = <HandlerT extends ((stage: Readonly<StageT>) => Record<any, any> | Promise<Record<any, any>>) >(handler: HandlerT) => Steps<Mixin<StageT, ToEmptyObject<Awaited<ReturnType<HandlerT>>>>>
@@ -34,15 +35,20 @@ export const createStep = () => {
 	const stepController = {
 		_steps: [] as Array<(stage: any) => Promise<any>>,
 		step(handler: (stage: any) => Promise<any>) {
-			this._steps.push(handler);
-			return this;
+			stepController._steps.push(handler);
+			return stepController;
 		},
-		async run(handler: any) {
+		async run() {
 			let stage = {};
-			for (const step of this._steps) {
+			for (const step of stepController._steps) {
 				stage = { ...stage, ...(await step(stage)) }
 			}
-			return await handler(stage);
+			let result: Record<any, any> = {};
+			for (const key in stage) {
+				const value = (stage as any)[key];
+				if (!key.startsWith('$')) result[key] = value;
+			}
+			return stage;
 		}
 	}
 	return stepController.step as any as Steps<{}>['step'];
