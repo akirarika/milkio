@@ -48,7 +48,7 @@ export const createStep = () => {
 				const value = (stage as any)[key];
 				if (!key.startsWith('$')) result[key] = value;
 			}
-			return stage;
+			return result;
 		}
 	}
 	return stepController.step as any as Steps<{}>['step'];
