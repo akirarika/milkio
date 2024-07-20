@@ -68,7 +68,7 @@ export default async () => {
 		apiParams = apiParamsLines.join("\n");
 
 		// Find the code for the API testing section.
-		const apiTestsCodeChars = [];
+		const apiTestsCodeChars:Array<string> = [];
 		let apiTestsStartIndex = undefined as undefined | number;
 		let semicolonMatch = 0;
 		let semicolonMax = 0;
