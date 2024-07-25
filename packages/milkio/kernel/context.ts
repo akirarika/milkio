@@ -29,7 +29,7 @@ export type Steps<StageT extends Record<any, any>> = {
 	run: () => Promise<Remove$<StageT>>
 }
 
-type StepFunction<StageT extends Record<any, any>> = <HandlerT extends ((stage: Readonly<StageT>) => Record<any, any> | Promise<Record<any, any>>) >(handler: HandlerT) => Steps<Mixin<StageT, ToEmptyObject<Awaited<ReturnType<HandlerT>>>>>
+type StepFunction<StageT extends Record<any, any>> = <HandlerT extends ((stage: Readonly<StageT>) => Record<any, any> | Promise<Record<any, any>>) >(handler: HandlerT) => Steps<Mixin<Awaited<StageT>, ToEmptyObject<Awaited<ReturnType<HandlerT>>>>>
 
 export const createStep = () => {
 	const stepController = {
