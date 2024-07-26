@@ -206,7 +206,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 						const index = ++stacksIndex;
 						if (stacks.has(index)) stacks.get(index)!.resolve({ done: false, value: TSON.parse(event.data) });
 						else {
-							const stack = Promise.withResolvers<IteratorResult<any>>();
+							const stack = withResolvers<IteratorResult<any>>();
 							stack.resolve({ done: false, value: TSON.parse(event.data) });
 							stacks.set(index, stack);
 						}
@@ -259,7 +259,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 								return stacks.get(index)!.promise;
 							}
 							else {
-								const stack = Promise.withResolvers<IteratorResult<any>>();
+								const stack = withResolvers<IteratorResult<any>>();
 								stacks.set(index, stack);
 								return stack.promise;
 							}
@@ -562,3 +562,16 @@ function newMessage(): EventSourceMessage {
 		data: '',
 	};
 }
+
+function withResolvers<T>(): {
+	promise: Promise<T>;
+	resolve: (value?: T | PromiseLike<T> | undefined) => void;
+	reject: (reason?: any) => void;
+} {
+	// @ts-ignore
+	var a, b, c = new (this)(function (resolve, reject) {
+		a = resolve;
+		b = reject;
+	});
+	return { resolve: a, reject: b, promise: c };
+};
