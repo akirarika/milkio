@@ -46,7 +46,7 @@ export const createStep = () => {
 			let result: Record<any, any> = {};
 			for (const key in stage) {
 				const value = (stage as any)[key];
-				if (!key.startsWith('$')) result[key] = value;
+				if (!key.endsWith('$')) result[key] = value;
 			}
 			return result;
 		}
