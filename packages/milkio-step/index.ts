@@ -5,13 +5,13 @@ export type Steps<StageT extends Record<any, any>> = {
 }
 type StepFunction<StageT extends Record<any, any>> = <HandlerT extends ((stage: Readonly<StageT>) => Record<any, any> | Promise<Record<any, any>>) >(handler: HandlerT) => Steps<Mixin<Awaited<StageT>, ToEmptyObject<Awaited<ReturnType<HandlerT>>>>>
 
-export type Remove$<T> = {
+type Remove$<T> = {
 	[K in keyof T as K extends `$${string}` ? never : K]: T[K];
 };
 
-export type Mixin<T, U> = U & Omit<T, keyof U>;
+type Mixin<T, U> = U & Omit<T, keyof U>;
 
-export type ToEmptyObject<T> = T extends undefined | null | never
+type ToEmptyObject<T> = T extends undefined | null | never
 	? {}
 	: T extends object
 	? T
