@@ -21,6 +21,7 @@ export type MilkioLoggerTags = {
 	fail?: ExecuteResultFail;
 	timein?: number;
 	timeout?: number;
+	result?: unknown;
 	requestHeaders?: Record<string, string>;
 	responseHeaders?: Record<string, string>;
 };

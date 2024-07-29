@@ -1,7 +1,7 @@
 import type { Context } from "../../../src/context";
 import { failCode } from "../../../src/fail-code";
 import schema from "../../../generated/api-schema";
-import { type ExecuteId, type ExecuteOptions, type ExecuteResult, createUlid, useLogger, runtime, loggerPushTags, headerToPlainObject, loggerSubmit, type ExecuteCoreOptions, TSON, MiddlewareEvent, reject, _validate, ExecuteStreamResult, createStep } from "..";
+import { type ExecuteId, type ExecuteOptions, type ExecuteResult, createUlid, useLogger, runtime, loggerPushTags, headerToPlainObject, loggerSubmit, type ExecuteCoreOptions, TSON, MiddlewareEvent, reject, _validate, ExecuteStreamResult, createStep, Steps } from "..";
 import { handleCatchError } from "../utils/handle-catch-error";
 
 const apis = new Map<string, any>();
@@ -56,7 +56,7 @@ export async function _call(
 		headers,
 		logger: options.logger,
 		detail: options?.detail ?? {} as any,
-		step: createStep(),
+		step: createStep() as any,
 	};
 
 	let result: { value: unknown };
@@ -126,7 +126,7 @@ export async function _execute<Path extends keyof (typeof schema)["apiMethodsTyp
 		logger,
 		onAfterHeaders: (headers) => {
 			loggerPushTags(executeId, {
-				headers: headerToPlainObject(headers),
+				requestHeaders: headerToPlainObject(headers),
 			});
 		},
 	});
@@ -183,7 +183,7 @@ export async function _executeStream<Path extends keyof (typeof schema)["apiMeth
 		logger,
 		onAfterHeaders: (headers) => {
 			loggerPushTags(executeId, {
-				headers: headerToPlainObject(headers),
+				requestHeaders: headerToPlainObject(headers)
 			});
 		},
 	});

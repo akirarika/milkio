@@ -29,12 +29,11 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 		runtime.execute.executeIds.add(executeId);
 		const logger = useLogger(executeId);
 		const ip = options.getRealIp ? options.getRealIp(request.request) : (request.request.headers.get("X-Forwarded-For") as string | undefined)?.split(",")[0] ?? "0.0.0.0";
-		const headers = request.request.headers;
+		const headers = request.request.headers as Headers;
 
 		loggerPushTags(executeId, {
 			from: "http-server",
 			url: fullurl.pathname,
-			fullurl: fullurl.pathname,
 			ip,
 			method: request.request.method,
 			// @ts-ignore
@@ -81,7 +80,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 				path: pathstr,
 				ip,
 				executeId,
-				fullurl,
+				fullurl: fullurl as URL,
 				request: request.request,
 				response,
 			};
@@ -221,7 +220,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 							cancel() {
 								control.close();
 							},
-						} as unknown as UnderlyingByteSource);
+						});
 					} else {
 						// node.js or others
 						stream = new ReadableStream({
@@ -285,7 +284,11 @@ export type MilkioHttpRequest = {
 export type MilkioHttpResponse = Mixin<
 	ResponseInit,
 	{
-		body: string | BodyInit;
+		body: string
+		| Blob
+		| FormData
+		| URLSearchParams
+		| ReadableStream<Uint8Array>;
 		status: number;
 		headers: Record<string, string>;
 	}
