@@ -1,6 +1,5 @@
 export type Steps<StageT extends Record<any, any>> = {
 	step: StepFunction<StageT>,
-	// run: <HandlerT extends (stage: StageT) => Record<any, any> | Promise<Record<any, any>>>(handler: HandlerT) => Promise<Awaited<ReturnType<HandlerT>>>,
 	run: () => Promise<Remove$<StageT>>,
 	runSync: () => Remove$<StageT>
 }
@@ -53,4 +52,4 @@ export const createStep = (
 		}
 		return () => { step: stepController.step };
 	}
-) as any as ({ step: Steps<{}>['step'] });
+) as any as (() => { step: Steps<{}>['step'] });
