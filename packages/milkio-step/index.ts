@@ -18,37 +18,39 @@ type ToEmptyObject<T> = T extends undefined | null | never
 	? T
 	: {};
 
-export const createStep = ((handler: (stage: any) => Promise<any>) => {
-	const stepController = {
-		_steps: [] as Array<(stage: any) => Promise<any>>,
-		step(handler: (stage: any) => Promise<any>) {
-			stepController._steps.push(handler);
-			return stepController;
-		},
-		async run() {
-			let stage = {};
-			for (const step of stepController._steps) {
-				stage = { ...stage, ...(await step(stage)) }
+export const createStep = (
+	() => {
+		const stepController = {
+			_steps: [] as Array<(stage: any) => Promise<any>>,
+			step(handler: (stage: any) => Promise<any>) {
+				stepController._steps.push(handler);
+				return stepController;
+			},
+			async run() {
+				let stage = {};
+				for (const step of stepController._steps) {
+					stage = { ...stage, ...(await step(stage)) }
+				}
+				let result: Record<any, any> = {};
+				for (const key in stage) {
+					const value = (stage as any)[key];
+					if (!key.startsWith('$')) result[key] = value;
+				}
+				return result;
+			},
+			runSync() {
+				let stage = {};
+				for (const step of stepController._steps) {
+					stage = { ...stage, ...(step(stage)) }
+				}
+				let result: Record<any, any> = {};
+				for (const key in stage) {
+					const value = (stage as any)[key];
+					if (!key.startsWith('$')) result[key] = value;
+				}
+				return result;
 			}
-			let result: Record<any, any> = {};
-			for (const key in stage) {
-				const value = (stage as any)[key];
-				if (!key.startsWith('$')) result[key] = value;
-			}
-			return result;
-		},
-		runSync() {
-			let stage = {};
-			for (const step of stepController._steps) {
-				stage = { ...stage, ...(step(stage)) }
-			}
-			let result: Record<any, any> = {};
-			for (const key in stage) {
-				const value = (stage as any)[key];
-				if (!key.startsWith('$')) result[key] = value;
-			}
-			return result;
 		}
+		return () => { step: stepController.step };
 	}
-	return stepController.step(handler);
-}) as any as Steps<{}>['step'];
+) as any as ({ step: Steps<{}>['step'] });
