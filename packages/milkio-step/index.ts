@@ -1,7 +1,8 @@
 export type Steps<StageT extends Record<any, any>> = {
 	step: StepFunction<StageT>,
 	// run: <HandlerT extends (stage: StageT) => Record<any, any> | Promise<Record<any, any>>>(handler: HandlerT) => Promise<Awaited<ReturnType<HandlerT>>>,
-	run: () => Promise<Remove$<StageT>>
+	run: () => Promise<Remove$<StageT>>,
+	runSync: () => Remove$<StageT>
 }
 type StepFunction<StageT extends Record<any, any>> = <HandlerT extends ((stage: Readonly<StageT>) => Record<any, any> | Promise<Record<any, any>>) >(handler: HandlerT) => Steps<Mixin<Awaited<StageT>, ToEmptyObject<Awaited<ReturnType<HandlerT>>>>>
 
@@ -28,6 +29,18 @@ export const createStep = ((handler: (stage: any) => Promise<any>) => {
 			let stage = {};
 			for (const step of stepController._steps) {
 				stage = { ...stage, ...(await step(stage)) }
+			}
+			let result: Record<any, any> = {};
+			for (const key in stage) {
+				const value = (stage as any)[key];
+				if (!key.startsWith('$')) result[key] = value;
+			}
+			return result;
+		},
+		runSync() {
+			let stage = {};
+			for (const step of stepController._steps) {
+				stage = { ...stage, ...(step(stage)) }
 			}
 			let result: Record<any, any> = {};
 			for (const key in stage) {
