@@ -17,7 +17,7 @@ type ToEmptyObject<T> = T extends undefined | null | never
 	? T
 	: {};
 
-export const createStep = () => {
+export const createStep = ((handler: (stage: any) => Promise<any>) => {
 	const stepController = {
 		_steps: [] as Array<(stage: any) => Promise<any>>,
 		step(handler: (stage: any) => Promise<any>) {
@@ -37,5 +37,5 @@ export const createStep = () => {
 			return result;
 		}
 	}
-	return stepController.step as any as Steps<{}>['step'];
-};
+	return stepController.step(handler);
+}) as any as Steps<{}>['step'];
