@@ -50,6 +50,7 @@ export const createStep = (
 				return result;
 			}
 		}
-		return () => { step: stepController.step };
+
+		return { step: stepController.step };
 	}
 ) as any as (() => { step: Steps<{}>['step'] });
