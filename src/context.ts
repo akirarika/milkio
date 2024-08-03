@@ -1,5 +1,5 @@
-import type { MilkioContext } from "milkio"
+import type { MilkioContext } from "milkio";
 
 export type Context = {
-  //
+	//
 } & MilkioContext;

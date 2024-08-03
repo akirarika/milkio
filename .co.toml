@@ -1,15 +1,2 @@
 ["general"]
-includes = ["co:bun", "co:git"]
-
-["publish:docker"]
-commands = ["publish:docker", "publ:docker", "p:docker"]
-scripts = [
-    '''
-    <% var now = day().format('YYYY-MM-DD-T-HH-mm-ss') %>
-    cd ./packages/milkio-docker
-    && docker build -t kecream/milkio:v1 -t kecream/milkio:<%= now %> -t kecream/milkio:latest .
-    && docker push kecream/milkio:latest
-    && docker push kecream/milkio:v1
-    && docker push kecream/milkio:<%= now %>
-''',
-]
+includes = ["co:bun"]

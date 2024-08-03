@@ -1,6 +1,0 @@
-["publish"]
-commands = ["publish", "publ"]
-scripts = ['''
-    docker build -t kecream/milkio:latest .
-    && docker push kecream/milkio:latest
-    ''']

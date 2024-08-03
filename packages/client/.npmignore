@@ -1,0 +1,6 @@
+# ignore
+node_modules
+/project/
+!/project/src/apps
+!/project/src/meta.d.ts
+!/project/src/fail-code.d.ts

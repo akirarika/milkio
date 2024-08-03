@@ -3,29 +3,26 @@
  */
 
 // api
-import type * as test from '../src/apps/test'
-import type * as cookbook from '../src/apps/cookbook'
-import type * as foo from '../src/apps/foo'
+import type * as apiTests$default from '../src/apps/api-tests/default'
+import type * as apiTests$stream from '../src/apps/api-tests/stream'
 
 import _apiValidator from './products/api-validator.ts'
 
 export default {
   apiValidator: _apiValidator,
   apiMethodsSchema: {
-    'test': () => ({ module: import('../src/apps/test') }),
-    'cookbook': () => ({ module: import('../src/apps/cookbook') }),
-    'foo': () => ({ module: import('../src/apps/foo') }),
+    'api-tests/default': () => ({ module: import('../src/apps/api-tests/default') }),
+    'api-tests/stream': () => ({ module: import('../src/apps/api-tests/stream') }),
     
   },
   apiMethodsTypeSchema: {
-    'test': undefined as unknown as typeof test,
-    'cookbook': undefined as unknown as typeof cookbook,
-    'foo': undefined as unknown as typeof foo,
+    'api-tests/default': undefined as unknown as typeof apiTests$default,
+    'api-tests/stream': undefined as unknown as typeof apiTests$stream,
     
   },
   apiTestsSchema: {
-    'test': () => ({ module: import('../src/apps/test') }),
-    'foo': () => ({ module: import('../src/apps/foo') }),
+    'api-tests/default': () => ({ module: import('../src/apps/api-tests/default') }),
+    'api-tests/stream': () => ({ module: import('../src/apps/api-tests/stream') }),
     
   },
 }

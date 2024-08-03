@@ -1,5 +1,5 @@
 {
-  "name": "client",
+  "name": "milkio-project-client",
   "version": "0.0.0",
   "module": "index.ts",
   "type": "module",
@@ -7,9 +7,9 @@
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5.4.3"
+    "typescript": "^5.5.0"
   },
   "dependencies": {
-    "milkio-client": "0.7.2"
+    "milkio-client": "^0.7.2"
   }
 }

@@ -1,5 +1,5 @@
-import { type MilkioMeta } from "milkio"
+import type { MilkioMeta } from "milkio";
 
 export type Meta = MilkioMeta & {
-  //
+	//
 };

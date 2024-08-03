@@ -26,7 +26,6 @@
     "allowJs": true
   },
   "include": [
-    "packages/**/*",
     "src/**/*",
     "generated/**/*",
     "*.ts",

@@ -1,8 +1,3 @@
-# 你好世界
+# Hello Cookbook
 
-Hello world
-
-```sh
-世界你好 # enenen
-```
-
+This document will be displayed on the homepage of your Cookbook.

@@ -1,15 +1,11 @@
 {
   "[typescript]": {
-    "editor.defaultFormatter": "vscode.typescript-language-features"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   "[json]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
   "editor.tabSize": 2,
   "editor.formatOnSave": true,
-  "editor.detectIndentation": true,
-  "cSpell.words": [
-    "TSON"
-  ],
-  "biome.enabled": false
+  "editor.detectIndentation": true
 }

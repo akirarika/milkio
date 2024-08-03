@@ -2,10 +2,9 @@
  * ⚠️This file is generated and modifications will be overwritten
  */
 export default {
-    generatedAt: 1720770093623,
+    generatedAt: 1722705268106,
     validate: {
-        'test': () => import('./apps/test.ts'),
-        'cookbook': () => import('./apps/cookbook.ts'),
-        'foo': () => import('./apps/foo.ts'),
+        'api-tests/default': () => import('./apps/api-tests/default.ts'),
+        'api-tests/stream': () => import('./apps/api-tests/stream.ts'),
     },
 };

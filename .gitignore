@@ -1,12 +1,13 @@
+# ignore
 node_modules
 /app
-/tmp
-**/.DS_Store
+/dist
+/dist-static
+/out
 /generated
 /packages/client/dist
 /packages/client/project
-/src/apps
-!/src/apps/cookbook.ts
-/src/databases
-!/src/apps/README.md
-/src/databases
+/.astro
+/.wrangler
+/.vercel
+/.env
