@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import schema from "../../../generated/api-schema";
-import { ExecuteResultFail, type MilkioApp } from "..";
+import { ExecuteResultFail, reject, type MilkioApp } from "..";
 import { handleCatchError } from "../utils/handle-catch-error.ts";
 
 export const executeApiTests = async <Path extends Array<keyof (typeof schema)["apiTestsSchema"]>>(app: MilkioApp, path: Path | string | true | 1 | undefined) => {
@@ -16,8 +16,8 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 	const startedAt = new Date().getTime();
 	const apiTestHooks = await import("../../../src/api-test.ts");
 	await apiTestHooks.default.onBootstrap();
-	const clientPackage = apiTestHooks.default?.client ? (await apiTestHooks.default?.client()) : undefined;
-	const results: Array<{ path: string, case: number, fail: boolean, failMessage?: string }> = [];
+	const clientPackage = apiTestHooks.default?.client ? await apiTestHooks.default?.client() : undefined;
+	const results: Array<{ path: string; case: number; fail: boolean; failMessage?: string }> = [];
 
 	if (!clientPackage) {
 		console.log(`🚨 For testing purposes, if the client package does not exist, subsequent operations might result in errors.`);
@@ -51,12 +51,14 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 		}
 	}
 
-	const client = clientPackage ? {
-		execute: async (options?: any) => clientPackage!.execute((path as any), options),
-		executeOther: async (path: any, options?: any) => clientPackage!.execute((path as any), options),
-		executeStream: async (options?: any) => clientPackage!.executeStream((path as any), options),
-		executeStreamOther: async (path: any, options?: any) => clientPackage!.executeStream((path as any), options),
-	} : undefined;
+	const client = clientPackage
+		? {
+				execute: async (options?: any) => clientPackage!.execute(path as any, options),
+				executeOther: async (path: any, options?: any) => clientPackage!.execute(path as any, options),
+				executeStream: async (options?: any) => clientPackage!.executeStream(path as any, options),
+				executeStreamOther: async (path: any, options?: any) => clientPackage!.executeStream(path as any, options),
+			}
+		: undefined;
 
 	console.log(chalk.hex("#0B346E")(`₋₋₋₋₋₋₋₋`));
 
@@ -77,20 +79,21 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 				await cs.handler({
 					...((await apiTestHooks.default.onBefore()) ?? {}),
 					log: (...args: Array<unknown>) => console.log(...args),
-					execute: async (options?: any) => app.execute((path as any), options),
-					executeOther: async (path: any, options?: any) => app.execute((path as any), options),
-					executeStream: async (options?: any) => app.executeStream((path as any), options),
-					executeStreamOther: async (path: any, options?: any) => app.executeStream((path as any), options),
+					execute: async (options?: any) => app.execute(path as any, options),
+					executeOther: async (path: any, options?: any) => app.execute(path as any, options),
+					executeStream: async (options?: any) => app.executeStream(path as any, options),
+					executeStreamOther: async (path: any, options?: any) => app.executeStream(path as any, options),
 					client,
 					randParams: () => app.randParams(path as any),
 					randOtherParams: (path: any) => app.randParams(path),
 					reject: (message?: string) => {
 						fail = true;
 						failMessage = message;
+						return reject("BUSINESS_FAIL", message ?? "test failed");
 					},
 				});
 			} catch (e: any) {
-				const response = handleCatchError(e, 'no-execute-id') as ExecuteResultFail;
+				const response = handleCatchError(e, "no-execute-id") as ExecuteResultFail;
 				fail = true;
 				failMessage = response.fail.message;
 			}
@@ -102,16 +105,16 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 			}
 			results.push({ path, case: i, fail, failMessage });
 			console.log(chalk.hex("#0B346E")(`₋₋₋₋₋₋₋₋`));
-			await new Promise(resolve => setTimeout(resolve, 64));
+			await new Promise((resolve) => setTimeout(resolve, 64));
 		}
 	}
 
 	const endedAt = new Date().getTime();
 
-	const failTotal = results.filter(r => r.fail).length;
+	const failTotal = results.filter((r) => r.fail).length;
 	const passTotal = results.length - failTotal;
 
 	console.log("");
 	if (failTotal === 0) console.log(chalk.hex("#1B813E")(`🥳 all tests ${chalk.hex("#1B813E")(`passed`)} ${chalk.hex("#999A9E")(`🌟 milkio testing took ${((endedAt - startedAt) / 1000).toFixed(2)}s\n`)}`));
-	else console.log(chalk.hex("#999A9E")(`🤗️️ ${failTotal} test${failTotal > 1 ? "s" : ""} ${chalk.hex("#D75455")(`failed`)}${passTotal > 0 ? `, and ${results.length - failTotal} ${chalk.hex("#1B813E")(`passed`)}` : ''} ${chalk.hex("#999A9E")(`🌟 milkio testing took ${((endedAt - startedAt) / 1000).toFixed(2)}s`)}`));
+	else console.log(chalk.hex("#999A9E")(`🤗️️ ${failTotal} test${failTotal > 1 ? "s" : ""} ${chalk.hex("#D75455")(`failed`)}${passTotal > 0 ? `, and ${results.length - failTotal} ${chalk.hex("#1B813E")(`passed`)}` : ""} ${chalk.hex("#999A9E")(`🌟 milkio testing took ${((endedAt - startedAt) / 1000).toFixed(2)}s`)}`));
 };

@@ -76,7 +76,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 			let pathstr = path.join("/") as keyof (typeof schema)["apiMethodsSchema"];
 
 			const detail = {
-				...options.mixin ?? {},
+				...(options.mixin ?? {}),
 				path: pathstr,
 				ip,
 				executeId,
@@ -98,7 +98,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 					if (!detail.response.body) {
 						if (!detail.response.headers["Content-Type"]) detail.response.headers["Content-Type"] = "application/json";
 						if (!detail.response.headers["Cache-Control"]) detail.response.headers["Cache-Control"] = "no-cache";
-						detail.response.body = `{"executeId":"${executeId}","success":false,"fail":{"code":"NOT_FOUND","message":"${failCode.NOT_FOUND()}"}}`;
+						detail.response.body = `{"executeId":"${executeId}","success":false,"fail":{"code":"NOT_FOUND","message":"${failCode.NOT_FOUND(undefined)}"}}`;
 					}
 					await MiddlewareEvent.handle("httpNotFound", [detail]);
 
@@ -124,7 +124,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 			// execute api
 			// after request middleware
 			await MiddlewareEvent.handle("afterHttpRequest", [headers, detail]);
-			const mode = (headers.get("Accept")) === "text/event-stream" ? "stream" : "execute";
+			const mode = headers.get("Accept") === "text/event-stream" ? "stream" : "execute";
 
 			const rawbody = await request.request.text();
 			loggerPushTags(executeId, {
@@ -158,7 +158,7 @@ export function defineHttpHandler(app: MilkioApp, options: ExecuteHttpServerOpti
 			}
 
 			if (mode === "execute") {
-				const result: string = await fn.validateResults(TSON.encode(resultsRaw.$result));
+				const result: string = JSON.stringify(TSON.encode(resultsRaw.$result));
 				if (!detail.response.body) detail.response.body = result;
 
 				// before response middleware
@@ -284,11 +284,7 @@ export type MilkioHttpRequest = {
 export type MilkioHttpResponse = Mixin<
 	ResponseInit,
 	{
-		body: string
-		| Blob
-		| FormData
-		| URLSearchParams
-		| ReadableStream<Uint8Array>;
+		body: string | Blob | FormData | URLSearchParams | ReadableStream<Uint8Array>;
 		status: number;
 		headers: Record<string, string>;
 	}

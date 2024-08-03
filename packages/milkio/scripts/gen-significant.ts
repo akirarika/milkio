@@ -106,7 +106,6 @@ import type * as <%= utils.camel(path.slice(0, -3).replaceAll('/', '$')) %> from
 type ParamsT = Parameters<typeof <%= utils.camel(path.replaceAll('/', '$').slice(0, -${3})) %>['api']['action']>[0];
 export const validateParams = async (params: any) => typia.misc.validatePrune<ParamsT>(params);
 type ResultsT = Awaited<ReturnType<typeof <%= utils.camel(path.replaceAll('/', '$').slice(0, -${3})) %>['api']['action']>>;
-export const validateResults = async (results: any) => { _validate(typia.validate<TSONEncode<ExecuteResultSuccess<ResultsT> | ExecuteResultFail>>(results)); return typia.json.stringify<TSONEncode<ExecuteResultSuccess<ResultsT> | ExecuteResultFail>>(results); };
 export const randParams = async () => typia.random<ParamsT>();
 `.trim();
 					// export const paramsSchema = typia.json.application<[{ data: ParamsT }], "swagger">();

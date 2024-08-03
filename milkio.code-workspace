@@ -1,0 +1,38 @@
+{
+	"folders": [
+		{
+			"name": "milkio",
+			"path": "."
+		},
+		{
+			"name": "milkio",
+			"path": "packages/milkio"
+		},
+		{
+			"name": "milkio-client",
+			"path": "packages/milkio-client"
+		},
+		{
+			"name": "milkio-drizzle",
+			"path": "packages/milkio-drizzle"
+		},
+		{
+			"name": "milkio-redis",
+			"path": "packages/milkio-redis"
+		},
+		{
+			"name": "milkio-static",
+			"path": "packages/milkio-static"
+		},
+		{
+			"path": "packages/milkio-static-for-node"
+		},
+		{
+			"path": "packages/milkio-step"
+		},
+		{
+			"path": "packages/milkio-template"
+		}
+	],
+	"settings": {}
+}

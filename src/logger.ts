@@ -10,7 +10,7 @@ export type LoggerTags = {
 
 export const loggerOptions = {
 	onSubmit: (tags, logs) => {
-		//
+		console.warn(tags.path);
 	},
 	onInsert: (options) => {
 		// Print the log to the console..

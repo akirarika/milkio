@@ -28,7 +28,7 @@ export async function _call(
 			success: false,
 			fail: {
 				code: "NOT_FOUND",
-				message: failCode.NOT_FOUND(),
+				message: failCode.NOT_FOUND(undefined),
 				data: undefined,
 			},
 		} as ExecuteResult<unknown>;
@@ -55,7 +55,7 @@ export async function _call(
 		path: path as string,
 		headers,
 		logger: options.logger,
-		detail: options?.detail ?? {} as any,
+		detail: options?.detail ?? ({} as any),
 		step: createStep() as any,
 	};
 
@@ -104,8 +104,8 @@ export async function _call(
 export async function _execute<Path extends keyof (typeof schema)["apiMethodsTypeSchema"], Result extends Awaited<ReturnType<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>>>(
 	path: Path,
 	options: {
-		params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string,
-		headers?: Record<string, string> | Headers,
+		params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string;
+		headers?: Record<string, string> | Headers;
 	} & ExecuteOptions,
 ): Promise<ExecuteResult<Result>> {
 	if (!options.headers) options.headers = {};
@@ -141,8 +141,8 @@ export async function _execute<Path extends keyof (typeof schema)["apiMethodsTyp
 export async function _executeToJson<Path extends keyof (typeof schema)["apiMethodsTypeSchema"]>(
 	path: Path,
 	options: {
-		params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string,
-		headers?: Record<string, string> | Headers,
+		params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string;
+		headers?: Record<string, string> | Headers;
 	} & ExecuteOptions,
 ): Promise<string> {
 	const resultsRaw = await _execute(path, options);
@@ -152,17 +152,15 @@ export async function _executeToJson<Path extends keyof (typeof schema)["apiMeth
 	} catch (error) {
 		throw reject("BUSINESS_FAIL", "This is the new API, which takes effect after restarting the server or saving any changes. It will be fixed in the future.");
 	}
-	const results = await fn.validateResults(TSON.encode(resultsRaw));
+	const results = JSON.stringify(TSON.encode(resultsRaw));
 	return results;
 }
-
-
 
 export async function _executeStream<Path extends keyof (typeof schema)["apiMethodsTypeSchema"], Result extends Awaited<ReturnType<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>>>(
 	path: Path,
 	options: {
-		params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string,
-		headers?: Record<string, string> | Headers,
+		params: Parameters<(typeof schema)["apiMethodsTypeSchema"][Path]["api"]["action"]>[0] | string;
+		headers?: Record<string, string> | Headers;
 	} & ExecuteOptions,
 ): Promise<ExecuteStreamResult<Path, Result>> {
 	if (!options.headers) options.headers = {};
@@ -183,7 +181,7 @@ export async function _executeStream<Path extends keyof (typeof schema)["apiMeth
 		logger,
 		onAfterHeaders: (headers) => {
 			loggerPushTags(executeId, {
-				requestHeaders: headerToPlainObject(headers)
+				requestHeaders: headerToPlainObject(headers),
 			});
 		},
 	});

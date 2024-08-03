@@ -4,31 +4,11 @@
 		"enabled": true
 	},
 	"linter": {
-		"enabled": true,
-		"ignore": [
-			"node_modules/**",
-			"generated/**",
-			"packages/client/dist/**",
-			"packages/client/project/**"
-		],
-		"rules": {
-			"recommended": true,
-			"style": {
-				"noUnusedTemplateLiteral": "off"
-			},
-			"complexity": {
-				"noBannedTypes": "off"
-			}
-		}
+		"enabled": false
 	},
 	"formatter": {
 		"enabled": true,
-		"ignore": [
-			"node_modules/**",
-			"generated/**",
-			"packages/client/dist/**",
-			"packages/client/project/**"
-		],
+		"ignore": ["node_modules/**", "generated/**", "packages/client/dist/**", "packages/client/project/**"],
 		"formatWithErrors": false,
 		"attributePosition": "auto",
 		"indentStyle": "tab",

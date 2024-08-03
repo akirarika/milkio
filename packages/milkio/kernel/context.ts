@@ -11,7 +11,7 @@ export type MilkioContext = {
 	 * During testing or when calling between microservices, some or all of the values may be undefined
 	 */
 	detail: FrameworkHttpDetail;
-	step: Steps<{}>['step'];
+	step: Steps<{}>["step"];
 };
 
 export type FrameworkHttpDetail = {
@@ -24,12 +24,12 @@ export type FrameworkHttpDetail = {
 };
 
 export type Steps<StageT extends Record<any, any>> = {
-	step: StepFunction<StageT>,
+	step: StepFunction<StageT>;
 	// run: <HandlerT extends (stage: StageT) => Record<any, any> | Promise<Record<any, any>>>(handler: HandlerT) => Promise<Awaited<ReturnType<HandlerT>>>,
-	run: () => Promise<Remove$<StageT>>
-}
+	run: () => Promise<Remove$<StageT>>;
+};
 
-type StepFunction<StageT extends Record<any, any>> = <HandlerT extends ((stage: Readonly<StageT>) => Record<any, any> | Promise<Record<any, any>>) >(handler: HandlerT) => Steps<Mixin<Awaited<StageT>, ToEmptyObject<Awaited<ReturnType<HandlerT>>>>>
+type StepFunction<StageT extends Record<any, any>> = <HandlerT extends (stage: Readonly<StageT>) => Record<any, any> | Promise<Record<any, any>>>(handler: HandlerT) => Steps<Awaited<StageT> & ToEmptyObject<Awaited<ReturnType<HandlerT>>>>;
 
 export const createStep = () => {
 	const stepController = {
@@ -41,15 +41,15 @@ export const createStep = () => {
 		async run() {
 			let stage = {};
 			for (const step of stepController._steps) {
-				stage = { ...stage, ...(await step(stage)) }
+				stage = { ...stage, ...(await step(stage)) };
 			}
 			let result: Record<any, any> = {};
 			for (const key in stage) {
 				const value = (stage as any)[key];
-				if (!key.startsWith('$')) result[key] = value;
+				if (!key.startsWith("$")) result[key] = value;
 			}
 			return result;
-		}
-	}
-	return stepController.step as any as Steps<{}>['step'];
+		},
+	};
+	return stepController.step as any as Steps<{}>["step"];
 };

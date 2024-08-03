@@ -1,28 +1,28 @@
 {
-  "name": "milkio-project",
-  "type": "module",
-  "private": true,
-  "module": "index.ts",
-  "scripts": {
-    "start": "bun run ./run-serve.ts",
-    "dev": "bun run --inspect ./run-serve.ts",
-    "api-test": "bun run ./run-api-test.ts",
-    "command": "bun run ./run-command.ts",
-    "build": "bun build ./run-serve.ts --sourcemap=external --outdir=./dist --target=bun --splitting --minify",
-    "milkio": "bun run ./node_modules/milkio/c.ts"
-  },
-  "trustedDependencies": [],
-  "dependencies": {
-    "biome": "^0.3.3",
-    "client": "./packages/client",
-    "milkio": "./packages/milkio",
-    "milkio-project-client": "./packages/client",
-    "milkio-template": "^0.0.2",
-    "typia": "^6.0.3"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "1.8.0",
-    "@types/bun": "latest",
-    "typescript": "^5.5.0"
-  }
+	"name": "milkio-project",
+	"type": "module",
+	"private": true,
+	"module": "index.ts",
+	"scripts": {
+		"start": "bun run ./run-serve.ts",
+		"dev": "bun run --inspect ./run-serve.ts",
+		"api-test": "bun run ./run-api-test.ts",
+		"command": "bun run ./run-command.ts",
+		"build": "bun build ./run-serve.ts --sourcemap=external --outdir=./dist --target=bun --splitting --minify",
+		"milkio": "bun run ./node_modules/milkio/c.ts"
+	},
+	"trustedDependencies": [],
+	"dependencies": {
+		"biome": "^0.3.3",
+		"client": "./packages/client",
+		"milkio": "./packages/milkio",
+		"milkio-project-client": "./packages/client",
+		"milkio-template": "^0.0.2",
+		"typia": "^6.7.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.8.0",
+		"@types/bun": "latest",
+		"typescript": "^5.5.0"
+	}
 }
