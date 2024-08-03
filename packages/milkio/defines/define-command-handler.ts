@@ -27,13 +27,13 @@ export function defineCommandHandler(app: MilkioApp, options: CommandOptions = {
 			}
 		}
 		if (argv.length === 2) params.path = `$/default`;
-		else params.path = `$/${argv[2] ?? 'default'}`;
+		else params.path = `$/${argv[2] ?? "default"}`;
 
 		// @ts-ignore
 		const result = await app.execute(params.path as any, { params: params });
 		if (!result.success) {
 			if (result.fail.code === "NOT_FOUND") {
-				if (options.notFoundHandler) await options.notFoundHandler({ ...params, name: argv.length === 2 ? "default" : (argv[2] ?? 'default') });
+				if (options.notFoundHandler) await options.notFoundHandler({ ...params, name: argv.length === 2 ? "default" : argv[2] ?? "default" });
 				return;
 			}
 			if (result.fail.code !== "INTERNAL_SERVER_ERROR") {

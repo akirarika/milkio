@@ -33,7 +33,7 @@ export const test = defineApiTest(api, [
 				console.log("chunk:", chunk);
 			}
 			const result = getResult(); // getResult 一定要在流读取完成后调用
-			if (!result.success) return test.reject(`这里是你的 API 测试失败的原因`);
+			if (!result.success) throw test.reject(`这里是你的 API 测试失败的原因`);
 		},
 	},
 ]);

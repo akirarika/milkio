@@ -45,7 +45,7 @@ export function handleCatchError(error: any, executeId: ExecuteId): ExecuteResul
 	}
 
 	loggerPushTags(executeId, {
-		fail: result
+		fail: result,
 	});
 
 	return result;

@@ -33,7 +33,7 @@ export const test = defineApiTest(api, [
 				},
 			});
 
-			if (!result.success) return test.reject("The result was not success");
+			if (!result.success) throw test.reject("The result was not success");
 		},
 	},
 ]);

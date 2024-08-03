@@ -10,22 +10,11 @@ export type Fail<FailCode extends keyof typeof failCode> = {
 	message: string;
 	data: Parameters<(typeof failCode)[FailCode]>[0];
 };
-export type ExecuteParams<Path extends keyof ApiSchema["apiMethodsSchema"]> =
-	Awaited<
-		Parameters<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>[0]
-	>;
-export type ExecuteMethodResult<
-	Path extends keyof ApiSchema["apiMethodsTypeSchema"],
-> = Awaited<
-	ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>
->;
-export type ExecuteResult<
-	Path extends keyof ApiSchema["apiMethodsTypeSchema"],
-> =
+export type ExecuteParams<Path extends keyof ApiSchema["apiMethodsSchema"]> = Awaited<Parameters<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>[0]>;
+export type ExecuteMethodResult<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> = Awaited<ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>>;
+export type ExecuteResult<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> =
 	| {
 			success: true;
-			data: Awaited<
-				ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>
-			>;
+			data: Awaited<ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>>;
 	  }
 	| { success: false; fail: Fail<keyof typeof failCode> };

@@ -2,7 +2,7 @@ export function defineConfig<T>(handler: (options: { config: typeof configFn }) 
 	const result = handler({ config: configFn });
 	if (!result) throw new Error("defineConfig must return a value, Did you forget to add a return statement?");
 	if (typeof result !== "object" || Array.isArray(result)) throw new Error("defineConfig must return an object.");
-	if ("environment" in result && "done" in result && typeof result["environment"] === "function" && typeof result["done"] === "function") throw new Error("Did you accidentally return the config method without adding \`.done()\`?");
+	if ("environment" in result && "done" in result && typeof result["environment"] === "function" && typeof result["done"] === "function") throw new Error("Did you accidentally return the config method without adding `.done()`?");
 	return result;
 }
 

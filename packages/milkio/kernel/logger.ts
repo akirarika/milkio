@@ -40,7 +40,7 @@ export type Logger = {
 };
 
 export const loggerController = (() => {
-	const logs = new Map<ExecuteId, { __LOG_DETAIL__: Array<LoggerItem>;[key: string]: any }>();
+	const logs = new Map<ExecuteId, { __LOG_DETAIL__: Array<LoggerItem>; [key: string]: any }>();
 
 	const loggerPushTags = (executeId: ExecuteId, tags: Partial<MilkioLoggerTags & LoggerTags>) => {
 		if (!logs.has(executeId)) logs.set(executeId, { __LOG_DETAIL__: [] });

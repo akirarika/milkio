@@ -16,7 +16,6 @@ export const milkioStatic = (options: MilkioStaticOptions = {}) => {
 	if (!options.index) options.index = "index.html";
 	if (!options.notFound) options.notFound = "404.html";
 
-
 	// Node.js
 	return defineMiddleware({
 		httpNotFound: async (detail): Promise<void> => {
@@ -28,16 +27,13 @@ export const milkioStatic = (options: MilkioStaticOptions = {}) => {
 			if (existsSync(join(options.assets!, detail.fullurl.pathname)) && lstatSync(join(options.assets!, detail.fullurl.pathname)).isFile()) {
 				path = join(options.assets!, detail.fullurl.pathname);
 				file = await readFile(path);
-			}
-			else if (existsSync(join(options.assets!, detail.fullurl.pathname, options.index!))) {
+			} else if (existsSync(join(options.assets!, detail.fullurl.pathname, options.index!))) {
 				path = join(options.assets!, detail.fullurl.pathname, options.index!);
 				file = await readFile(path);
-			}
-			else if (existsSync(join(options.assets!, options.notFound!))) {
+			} else if (existsSync(join(options.assets!, options.notFound!))) {
 				path = join(options.assets!, options.notFound!);
 				file = await readFile(path);
-			}
-			else {
+			} else {
 				detail.response.status = 404;
 				detail.response.headers["Cache-Control"] = "no-store";
 				return; // 404 not found

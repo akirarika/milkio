@@ -46,7 +46,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 				async removeItem(key) {
 					mapStorage.delete(key);
 				},
-			}
+			};
 		} else if (!options.storage) {
 			options.storage = localStorage;
 		}
@@ -109,7 +109,7 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 
 				const body = TSON.stringify(executeOptions.params) ?? "";
 
-				let result: { value: Record<any, any> }
+				let result: { value: Record<any, any> };
 				try {
 					const response = await new Promise<string>(async (resolve, reject) => {
 						const timeout = executeOptions?.timeout ?? options?.timeout ?? 6000;
@@ -132,12 +132,12 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 							success: false,
 							fail: {
 								fromClient: true,
-								code: 'NETWORK_ERROR',
-								message: '',
+								code: "NETWORK_ERROR",
+								message: "",
 								data: undefined,
 							},
-						}
-					}
+						},
+					};
 					return { ...result.value } as any;
 				}
 
@@ -152,48 +152,51 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 				path: Path,
 				eventOptions: { params: Params } & ExecuteStreamOptions,
 			): {
-				stream: AsyncGenerator<MilkioEvent<Path>>,
-				getResult: () => (
+				stream: AsyncGenerator<MilkioEvent<Path>>;
+				getResult: () =>
 					| {
-						success: true;
-						executeId: string;
-					})
+							success: true;
+							executeId: string;
+					  }
 					| {
-						success: false;
-						executeId: string;
-						fromClient: true | undefined,
-						fail: {
-							code: Exclude<keyof FailCode, "TYPE_SAFE_ERROR">;
-							message: string;
-							data: any;
-						};
-					}
-					| {
-						success: false;
-						executeId: string;
-						fail: {
-							code: "TYPE_SAFE_ERROR";
+							success: false;
+							executeId: string;
 							fromClient: true | undefined;
-							message: string;
-							data: {
-								path: FlattenKeys<TypeSafeErrorPath> | "$input",
-								expected: string,
-								value: any
-							}
-						};
-					}
+							fail: {
+								code: Exclude<keyof FailCode, "TYPE_SAFE_ERROR">;
+								message: string;
+								data: any;
+							};
+					  }
+					| {
+							success: false;
+							executeId: string;
+							fail: {
+								code: "TYPE_SAFE_ERROR";
+								fromClient: true | undefined;
+								message: string;
+								data: {
+									path: FlattenKeys<TypeSafeErrorPath> | "$input";
+									expected: string;
+									value: any;
+								};
+							};
+					  };
 			} {
 				if (eventOptions.headers === undefined) eventOptions.headers = {};
 				eventOptions.headers = { ...eventOptions.headers };
-				if (eventOptions.headers['Accept'] === undefined) eventOptions.headers['Accept'] = 'text/event-stream';
+				if (eventOptions.headers["Accept"] === undefined) eventOptions.headers["Accept"] = "text/event-stream";
 				if (eventOptions.headers["Content-Type"] === undefined) eventOptions.headers["Content-Type"] = "application/json";
-				const url = async () => ((await baseUrl) + (path as string));
+				const url = async () => (await baseUrl) + (path as string);
 				const body = TSON.stringify(eventOptions.params) ?? "";
-				const stacks: Map<number, {
-					promise: Promise<IteratorResult<any>>;
-					resolve: (value: IteratorResult<any>) => void;
-					reject: (reason: any) => void;
-				}> = new Map();
+				const stacks: Map<
+					number,
+					{
+						promise: Promise<IteratorResult<any>>;
+						resolve: (value: IteratorResult<any>) => void;
+						reject: (reason: any) => void;
+					}
+				> = new Map();
 				let stacksIndex: number = 0;
 				let iteratorIndex: number = 0;
 				let streamResult: any = undefined;
@@ -211,28 +214,28 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 							stacks.set(index, stack);
 						}
 					}
-				}
+				};
 
 				let curRequestController: AbortController;
 
 				async function create() {
 					curRequestController = new $abort();
-					curRequestController.signal.addEventListener('abort', () => iterator.return());
+					curRequestController.signal.addEventListener("abort", () => iterator.return());
 					try {
 						for (const m of _beforeExecuteMiddlewares) {
 							await m.middleware({ path: path as string, params: eventOptions.params, headers: eventOptions.headers!, storage: options.storage as ClientStorage });
 						}
 
 						const response = await $fetch(await url(), {
-							method: 'POST',
+							method: "POST",
 							headers: eventOptions.headers,
 							body: body,
 							signal: curRequestController.signal,
 						});
 
-						const contentType = response.headers.get('Content-Type');
-						if (!contentType?.startsWith('text/event-stream')) {
-							throw new Error(`Expected content-type to be ${'text/event-stream'}, Actual: ${contentType}`);
+						const contentType = response.headers.get("Content-Type");
+						if (!contentType?.startsWith("text/event-stream")) {
+							throw new Error(`Expected content-type to be ${"text/event-stream"}, Actual: ${contentType}`);
 						}
 
 						await getBytes(response.body!, getLines(getMessages(onmessage)));
@@ -251,14 +254,13 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 				void create();
 
 				const iterator = {
-					...{
+					...({
 						next(): Promise<IteratorResult<unknown>> {
 							const index = ++iteratorIndex;
 							if (stacks.has(index - 2)) stacks.delete(index - 2);
 							if (stacks.has(index)) {
 								return stacks.get(index)!.promise;
-							}
-							else {
+							} else {
 								const stack = withResolvers<IteratorResult<any>>();
 								stacks.set(index, stack);
 								return stack.promise;
@@ -267,24 +269,24 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 						async return(): Promise<IteratorResult<void>> {
 							if (!curRequestController.signal.aborted) curRequestController.abort();
 							for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined });
-							return { done: true, value: undefined }
+							return { done: true, value: undefined };
 						},
 						async throw(err: any): Promise<IteratorResult<void>> {
 							streamResult = {
 								success: false,
-								executeId: streamResult?.executeId ?? '',
+								executeId: streamResult?.executeId ?? "",
 								fail: {
 									code: "NETWORK_ERROR",
 									message: "Network Error",
 									fromClient: true,
 									data: err,
-								}
+								},
 							};
 							if (!curRequestController.signal.aborted) curRequestController.abort();
 							for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined });
-							return { done: true, value: undefined }
-						}
-					} satisfies AsyncIterator<unknown>,
+							return { done: true, value: undefined };
+						},
+					} satisfies AsyncIterator<unknown>),
 					[Symbol.asyncIterator]() {
 						return this;
 					},
@@ -297,37 +299,36 @@ export const defineMilkioClient = <ApiSchema extends ApiSchemaExtend, FailCode e
 		type ExecuteParams<Path extends keyof ApiSchema["apiMethodsSchema"]> = Awaited<Parameters<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>[0]>;
 		type ExecuteResult<Path extends keyof ApiSchema["apiMethodsTypeSchema"], TypeSafeErrorPath extends ExecuteParams<Path> = ExecuteParams<Path>> =
 			| {
-				success: true;
-				executeId: string;
-				data: Awaited<ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>>;
-			}
+					success: true;
+					executeId: string;
+					data: Awaited<ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>>;
+			  }
 			| {
-				success: false;
-				executeId: string;
-				fail: {
-					code: "TYPE_SAFE_ERROR";
-					fromClient: true | undefined;
-					message: string;
-					data: {
-						path: FlattenKeys<TypeSafeErrorPath> | "$input",
-						expected: string,
-						value: any
-					}
-				};
-			}
+					success: false;
+					executeId: string;
+					fail: {
+						code: "TYPE_SAFE_ERROR";
+						fromClient: true | undefined;
+						message: string;
+						data: {
+							path: FlattenKeys<TypeSafeErrorPath> | "$input";
+							expected: string;
+							value: any;
+						};
+					};
+			  }
 			| {
-				success: false;
-				executeId: string;
-				fail: {
-					code: Exclude<keyof FailCode, "TYPE_SAFE_ERROR">;
-					fromClient: true | undefined;
-					message: string;
-					data: any;
-				};
-			};
+					success: false;
+					executeId: string;
+					fail: {
+						code: Exclude<keyof FailCode, "TYPE_SAFE_ERROR">;
+						fromClient: true | undefined;
+						message: string;
+						data: any;
+					};
+			  };
 		type MilkioEventResult<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> = Awaited<ReturnType<ApiSchema["apiMethodsTypeSchema"][Path]["api"]["action"]>>;
 		type MilkioEvent<Path extends keyof ApiSchema["apiMethodsTypeSchema"]> = Awaited<GeneratorGeneric<MilkioEventResult<Path>>>;
-
 
 		return client;
 	};
@@ -398,10 +399,8 @@ export type ExecuteResultSuccess<Result> = {
 
 export type GeneratorGeneric<T> = T extends AsyncGenerator<infer I> ? I : never;
 
-export type FlattenKeys<T extends any, Prefix extends string = ''> = {
-	[K in keyof T]: T[K] extends object
-	? FlattenKeys<T[K], `${Prefix}${Exclude<K, symbol>}.`>
-	: `$input.${Prefix}${Exclude<K, symbol>}`
+export type FlattenKeys<T extends any, Prefix extends string = ""> = {
+	[K in keyof T]: T[K] extends object ? FlattenKeys<T[K], `${Prefix}${Exclude<K, symbol>}.`> : `$input.${Prefix}${Exclude<K, symbol>}`;
 }[keyof T];
 
 // *** This part of the code is based on `@microsoft/fetch-event-source` rewrite, thanks to the work of Microsoft *** //
@@ -416,11 +415,11 @@ export interface EventSourceMessage {
 }
 
 /**
-* Converts a ReadableStream into a callback pattern.
-* @param stream The input ReadableStream.
-* @param onChunk A function that will be called on each new byte chunk in the stream.
-* @returns {Promise<void>} A promise that will be resolved when the stream closes.
-*/
+ * Converts a ReadableStream into a callback pattern.
+ * @param stream The input ReadableStream.
+ * @param onChunk A function that will be called on each new byte chunk in the stream.
+ * @returns {Promise<void>} A promise that will be resolved when the stream closes.
+ */
 export async function getBytes(stream: ReadableStream<Uint8Array>, onChunk: (arr: Uint8Array) => void) {
 	const reader = stream.getReader();
 	let result: ReadableStreamReadResult<Uint8Array>;
@@ -436,12 +435,12 @@ const enum ControlChars {
 	Colon = 58,
 }
 
-/** 
-* Parses arbitary byte chunks into EventSource line buffers.
-* Each line should be of the format "field: value" and ends with \r, \n, or \r\n. 
-* @param onLine A function that will be called on each new EventSource line.
-* @returns A function that should be called for each incoming byte chunk.
-*/
+/**
+ * Parses arbitary byte chunks into EventSource line buffers.
+ * Each line should be of the format "field: value" and ends with \r, \n, or \r\n.
+ * @param onLine A function that will be called on each new EventSource line.
+ * @returns A function that should be called for each incoming byte chunk.
+ */
 export function getLines(onLine: (line: Uint8Array, fieldLength: number) => void) {
 	let buffer: Uint8Array | undefined;
 	let position: number; // current read position
@@ -475,7 +474,8 @@ export function getLines(onLine: (line: Uint8Array, fieldLength: number) => void
 			for (; position < bufLength && lineEnd === -1; ++position) {
 				switch (buffer[position]) {
 					case ControlChars.Colon:
-						if (fieldLength === -1) { // first colon in line
+						if (fieldLength === -1) {
+							// first colon in line
 							fieldLength = position - lineStart;
 						}
 						break;
@@ -508,19 +508,17 @@ export function getLines(onLine: (line: Uint8Array, fieldLength: number) => void
 			buffer = buffer.subarray(lineStart);
 			position -= lineStart;
 		}
-	}
+	};
 }
 
-/** 
-* Parses line buffers into EventSourceMessages.
-* @param onId A function that will be called on each `id` field.
-* @param onRetry A function that will be called on each `retry` field.
-* @param onMessage A function that will be called on each message.
-* @returns A function that should be called for each incoming line buffer.
-*/
-export function getMessages(
-	onMessage?: (msg: EventSourceMessage) => void
-) {
+/**
+ * Parses line buffers into EventSourceMessages.
+ * @param onId A function that will be called on each `id` field.
+ * @param onRetry A function that will be called on each `retry` field.
+ * @param onMessage A function that will be called on each message.
+ * @returns A function that should be called for each incoming line buffer.
+ */
+export function getMessages(onMessage?: (msg: EventSourceMessage) => void) {
 	let message = newMessage();
 	const decoder = new TextDecoder();
 
@@ -530,7 +528,8 @@ export function getMessages(
 			// empty line denotes end of message. Trigger the callback and start a new message:
 			onMessage?.(message);
 			message = newMessage();
-		} else if (fieldLength > 0) { // exclude comments and lines with no values
+		} else if (fieldLength > 0) {
+			// exclude comments and lines with no values
 			// line is of format "<field>:<value>" or "<field>: <value>"
 			// https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation
 			const field = decoder.decode(line.subarray(0, fieldLength));
@@ -538,16 +537,14 @@ export function getMessages(
 			const value = decoder.decode(line.subarray(valueOffset));
 
 			switch (field) {
-				case 'data':
+				case "data":
 					// if this message already has data, append the new value to the old.
 					// otherwise, just set to the new value:
-					message.data = message.data
-						? message.data + '\n' + value
-						: value; // otherwise, 
+					message.data = message.data ? message.data + "\n" + value : value; // otherwise,
 					break;
 			}
 		}
-	}
+	};
 }
 
 function concat(a: Uint8Array, b: Uint8Array) {
@@ -559,7 +556,7 @@ function concat(a: Uint8Array, b: Uint8Array) {
 
 function newMessage(): EventSourceMessage {
 	return {
-		data: '',
+		data: "",
 	};
 }
 

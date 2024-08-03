@@ -53,8 +53,8 @@ export type MilkioConfig = {
 export type ExecuteResult<Result> = ExecuteResultSuccess<Result> | ExecuteResultFail;
 
 export type ExecuteStreamResult<Path, Result> = {
-	getResult: () => ExecuteResultSuccess<Result> | ExecuteResultFail,
-	stream: AsyncGenerator<MilkioEvent<Path>>
+	getResult: () => ExecuteResultSuccess<Result> | ExecuteResultFail;
+	stream: AsyncGenerator<MilkioEvent<Path>>;
 };
 
 export type ExecuteResultSuccess<Result> = {
@@ -94,12 +94,7 @@ export type ExecuteCoreOptions = Mixin<
 
 export type MilkioEvent<Result> = Awaited<GeneratorGeneric<ExecuteResultSuccess<Result>["data"] extends { $type: any } ? ExecuteResultSuccess<Result>["data"]["$type"] : never>>;
 
-
-export type ToEmptyObject<T> = T extends undefined | null | never
-	? {}
-	: T extends object
-	? T
-	: {};
+export type ToEmptyObject<T> = T extends undefined | null | never ? {} : T extends object ? T : {};
 
 export type Remove$<T> = {
 	[K in keyof T as K extends `$${string}` ? never : K]: T[K];
