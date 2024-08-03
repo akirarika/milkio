@@ -563,15 +563,12 @@ function newMessage(): EventSourceMessage {
 	};
 }
 
-function withResolvers<T>(): {
-	promise: Promise<T>;
-	resolve: (value?: T | PromiseLike<T> | undefined) => void;
-	reject: (reason?: any) => void;
-} {
-	// @ts-ignore
-	var a, b, c = new (this)(function (resolve, reject) {
-		a = resolve;
-		b = reject;
+export function withResolvers<T = any>(): PromiseWithResolvers<T> {
+	let resolve: PromiseWithResolvers<T>["resolve"];
+	let reject: PromiseWithResolvers<T>["reject"];
+	const promise = new Promise<T>((res, rej) => {
+		resolve = res;
+		reject = rej;
 	});
-	return { resolve: a, reject: b, promise: c };
-};
+	return { promise, resolve: resolve!, reject: reject! };
+}
