@@ -31,7 +31,7 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 		for (let index = 0; index < 160; index++) {
 			let response;
 			try {
-				response = await fetch(typeof clientPackage.options.baseUrl === "string" ? clientPackage.options.baseUrl : await clientPackage.options.baseUrl(), { method: "HEAD" });
+				response = await fetch(typeof clientPackage.options.baseUrl === "string" ? clientPackage.options.baseUrl : await clientPackage.options.baseUrl(), { method: "GET" });
 			} catch (error: any) {
 				if (error?.status && error.status < 500) {
 					done = true;
@@ -39,6 +39,8 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 				}
 			}
 			if (response?.status && response.status < 500) {
+				console.warn(response, response.status);
+
 				done = true;
 				break;
 			}
@@ -46,7 +48,7 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 			continue;
 		}
 		if (!done) {
-			console.log(`🚨 The server startup exceeded the maximum waiting time (1600ms).`);
+			console.log(`🚨 The server startup exceeded the maximum waiting time (16000ms).`);
 			console.log(`This is likely an error encountered during the startup of the Milkio Server. Please check the 'Milkio Run & Watch' tab in your VS Code terminal panel. This is only a warning, and the tests will continue, but there is a chance they might fail due to network issues.\n`);
 		}
 	}

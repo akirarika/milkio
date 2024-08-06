@@ -1,14 +1,1 @@
-{
-    "milkio step": {
-        "prefix": ".step",
-        "body": [
-            "/**",
-            " * ${1:Step Name}",
-            " */",
-            ".step(${3:async }(stage) => {",
-            "  ${2://}",
-            "  return {};",
-            "})"
-        ]
-    }
-}
+{}
