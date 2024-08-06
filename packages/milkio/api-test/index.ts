@@ -39,12 +39,11 @@ export const executeApiTests = async <Path extends Array<keyof (typeof schema)["
 				}
 			}
 			if (response?.status && response.status < 500) {
-				console.warn(response, response.status);
-
 				done = true;
 				break;
 			}
-			await new Promise((resolve) => setTimeout(resolve, 100));
+
+			await new Promise((resolve) => setTimeout(resolve, 60));
 			continue;
 		}
 		if (!done) {
