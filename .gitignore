@@ -11,3 +11,4 @@ node_modules
 /.wrangler
 /.vercel
 /.env
+/generated
