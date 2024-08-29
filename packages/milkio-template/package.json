@@ -1,5 +1,5 @@
 {
-  "name": "milkio-template",
+  "name": "@milkio/template",
   "module": "index.ts",
   "type": "module",
   "version": "0.0.2",
@@ -7,10 +7,7 @@
     "typescript": "*",
     "@types/bun": "latest"
   },
-  "files": [
-    "index.ts",
-    "LICENSE"
-  ],
+  "files": ["index.ts", "LICENSE"],
   "dependencies": {
     "@poech/camel-hump-under": "^1.1.0",
     "@southern-aurora/tson": "*",

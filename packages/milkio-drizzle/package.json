@@ -1,10 +1,10 @@
 {
-	"name": "milkio-drizzle",
-	"module": "index.ts",
-	"version": "0.1.6",
-	"type": "module",
-	"devDependencies": {
-		"typescript": "*",
-		"@types/bun": "latest"
-	}
+  "name": "@milkio/drizzle",
+  "module": "index.ts",
+  "version": "0.1.6",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "*",
+    "@types/bun": "latest"
+  }
 }

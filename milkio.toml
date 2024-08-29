@@ -1,3 +1,6 @@
+[general]
+developPort = 9001
+
 [menubar]
 commands = []
 

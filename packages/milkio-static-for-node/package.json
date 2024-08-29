@@ -1,5 +1,5 @@
 {
-  "name": "milkio-static-for-node",
+  "name": "@milkio/static-for-node",
   "module": "index.ts",
   "type": "module",
   "version": "0.0.3",
