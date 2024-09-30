@@ -1,0 +1,14 @@
+[general]
+cookbookPort = 8000
+
+[projects.milkio-project]
+type = "milkio"
+port = 9000
+start = ["bun", "run", "index.ts"]
+build = ["bun", "run", ".milkio/bun-build.ts"]
+
+[projects.vite-project]
+type = "other"
+port = 4173
+start = ["bun", "run", "dev"]
+build = ["bun", "run", ".milkio/bun-build.ts"]

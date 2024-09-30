@@ -1,15 +1,4 @@
 # ignore
+/projects/*/.milkio/generated
 node_modules
-/app
-/dist
-/dist-static
-/out
-/generated
-/packages/client/dist
-/packages/client/project
-/.astro
-/.wrangler
-/.vercel
-/.env
-/generated
 *.old

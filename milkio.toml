@@ -1,9 +1,0 @@
-[general]
-developPort = 9001
-
-[menubar]
-commands = []
-
-[generate]
-significant = []
-insignificant = []

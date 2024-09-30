@@ -2,13 +2,21 @@
   "name": "milkio-project",
   "type": "module",
   "private": true,
-  "workspaces": ["packages/milkio-core"],
+  "workspaces": ["projects/*", "packages/milkio"],
   "module": "index.ts",
   "scripts": {
-    "milkio": "bun i ./packages/milkio && ./packages/milkio/develop.ts && sleep 1 && milkio"
+    "dev": "bun i && ./packages/cookbook/develop.ts && sleep 2 && cookbook",
+    "build": "bun i && ./packages/cookbook/develop.ts && sleep 2 && cookbook build",
+    "test": "vitest --max-concurrency=1"
   },
   "trustedDependencies": [],
-  "dependencies": { "milkio": "./packages/milkio" },
+  "dependencies": {
+    "@milkio/cookbook": "./packages/cookbook",
+    "@ryoppippi/unplugin-typia": "^1.0.6",
+    "milkio": "./packages/milkio",
+    "typia": "^6.10.2",
+    "vitest": "2.0.5"
+  },
   "devDependencies": {
     "@biomejs/biome": "1.8.0"
   }

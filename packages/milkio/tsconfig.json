@@ -1,32 +1,30 @@
 {
   "compilerOptions": {
-    // Enable latest features
+    "rootDir": "./../../../",
     "lib": [
       "ESNext"
     ],
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleDetection": "force",
-    "jsx": "react-jsx",
-    "allowJs": true,
-    // Bundler mode
+    "module": "esnext",
+    "target": "esnext",
     "moduleResolution": "bundler",
+    "moduleDetection": "force",
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
     "noEmit": true,
-    // Best practices
+    "composite": true,
     "strict": true,
+    "downlevelIteration": true,
     "skipLibCheck": true,
-    "noFallthroughCasesInSwitch": true,
-    // Some stricter flags (disabled by default)
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false,
-    "plugins": [
-      {
-        "transform": "typia/lib/transform"
-      }
+    "jsx": "react-jsx",
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowJs": true,
+    "types": [
+      "bun-types"
     ],
-    "strictNullChecks": true
-  }
+    "paths": {
+      "../../*": [
+        "../../*"
+      ]
+    }
+  },
 }

@@ -1,0 +1,17 @@
+{
+  "name": "milkio-project",
+  "type": "module",
+  "private": true,
+  "module": "index.ts",
+  "scripts": {},
+  "trustedDependencies": [],
+  "dependencies": {
+    "@ryoppippi/unplugin-typia": "^1.0.6",
+    "milkio": "../../packages/milkio",
+    "typia": "^6.10.2",
+    "vitest": "2.0.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.8.0"
+  }
+}
