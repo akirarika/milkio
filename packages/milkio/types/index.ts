@@ -28,26 +28,42 @@ export type Results<T extends unknown> = {
 export type ExecuteOptions = {
   params?: Record<any, any>;
   headers?: Record<string, string>;
-  timeout?: number;
 };
+
+export type Ping =
+  | [
+      {
+        connect: false;
+        delay: number;
+        error: any;
+      },
+      null,
+    ]
+  | [
+      null,
+      {
+        connect: true;
+        delay: number;
+        serverTimestamp: number;
+      },
+    ];
 
 export type Execute = <Path extends keyof $types["generated"]["routeSchema"]["$types"]>(
   path: Path,
   options?: Mixin<
     ExecuteOptions,
     {
+      headers?: Record<string, string>;
       params?: $types["generated"]["routeSchema"]["$types"][Path]["params"];
     }
   >,
 ) => $types["generated"]["routeSchema"]["$types"][Path]["🐣"] extends boolean
   ? // action
-    Promise<[Partial<$rejectCode>, undefined] | [undefined, ExecuteActionResults<Path>]>
+    Promise<[Partial<$rejectCode>, null, ExecuteResultsOption] | [null, ExecuteActionResults<Path>, ExecuteResultsOption]>
   : // stream
-    Promise<[Partial<$rejectCode>, undefined] | [undefined, AsyncGenerator<[Partial<$rejectCode>, undefined] | [undefined, ExecuteStreamResults<Path>], undefined>]>;
+    Promise<[Partial<$rejectCode>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<$rejectCode>, null] | [null, ExecuteStreamResults<Path>], null>, ExecuteResultsOption]>;
 
-export type ExecuteActionMeta<Path extends keyof Generated["routeSchema"]["$types"], Generated extends $types["generated"] = $types["generated"]> = Generated["routeSchema"]["$types"][Path]["meta"];
-
-export type ExecuteActionParams<Path extends keyof Generated["routeSchema"]["$types"], Generated extends $types["generated"] = $types["generated"]> = Generated["routeSchema"]["$types"][Path]["params"];
+export type ExecuteResultsOption = { executeId: string };
 
 export type ExecuteActionResults<Path extends keyof Generated["routeSchema"]["$types"], Generated extends $types["generated"] = $types["generated"]> = Generated["routeSchema"]["$types"][Path]["result"];
 

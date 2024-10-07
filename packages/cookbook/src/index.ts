@@ -30,6 +30,9 @@ export type CookbookOptions = {
 export const execute = async () => {
   switch (process.argv[2]) {
     default: {
+      console.log(asciis().join("\n"));
+      console.log(chalk.hex("#0B346E")(`₋₋₋₋₋₋₋₋`));
+
       const startTime = new Date();
       const options: CookbookOptions = await getOptions(Bun.file(join(cwd(), "cookbook.toml")));
       if (Object.keys(options.projects).length === 0) {
@@ -56,8 +59,6 @@ export const execute = async () => {
 
       const endTime = new Date();
 
-      console.log(asciis().join("\n"));
-      console.log(chalk.hex("#0B346E")(`₋₋₋₋₋₋₋₋`));
       console.log(chalk.hex("#24B56A")(`△ `) + message());
       console.log(chalk.hex("#24B56A")(`△ `) + chalk.hex("#E6E7E9")(`Time taken: `) + chalk.hex("#24B56A")(`${endTime.getTime() - startTime.getTime()}ms`));
       console.log("");

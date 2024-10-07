@@ -1,8 +1,6 @@
 import { Glob } from "bun";
-import consola from "consola";
 import { join } from "node:path";
 import type { CookbookOptions } from "..";
-import { exit, cwd } from "node:process";
 import { exists } from "node:fs/promises";
 import { checkPath } from "./utils";
 
@@ -23,7 +21,7 @@ export const commandSchema = async (options: CookbookOptions, paths: { cwd: stri
     const file = Bun.file(join(scanner, path));
     const fileUnit8Array = await file.text();
     if (!fileUnit8Array.includes("export default command({")) continue;
-    checkPath(path);
+    checkPath(paths, path);
 
     const nameWithPath = path.slice(0, path.length - 3); // 3 === ".ts".length
     const name = nameWithPath.replaceAll("/", "$").replaceAll("-", "_");

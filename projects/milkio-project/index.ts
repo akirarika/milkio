@@ -1,12 +1,13 @@
 import { env, argv, exit } from "node:process";
-import { defineMilkioWorld, type $types, type GeneratorGeneric } from "milkio";
+import { createWorld, type $types, type GeneratorGeneric } from "milkio";
 import { generated } from "./.milkio/generated";
+export type { generated } from "./.milkio/generated";
 
 declare module "milkio" {
   interface $types {
     generated: typeof generated;
   }
-  interface context {
+  interface $context {
     fancyFormat(): string;
   }
 }
@@ -26,8 +27,8 @@ interface IMember {
   age: number & tags.Type<"uint32"> & tags.ExclusiveMinimum<19> & tags.Maximum<100>;
 }
 
-const world = await defineMilkioWorld(generated, {
-  port: { app: 9000, develop: env.NODE_ENV ? "disabled" : 8000 },
+const world = await createWorld(generated, {
+  port: { app: 9000, develop: env.MILKIO_DEVELOP ? 8000 : "disabled" },
   argv: process.argv,
 });
 

@@ -1,7 +1,7 @@
 import { type IValidation } from "typia";
 import { TSON } from "@southern-aurora/tson";
 import { createId } from "../utils/create-id";
-import { reject, type $context, type $meta, type ExecuteOptions, type Logger, type MilkioRuntimeInit, type Results, type GeneratedInit, type MilkioInit, createLogger, exceptionHandler } from "..";
+import { reject, type $context, type $meta, type ExecuteOptions, type Logger, type MilkioRuntimeInit, type Results, type GeneratedInit, type MilkioInit, createLogger, exceptionHandler, Ping } from "..";
 
 export type MilkioHttpRequest = {
   request: Request;
@@ -38,6 +38,7 @@ export const __initExecuter = <MilkioRuntime extends MilkioRuntimeInit<MilkioRun
       headers = options.headers;
     }
     let params: Record<any, unknown>;
+    if (runtime.port.develop === "disabled") throw reject("NOT_DEVELOP_MODE", "This feature must be in developer mode to use. Usually entering developer mode requires using a cookbook to start milkio and accessing it through localhost.");
     if (options.paramsType === "raw") {
       params = options.params;
       if (typeof params === "undefined") params = {};
@@ -52,9 +53,22 @@ export const __initExecuter = <MilkioRuntime extends MilkioRuntimeInit<MilkioRun
         if (typeof params === "undefined") params = {};
       }
     }
-    if (typeof params !== "object") throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
+    if (typeof params !== "object" || Array.isArray(params)) throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
+    if ("$milkioGenerateParams" in params && params.$milkioGenerateParams === "enable") {
+      delete params.$milkioGenerateParams;
+      let paramsRand = routeSchema.randomParams();
+      if (paramsRand === undefined || paramsRand === null) paramsRand = {};
+      params = { ...paramsRand, ...params };
+      options.createdLogger.debug("[milkio]", "🪄 generate params:", options.path, TSON.stringify(params));
+    }
     if (options.mixinContext?.detail?.params?.string) options.mixinContext.detail.params.parsed = params; // listen でパースしたパラメータを渡す
-    const context = { ...(options.mixinContext ? options.mixinContext : {}) } as unknown as $context;
+    const context = {
+      ...(options.mixinContext ? options.mixinContext : {}),
+      path: options.path,
+      logger: options.createdLogger,
+      executeId: options.createdExecuteId,
+    } as unknown as $context;
+
     const results: Results<unknown> = { value: undefined };
 
     const module = await routeSchema.module();
@@ -78,7 +92,7 @@ export const __initExecuter = <MilkioRuntime extends MilkioRuntimeInit<MilkioRun
   const execute = async (path: string, options?: ExecuteOptions): Promise<any> => {
     if (!options) options = {};
     const executeId = createId();
-    const logger = createLogger(executeId);
+    const logger = createLogger(runtime, executeId);
     runtime.runtime.request.set(executeId, { logger: logger });
 
     try {
@@ -102,7 +116,7 @@ export const __initExecuter = <MilkioRuntime extends MilkioRuntimeInit<MilkioRun
           (async function* () {
             try {
               for await (const result of executed.results.value) {
-                yield [undefined, result];
+                yield [null, result];
               }
               return undefined;
             } catch (error) {
@@ -110,26 +124,37 @@ export const __initExecuter = <MilkioRuntime extends MilkioRuntimeInit<MilkioRun
               const result: any = {};
               result[reject.code] = reject.reject;
 
-              yield [result, undefined];
+              yield [result, null];
               return undefined;
             }
           })(),
+          { executeId: executeId },
         ];
       } else {
         // action
-        return [undefined, executed.results.value];
+        return [null, executed.results.value, { executeId: executeId }];
       }
     } catch (error) {
       const reject = exceptionHandler(executeId, logger, error);
       const result: any = {};
       result[reject.code] = reject.reject;
 
-      return [result, undefined];
+      return [result, null, { executeId: executeId }];
     }
   };
+
+  const ping = async (): Promise<Ping> => [
+    null,
+    {
+      connect: true,
+      delay: 0,
+      serverTimestamp: Date.now(),
+    },
+  ];
 
   return {
     __call,
     execute,
+    ping,
   };
 };

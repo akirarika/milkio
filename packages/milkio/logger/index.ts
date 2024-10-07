@@ -1,6 +1,8 @@
+import { TSON } from "@southern-aurora/tson";
 import { format } from "date-fns";
+import { type MilkioInit, type MilkioRuntimeInit } from "..";
 
-export type Log = ["[DEBUG]" | "[INFO]" | "[WARN]" | "[ERROR]", string, string, ...Array<unknown>];
+export type Log = [string /* executeId */, "[DEBUG]" | "[INFO]" | "[WARN]" | "[ERROR]", string, string, ...Array<unknown>];
 
 export type Logger = {
   _: {
@@ -9,14 +11,13 @@ export type Logger = {
   };
   setTag: (key: string, value: unknown) => void;
   setLog: (...log: Log) => void;
-  debug: (description: string, ...params: Array<unknown>) => void;
-  log: (description: string, ...params: Array<unknown>) => void;
-  info: (description: string, ...params: Array<unknown>) => void;
-  warn: (description: string, ...params: Array<unknown>) => void;
-  error: (description: string, ...params: Array<unknown>) => void;
+  debug: (description: string, ...params: Array<unknown>) => Log;
+  info: (description: string, ...params: Array<unknown>) => Log;
+  warn: (description: string, ...params: Array<unknown>) => Log;
+  error: (description: string, ...params: Array<unknown>) => Log;
 };
 
-export const createLogger = (executeId: string): Logger => {
+export const createLogger = <MilkioRuntime extends MilkioRuntimeInit<MilkioRuntimeInit<MilkioInit>> = MilkioRuntimeInit<MilkioInit>>(runtime: MilkioRuntime, executeId: string): Logger => {
   const logger = {} as Logger;
 
   logger._ = {
@@ -27,9 +28,29 @@ export const createLogger = (executeId: string): Logger => {
   const __tagPush = (key: string, value: unknown): void => {
     logger._.tags.set(key, value);
   };
-  const __logPush = (log: Log): void => {
+  const __logPush = (log: Log): Log => {
+    logger._.logs.push([...log]);
+    if (runtime.port.develop !== "disabled") {
+      void (async () => {
+        try {
+          const response = await fetch(`http://localhost:${runtime.port.develop}/$action`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: TSON.stringify({
+              type: "milkio@logger",
+              log: log,
+            }),
+          });
+          if (!response.ok) console.log("[COOKBOOK]", await response.text());
+        } catch (error) {
+          console.log("[COOKBOOK]", error);
+        }
+      })();
+    }
     console.log(...log);
-    logger._.logs.push(log);
+    return log;
   };
 
   logger.setTag = (key: string, value: unknown) => __tagPush(key, value);
@@ -37,10 +58,10 @@ export const createLogger = (executeId: string): Logger => {
 
   const getNow = () => format(new Date(), "(yyyy-MM-dd hh:mm:ss)");
 
-  logger.debug = (description: string, ...params: Array<unknown>) => __logPush(["[DEBUG]", description, getNow(), ...params]);
-  logger.info = (description: string, ...params: Array<unknown>) => __logPush(["[INFO]", description, getNow(), ...params]);
-  logger.warn = (description: string, ...params: Array<unknown>) => __logPush(["[WARN]", description, getNow(), ...params]);
-  logger.error = (description: string, ...params: Array<unknown>) => __logPush(["[ERROR]", description, getNow(), ...params]);
+  logger.debug = (description: string, ...params: Array<unknown>) => __logPush([executeId, "[DEBUG]", description, getNow(), ...params]);
+  logger.info = (description: string, ...params: Array<unknown>) => __logPush([executeId, "[INFO]", description, getNow(), ...params]);
+  logger.warn = (description: string, ...params: Array<unknown>) => __logPush([executeId, "[WARN]", description, getNow(), ...params]);
+  logger.error = (description: string, ...params: Array<unknown>) => __logPush([executeId, "[ERROR]", description, getNow(), ...params]);
 
   return logger;
 };

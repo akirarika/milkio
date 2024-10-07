@@ -1,0 +1,14 @@
+{
+  "name": "@milkio/stargate",
+  "module": "index.ts",
+  "type": "module",
+  "dependencies": {
+    "@southern-aurora/tson": "^2.0.2"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "5.6.0"
+  }
+}

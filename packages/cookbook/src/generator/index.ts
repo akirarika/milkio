@@ -24,15 +24,17 @@ export const generator = {
         (() => {
           const mode = project?.typiaMode !== "bundler" ? "typia" : "raw";
           let indexFile = "// index";
-          indexFile += `\nimport { type MilkioRoutes, routes } from "./${mode}/route-schema.ts"`;
-          indexFile += `\nimport commandSchema from "./${mode}/command-schema.ts"`;
-          indexFile += `\nimport testSchema from "./${mode}/test-schema.ts"`;
+          indexFile += `\nimport { type MilkioRoutes, routes } from "./${mode}/route-schema.ts";`;
+          indexFile += `\nimport commandSchema from "./${mode}/command-schema.ts";`;
+          indexFile += `\nimport testSchema from "./${mode}/test-schema.ts";`;
+          indexFile += `\nimport type { $rejectCode } from "milkio";`;
           indexFile += "\n";
           indexFile += "\nexport const generated = {";
+          indexFile += "\n  rejectCode: undefined as unknown as $rejectCode,";
           indexFile += "\n  routeSchema: { routes: routes, $types: void 0 as unknown as MilkioRoutes },";
           indexFile += "\n  commandSchema,";
           indexFile += "\n  testSchema,";
-          indexFile += "\n}";
+          indexFile += "\n};";
           Bun.write(join(paths.milkio, "generated", "index.ts"), indexFile);
         })();
 

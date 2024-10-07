@@ -5,9 +5,13 @@
   },
   "linter": {
     "enabled": true,
-    "ignore": ["packages/**"],
+    "include": ["projects/**"],
+    "ignore": ["packages/**", "packages/**/node_modules/**", "projects/**/.milkio/**", "projects/**/node_modules/**"],
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "complexity": {
+        "noBannedTypes": "off"
+      }
     }
   },
   "formatter": {

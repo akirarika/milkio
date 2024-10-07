@@ -16,6 +16,10 @@ export type Emit =
       type: "watcher@change";
       event: "rename" | "change";
       path: string;
+    }
+  | {
+      type: "milkio@logger";
+      log: Array<any>;
     };
 
 export const emitter = mitt<{ data: Emit }>();

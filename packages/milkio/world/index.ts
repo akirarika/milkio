@@ -1,4 +1,4 @@
-import { __initCommander, __initListener, ExecuteId, type Logger, type Mixin, type GeneratedInit, $types, Execute } from "..";
+import { __initCommander, __initListener, ExecuteId, type Logger, type Mixin, type GeneratedInit, $types, Execute, Ping } from "..";
 import { __initExecuter } from "../execute";
 import { defineDefaultExecuteIdGenerator } from "../execute/execute-id-generator";
 
@@ -9,6 +9,9 @@ export type MilkioInit = {
   };
   getRealIp?: (request: Request) => string;
   executeIdGenerator?: (request: Request) => string | Promise<string>;
+  corsAllowMethods?: string;
+  corsAllowHeaders?: string;
+  corsAllowOrigin?: string;
   ignorePathLevel?: number;
 };
 
@@ -22,7 +25,7 @@ export type MilkioRuntimeInit<T extends MilkioInit> = Mixin<
   }
 >;
 
-export const defineMilkioWorld = async <CookbookOptions extends MilkioInit>(generated: GeneratedInit, options: CookbookOptions): Promise<MilkioWorld<CookbookOptions>> => {
+export const createWorld = async <CookbookOptions extends MilkioInit>(generated: GeneratedInit, options: CookbookOptions): Promise<MilkioWorld<CookbookOptions>> => {
   const executeIdGenerator = options.executeIdGenerator ?? defineDefaultExecuteIdGenerator();
 
   const runtime = {
@@ -44,6 +47,7 @@ export const defineMilkioWorld = async <CookbookOptions extends MilkioInit>(gene
     _: _,
     _executer: executer,
     execute: executer.execute,
+    ping: executer.ping,
     commander,
     listener,
   };
@@ -57,4 +61,5 @@ export type MilkioWorld<CookbookOptions extends MilkioInit = MilkioInit> = {
   commander: Awaited<ReturnType<typeof __initCommander<MilkioRuntimeInit<CookbookOptions>>>>;
   listener: Awaited<ReturnType<typeof __initListener<MilkioRuntimeInit<CookbookOptions>>>>;
   execute: Execute;
+  ping: (options?: { timeout?: number }) => Promise<Ping>;
 };

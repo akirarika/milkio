@@ -1,11 +1,10 @@
 {
-  "name": "milkio-project",
   "type": "module",
   "private": true,
-  "workspaces": ["projects/*", "packages/milkio"],
+  "workspaces": ["projects/*", "packages/milkio-astra", "packages/milkio-stargate"],
   "module": "index.ts",
   "scripts": {
-    "dev": "bun i && ./packages/cookbook/develop.ts && sleep 2 && cookbook",
+    "dev": "bun i  && ./packages/cookbook/develop.ts && sleep 2 && cookbook",
     "build": "bun i && ./packages/cookbook/develop.ts && sleep 2 && cookbook build",
     "test": "vitest --max-concurrency=1"
   },
@@ -13,11 +12,11 @@
   "dependencies": {
     "@milkio/cookbook": "./packages/cookbook",
     "@ryoppippi/unplugin-typia": "^1.0.6",
-    "milkio": "./packages/milkio",
     "typia": "^6.10.2",
     "vitest": "2.0.5"
   },
   "devDependencies": {
+    "typescript": "^5.6.0",
     "@biomejs/biome": "1.8.0"
   }
 }

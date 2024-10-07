@@ -1,26 +1,57 @@
-import "./style.css";
-import typescriptLogo from "./typescript.svg";
-import viteLogo from "/vite.svg";
-import { setupCounter } from "./counter.ts";
+import { createStargate } from "@milkio/stargate";
+import { createAstra } from "@milkio/astra";
+import type { generated } from "milkio-project";
 
-document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`;
+const stargate = await createStargate<typeof generated>({
+  baseUrl: "http://localhost:9000",
+});
 
-setupCounter(document.querySelector<HTMLButtonElement>("#counter")!);
+const astra = await createAstra({
+  stargate: stargate,
+  bootstrap: async () => {
+    return {
+      world: "world",
+    };
+  },
+});
 
-// asdasddsa
+const world = await astra.createMirrorWorld(import.meta.url);
+
+const [reject, results] = await world.execute("/user", {
+  params: { hello: "world" },
+  generateParams: true,
+});
+
+// // action
+// console.log("action");
+// await (async () => {
+//   const [reject, result] = await stargate.execute("/user", { params: { hello: "world", world: "hello" } });
+//   if (reject) {
+//     console.log("reject", reject, result);
+//     return;
+//   }
+//   console.log("done", reject, result);
+// })();
+
+// // stream
+// console.log("stream");
+// await (async () => {
+//   const [reject, results] = await stargate.execute("/", { params: { hello: "world", world: "hello" }, type: "stream" });
+//   console.log(reject, results);
+//   if (reject) {
+//     console.log("reject", reject, results);
+//     return;
+//   }
+//   let i = 0;
+//   for await (const [reject, result] of results) {
+//     if (++i > 10) break;
+//     if (reject) {
+//       console.log("reject", reject, results);
+//       break;
+//     }
+//     console.log("result", reject, result);
+//   }
+//   console.log("done");
+// })();
+
+console.log("结果", JSON.stringify([reject, results]));

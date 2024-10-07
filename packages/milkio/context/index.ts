@@ -1,7 +1,9 @@
-import { $types } from "..";
+import { type $types, type Logger } from "..";
 
 export interface $context {
-  foo: string;
+  executeId: string;
+  path: string;
+  logger: Logger;
   http?: ContextHttp<Record<any, any>>;
 }
 

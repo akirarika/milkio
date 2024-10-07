@@ -5,6 +5,7 @@ import type { BunFile } from "bun";
 import { actionHandler, type MilkioActionResultFail } from "../actions";
 import { TSON } from "@southern-aurora/tson";
 import type { CookbookOptions } from "..";
+import { emitter } from "../emitter";
 
 export const initServer = async (options: CookbookOptions) => {
   Bun.serve({
@@ -19,18 +20,31 @@ export const initServer = async (options: CookbookOptions) => {
             return new Response(TSON.stringify(result));
           } catch (error) {
             consola.error(error);
-            return new Response(TSON.stringify({ success: false } satisfies MilkioActionResultFail), { headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" } });
+            return new Response(TSON.stringify({ success: false } satisfies MilkioActionResultFail), { headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" }, status: 500 });
           }
         }
         case "/$subscribe": {
           let control: ReadableStreamDirectController;
+          let messages: Array<string> = [];
+          const handler = (data: any) => {
+            messages.push(`data:${TSON.stringify(data)}\n\n`);
+          };
+          emitter.on("data", handler);
+          let closed = false;
           const stream = new ReadableStream({
             type: "direct",
             async pull(controller: ReadableStreamDirectController) {
               control = controller;
+              while (!closed) {
+                const message = messages.shift();
+                if (!message) await Bun.sleep(20);
+                else controller.write(message);
+              }
             },
             cancel() {
+              emitter.off("data", handler);
               control.close();
+              closed = true;
             },
           });
           return new Response(stream, { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" } });

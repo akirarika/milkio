@@ -5,6 +5,7 @@ import typia from "typia";
 import { exit, cwd } from "node:process";
 import { TSON } from "@southern-aurora/tson";
 import type { CookbookOptions } from "../..";
+import type { MilkioActionParams } from "../../actions";
 
 export const getOptions = async (milkioToml: BunFile) => {
   if (!(await milkioToml.exists())) {
@@ -25,10 +26,11 @@ export const getOptions = async (milkioToml: BunFile) => {
   return options as any;
 };
 
-export const getActionOptions = (options: string) => {
-  const checkResult = typia.misc.validatePrune<CookbookOptions>(TSON.parse(options));
+export const getActionOptions = (options: string): any => {
+  const results = TSON.parse(options);
+  const checkResult = typia.misc.validatePrune<MilkioActionParams>(results);
   if (!checkResult.success) {
     throw checkResult.errors.at(0)!;
   }
-  return options;
+  return results;
 };

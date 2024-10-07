@@ -1,8 +1,10 @@
 import { join } from "node:path";
-import { exit, cwd } from "node:process";
-import { $, env, type Subprocess } from "bun";
+import { cwd, kill } from "node:process";
+import { env, type Subprocess } from "bun";
 import type { CookbookOptions } from "..";
 import { emitter } from "../emitter";
+import consola from "consola";
+import { fetchWithTimeout } from "../utils/fetch-with-timeout";
 
 const textDecoder = new TextDecoder();
 export const workers = new Map<string, Worker>();
@@ -18,6 +20,44 @@ export type Worker = {
 export const initWorkers = async (options: CookbookOptions) => {
   for (const projectName in options.projects) {
     const project = options.projects[projectName];
+    if (project.type !== "milkio") continue;
+    createWorkers(projectName, { command: project.start, max: 0, cwd: join(cwd(), "projects", projectName) }).run();
+  }
+
+  // Wait for all milkio projects to start and can be accessed
+  await Promise.all([
+    ...(() => {
+      const projectStatus = new Map<string, { promise: Promise<undefined>; resolve: (value?: undefined | PromiseLike<undefined>) => void; reject: (reason?: any) => void }>();
+      for (const projectName in options.projects) {
+        const project = options.projects[projectName];
+        if (project.type !== "milkio") continue;
+        projectStatus.set(projectName, Promise.withResolvers());
+        let counter = 256;
+        let timer: Timer | null = setInterval(async () => {
+          if (--counter <= 0) {
+            clearInterval(timer!);
+            timer = null;
+            consola.warn(`[cookbook] Your project ${projectName} (http://localhost:${project.port}/) HTTP server hasn't started for too long.`);
+            projectStatus.get(projectName)!.resolve(undefined);
+            return;
+          }
+          try {
+            const response = await fetchWithTimeout(`http://localhost:${project.port}/generate_204`, { method: "HEAD", timeout: 2000 });
+            if (response.status === 204) {
+              if (timer) clearTimeout(timer);
+              timer = null;
+              return projectStatus.get(projectName)!.resolve(undefined);
+            }
+          } catch (error) {}
+        }, 42);
+      }
+      return Array.from(projectStatus.values()).map((v) => v.promise);
+    })(),
+  ]);
+
+  for (const projectName in options.projects) {
+    const project = options.projects[projectName];
+    if (project.type === "milkio") continue;
     createWorkers(projectName, { command: project.start, max: 0, cwd: join(cwd(), "projects", projectName) }).run();
   }
 };
@@ -32,15 +72,19 @@ export const createWorkers = (key: string, options: { command: Array<string>; cw
     state: "stopped",
     kill: () => {
       if (worker.state === "stopped") return;
-      spawn.kill(1);
       emitter.emit("data", { type: "workers@state", key, state: "stopped", code: "kill" });
       worker.state = "stopped";
+      try {
+        kill(spawn.pid, "SIGINT");
+      } catch (error) {}
+      spawn.kill(1);
     },
     run: () => {
       if (worker.state === "running") return;
       spawn = Bun.spawn(options.command, {
         ...options,
         stdin: "ignore",
+        stderr: "ignore",
         stdout: options.stdout !== "ignore" ? "pipe" : "ignore",
         env: options.env,
         onExit: (_proc, _code, _signalCode, _error) => {

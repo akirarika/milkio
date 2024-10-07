@@ -21,7 +21,7 @@ export const testSchema = async (options: CookbookOptions, paths: { cwd: string;
     // const fileUnit8Array = await file.text();
     // if (!fileUnit8Array.includes("export default [")) continue;
     if (!/^[a-z0-9/$/-]+$/.test(path.slice(0, -8))) {
-      consola.error(`Invalid path: "/${path}". The path can only contain lowercase letters, numbers, and "-".\n`);
+      consola.error(`Invalid path: "${join(cwd(), path)}". The path can only contain lowercase letters, numbers, and "-".\n`);
       exit(1);
     }
 
