@@ -1,6 +1,7 @@
 {
   "name": "@milkio/astra",
   "module": "index.ts",
+  "version": "1.0.0-alpha.0",
   "type": "module",
   "devDependencies": {
     "@types/bun": "latest"
