@@ -1,4 +1,4 @@
-# milkio-world
+# milkio-starter
 
 To install dependencies:
 

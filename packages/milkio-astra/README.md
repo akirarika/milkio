@@ -1,4 +1,4 @@
-# milkio-test
+# milkio-astra
 
 To install dependencies:
 
