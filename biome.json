@@ -9,6 +9,9 @@
     "ignore": ["packages/**", "packages/**/node_modules/**", "projects/**/.milkio/**", "projects/**/node_modules/**"],
     "rules": {
       "recommended": true,
+      "style": {
+        "noNonNullAssertion": "off"
+      },
       "complexity": {
         "noBannedTypes": "off"
       }

@@ -38,7 +38,6 @@ export const __initExecuter = <MilkioRuntime extends MilkioRuntimeInit<MilkioRun
       headers = options.headers;
     }
     let params: Record<any, unknown>;
-    if (runtime.port.develop === "disabled") throw reject("NOT_DEVELOP_MODE", "This feature must be in developer mode to use. Usually entering developer mode requires using a cookbook to start milkio and accessing it through localhost.");
     if (options.paramsType === "raw") {
       params = options.params;
       if (typeof params === "undefined") params = {};
@@ -55,6 +54,7 @@ export const __initExecuter = <MilkioRuntime extends MilkioRuntimeInit<MilkioRun
     }
     if (typeof params !== "object" || Array.isArray(params)) throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
     if ("$milkioGenerateParams" in params && params.$milkioGenerateParams === "enable") {
+      if (runtime.port.develop === "disabled") throw reject("NOT_DEVELOP_MODE", "This feature must be in developer mode to use. Usually entering developer mode requires using a cookbook to start milkio and accessing it through localhost.");
       delete params.$milkioGenerateParams;
       let paramsRand = routeSchema.randomParams();
       if (paramsRand === undefined || paramsRand === null) paramsRand = {};
