@@ -56,7 +56,7 @@ export const __initListener = <MilkioRuntime extends MilkioRuntimeInit<MilkioRun
     };
 
     try {
-      const detail = (await (async () => {
+      const http = (await (async () => {
         const url = new URL(request.url);
         let pathArray = url.pathname.substring(1).split("/");
         if (runtime.ignorePathLevel !== undefined && runtime.ignorePathLevel !== 0) pathArray = pathArray.slice(runtime.ignorePathLevel);
@@ -69,25 +69,27 @@ export const __initListener = <MilkioRuntime extends MilkioRuntimeInit<MilkioRun
 
         return {
           url,
-          path: { string: pathString as keyof $types["generated"]["routeSchema"]["$types"], array: pathArray },
           ip,
+          path: { string: pathString as keyof $types["generated"]["routeSchema"]["$types"], array: pathArray },
           params,
+          request,
+          response,
         } as ContextHttp<undefined>;
       })())!;
 
       if (!request.headers.get("Accept")?.startsWith("text/event-stream")) {
         // action
-        const routeSchema = generated.routeSchema.routes.get(detail.path.string);
-        if (routeSchema === undefined) throw reject("NOT_FOUND", { path: detail.path.string as string });
+        const routeSchema = generated.routeSchema.routes.get(http.path.string);
+        if (routeSchema === undefined) throw reject("NOT_FOUND", { path: http.path.string as string });
         if (routeSchema.type !== "action") throw reject("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "text/event-stream". If you are using the "@milkio/stargate" package, please add \`type: "stream"\` to the execute options.` });
 
         const executed = await executer.__call(routeSchema, {
           createdExecuteId: executeId,
           createdLogger: logger,
-          path: detail.path.string as string,
+          path: http.path.string as string,
           headers: request.headers as Headers,
-          mixinContext: { detail },
-          params: detail.params.string,
+          mixinContext: { http },
+          params: http.params.string,
           paramsType: "string",
         });
 
@@ -97,17 +99,17 @@ export const __initListener = <MilkioRuntime extends MilkioRuntimeInit<MilkioRun
         return new Response(response.body, response);
       } else {
         // stream
-        const routeSchema = generated.routeSchema.routes.get(detail.path.string);
-        if (routeSchema === undefined) throw reject("NOT_FOUND", { path: detail.path.string as string });
+        const routeSchema = generated.routeSchema.routes.get(http.path.string);
+        if (routeSchema === undefined) throw reject("NOT_FOUND", { path: http.path.string as string });
         if (routeSchema.type !== "stream") throw reject("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "application/json". If you are using the "@milkio/stargate" package, please remove \`type: "stream"\` to the execute options.` });
 
         const executed = await executer.__call(routeSchema, {
           createdExecuteId: executeId,
           createdLogger: logger,
-          path: detail.path.string as string,
+          path: http.path.string as string,
           headers: request.headers as Headers,
-          mixinContext: { detail },
-          params: detail.params.string,
+          mixinContext: { http },
+          params: http.params.string,
           paramsType: "string",
         });
         let stream: ReadableStream;

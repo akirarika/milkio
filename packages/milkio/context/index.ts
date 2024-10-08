@@ -1,4 +1,4 @@
-import { type $types, type Logger } from "..";
+import { type MilkioHttpRequest, type MilkioHttpResponse, type $types, type Logger } from "..";
 
 export interface $context {
   executeId: string;
@@ -15,4 +15,6 @@ export type ContextHttp<ParamsParsed> = {
     string: string;
     parsed: ParamsParsed;
   };
+  request: MilkioHttpRequest;
+  response: MilkioHttpResponse;
 };
