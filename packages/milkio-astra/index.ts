@@ -148,7 +148,7 @@ export const createAstra = async <AstraOptions extends AstraOptionsInit, Generat
         await new Promise((resolve) => setTimeout(resolve, 40));
         results.return();
 
-        console.log("[MILKIO]", "--- server logs end ---");
+        console.log("[MILKIO]", "---  server logs end  ---");
 
         return response;
       };
