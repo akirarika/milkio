@@ -1,6 +1,7 @@
 import { TSON } from "@southern-aurora/tson";
 import { format } from "date-fns";
 import { type MilkioInit, type MilkioRuntimeInit } from "..";
+import { sendCookbookEvent } from "../utils/send-cookbook-event";
 
 export type Log = [string /* executeId */, "[DEBUG]" | "[INFO]" | "[WARN]" | "[ERROR]", string, string, ...Array<unknown>];
 
@@ -31,23 +32,10 @@ export const createLogger = <MilkioRuntime extends MilkioRuntimeInit<MilkioRunti
   const __logPush = (log: Log): Log => {
     logger._.logs.push([...log]);
     if (runtime.port.develop !== "disabled") {
-      void (async () => {
-        try {
-          const response = await fetch(`http://localhost:${runtime.port.develop}/$action`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: TSON.stringify({
-              type: "milkio@logger",
-              log: log,
-            }),
-          });
-          if (!response.ok) console.log("[COOKBOOK]", await response.text());
-        } catch (error) {
-          console.log("[COOKBOOK]", error);
-        }
-      })();
+      void sendCookbookEvent(runtime, {
+        type: "milkio@logger",
+        log: log,
+      });
     }
     console.log(...log);
     return log;

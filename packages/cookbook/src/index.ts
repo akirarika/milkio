@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import { join } from "node:path";
 import { exit, cwd } from "node:process";
+import { existsSync } from "node:fs";
 import { getOptions } from "./typia/generated";
 import { initWorkers } from "./workers";
 import { initWatcher } from "./watcher";
@@ -41,6 +42,10 @@ export const execute = async () => {
       }
       for (const projectName in options.projects) {
         const project = options.projects[projectName];
+        if (!existsSync(join(cwd(), "projects", projectName, "package.json"))) {
+          consola.error(`This project "${projectName}" does not exist (directory does not exist or there is no package.json), if the project has been deleted, please edit your "cookbook.toml" and delete [projects.${projectName}].`);
+          exit(0);
+        }
         const packageJsonRaw = await Bun.file(join(cwd(), "projects", projectName, "package.json"));
         const packageJson = await packageJsonRaw.json();
         if (project.type === "milkio" && packageJson.dependencies?.["milkio"] === undefined) {

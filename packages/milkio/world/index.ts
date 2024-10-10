@@ -1,6 +1,6 @@
 import { __initCommander, __initListener, ExecuteId, type Logger, type Mixin, type GeneratedInit, $types, Execute, Ping } from "..";
-import { __initExecuter } from "../execute";
 import { defineDefaultExecuteIdGenerator } from "../execute/execute-id-generator";
+import { __initExecuter } from "../execute";
 
 export type MilkioInit = {
   port: {
