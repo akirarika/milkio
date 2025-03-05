@@ -101,7 +101,6 @@ export function createWorkers(key: string, options: { command: Array<string>, cw
         onExit: (_proc, _code, _signalCode, error) => {
           if (_code !== 0 && options.stdout !== 'ignore' && options.max !== 0) {
             const message = `\n-- code: ${_code}\n`
-            void process.stdout.write(message)
             emitter.emit('data', { type: 'workers@stdout', key, chunk: message })
           }
 
@@ -119,7 +118,7 @@ export function createWorkers(key: string, options: { command: Array<string>, cw
           new WritableStream({
             write: (chunk) => {
               const str = textDecoder.decode(chunk)
-              void process.stdout.write(str)
+              process.stdout.write(str)
               worker.stdout.push(str)
               if (options.max !== 0) emitter.emit('data', { type: 'workers@stdout', key, chunk: str })
               if (worker.stdout.length >= (options.max ?? 1024 * 64)) worker.stdout.splice(0, Math.ceil((options.max ?? 1024 * 64) * 0.2))

@@ -53,7 +53,7 @@ tasks.push((async () => {
 })())
 
 tasks.push((async () => {
-  if (await exists(join(cwd(), '../canto-projects/projects/cookbook-ui/package.json'))) await $`cd ../canto-projects/projects/cookbook-ui && bun run build.ts`
+  // if (await exists(join(cwd(), '../canto-projects/projects/cookbook-ui/package.json'))) await $`cd ../canto-projects/projects/cookbook-ui && bun run build.ts`
 })())
 
 await Promise.all(tasks)

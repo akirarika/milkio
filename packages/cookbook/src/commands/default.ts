@@ -79,8 +79,7 @@ export async function defaultCommand() {
         const project = options.projects[projectName]
         console.log(chalk.hex('#24B56A')(`△ `) + chalk.hex('#24B56A')(`${projectName}:\t${projectName.length > 12 ? '' : '\t'}${projectName.length > 6 ? '' : '\t'}`) + chalk.hex('#4988fc')(`http://localhost:${project.port}/`))
       }
-      console.log(chalk.hex('#0B346E')(`????????`))
-      console.log('The logger is ready for recording.')
+      console.log(chalk.hex('#0B346E')(`--------`))
     })
 }
 

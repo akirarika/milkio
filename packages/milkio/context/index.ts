@@ -10,6 +10,7 @@ export interface $context {
   http: ContextHttp<Record<any, any>>
   config: Readonly<Awaited<ReturnType<$types['configSchema']['get']>>>
   call: <Module extends Promise<{ default: Action<any> }>>(module: Module, params: Parameters<Awaited<Module>['default']['handler']>[1]) => Promise<ReturnType<Awaited<Module>['default']['handler']>>
+  onFinally: (handler: () => void | Promise<void>) => void
 }
 
 export interface ContextHttp<ParamsParsed = any> {

@@ -23,7 +23,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         paramsType: 'string'
       }
     ),
-  ): Promise<{ executeId: string, headers: Headers, params: Record<any, unknown>, results: Results<any>, context: $context, meta: Readonly<$meta>, type: 'action' | 'stream', emptyResult: boolean, resultsTypeSafety: boolean }> => {
+  ): Promise<{ executeId: string, headers: Headers, params: Record<any, unknown>, results: Results<any>, context: $context, meta: Readonly<$meta>, type: 'action' | 'stream', emptyResult: boolean, resultsTypeSafety: boolean, finales: Array<() => void | Promise<void>> }> => {
     const executeId: string = options.createdExecuteId
     let headers: Headers
     if (!(options.headers instanceof Headers)) {
@@ -36,6 +36,9 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
       headers = options.headers
     }
     if (!('toJSON' in headers)) (headers as any).toJSON = () => headersToJSON(headers)
+
+    const finales: Array<any> = []
+    const onFinally = (handler: any) => finales.unshift(handler)
 
     let params: Record<any, unknown>
     if (options.paramsType === 'raw') {
@@ -74,6 +77,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
       executeId: options.createdExecuteId,
       config: runtime.runtime.config,
       call: (module: any, options: any) => __call(context, module, options),
+      onFinally: onFinally,
       _: runtime
     } as unknown as $context
     const results: Results<any> = { value: undefined }
@@ -116,7 +120,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
 
     await runtime.emit('milkio:executeAfter', { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context, results })
 
-    return { executeId, headers, params, results, context, meta, type: module.$milkioType, emptyResult, resultsTypeSafety }
+    return { executeId, headers, params, results, context, meta, type: module.$milkioType, emptyResult, resultsTypeSafety, finales }
   }
 
   const __call = async (context: $context, module: { default: any }, params?: any): Promise<any> => {

@@ -66,6 +66,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         'Content-Type': 'application/json',
       },
     }
+    
+    let finales: Array<() => void | Promise<void>> = []
 
     try {
       const http = (await (async () => {
@@ -110,6 +112,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
           params: http.params.string,
           paramsType: 'string',
         })
+        finales = executed.finales;
 
         if (response.body === '' && executed.results.value !== undefined) {
           if (executed.emptyResult) {
@@ -124,6 +127,14 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         }
 
         await runtime.emit('milkio:httpResponse', { executeId, logger, path: http.path.string as string, http, context: executed.context })
+        
+        for (const handler of finales) {
+          try {
+            await handler()
+          } catch (error) {
+            logger.error('An error occurred inside onFinally.', error)
+          }
+        }
 
         runtime.runtime.request.delete(executeId)
         return new Response(response.body, response)
@@ -134,6 +145,18 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         if (routeSchema === undefined) throw reject('NOT_FOUND', { path: http.path.string as string })
         if (routeSchema.type !== 'stream') throw reject('UNACCEPTABLE', { expected: 'stream', message: `Not acceptable, the Accept in the request header should be "application/json". If you are using the "@milkio/stargate" package, please remove \`type: "stream"\` to the execute options.` })
 
+
+        const handleClose = async () => {
+          runtime.runtime.request.delete(executeId)
+          for (const handler of finales) {
+            try {
+              await handler()
+            } catch (error) {
+              logger.error('An error occurred inside onFinally.', error)
+            }
+          }
+        }
+
         const executed = await executer.__execute(routeSchema, {
           createdExecuteId: executeId,
           createdLogger: logger,
@@ -143,6 +166,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
           params: http.params.string,
           paramsType: 'string',
         })
+        finales = executed.finales;
         let stream: ReadableStream
         let control: ReadableStreamDirectController | ReadableStreamDefaultController
 
@@ -161,6 +185,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                   }
                   else {
                     executed.results.value.return(undefined)
+                    await handleClose()
                     controller.close()
                   }
                 }
@@ -172,9 +197,11 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 controller.write(`data:${JSON.stringify([TSON.encode(result), null])}\n\n`)
               }
               await new Promise(resolve => setTimeout(resolve, 0))
+              await handleClose()
               controller.close()
             },
-            cancel() {
+            async cancel() {
+              await handleClose()
               control.close()
             },
           })
@@ -193,6 +220,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                   }
                   else {
                     executed.results.value.return(undefined)
+                    await handleClose()
                     controller.close()
                   }
                 }
@@ -203,10 +231,12 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 result[exception.code] = exception.reject
                 controller.enqueue(`data:${JSON.stringify([TSON.encode(result), null])}\n\n`)
               }
+              await handleClose()
               await new Promise(resolve => setTimeout(resolve, 0))
               controller.close()
             },
-            cancel() {
+            async cancel() {
+              await handleClose()
               control.close()
             },
           })
@@ -218,7 +248,6 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
         await runtime.emit('milkio:httpResponse', { executeId, logger, path: http.path.string as string, http, context: executed.context })
 
-        runtime.runtime.request.delete(executeId)
         return new Response(response.body, response)
       }
     }

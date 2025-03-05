@@ -6,12 +6,12 @@
   "scripts": {
     "dev": "bun run ./.commands/develop.ts && cookbook",
     "cookbook": "bun run ./.commands/develop.ts && cookbook",
+    "publ": "bun run ./.commands/publish.ts",
     "test": "vitest --max-concurrency=1"
   },
   "trustedDependencies": [],
   "dependencies": {
     "@milkio/cookbook": "workspace:*",
-    "@milkio/cookbook-template": "./packages/cookbook-template",
     "@ryoppippi/unplugin-typia": "^1.0.6",
     "@types/fs-extra": "^11.0.4",
     "fs-extra": "^11.2.0",
