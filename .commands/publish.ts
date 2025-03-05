@@ -8,7 +8,7 @@ import { cli } from './utils/cli.ts'
 import consola from 'consola'
 
 const mainPackage = 'milkio'
-const childPackages = ['cookbook', 'cookbook-template', 'milkio-astra', 'milkio-redis', 'milkio-stargate', 'milkio-eslint']
+const childPackages = ['cookbook', 'milkio-astra', 'milkio-redis', 'milkio-stargate', 'milkio-eslint']
 
 console.log('')
 console.log('[发布版本]')
