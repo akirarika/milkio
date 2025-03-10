@@ -1,9 +1,9 @@
 import { devCommand } from './dev'
-import { buildUpgrade } from './upgrade'
+import { upgradeCommand } from './upgrade'
 import { defaultCommand } from './default'
 import { initCommand } from './init'
 
-export const paths = ['dev', 'init', 'build', 'upgrade']
+export const paths = ['dev', 'init', 'upgrade']
 
 export async function __router__(path: string) {
   switch (path) {
@@ -18,7 +18,7 @@ export async function __router__(path: string) {
     }
 
     case 'upgrade': {
-      await buildUpgrade()
+      await upgradeCommand()
       break
     }
     

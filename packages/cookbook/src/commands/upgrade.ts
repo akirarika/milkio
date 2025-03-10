@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { cwd, exit } from 'node:process'
 import { readFile, writeFile } from 'node:fs/promises'
 
-export async function buildUpgrade() {
+export async function upgradeCommand() {
   const packageJson = JSON.parse(await readFile(join(cwd(), 'package.json'), 'utf-8'))
   const lastMilkioVersion = packageJson?.dependencies?.milkio ?? packageJson?.peerDependencies?.milkio
   if (!lastMilkioVersion) {

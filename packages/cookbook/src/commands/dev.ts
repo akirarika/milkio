@@ -3,7 +3,6 @@ import consola from 'consola'
 import { join } from 'node:path'
 import { exit, cwd } from 'node:process'
 import { existsSync } from 'node:fs'
-import { defaultCommand } from './default'
 import { initWorkers } from '../workers'
 import { initWatcher } from '../watcher'
 import { initServer } from '../server'
@@ -11,10 +10,11 @@ import { generator } from '../generator'
 import { progress } from '../progress'
 import { checkPort } from '../utils/check-port'
 import { killPort } from '../utils/kill-port'
+import { execFileSync } from 'node:child_process'
 
 export async function devCommand() {
     if (existsSync(join(cwd(), 'packages', 'cookbook', 'src', 'ui', 'README.md'))) {
-      await defaultCommand()
+      execFileSync("powershell.exe", ["-Command", "bun run ./.commands/develop.ts"], { stdio: "inherit", shell: true, env: { ...process.env } });
       return
     }
 
