@@ -38,10 +38,13 @@ export async function initServer(options: CookbookOptions) {
             response.headers['Content-Type'] = file.type
           }
           else {
-            file = Bun.file(join(assets, url.pathname, 'index.html'))
+            file = Bun.file(join(join(cwd(), 'node_modules', '.cookbook-ui'), url.pathname, 'index.html'))
             if (!(await file.exists())) {
-              file = Bun.file(join(assets, 'index.html'))
-              if (!(await file.exists())) file = "<p>404 Not Found ~ UwU</p><p></p><p>Maybe you don't have cookbook-ui installed, you can run: npm install --save-dev @milkio/cookbook-ui</p>";
+              file = Bun.file(join(assets, url.pathname, 'index.html'))
+              if (!(await file.exists())) {
+                file = Bun.file(join(assets, 'index.html'))
+                if (!(await file.exists())) file = "<p>404 Not Found ~ UwU</p><p></p><p>Maybe you don't have cookbook-ui installed, you can run: npm install --save-dev @milkio/cookbook-ui</p>";
+              }
             }
           }
 

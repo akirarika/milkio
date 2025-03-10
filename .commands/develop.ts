@@ -26,7 +26,7 @@ tasks.push((async () => {
   execFileSync('bun', ['run', 'generate'], { stdio: 'inherit', shell: true, cwd: join(cwd(), '../canto-projects/projects/cookbook-ui') })
   await new Promise(resolve => setTimeout(resolve, 1000))
   try {
-    await copyDir(join(cwd(), '../canto-projects/projects/cookbook-ui/.output/public'), join(cwd(), './packages/cookbook/src/ui/www'))
+    await copyDir(join(cwd(), '../canto-projects/projects/cookbook-ui/.output/public'), join(cwd(), './node_modules/.cookbook-ui'))
   } catch (error) {
     consola.warn('cookbook-ui 的目录拷贝失败')
   }
