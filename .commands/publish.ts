@@ -8,7 +8,6 @@ import { cli } from './utils/cli.ts'
 import consola from 'consola'
 import { existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
-import { exit } from 'node:process'
 
 const mainPackage = 'milkio'
 const childPackages = ['cookbook', 'create-cookbook', 'milkio-astra', 'milkio-redis', 'milkio-stargate', 'milkio-eslint']
@@ -127,10 +126,9 @@ catch (error) {
     execFileSync("powershell.exe", ["-Command", `npm publish --access public`], { stdio: "inherit", cwd: `../canto-projects/projects/cookbook-ui/.output/public` })
     consola.success('cookbook-ui 静态资源打包并发布成功')
 
-    exit(0);
-
     // 打包 cookbook 的二进制文件并发布
     await (async () => {
+      consola.log('正在打包 cookbook 的二进制文件..')
       const platforms = [
         {
           platform: 'darwin',
@@ -164,6 +162,7 @@ catch (error) {
       const packageJson = JSON.parse(await readFile('./packages/cookbook/package.json', 'utf-8'))
 
       for (const platform of platforms) {
+        consola.log(`正在打包 ${platform.platform} ${platform.arch} 的二进制文件..`)
         const command = `bun build ./packages/cookbook/cookbook.ts --outfile ./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/co --compile --minify --sourcemap=inline --env=COOKBOOK_* --target=${platform.target}`
         execFileSync("powershell.exe", ["-Command", command], { stdio: "inherit", env: { ...process.env, COOKBOOK_PRODUCTION: "true" } })
         await writeFile(`./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/index.js`, `console.log("This package is used to distribute cookbook binaries. You can run it directly.");`)
@@ -175,10 +174,12 @@ catch (error) {
         }))
         execFileSync("powershell.exe", ["-Command", `npm publish --access public`], { stdio: "inherit", cwd: `./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}` })
       }
+      consola.success('cookbook 二进制文件打包并发布成功')
     })()
 
     // 将包发布到 npm
     for (const childPackage of [mainPackage, ...childPackages]) {
+      consola.log(`正在发布 ${childPackage} 到 npm..`)
       while (true) {
         try {
           let command = `npm publish --access public`
