@@ -146,8 +146,8 @@ catch (error) {
       const packageJson = JSON.parse(await readFile('./packages/cookbook/package.json', 'utf-8'))
   
       for (const platform of platforms) {
-        const command = `bun build ./packages/cookbook/cookbook.ts --outfile ./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/co --compile --minify --sourcemap=inline --target=${platform.target}`
-        execFileSync("powershell.exe", ["-Command", command], { stdio: "inherit" })
+        const command = `bun build ./packages/cookbook/cookbook.ts --outfile ./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/co --compile --minify --sourcemap=inline --env=COOKBOOK_* --target=${platform.target}`
+        execFileSync("powershell.exe", ["-Command", command], { stdio: "inherit", env: { ...process.env, COOKBOOK_PRODUCTION: "true" } })
         await writeFile(`./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/index.js`, `console.log("This package is used to distribute cookbook binaries. You can run it directly.");`)
         await writeFile(`./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/package.json`, JSON.stringify({
           name: `@milkio/cookbook-${platform.platform}-${platform.arch}`,

@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs'
 import { mkdir, readdir, copyFile } from 'node:fs/promises'
 import { cwd } from 'node:process'
 import { execFileSync } from 'node:child_process'
+import consola from 'consola'
 
 const tasks: Array<any> = []
 
@@ -24,7 +25,11 @@ tasks.push((async () => {
   if (!(await existsSync(join(cwd(), '../canto-projects/projects/cookbook-ui/package.json')))) return
   execFileSync('bun', ['run', 'generate'], { stdio: 'inherit', shell: true, cwd: join(cwd(), '../canto-projects/projects/cookbook-ui') })
   await new Promise(resolve => setTimeout(resolve, 1000))
-  await copyDir(join(cwd(), '../canto-projects/projects/cookbook-ui/.output/public'), join(cwd(), '../../../milkio/packages/cookbook/src/ui/www'))
+  try {
+    await copyDir(join(cwd(), '../canto-projects/projects/cookbook-ui/.output/public'), join(cwd(), '../../../milkio/packages/cookbook/src/ui/www'))
+  } catch (error) {
+    consola.warn('cookbook-ui 的目录拷贝失败')
+  }
 })())
 
 await Promise.all(tasks)

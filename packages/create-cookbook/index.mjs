@@ -66,7 +66,7 @@ const color = gradient(["cyan", "#2d9b87"]);
     consola.success(color("Extracted!"));
 
     console.log("");
-    consola.info(color(`Try run: co --version`));
+    consola.info(color(`Try run: co version`));
     consola.info(colorLong(`If you find that the co command does not exist, try restarting your Terminal or System`));
 })();
 
