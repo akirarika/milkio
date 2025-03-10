@@ -111,6 +111,21 @@ catch (error) {
       await $`git push -u origin ${(await $`git symbolic-ref --short HEAD`).text().trim()}`
     }
 
+    // 将 cookbook-ui 的静态资源打包并发布
+    await (async () => {
+      if (!(await existsSync(join(cwd, '../canto-projects/projects/cookbook-ui/package.json')))) throw new Error('未找到 cookbook-ui 项目')
+      execFileSync('bun', ['run', 'generate'], { stdio: 'inherit', shell: true, cwd: join(cwd, '../canto-projects/projects/cookbook-ui') })
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      await writeFile(`../canto-projects/projects/cookbook-ui/.output/public/__cookbook_ui__.js`, `console.log("This package is used to distribute cookbook-ui binaries. You can run it directly.");`)
+        await writeFile(`../canto-projects/projects/cookbook-ui/.output/public/package.json`, JSON.stringify({
+        name: `@milkio/cookbook-ui`,
+        type: "module",
+        version: packageJson.version,
+        module: "./__cookbook_ui__.js",
+      }))
+      execFileSync("powershell.exe", ["-Command", `npm publish --access public`], { stdio: "inherit", cwd: `../canto-projects/projects/cookbook-ui/.output/public` })
+    })
+
     // 打包 cookbook 的二进制文件并发布
     await (async () => {
       const platforms = [
