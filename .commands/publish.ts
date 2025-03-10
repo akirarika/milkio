@@ -6,9 +6,11 @@ import { exists, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { Octokit } from '@octokit/core'
 import { cli } from './utils/cli.ts'
 import consola from 'consola'
+import { existsSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 
 const mainPackage = 'milkio'
-const childPackages = ['cookbook', 'milkio-astra', 'milkio-redis', 'milkio-stargate', 'milkio-eslint']
+const childPackages = ['cookbook', 'create-cookbook', 'milkio-astra', 'milkio-redis', 'milkio-stargate', 'milkio-eslint']
 
 console.log('')
 console.log('[发布版本]')
@@ -19,10 +21,10 @@ const cwd = join(process.cwd())
 
 let config: any
 try {
-  config = (await import(join(homedir(), '.commands', 'utils', 'config.ts'))).config
+  config = (await import(join(homedir(), 'cookbook.config.ts'))).config
 }
 catch (error) {
-  consola.error(`未找到配置文件，请在 ${join(homedir(), '.commands', 'utils', 'config.ts')} 中编写你的配置`)
+  consola.error(`未找到配置文件，请在 ${join(homedir(), 'cookbook.config.ts')} 中编写你的配置`)
   console.log(`export const config = {
   github: {
     token: "<YOUR_TOKEN>",
@@ -109,6 +111,55 @@ catch (error) {
       await $`git push -u origin ${(await $`git symbolic-ref --short HEAD`).text().trim()}`
     }
 
+    // 打包 cookbook 的二进制文件并发布
+    await (async () => {
+      const platforms = [
+        {
+          platform: 'darwin',
+          arch: 'arm64',
+          target: 'bun-darwin-arm64'
+        },
+        {
+          platform: 'darwin',
+          arch: 'x64',
+          target: 'bun-darwin-x64'
+        },
+        {
+          platform: 'linux',
+          arch: 'arm64',
+          target: 'bun-linux-arm64'
+        },
+        {
+          platform: 'linux',
+          arch: 'x64',
+          target: 'bun-linux-x64-baseline'
+        },
+        {
+          platform: 'win32',
+          arch: 'x64',
+          target: 'bun-windows-x64-baseline'
+        }
+      ]
+  
+  
+      if (!existsSync(`./packages/cookbook/dist`)) await mkdir(`./packages/cookbook/dist`)
+      const packageJson = JSON.parse(await readFile('./packages/cookbook/package.json', 'utf-8'))
+  
+      for (const platform of platforms) {
+        const command = `bun build ./packages/cookbook/cookbook.ts --outfile ./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/co --compile --minify --sourcemap=inline --target=${platform.target}`
+        execFileSync("powershell.exe", ["-Command", command], { stdio: "inherit" })
+        await writeFile(`./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/index.js`, `console.log("This package is used to distribute cookbook binaries. You can run it directly.");`)
+        await writeFile(`./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/package.json`, JSON.stringify({
+          name: `@milkio/cookbook-${platform.platform}-${platform.arch}`,
+          type: "module",
+          version: packageJson.version,
+          module: "./index.js",
+        }))
+        execFileSync("powershell.exe", ["-Command", `npm publish --access public`], { stdio: "inherit", cwd: `./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}` })
+      }
+    })()
+
+    // 将包发布到 npm
     for (const childPackage of [mainPackage, ...childPackages]) {
       while (true) {
         try {

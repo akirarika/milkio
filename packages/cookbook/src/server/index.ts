@@ -4,7 +4,6 @@ import type { BunFile } from 'bun'
 import { actionHandler } from '../actions'
 import { TSON } from '@southern-aurora/tson'
 import type { CookbookOptions } from '../utils/cookbook-dto-types'
-import { checkCookbookActionParams } from '../utils/cookbook-dto-checks'
 import { exists } from 'node:fs/promises'
 import { cwd } from 'node:process'
 
@@ -18,10 +17,10 @@ export async function initServer(options: CookbookOptions) {
         case '/$action': {
           let headers: Record<string, string> = { 'Content-Type': 'application/json' }
           // This may be a bit of a hack, the purpose is to only allow cross-domain in the process of developing cookbooks
-          if (await exists(join(cwd(), 'packages', 'cookbook', 'cookbook.ts'))) headers = { ...headers, 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type' }
+          if (await exists(join(cwd(), 'packages', 'cookbook', 'cookbook.ts'))) headers = { ...headers, 'Access-Control-Allow-Origin': 'http://localhost:8001', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Authorization,Content-Type' }
+          if (request.method === 'OPTIONS') return new Response(null, { headers, status: 204 })
           try {
-            const [error, options] = await checkCookbookActionParams(TSON.parse(await request.text()))
-            if (error) throw error
+            const options = TSON.parse(await request.text())
             const result = await actionHandler(options)
             return new Response(TSON.stringify({ success: true, data: result }), { headers, status: 200})
           }

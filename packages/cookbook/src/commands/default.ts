@@ -1,217 +1,164 @@
-import chalk from 'chalk'
-import consola from 'consola'
-import { join } from 'node:path'
-import { exit, cwd } from 'node:process'
-import { existsSync } from 'node:fs'
-import { initWorkers } from '../workers'
-import { initWatcher } from '../watcher'
-import { initServer } from '../server'
-import { generator } from '../generator'
-import { progress } from '../progress'
-import { checkCookbookOptions } from '../utils/cookbook-dto-checks'
-import { checkPort } from '../utils/check-port'
-import { killPort } from '../utils/kill-port'
+import { search } from "@inquirer/prompts";
+import { argv, cwd, exit } from "node:process";
+import consola from "consola";
+import { execFileSync } from "node:child_process";
+import { join } from "node:path";
+import { exists, mkdir } from "node:fs/promises";
+import { initCommand } from "./init";
+import { readdir, readFile } from "node:fs/promises";
+import { env } from "bun";
+import { __router__, paths } from "./__router__";
+
+type Params = {
+  command: string;
+  commands: Array<string>;
+  options: Record<string, string | true>;
+  raw: Array<string>;
+};
 
 export async function defaultCommand() {
-    
-    progress.open()
+  const params: Params = {
+    command: "index",
+    commands: [],
+    options: {},
+    raw: [],
+  };
+  params.raw = argv.slice(3);
 
-    const startTime = new Date()
-    const cookbookToml = Bun.file(join(cwd(), 'cookbook.toml'))
-    if (!(await cookbookToml.exists())) {
-      consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`)
-      exit(0)
+  for (const v of argv.slice(3)) {
+    if (v.startsWith("--") && v.includes("=")) {
+      const vSplited = v.split("=");
+      params.options[vSplited[0].slice(2)] = vSplited.slice(1, vSplited.length).join("=");
+    } else if (v.startsWith("--")) {
+      params.options[v.slice(2)] = "1";
+    } else if (v.startsWith("-") && v.includes("=")) {
+      const vSplited = v.split("=");
+      params.options[vSplited[0].slice(1)] = vSplited.slice(1, vSplited.length).join("=");
+    } else if (v.startsWith("-")) {
+      params.options[v.slice(1)] = "1";
+    } else {
+      params.commands.push(v);
     }
-    const [error, options] = await checkCookbookOptions(Bun.TOML.parse(await cookbookToml.text()))
-    if (error) {
-      consola.error(error.message)
-      exit(0)
+  }
+  if (argv.length === 2) params.command = `index`;
+  if (argv.length !== 2) params.command = `${argv[2] ?? "index"}`;
+  if (params.command.startsWith("--")) params.command = params.command.slice(2);
+  if (params.command.startsWith("-") && params.command !== "-") params.command = params.command.slice(1);
+
+  
+  const packageJson = (await exists(join(cwd(), "package.json"))) ? JSON.parse(await readFile(join(cwd(), "package.json"), "utf-8")) : undefined;
+  exists(join(env.HOME || env.USERPROFILE || "/", ".commands"));
+  if (!(await exists(join(env.HOME || env.USERPROFILE || "/", ".commands")))) await mkdir(join(env.HOME || env.USERPROFILE || "/", ".commands"));
+
+  if (params.command === "index") {
+    const commands = [] as Array<{ name: string; value: string; path?: string; description?: "global" | "npm-script" | "workspace" | "built-in" }>;
+
+    for (const path of paths) {
+      commands.push({ name: path, value: path, description: "built-in" });
     }
-    if (Object.keys(options.projects).length === 0) {
-      consola.error(`For at least one project, check your "cookbook.toml".`)
-      exit(0)
+  
+    if (await exists(join(env.HOME || env.USERPROFILE || "/", ".commands"))) {
+      const dir = await readdir(join(env.HOME || env.USERPROFILE || "/", ".commands"));
+      let temp = [] as typeof commands;
+      for (const file of dir) {
+        if (!file.endsWith(".ts")) continue;
+        temp.push({ name: file.slice(0, -3), value: file, path: join(env.HOME || env.USERPROFILE || "/", ".commands", file), description: "global" });
+      }
+      temp.sort((a, b) => a.name.localeCompare(b.name));
+      commands.push(...temp);
     }
-    for (const projectName in options.projects) {
-      if (!existsSync(join(cwd(), 'projects', projectName, 'package.json'))) {
-        consola.error(`This project "${projectName}" does not exist (directory does not exist or there is no package.json), if the project has been deleted, please edit your "cookbook.toml" and delete [projects.${projectName}].`)
-        exit(0)
+  
+    if (await exists(join(cwd(), "package.json"))) {
+      const packageJson = JSON.parse(await readFile(join(cwd(), "package.json"), "utf-8"));
+      for (const key in packageJson?.scripts ?? {}) {
+        commands.push({ name: key, value: key, path: key, description: "npm-script" });
       }
     }
-
-    if (!(await checkPort(options.general.cookbookPort))) {
-      progress.close()
-      consola.info(`Port number ${options.general.cookbookPort} is already occupied. You may have started Cookbook.`)
-      const confirm = await consola.prompt('Do you want to try to kill the process that is using the port number?', {
-        type: 'confirm',
-      })
-      if (!confirm) exit(0)
-      if (confirm) {
-        try {
-          await killPort(options.general.cookbookPort)
-          await Bun.sleep(768)
-        }
-        catch (error) {}
-        if (!(await checkPort(options.general.cookbookPort))) {
-          consola.error(`Attempted to kill the process occupying the port number, but this appears to be ineffective.`)
-          await exit(0)
-        }
-        progress.close()
+  
+    if (await exists(join(cwd(), ".commands"))) {
+      const dir = await readdir(join(cwd(), ".commands"));
+      let temp = [] as typeof commands;
+      for (const file of dir) {
+        if (!file.endsWith(".ts")) continue;
+        commands.push({ name: file.slice(0, -3), value: file, path: join(cwd(), ".commands", file), description: "workspace" });
       }
+      temp.sort((a, b) => a.name.localeCompare(b.name));
+      commands.push(...temp);
     }
+  
+    if (commands.length === 0) {
+      consola.warn("There is no command yet.");
+      consola.info(`Docs: https://github.com/akirarika/co`);
+      return;
+    }
+  
+    const selected = await search({
+      message: "Which command to execute?",
+      source: async (input, { signal }) => {
+        return commands.filter((command) => {
+          return command.name.startsWith(input ?? "");
+        });
+      },
+    });
 
-    await generator.significant(options) // insignificant running in initWather
-    await initWorkers(options)
-    await Promise.all([
-      // UwU
-      initWatcher(options),
-    ])
-
-    void initServer(options)
-
-    const endTime = new Date()
-    progress.close().then(() => {
-      console.log(asciis().join('\n'))
-      console.log(chalk.hex('#24B56A')(`△ `) + message())
-      console.log(chalk.hex('#24B56A')(`△ `) + chalk.hex('#E6E7E9')(`Time taken: `) + chalk.hex('#24B56A')(`${endTime.getTime() - startTime.getTime()}ms`))
-      console.log('')
-      console.log(chalk.hex('#24B56A')(`△ `) + chalk.hex('#24B56A')(`cookbook:\t\t`) + chalk.hex('#4988fc')(`http://localhost:${options.general.cookbookPort}/`))
-      for (const projectName in options.projects) {
-        const project = options.projects[projectName]
-        console.log(chalk.hex('#24B56A')(`△ `) + chalk.hex('#24B56A')(`${projectName}:\t${projectName.length > 12 ? '' : '\t'}${projectName.length > 6 ? '' : '\t'}`) + chalk.hex('#4988fc')(`http://localhost:${project.port}/`))
-      }
-      console.log(chalk.hex('#0B346E')(`--------`))
-    })
+    const command = commands.find((v) => v.value === selected)!
+    if (command.description === 'built-in') await __router__(command.value!);
+    else await run(params, command as any);
+    exit(0);
+  } else if (await exists(join(cwd(), ".commands", `${params.command}.ts`))) {
+    const modulePath = join(cwd(), ".commands", `${params.command}.ts`);
+    await run(params, { path: modulePath, description: "workspace" });
+  } else if (packageJson?.scripts?.[params.command]) {
+    run(params, { path: params.command, description: "npm-script" });
+  } else if (await exists(join(env.HOME || env.USERPROFILE || "/", ".commands", `${params.command}.ts`))) {
+    const modulePath = join(env.HOME || env.USERPROFILE || "/", ".commands", `${params.command}.ts`);
+    await run(params, { path: modulePath, description: "global" });
+  } else {
+    // not found
+    consola.error(`Command not found: ${params.command}`);
+    console.log("");
+    exit(1);
+  }
 }
 
+export async function run(params: Params, options: { path?: string; description?: "global" | "npm-script" | "workspace" }) {
+  if (options.description === "npm-script") {
+    if (!(await exists(join(cwd(), "cookbook.toml")))) await initCommand();
+    const config: any = Bun.TOML.parse(await Bun.file(join(cwd(), "cookbook.toml")).text());
 
-function asciis() {
-    return [
-      ` ` + ` ${chalk.hex('00AEF1')(`_`)}${chalk.hex('00AEE4')(`_`)} ` + ` ${chalk.hex('00AED6')(`_`)}${chalk.hex('00AEC9')(`_`)} ${chalk.hex('00AEBB')(`_`)} ${chalk.hex('00AEAE')(`_`)} ${chalk.hex('00AEA1')(`_`)} ` + ` ` + ` ` + ` ${chalk.hex('00AE93')(`_`)}`,
-      ` ${
-        chalk.hex('00AEF4')(`|`)
-      } `
-      + ` ${
-        chalk.hex('00AEE9')(`\\`)
-      }${chalk.hex('00AEDF')(`/`)
-      } `
-      + ` ${
-        chalk.hex('00AED4')(`(`)
-      }${chalk.hex('00AEC9')(`_`)
-      }${chalk.hex('00AEBF')(`)`)
-      } ${
-        chalk.hex('00AEB4')(`|`)
-      } ${
-        chalk.hex('00AEAA')(`|`)
-      } ${
-        chalk.hex('00AE9F')(`_`)
-      }${chalk.hex('00AE94')(`(`)
-      }${chalk.hex('00AE8A')(`_`)
-      }${chalk.hex('00AE7F')(`)`)
-      } ${
-        chalk.hex('00AE74')(`_`)
-      }${chalk.hex('00AE6A')(`_`)
-      }${chalk.hex('00AE5F')(`_`)}`,
-      ` ${
-        chalk.hex('00AEF4')(`|`)
-      } ${
-        chalk.hex('00AEEA')(`|`)
-      }${chalk.hex('00AEE0')(`\\`)
-      }${chalk.hex('00AED6')(`/`)
-      }${chalk.hex('00AECC')(`|`)
-      } ${
-        chalk.hex('00AEC1')(`|`)
-      } ${
-        chalk.hex('00AEB7')(`|`)
-      } ${
-        chalk.hex('00AEAD')(`|`)
-      } ${
-        chalk.hex('00AEA3')(`|`)
-      }${chalk.hex('00AE99')(`/`)
-      } ${
-        chalk.hex('00AE8E')(`/`)
-      } ${
-        chalk.hex('00AE84')(`|`)
-      }${chalk.hex('00AE7A')(`/`)
-      } ${
-        chalk.hex('00AE70')(`_`)
-      } ${
-        chalk.hex('00AE66')(`\\`)}`,
-      ` ${
-        chalk.hex('00AEF5')(`|`)
-      } ${
-        chalk.hex('00AEEB')(`|`)
-      } `
-      + ` ${
-        chalk.hex('00AEE1')(`|`)
-      } ${
-        chalk.hex('00AED7')(`|`)
-      } ${
-        chalk.hex('00AECD')(`|`)
-      } ${
-        chalk.hex('00AEC4')(`|`)
-      } `
-      + ` `
-      + ` ${
-        chalk.hex('00AEBA')(`<`)
-      }${chalk.hex('00AEB0')(`|`)
-      } ${
-        chalk.hex('00AEA6')(`|`)
-      } ${
-        chalk.hex('00AE9C')(`(`)
-      }${chalk.hex('00AE93')(`_`)
-      }${chalk.hex('00AE89')(`)`)
-      }${chalk.hex('00AE1E')(`丨`)}`,
-      ` ${
-        chalk.hex('00AEF4')(`|`)
-      }${chalk.hex('00AEEA')(`_`)
-      }${chalk.hex('00AEE0')(`|`)
-      } `
-      + ` ${
-        chalk.hex('00AED6')(`|`)
-      }${chalk.hex('00AECC')(`_`)
-      }${chalk.hex('00AEC1')(`|`)
-      }${chalk.hex('00AEB7')(`_`)
-      }${chalk.hex('00AEAD')(`|`)
-      }${chalk.hex('00AEA3')(`_`)
-      }${chalk.hex('00AE99')(`|`)
-      }${chalk.hex('00AE8E')(`_`)
-      }${chalk.hex('00AE84')(`|`)
-      }${chalk.hex('00AE7A')(`\\`)
-      }${chalk.hex('00AE70')(`_`)
-      }${chalk.hex('00AE66')(`\\`)
-      }${chalk.hex('00AE5B')(`_`)
-      }${chalk.hex('00AEA6')(`|`)
-      }${chalk.hex('00AE47')(`\\`)
-      }${chalk.hex('00AE3D')(`_`)
-      }${chalk.hex('00AE33')(`_`)
-      }${chalk.hex('00AE28')(`_`)
-      }${chalk.hex('00AE1E')(`/`)}`,
-    ]
+    try {
+      if (config.general.packageManager === "bun") {
+        execFileSync("bun", ["run", options.path!, ...params.raw], { stdio: "inherit", shell: true, env: { TERM: "xterm-256color", ...process.env } });
+      }
+
+      if (config.general.packageManager === "npm") {
+        execFileSync("npm", ["run", options.path!, ...params.raw], { stdio: "inherit", shell: true, env: { TERM: "xterm-256color", ...process.env } });
+      }
+
+      if (config.general.packageManager === "cnpm") {
+        execFileSync("cnpm", ["run", options.path!, ...params.raw], { stdio: "inherit", shell: true, env: { TERM: "xterm-256color", ...process.env } });
+      }
+
+      if (config.general.packageManager === "yarn") {
+        execFileSync("yarn", ["run", options.path!, ...params.raw], { stdio: "inherit", shell: true, env: { TERM: "xterm-256color", ...process.env } });
+      }
+
+      if (config.general.packageManager === "pnpm") {
+        execFileSync("pnpm", ["run", options.path!, ...params.raw], { stdio: "inherit", shell: true, env: { TERM: "xterm-256color", ...process.env } });
+      }
+
+      exit(0);
+    } catch (error: any) {
+      consola.error(error?.message ?? "Running Error");
+      exit(1);
+    }
+  } else {
+    try {
+      execFileSync("bun", ["run", options.path!, JSON.stringify(params)], { stdio: "inherit", shell: true, env: { TERM: "xterm-256color", ...process.env } });
+      exit(0);
+    } catch (error: any) {
+      consola.error(error?.message ?? "Running Error");
+      exit(1);
+    }
   }
-  
-  function message() {
-    return chalk.hex('#00AEF5')('I ')
-      + chalk.hex('#00AEEC')('w')
-      + chalk.hex('#00AEE3')('i')
-      + chalk.hex('#00AEDA')('l')
-      + chalk.hex('#00AED1')('l ')
-      + chalk.hex('#00AEC8')('b')
-      + chalk.hex('#00AEBF')('e ')
-      + chalk.hex('#00AEB6')('t')
-      + chalk.hex('#00AEAD')('h')
-      + chalk.hex('#00AEA3')('e ')
-      + chalk.hex('#00AE9A')('b')
-      + chalk.hex('#00AE91')('e')
-      + chalk.hex('#00AE88')('s')
-      + chalk.hex('#00AE7F')('t ')
-      + chalk.hex('#00AE76')('a')
-      + chalk.hex('#00AE6D')('s')
-      + chalk.hex('#00AE64')('t')
-      + chalk.hex('#00AE5B')('r')
-      + chalk.hex('#00AE51')('o')
-    + chalk.hex('#00AE48')('n')
-    + chalk.hex('#00AE3F')('a')
-    + chalk.hex('#00AE36')('u')
-    + chalk.hex('#00AE2D')('t!')
-  }
-  
+}

@@ -1,0 +1,17 @@
+{
+  "name": "create-cookbook",
+  "version": "1.0.0-alpha.68",
+  "main": "index.mjs",
+  "bin": {
+    "create-cookbook": "./index.mjs"
+  },
+  "scripts": {
+    "create-cookbook": "./index.mjs"
+  },
+  "dependencies": {
+    "consola": "^3.2.3",
+    "fs-extra": "^11.2.0",
+    "gradient-string": "^3.0.0",
+    "tar": "^7.4.3"
+  }
+}

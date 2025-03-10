@@ -3,6 +3,7 @@
     "composite": true,
     "target": "esnext",
     "jsx": "preserve",
+    "erasableSyntaxOnly":true,
     "lib": [
       "ESNext"
     ],

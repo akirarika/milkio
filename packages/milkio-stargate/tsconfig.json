@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "jsx": "react-jsx",
+    "erasableSyntaxOnly":true,
     // Enable latest features
     "lib": ["ESNext", "DOM"],
     "moduleDetection": "force",

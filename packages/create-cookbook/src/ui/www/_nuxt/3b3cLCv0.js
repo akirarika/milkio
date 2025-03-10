@@ -1,0 +1,1 @@
+import{_ as r}from"./DlAUqK2U.js";import{v as e,x as o}from"./CIqA1Z9E.js";const c={},t={class:"bar-container"};function a(n,s){return o(),e("div",t," hello world bar ")}const f=r(c,[["render",a]]);export{f as default};

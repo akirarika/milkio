@@ -1,7 +1,7 @@
 {
   "name": "@milkio/cookbook",
   "type": "module",
-  "version": "1.0.0-alpha.65",
+  "version": "1.0.0-alpha.68",
   "module": "./exports.ts",
   "bin": {
     "cookbook": "./cookbook.ts"
@@ -10,6 +10,7 @@
     "typia": "typia"
   },
   "dependencies": {
+    "@inquirer/prompts": "^7.3.3",
     "@poech/camel-hump-under": "^1.1.0",
     "@rollup/pluginutils": "^5.1.0",
     "@southern-aurora/tson": "*",

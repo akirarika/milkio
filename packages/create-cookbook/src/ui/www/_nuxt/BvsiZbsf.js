@@ -1,0 +1,1 @@
+import{d as t,D as e,B as a,E as r,x as n,A as _,_ as s}from"./CIqA1Z9E.js";import{A as c}from"./CUbNaA4v.js";import"./BElEMMGc.js";import"./DlAUqK2U.js";const x=t({__name:"[aurora]",setup(p){return(m,u)=>{const o=s;return n(),e(r(c),null,{default:a(()=>[_(o)]),_:1})}}});export{x as default};
