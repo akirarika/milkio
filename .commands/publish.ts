@@ -8,6 +8,7 @@ import { cli } from './utils/cli.ts'
 import consola from 'consola'
 import { existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
+import { exit } from 'node:process'
 
 const mainPackage = 'milkio'
 const childPackages = ['cookbook', 'create-cookbook', 'milkio-astra', 'milkio-redis', 'milkio-stargate', 'milkio-eslint']
@@ -125,6 +126,8 @@ catch (error) {
       }))
       execFileSync("powershell.exe", ["-Command", `npm publish --access public`], { stdio: "inherit", cwd: `../canto-projects/projects/cookbook-ui/.output/public` })
     })
+
+    exit(0);
 
     // 打包 cookbook 的二进制文件并发布
     await (async () => {
