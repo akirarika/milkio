@@ -73,7 +73,6 @@ const color = gradient(["cyan", "#2d9b87"]);
 const utils = {
     downloadFile: async (url, workspace, filename) => {
         const res = await fetch(url);
-        if (!existsSync("downloads")) await mkdirSync("downloads");
         if (existsSync(join(workspace, filename))) await remove(join(workspace, filename));
         const destination = join(workspace, filename);
         const fileStream = createWriteStream(destination, { flags: "wx" });

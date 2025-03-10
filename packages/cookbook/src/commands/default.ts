@@ -125,6 +125,10 @@ export async function run(params: Params, options: { path?: string; description?
   if (options.description === "npm-script") {
     if (!(await exists(join(cwd(), "cookbook.toml")))) await initCommand();
     const config: any = Bun.TOML.parse(await Bun.file(join(cwd(), "cookbook.toml")).text());
+    if (!config.general.packageManager) {
+      consola.error("You need to specify which package manager to use to run this command, modify your cookbook.toml file, and [general] bar to packageManager = \"npm\" or any other package manager you like.");
+      exit(1);
+    }
 
     try {
       if (config.general.packageManager === "bun") {
