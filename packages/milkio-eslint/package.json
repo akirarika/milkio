@@ -1,7 +1,7 @@
 {
   "name": "@milkio/eslint",
   "type": "module",
-  "version": "1.0.0-alpha.68",
+  "version": "1.0.0-alpha.69",
   "module": "index.ts",
   "dependencies": {
     "@antfu/eslint-config": "*"
