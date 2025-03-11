@@ -1,1 +1,0 @@
-import{_ as e}from"./DlAUqK2U.js";import{v as o,x as c}from"./CIqA1Z9E.js";const r={},t={class:"baz-container"};function a(n,s){return c(),o("div",t," hello world baz ")}const f=e(r,[["render",a]]);export{f as default};

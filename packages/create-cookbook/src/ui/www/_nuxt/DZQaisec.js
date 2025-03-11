@@ -1,1 +1,0 @@
-import{d as e}from"./CIqA1Z9E.js";const r=e({__name:"index",setup(o){const n=navigator?.language||navigator?.languages?.[0],a=new URL(window.location.href);return n?.startsWith("zh")?window.location.replace(`/zh/?${a.searchParams.toString()}`):window.location.replace(`/en/?${a.searchParams.toString()}`),()=>{}}});export{r as default};
