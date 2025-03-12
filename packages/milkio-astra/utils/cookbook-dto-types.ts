@@ -5,7 +5,7 @@
 
 export interface CookbookOptions {
     projects: Record<string, {
-        type: 'milkio' | 'other';
+        type: 'milkio' | 'custom';
         port: number;
         start: Array<string>;
         build: Array<string>;

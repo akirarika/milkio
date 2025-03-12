@@ -5,8 +5,10 @@ cookbookPort = 8000
 
 [projects.__test__]
 port = 9000
+name = "Test"
 type = "milkio"
 typiaMode = "generation"
+autoStart = true
 start = [
   "bun",
   "run",

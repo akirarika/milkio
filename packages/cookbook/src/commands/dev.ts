@@ -69,11 +69,10 @@ export async function devCommand() {
     console.log(chalk.hex('#24B56A')(`△ `) + chalk.hex('#E6E7E9')(`Time taken: `) + chalk.hex('#24B56A')(`${endTime.getTime() - startTime.getTime()}ms`))
     console.log('')
     console.log(chalk.hex('#24B56A')(`△ `) + chalk.hex('#24B56A')(`cookbook:\t\t`) + chalk.hex('#4988fc')(`http://localhost:${options.general.cookbookPort}/`))
-    for (const projectName in options.projects) {
-      const project = options.projects[projectName]
-      console.log(chalk.hex('#24B56A')(`△ `) + chalk.hex('#24B56A')(`${projectName}:\t${projectName.length > 12 ? '' : '\t'}${projectName.length > 6 ? '' : '\t'}`) + chalk.hex('#4988fc')(`http://localhost:${project.port}/`))
-    }
-    console.log(chalk.hex('#0B346E')(`--------`))
+    // for (const projectName in options.projects) {
+    //   const project = options.projects[projectName]
+    //   console.log(chalk.hex('#24B56A')(`△ `) + chalk.hex('#24B56A')(`${projectName}:\t${projectName.length > 12 ? '' : '\t'}${projectName.length > 6 ? '' : '\t'}`) + chalk.hex('#4988fc')(`http://localhost:${project.port}/`))
+    // }
   })
 }
 
