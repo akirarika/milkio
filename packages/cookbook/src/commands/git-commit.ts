@@ -130,6 +130,7 @@ export default await defineCookbookCommand(async (utils) => {
 
 
       if (diff.length >= 65535) consola.warn(`The diff result is too long, so this commit is no longer automatically generated using AI.`)
+      console.log('')
       let inputMessage = await utils.inputString({
         env: "message",
         message: "Enter commit message",
