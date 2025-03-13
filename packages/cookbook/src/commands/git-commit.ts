@@ -89,6 +89,14 @@ export default await defineCookbookCommand(async (utils) => {
 2. 按照代码文件、修改的行号、修改的内容、修改的类型（增加、删除、修改）等方面进行详细描述。
 3. 对于复杂的改动，尝试进行逻辑和功能上的解释。
 
+## 示例：
+- 修复内存泄漏，而不破坏转换测试
+- 为弹窗组件编写类型
+- 添加按钮、表格、表单组件
+- 如果在 shallowReactive 中设置时已经是反应性的，则应该跟踪值
+- 修复失效的链接
+- 对评分功能进行重构
+
 ## 限制:
 - 只专注于分析 git diff 结果中的代码改动，不涉及其他无关内容
 - 直接输出描述内容，不要解释自己输出的内容是什么
@@ -100,15 +108,7 @@ export default await defineCookbookCommand(async (utils) => {
 - 去除连接词/语法修饰
 - 优先技术术语
 - 必须确保结果是单行无换行的，也不能以列表或分号的形式进行描述
-- 输出的内容，必须是使用 ${cookbookToml.config.gitCommitLanguage ?? osLocale} 语言
-
-## 示例：
-- 修复内存泄漏，而不破坏转换测试
-- 为弹窗组件编写类型
-- 添加按钮、表格、表单组件
-- 如果在 shallowReactive 中设置时已经是反应性的，则应该跟踪值
-- 修复失效的链接
-- 对评分功能进行重构
+- 输出的内容，必须是使用 ${cookbookToml.config.gitCommitLanguage ?? osLocale} 语言！这非常重要
 `;
           const response = await client.chat.completions.create({
             model,
@@ -119,6 +119,7 @@ export default await defineCookbookCommand(async (utils) => {
             stream: true,
           });
           message = message + `: `;
+          process.stdout.write(`: `);
           for await (const chunk of response) {
             process.stdout.write((chunk.choices[0].delta as any).content || (chunk.choices[0].delta as any).reasoning_content);
             const content = (chunk.choices[0].delta as any).content;
