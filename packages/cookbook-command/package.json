@@ -1,0 +1,8 @@
+{
+  "name": "@milkio/cookbook-command",
+  "module": "index.ts",
+  "type": "module",
+  "dependencies": {
+    "consola": "^3.4.0"
+  }
+}

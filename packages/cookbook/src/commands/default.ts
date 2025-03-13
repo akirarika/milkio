@@ -45,7 +45,7 @@ export async function defaultCommand() {
   if (params.command.startsWith("--")) params.command = params.command.slice(2);
   if (params.command.startsWith("-") && params.command !== "-") params.command = params.command.slice(1);
 
-  
+
   const packageJson = (await exists(join(cwd(), "package.json"))) ? JSON.parse(await readFile(join(cwd(), "package.json"), "utf-8")) : undefined;
   exists(join(env.HOME || env.USERPROFILE || "/", ".commands"));
   if (!(await exists(join(env.HOME || env.USERPROFILE || "/", ".commands")))) await mkdir(join(env.HOME || env.USERPROFILE || "/", ".commands"));
@@ -56,7 +56,7 @@ export async function defaultCommand() {
     for (const path of paths) {
       commands.push({ name: path, value: path, description: "built-in" });
     }
-  
+
     if (await exists(join(env.HOME || env.USERPROFILE || "/", ".commands"))) {
       const dir = await readdir(join(env.HOME || env.USERPROFILE || "/", ".commands"));
       let temp = [] as typeof commands;
@@ -67,14 +67,14 @@ export async function defaultCommand() {
       temp.sort((a, b) => a.name.localeCompare(b.name));
       commands.push(...temp);
     }
-  
+
     if (await exists(join(cwd(), "package.json"))) {
       const packageJson = JSON.parse(await readFile(join(cwd(), "package.json"), "utf-8"));
       for (const key in packageJson?.scripts ?? {}) {
         commands.push({ name: key, value: key, path: key, description: "npm-script" });
       }
     }
-  
+
     if (await exists(join(cwd(), ".commands"))) {
       const dir = await readdir(join(cwd(), ".commands"));
       let temp = [] as typeof commands;
@@ -85,13 +85,13 @@ export async function defaultCommand() {
       temp.sort((a, b) => a.name.localeCompare(b.name));
       commands.push(...temp);
     }
-  
+
     if (commands.length === 0) {
       consola.warn("There is no command yet.");
       consola.info(`Docs: https://github.com/akirarika/co`);
       return;
     }
-  
+
     const selected = await search({
       message: "Which command to execute?",
       source: async (input, { signal }) => {
@@ -158,11 +158,67 @@ export async function run(params: Params, options: { path?: string; description?
     }
   } else {
     try {
-      execFileSync("bun", ["run", options.path!, JSON.stringify(params)], { stdio: "inherit", shell: true, env: { TERM: "xterm-256color", ...process.env } });
+      if (!(await exists(options.path))) {
+        consola.error(`Command not found: ${options.path}`);
+        exit(1);
+      }
+      const module = await (import(options.path!));
+      await module.default(await createCommandUtils(params, options));
+      // execFileSync("bun", ["run", options.path!, JSON.stringify(params)], { stdio: "inherit", shell: true, env: { TERM: "xterm-256color", ...process.env } });
       exit(0);
     } catch (error: any) {
-      consola.error(error?.message ?? "Running Error");
+      consola.error(error.toString ? (error.toString()) : (error?.message ?? "Running Error"));
       exit(1);
     }
+  }
+}
+
+function createCommandUtils(params: Params, options: { path?: string; description?: "global" | "npm-script" | "workspace" }) {
+  const log = consola.log;
+  const info = consola.info;
+  const warn = consola.warn;
+  const error = consola.error;
+  const success = consola.success;
+  const debug = consola.debug;
+  const fatal = consola.fatal;
+  const trace = consola.trace;
+  const start = consola.start;
+  const box = consola.box;
+  const prompt = consola.prompt;
+  const getScriptPath = () => options.path!;
+  const getWorkspacePath = () => cwd();
+  const getParams = () => params;
+  const inputBoolean = async (options: { env: string, message: string, placeholder?: string }) => {
+    if (options.env in params.options) return params.options[options.env] === "1";
+    return await consola.prompt(options.message, {
+      type: "confirm",
+      placeholder: options.placeholder,
+    })
+  };
+  const inputString = async (options: { env: string, message: string, placeholder?: string }) => {
+    if (options.env in params.options) return params.options[options.env];
+    return await consola.prompt(options.message, {
+      type: "text",
+      placeholder: options.placeholder,
+    })
+  };
+
+  return {
+    log,
+    info,
+    warn,
+    error,
+    success,
+    debug,
+    fatal,
+    trace,
+    start,
+    box,
+    prompt,
+    getScriptPath,
+    getWorkspacePath,
+    getParams,
+    inputBoolean,
+    inputString,
   }
 }

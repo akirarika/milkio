@@ -10,7 +10,7 @@ import { existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 
 const mainPackage = 'milkio'
-const childPackages = ['cookbook', 'create-cookbook', 'milkio-astra', 'milkio-redis', 'milkio-stargate', 'milkio-eslint']
+const childPackages = ['cookbook', 'create-cookbook', 'cookbook-command', 'milkio-astra', 'milkio-redis', 'milkio-stargate', 'milkio-eslint']
 
 console.log('')
 console.log('[发布版本]')

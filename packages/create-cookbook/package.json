@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "compressing": "^1.10.1",
-    "consola": "^3.2.3",
+    "consola": "^3.4.0",
     "fs-extra": "^11.2.0",
     "gradient-string": "^3.0.0"
   }
