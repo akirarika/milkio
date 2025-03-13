@@ -148,7 +148,7 @@ export default await defineCookbookCommand(async (utils) => {
           }
           messageTranslated = messageTranslated.trim();
         })();
-       await utils.closeProgress(`Generated!`);
+        await utils.closeProgress(`Generated!`);
       }
 
       if (diff.length >= 65535) consola.warn(`The diff result is too long, so this commit is no longer automatically generated using AI.`)
@@ -172,6 +172,11 @@ export default await defineCookbookCommand(async (utils) => {
 
       await $`${{ raw: `git commit -m '${inputMessage.replaceAll("'", '"')}'` }}`;
       await $`git push -u origin ${branch}`;
+
+      consola.log("Attempting to pull remote code changes...");
+      await $`git pull origin ${branch}:${branch}`;
+      consola.success(`Code synchronization completed for branch '${branch}'.`);
+
       break;
     } catch (error) {
       consola.error(error);

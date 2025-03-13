@@ -15,4 +15,8 @@ export const __router__ = [
     commands: ["git:commit", "gc"],
     script: () => import("./git-commit.ts"),
   },
+  {
+    commands: ["git:pull", "gp"],
+    script: () => import("./git-pull.ts"),
+  },
 ]
