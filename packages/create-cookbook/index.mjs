@@ -88,10 +88,8 @@ const color = gradient(["cyan", "#2d9b87"]);
     await utils.downloadFile(uiUrl, tempspace, "ui.tgz");
     consola.success(color("Downloaded!"));
     const uiExtractPromise = ((async () => {
-        consola.start(color(`Cookbook UI Extracting..`));
         if (!existsSync(join(tempspace, "ui"))) mkdirSync(join(tempspace, "ui"))
         await compressing.tgz.uncompress(join(tempspace, "ui.tgz"), join(tempspace, "ui"));
-        consola.success(color("Cookbook UI Extracted!"));
     }))();
 
     const cookbookUrl = `${cookbookPackageInfo.mirror}${cookbookName}/-/cookbook-${process.platform}-${os.arch()}-${version === 'latest' ? cookbookPackageInfo.json["dist-tags"].latest : version}.tgz`;
@@ -100,12 +98,12 @@ const color = gradient(["cyan", "#2d9b87"]);
     await utils.downloadFile(cookbookUrl, tempspace, "cookbook.tgz");
     consola.success(color("Downloaded!"));
     const cookbookExtractPromise = ((async () => {
-        consola.start(color(`Cookbook Core Extracting..`));
         await compressing.tgz.uncompress(join(tempspace, "cookbook.tgz"), tempspace);
-        consola.success(color("Cookbook Core Extracted!"));
     }))();
 
+    consola.start(color(`Extracting..`));
     await Promise.all([uiExtractPromise, cookbookExtractPromise]);
+    consola.success(color("Extracted!"));
 
     consola.success(color("Installing.."));
     await utils.mvToPathAndInstall(join(tempspace, "package"), process.platform === "win32" ? "co.exe" : "co", tempspace);
@@ -127,7 +125,7 @@ const utils = {
         await finished(Readable.fromWeb(res.body).pipe(fileStream));
     },
     mvUIDir: async (tempspace) => {
-        if (!existsSync(process.env.USERPROFILE, ".cookbook")) mkdirSync(process.env.USERPROFILE, ".cookbook");
+        if (!existsSync(process.env.HOME || process.env.USERPROFILE, ".cookbook")) mkdirSync(join(process.env.HOME || process.env.USERPROFILE, ".cookbook"));
         if (process.platform === "win32") {
             if (existsSync(join(process.env.USERPROFILE, ".cookbook", 'ui'))) await utils.executePowershell(`Remove-Item -Recurse -Force "${join(process.env.USERPROFILE, ".cookbook", 'ui')}";`);
             await utils.executePowershell(`Move-Item -Path "${join(tempspace)}" -Destination "${join(process.env.USERPROFILE, ".cookbook", 'ui')}" -Force;`);

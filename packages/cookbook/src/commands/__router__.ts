@@ -7,30 +7,9 @@ import { initCommand } from './init'
 export const paths = ['dev', 'init', 'upgrade']
 
 export async function __router__(path: string) {
-  switch (path) {
-    case 'dev': {
-      await devCommand()
-      break
-    }
-
-    case 'init': {
-      await initCommand()
-      break
-    }
-
-    case 'upgrade': {
-      await upgradeCommand()
-      break
-    }
-
-    case 'version': {
-      console.log(packageJson.version)
-      break
-    }
-    
-    default: {
-      await defaultCommand()
-      break
-    }
-  }
+  if (path === 'version' || path === '--version' || path === '-v') return console.log(packageJson.version)
+  if (path === 'dev') return devCommand()
+  if (path === 'init') return initCommand()
+  if (path === 'upgrade') return upgradeCommand()
+  return defaultCommand()
 }
