@@ -38,7 +38,7 @@ export default await defineCookbookCommand(async (utils) => {
       let messageTranslated = "";
       if (canUseAI && diff.length < 65535) {
         const { client, model } = await utils.useAI();
-        consola.start(`Generating AI commit message (${model})..`);
+        await utils.openProgress(`Generating AI commit message (${model})..`);
         await (async () => {
           let instructions = `
 # 角色
@@ -149,6 +149,7 @@ export default await defineCookbookCommand(async (utils) => {
           }
           messageTranslated = messageTranslated.trim();
         })();
+       await utils.closeProgress(`Generated!`);
       }
 
       if (diff.length >= 65535) consola.warn(`The diff result is too long, so this commit is no longer automatically generated using AI.`)
