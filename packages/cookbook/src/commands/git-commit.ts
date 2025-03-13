@@ -33,7 +33,9 @@ export default await defineCookbookCommand(async (utils) => {
 
   while (true) {
     try {
-      let message: string = "";
+      let messagePrefix = "";
+      let message = "";
+      let messageTranslated = "";
       if (canUseAI && diff.length < 65535) {
         const { client, model } = await utils.useAI();
         consola.start(`Generating AI commit message (${model})..`);
@@ -73,10 +75,10 @@ export default await defineCookbookCommand(async (utils) => {
           });
           for await (const chunk of response) {
             const content = (chunk.choices[0].delta).content;
-            message = message + content;
+            messagePrefix = messagePrefix + content;
           }
-          if (message.startsWith('-')) message.slice(1);
-          message = message.trim();
+          if (messagePrefix.startsWith('-')) messagePrefix.slice(1);
+          messagePrefix = messagePrefix.trim();
         })();
         await (async () => {
           let instructions = `
@@ -84,7 +86,7 @@ export default await defineCookbookCommand(async (utils) => {
 你是一个专业的代码改动分析员，你将会收到所做改动的方向，和 git diff 的结果，你能够能够从这些内容中清晰、准确地描述本次的改动内容，并使用一句话，简练精准地描述本次改动的主要内容
 
 ## 技能
-1. 仔细检查 git diff 的输出结果，代码的改动方向是 ${message}。
+1. 仔细检查 git diff 的输出结果，代码的改动方向是 ${messagePrefix}。
 2. 按照代码文件、修改的行号、修改的内容、修改的类型（增加、删除、修改）等方面进行详细描述。
 3. 对于复杂的改动，尝试进行逻辑和功能上的解释。
 
@@ -116,7 +118,6 @@ export default await defineCookbookCommand(async (utils) => {
             ],
             stream: true,
           });
-          message = message + `: `;
           for await (const chunk of response) {
             const content = (chunk.choices[0].delta).content;
             message = message + content;
@@ -131,8 +132,8 @@ export default await defineCookbookCommand(async (utils) => {
 ##注意事项
 1. 确保专业术语的准确使用。
 2. 对敏感词汇体现必要的敏感性。
-3. 严格保持原文中的 emoji 表情。
-4. 严格保持回复的内容仅包含润色后的文章本身，不包含任何多余的话，也不需要请求用户提出反馈。
+3. 必须确保所有的单词都是小写的。
+5. 严格保持回复的内容仅包含翻译后的内容本身，不包含任何多余的话，也不需要请求用户提出反馈。
 `;
           const response = await client.chat.completions.create({
             model,
@@ -142,24 +143,32 @@ export default await defineCookbookCommand(async (utils) => {
             ],
             stream: true,
           });
-          message = '';
           for await (const chunk of response) {
             const content = (chunk.choices[0].delta).content;
-            message = message + content;
+            messageTranslated = messageTranslated + content;
           }
-          message = message.trim();
+          messageTranslated = messageTranslated.trim();
         })();
       }
 
-
       if (diff.length >= 65535) consola.warn(`The diff result is too long, so this commit is no longer automatically generated using AI.`)
       console.log('')
-      let inputMessage = await utils.inputString({
-        env: "message",
-        message: "Enter commit message",
-        placeholder: message,
-      })
-      if (!inputMessage || typeof inputMessage !== 'string') inputMessage = message;
+      const messageMixed = `${messagePrefix}: ${messageTranslated}`;
+      console.log(messageMixed);
+      let inputMessage = "";
+      if (await utils.inputBoolean({
+        env: 'is-it-adopted',
+        message: `Is it adopted?`,
+      })) {
+        inputMessage = messageMixed;
+      } else {
+        inputMessage = await utils.inputString({
+          env: "message",
+          message: "Enter commit message",
+          placeholder: messageMixed,
+        })
+        if (!inputMessage || typeof inputMessage !== 'string') exit(0);
+      }
 
       await $`${{ raw: `git commit -m '${inputMessage.replaceAll("'", '"')}'` }}`;
       await $`git push -u origin ${branch}`;
