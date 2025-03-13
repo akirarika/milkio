@@ -10,33 +10,40 @@ import { mkdirSync, existsSync, createWriteStream, rmSync } from "node:fs";
 import { remove } from "fs-extra";
 import consola from "consola";
 import gradient from "gradient-string";
-import * as tar from "tar";
+import compressing from "compressing";
 
 const colorLong = gradient(["cyan", "green"]);
 const color = gradient(["cyan", "#2d9b87"]);
 
 (async () => {
+    const args = process.argv.slice(2);
+    let version = "latest";
+    if (args[0] && args[0].startsWith("--version=")) {
+        version = args[0].slice(10);
+    }
     let workspace = process.platform === "win32" ? join(process.env.USERPROFILE, ".cookbook") : join(process.env.HOME, ".cookbook");
     let tempspace = process.platform === "win32" ? join(process.env.USERPROFILE, ".cookbook", ".temp") : join(process.env.HOME, ".cookbook", ".temp");
     if (!existsSync(workspace)) mkdirSync(workspace);
     if (!existsSync(tempspace)) mkdirSync(tempspace);
 
-    const name = `@milkio/cookbook-${process.platform}-${os.arch()}`;
-    let packageInfo;
+    const uiName = `@milkio/cookbook-ui`;
+    const cookbookName = `@milkio/cookbook-${process.platform}-${os.arch()}`;
+    let uiPackageInfo;
+    let cookbookPackageInfo;
+    console.log("");
     for (const mirror of ["https://registry.npmjs.org/", "https://registry.npmmirror.com/", "https://mirrors.cloud.tencent.com/npm/", "https://cdn.jsdelivr.net/npm/"]) {
         try {
-            console.log("");
-            consola.start(color(`Checking (${mirror}${name})..`));
+            consola.start(color(`Checking (${mirror}${uiName})..`));
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 8000);
-            const response = await fetch(`${mirror}${name}`, {
+            const response = await fetch(`${mirror}${uiName}`, {
                 signal: controller.signal
             });
             clearTimeout(timeout);
             if (response.status !== 200) continue;
             const json = await response.json();
-            if (json.name !== name) continue;
-            packageInfo = {
+            if (json.name !== uiName) continue;
+            uiPackageInfo = {
                 mirror,
                 json,
             };
@@ -45,29 +52,70 @@ const color = gradient(["cyan", "#2d9b87"]);
             continue;
         }
     }
-    if (!packageInfo) {
+    if (!uiPackageInfo) {
+        consola.error(color("Network connection failed!"));
+        exit(1);
+    }
+    for (const mirror of ["https://registry.npmjs.org/", "https://registry.npmmirror.com/", "https://mirrors.cloud.tencent.com/npm/", "https://cdn.jsdelivr.net/npm/"]) {
+        try {
+            consola.start(color(`Checking (${mirror}${cookbookName})..`));
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 8000);
+            const response = await fetch(`${mirror}${cookbookName}`, {
+                signal: controller.signal
+            });
+            clearTimeout(timeout);
+            if (response.status !== 200) continue;
+            const json = await response.json();
+            if (json.name !== cookbookName) continue;
+            cookbookPackageInfo = {
+                mirror,
+                json,
+            };
+            break;
+        } catch (error) {
+            continue;
+        }
+    }
+    if (!cookbookPackageInfo) {
         consola.error(color("Network connection failed!"));
         exit(1);
     }
 
-    const url = `${packageInfo.mirror}${name}/-/cookbook-${process.platform}-${os.arch()}-${packageInfo.json["dist-tags"].latest}.tgz`;
-    console.log(url)
-    consola.start(url);
-    consola.start(color(`Downloading..`));
-    await utils.downloadFile(url, tempspace, "cookbook.tgz");
+    const uiUrl = `${cookbookPackageInfo.mirror}${uiName}/-/cookbook-ui-${version === 'latest' ? uiPackageInfo.json["dist-tags"].latest : version}.tgz`;
+    consola.start(uiUrl);
+    consola.start(color(`Downloading Cookbook UI (${uiUrl})..`));
+    await utils.downloadFile(uiUrl, tempspace, "ui.tgz");
     consola.success(color("Downloaded!"));
+    const uiExtractPromise = ((async () => {
+        consola.start(color(`Cookbook UI Extracting..`));
+        if (!existsSync(join(tempspace, "ui"))) mkdirSync(join(tempspace, "ui"))
+        await compressing.tgz.uncompress(join(tempspace, "ui.tgz"), join(tempspace, "ui"));
+        consola.success(color("Cookbook UI Extracted!"));
+    }))();
 
-    consola.start(color(`Extracting..`));
-    await tar.extract({
-        file: join(tempspace, "cookbook.tgz"),
-        cwd: tempspace,
-    });
-    await utils.mvToPathAndClean(join(tempspace, "package"), process.platform === "win32" ? "co.exe" : "co", tempspace);
-    consola.success(color("Extracted!"));
+    const cookbookUrl = `${cookbookPackageInfo.mirror}${cookbookName}/-/cookbook-${process.platform}-${os.arch()}-${version === 'latest' ? cookbookPackageInfo.json["dist-tags"].latest : version}.tgz`;
+    consola.start(cookbookUrl);
+    consola.start(color(`Downloading Cookbook Core (${cookbookUrl})..`));
+    await utils.downloadFile(cookbookUrl, tempspace, "cookbook.tgz");
+    consola.success(color("Downloaded!"));
+    const cookbookExtractPromise = ((async () => {
+        consola.start(color(`Cookbook Core Extracting..`));
+        await compressing.tgz.uncompress(join(tempspace, "cookbook.tgz"), tempspace);
+        consola.success(color("Cookbook Core Extracted!"));
+    }))();
+
+    await Promise.all([uiExtractPromise, cookbookExtractPromise]);
+
+    consola.success(color("Installing.."));
+    await utils.mvToPathAndInstall(join(tempspace, "package"), process.platform === "win32" ? "co.exe" : "co", tempspace);
+    await utils.mvUIDir(join(tempspace, "ui", "package"));
+    await utils.tempspaceClean(tempspace);
+    consola.success(color("Installed!"));
 
     console.log("");
     consola.info(color(`Try run: co version`));
-    consola.info(colorLong(`If you find that the co command does not exist, try restarting your Terminal or System`));
+    consola.info(colorLong(`* If you find that the co command does not exist, try restarting your Terminal or System`));
 })();
 
 const utils = {
@@ -78,7 +126,35 @@ const utils = {
         const fileStream = createWriteStream(destination, { flags: "wx" });
         await finished(Readable.fromWeb(res.body).pipe(fileStream));
     },
-    mvToPathAndClean: async (workspace, filename, tempspace) => {
+    mvUIDir: async (tempspace) => {
+        if (!existsSync(process.env.USERPROFILE, ".cookbook")) mkdirSync(process.env.USERPROFILE, ".cookbook");
+        if (process.platform === "win32") {
+            if (existsSync(join(process.env.USERPROFILE, ".cookbook", 'ui'))) await utils.executePowershell(`Remove-Item -Recurse -Force "${join(process.env.USERPROFILE, ".cookbook", 'ui')}";`);
+            await utils.executePowershell(`Move-Item -Path "${join(tempspace)}" -Destination "${join(process.env.USERPROFILE, ".cookbook", 'ui')}" -Force;`);
+            return;
+        }
+        if (process.platform === "linux") {
+            if (existsSync(join(process.env.HOME, ".cookbook", 'ui'))) await utils.executeBash(`rm -rf "${join(process.env.HOME, ".cookbook", 'ui')}";`);
+            await utils.executeBash(`mv "${join(tempspace)}" "${join(process.env.HOME, ".cookbook", 'ui')}"`);
+        }
+        if (process.platform === "darwin") {
+            if (existsSync(join(process.env.HOME, ".cookbook", 'ui'))) await utils.executeBash(`rm -rf "${join(process.env.HOME, ".cookbook", 'ui')}";`);
+            await utils.executeBash(`mv "${join(tempspace)}" "${join(process.env.HOME, ".cookbook", 'ui')}"`);
+        }
+    },
+    tempspaceClean: async (tempspace) => {
+        if (process.platform === "win32") {
+            if (existsSync(join(tempspace))) await utils.executePowershell(`Remove-Item -Recurse -Force "${join(tempspace)}";`);
+            return;
+        }
+        if (process.platform === "linux") {
+            if (existsSync(join(tempspace))) await utils.executeBash(`rm -rf "${join(tempspace)}"`);
+        }
+        if (process.platform === "darwin") {
+            if (existsSync(join(tempspace))) await utils.executeBash(`rm -rf "${join(tempspace)}"`);
+        }
+    },
+    mvToPathAndInstall: async (workspace, filename, tempspace) => {
         if (process.platform === "win32") {
             await new Promise((resolve) => setTimeout(resolve, 500));
             if (!(process.env.PATH.includes(`${join(process.env.USERPROFILE, ".cookbook")};`) || process.env.PATH.includes(`;${join(process.env.USERPROFILE, ".cookbook")}`) || process.env.PATH === `${join(process.env.USERPROFILE, ".cookbook")}`)) {
@@ -87,7 +163,6 @@ const utils = {
             if (!existsSync(process.env.USERPROFILE, ".cookbook")) mkdirSync(process.env.USERPROFILE, ".cookbook");
             if (existsSync(join(process.env.USERPROFILE, ".cookbook", filename))) rmSync(join(process.env.USERPROFILE, ".cookbook", filename));
             await utils.executePowershell(`Move-Item -Path "${join(workspace, filename)}" -Destination "${join(process.env.USERPROFILE, ".cookbook")}";`);
-            await utils.executePowershell(`Remove-Item -Recurse -Force "${join(tempspace)}";`);
             return;
         }
         if (process.platform === "linux") {
@@ -108,8 +183,8 @@ const utils = {
                 if (pathChecked.startsWith("/home")) await utils.executeBash(`rm -f ${join(pathChecked, filename)}`);
                 else await utils.executeBash(`sudo rm -f ${join(pathChecked, filename)}`);
             }
-            if (pathChecked.startsWith("/home")) await utils.executeBash(`mv ${join(workspace, filename)} ${pathChecked} && chmod +x ${join(pathChecked, filename)} && rm -rf ${join(tempspace)}`);
-            else await utils.executeBash(`sudo mv ${join(workspace, filename)} ${pathChecked} && sudo chmod +x ${join(pathChecked, filename)} && sudo rm -rf ${join(tempspace)}`);
+            if (pathChecked.startsWith("/home")) await utils.executeBash(`mv ${join(workspace, filename)} ${pathChecked} && chmod +x ${join(pathChecked, filename)}`);
+            else await utils.executeBash(`sudo mv ${join(workspace, filename)} ${pathChecked} && sudo chmod +x ${join(pathChecked, filename)}`);
         }
         if (process.platform === "darwin") {
             const paths = [join(process.env.HOME, "bin"), join(process.env.HOME, ".bin"), join(process.env.HOME, ".local", "bin"), "/usr/local/bin"];
@@ -129,8 +204,8 @@ const utils = {
                 if (pathChecked.startsWith("/Users")) await utils.executeBash(`rm -f ${join(pathChecked, filename)}`);
                 else await utils.executeBash(`sudo rm -f ${join(pathChecked, filename)}`);
             }
-            if (pathChecked.startsWith("/Users")) await utils.executeBash(`mv ${join(workspace, filename)} ${pathChecked} && chmod +x ${join(pathChecked, filename)} && rm -rf ${join(tempspace)}`);
-            else await utils.executeBash(`sudo mv ${join(workspace, filename)} ${pathChecked} && sudo chmod +x ${join(pathChecked, filename)} && sudo rm -rf ${join(tempspace)}`);
+            if (pathChecked.startsWith("/Users")) await utils.executeBash(`mv ${join(workspace, filename)} ${pathChecked} && chmod +x ${join(pathChecked, filename)}`);
+            else await utils.executeBash(`sudo mv ${join(workspace, filename)} ${pathChecked} && sudo chmod +x ${join(pathChecked, filename)}`);
         }
     },
     executePowershell: async (script) => {
