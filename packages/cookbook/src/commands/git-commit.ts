@@ -49,10 +49,9 @@ export default await defineCookbookCommand(async (utils) => {
 - ✨ feat
 - 🧊 fix
 - 🦄 improve
-- 🧩 refact
+- 🧩 refactor
 - 📄 docs
 - ✅ test
-- 🔧 refactor
 - 🔨 chore
 
 ## 技能
