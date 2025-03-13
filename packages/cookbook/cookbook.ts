@@ -1,5 +1,4 @@
 #!/usr/bin/env bun
 
-import { execute } from './src/index'
-
-await execute()
+import { cookbook } from './src/index'
+await cookbook();

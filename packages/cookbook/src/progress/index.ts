@@ -8,7 +8,7 @@ export const progress = {
   time: 0,
   intervalId: undefined as Timer | undefined,
   textIntervalId: undefined as Timer | undefined,
-  open() {
+  open(message: string) {
     progress.timeStart = Date.now()
     progress.current = 0
     const speed = 4800
@@ -17,7 +17,7 @@ export const progress = {
     progress.timeWaste = 0
     progress.time = 0
     progress.rate = 0
-    consola.start(`[${(progress.rate++ / 10).toFixed(1)}%] cookbook is generating..`)
+    consola.start(`[${(progress.rate++ / 10).toFixed(1)}%] ${message}`)
 
     progress.intervalId = setInterval(() => {
       progress.time += intervalFrequency
@@ -29,10 +29,10 @@ export const progress = {
       progress.rate = Math.floor(progress.current * 1000)
     }, intervalFrequency)
     progress.textIntervalId = setInterval(() => {
-      if (progress.rate < 1000) consola.start(`[${(progress.rate++ / 10).toFixed(1)}%] cookbook is generating..`)
+      if (progress.rate < 1000) consola.start(`[${(progress.rate++ / 10).toFixed(1)}%] ${message}`)
     }, 334)
   },
-  async close() {
+  async close(message: string) {
     clearInterval(progress.intervalId)
     clearInterval(progress.textIntervalId)
     const p = Math.ceil(progress.current * 1000)
@@ -42,6 +42,6 @@ export const progress = {
     }
     progress.rate = 1000
 
-    consola.success(`[100%] Cookbook is ready.`)
+    consola.success(`[100.0%] ${message}`)
   },
 }

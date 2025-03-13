@@ -1,15 +1,18 @@
-import { packageJson } from '../utils/package-json'
-import { devCommand } from './dev'
-import { upgradeCommand } from './upgrade'
-import { defaultCommand } from './default'
-import { initCommand } from './init'
-
-export const paths = ['dev', 'init', 'upgrade']
-
-export async function __router__(path: string) {
-  if (path === 'version' || path === '--version' || path === '-v') return console.log(packageJson.version)
-  if (path === 'dev') return devCommand()
-  if (path === 'init') return initCommand()
-  if (path === 'upgrade') return upgradeCommand()
-  return defaultCommand()
-}
+export const __router__ = [
+  {
+    commands: ["dev"],
+    script: () => import("./dev.ts"),
+  },
+  {
+    commands: ["init"],
+    script: () => import("./init.ts"),
+  },
+  {
+    commands: ["upgrade", "up"],
+    script: () => import("./upgrade.ts"),
+  },
+  {
+    commands: ["git:commit", "gc"],
+    script: () => import("./git-commit.ts"),
+  },
+]

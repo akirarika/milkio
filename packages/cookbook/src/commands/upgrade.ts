@@ -2,8 +2,9 @@ import consola from 'consola'
 import { join } from 'node:path'
 import { cwd, exit } from 'node:process'
 import { readFile, writeFile } from 'node:fs/promises'
+import { defineCookbookCommand } from '@milkio/cookbook-command'
 
-export async function upgradeCommand() {
+export default await defineCookbookCommand(async (utils) => {
   const packageJson = JSON.parse(await readFile(join(cwd(), 'package.json'), 'utf-8'))
   const lastMilkioVersion = packageJson?.dependencies?.milkio ?? packageJson?.peerDependencies?.milkio
   if (!lastMilkioVersion) {
@@ -45,4 +46,4 @@ export async function upgradeCommand() {
   console.log(`△ Milkio upgrade!`)
   console.log(`△ Run the installation command, such as: bun i`)
   console.log('')
-}
+})

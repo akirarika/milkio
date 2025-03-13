@@ -4,10 +4,8 @@
   "workspaces": [".commands", "projects/*", "packages/*"],
   "module": "index.ts",
   "scripts": {
-    "dev": "bun run ./.commands/develop.ts && bun run ./packages/cookbook/cookbook.ts dev",
-    "cookbook": "bun run ./.commands/develop.ts && bun run ./packages/cookbook/cookbook.ts",
-    "publ": "bun run ./.commands/publish.ts",
-    "test": "vitest --max-concurrency=1"
+    "cookbook:dev": "bun run ./.commands/develop.ts && bun run ./packages/cookbook/cookbook.ts dev",
+    "cookbook": "bun run ./.commands/develop.ts && bun run ./packages/cookbook/cookbook.ts"
   },
   "trustedDependencies": [],
   "dependencies": {

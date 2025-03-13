@@ -109,7 +109,7 @@ export default await defineCookbookCommand(async (utils) => {
       const checkGitStatus = await $`git status --porcelain`.text()
       if (checkGitStatus.trim() !== '') {
         await $`git add --all`
-        await $`${{ raw: `git commit -m "?? publish: v${newVersion}"` }}`
+        await $`${{ raw: `git commit -m "🎈 publish: v${newVersion}"` }}`
         await $`git push -u origin ${(await $`git symbolic-ref --short HEAD`).text().trim()}`
       }
   
@@ -210,18 +210,18 @@ export default await defineCookbookCommand(async (utils) => {
   
   consola.success(`所有的包均发布完成：${[mainPackage, ...childPackages].join(', ')}`)
   
-  console.log('\n?? 如果版本是修复 bug 版本 (仅最小版本号增加) 则无需编写发行说明')
+  console.log('\n如果版本是修复 bug 版本 (仅最小版本号增加) 则无需编写发行说明')
   if ((await cli.select('要编写发行说明吗？', ['否', '是'])) === '是') {
     console.clear()
     if (await exists(join(cwd, '.commands', 'publish', 'releases', `${newVersion}.md`))) {
       console.log('已存在该版本的发布说明文件，你可能输入了一个已经存在的版本号')
       if ((await cli.select('确定使用此版本吗？', ['否', '是'])) === '否') process.exit(0)
-      console.log('?? 请编辑发行说明文件，并在编辑完成后，再继续操作 (VS Code 按住 Ctrl 键点击下方路径可快速编辑)\n')
+      console.log('请编辑发行说明文件，并在编辑完成后，再继续操作 (VS Code 按住 Ctrl 键点击下方路径可快速编辑)\n')
     }
     else {
       const markdownTemplate = `# ${newVersion} - 某章节名\n\n> 一段编纂出来的虚构科幻小说的摘抄片段\n\n## ...更新内容...\n\n...更新内容...\n\n## 升级\n\n\`\`\`\nbun i ${packageJson.name}@${newVersion}\n\`\`\``
       await writeFile(join(cwd, '.commands', 'publish', 'releases', `${newVersion}.md`), markdownTemplate)
-      console.log('?? 已创建发行说明文件。请编辑它，并在编辑完成后，再继续操作 (VS Code 按住 Ctrl 键点击下方路径可快速编辑)\n')
+      console.log('已创建发行说明文件。请编辑它，并在编辑完成后，再继续操作 (VS Code 按住 Ctrl 键点击下方路径可快速编辑)\n')
     }
   
     let releaseNote: string
@@ -294,7 +294,7 @@ export default await defineCookbookCommand(async (utils) => {
       const releaseGithubNoteTranslated = await translateToEnglish(releaseGithubNote)
       await writeFile(join(cwd, '.commands', 'publish', 'releases-english', `${newVersion}.md`), `${releaseGithubNote}\n\n----------------\n\n${releaseGithubNoteTranslated}`)
       console.log('发行说明翻译完成')
-      console.log('?? 请编辑它，检查翻译的内容是否合理')
+      console.log('请编辑它，检查翻译的内容是否合理')
       console.log('其中，还重新回译了一份译文，你可以结合译文和回译译文，来判断结果是否有错漏。在正式提交前，需删除回译的译文\n')
       console.log(join(cwd, '.commands', 'publish', 'releases-english', `${newVersion}.md`))
       if ((await cli.select('\n检查完毕并继续吗？', ['否，重新翻译', '是，继续'])) === '是，继续') break
@@ -351,12 +351,12 @@ export default await defineCookbookCommand(async (utils) => {
     const checkGitStatus = await $`git status --porcelain`.text()
     if (checkGitStatus.trim() !== '') {
       await $`git add --all`
-      await $`${{ raw: `git commit -m "?? release: v${newVersion}"` }}`
+      await $`${{ raw: `git commit -m "release: v${newVersion}"` }}`
       await $`git push -u origin ${(await $`git symbolic-ref --short HEAD`).text().trim()}`
     }
   }
   
-  console.log('\n\n?? 发布成功\n')
+  console.log('\n\n发布成功\n')
   console.log(`- npm: https://www.npmjs.com/package/${packageJson.name}/v/${newVersion}`)
   console.log(`- gitee: https://gitee.com/${publishJson.giteeOwner}/${publishJson.giteeRepo}/releases/tag/v${newVersion}`)
   console.log(`- github: https://github.com/${publishJson.githubOwner}/${publishJson.githubRepo}/releases/tag/v${newVersion}`)

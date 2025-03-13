@@ -3,7 +3,8 @@
   "module": "index.ts",
   "type": "module",
   "dependencies": {
-    "consola": "^3.4.0"
+    "consola": "^3.4.0",
+    "openai": "^4.87.3"
   },
   "version": "1.0.0-alpha.80"
 }

@@ -1,57 +1,16 @@
 import chalk from 'chalk'
-import consola from 'consola'
-import { join } from 'node:path'
-import { exit, cwd } from 'node:process'
-import { existsSync } from 'node:fs'
+import { defineCookbookCommand } from "@milkio/cookbook-command";
 import { initWorkers } from '../workers'
 import { initWatcher } from '../watcher'
 import { initServer } from '../server'
 import { generator } from '../generator'
 import { progress } from '../progress'
-import { checkPort } from '../utils/check-port'
-import { killPort } from '../utils/kill-port'
+import { getCookbookToml } from '../utils/get-cookbook-toml'
 
-export async function devCommand() {
-  progress.open()
-
+export default await defineCookbookCommand(async (utils) => {
+  progress.open('cookbook is generating..')
   const startTime = new Date()
-  const cookbookToml = Bun.file(join(cwd(), 'cookbook.toml'))
-  if (!(await cookbookToml.exists())) {
-    consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`)
-    exit(0)
-  }
-  const options: any = Bun.TOML.parse(await cookbookToml.text());
-  if (Object.keys(options.projects).length === 0) {
-    consola.error(`For at least one project, check your "cookbook.toml".`)
-    exit(0)
-  }
-  for (const projectName in options.projects) {
-    if (!existsSync(join(cwd(), 'projects', projectName, 'package.json'))) {
-      consola.error(`This project "${projectName}" does not exist (directory does not exist or there is no package.json), if the project has been deleted, please edit your "cookbook.toml" and delete [projects.${projectName}].`)
-      exit(0)
-    }
-  }
-
-  if (!(await checkPort(options.general.cookbookPort))) {
-    progress.close()
-    consola.info(`Port number ${options.general.cookbookPort} is already occupied. You may have started Cookbook.`)
-    const confirm = await consola.prompt('Do you want to try to kill the process that is using the port number?', {
-      type: 'confirm',
-    })
-    if (!confirm) exit(0)
-    if (confirm) {
-      try {
-        await killPort(options.general.cookbookPort)
-        await Bun.sleep(768)
-      }
-      catch (error) { }
-      if (!(await checkPort(options.general.cookbookPort))) {
-        consola.error(`Attempted to kill the process occupying the port number, but this appears to be ineffective.`)
-        await exit(0)
-      }
-      progress.close()
-    }
-  }
+  const options = await getCookbookToml(progress)
 
   await generator.significant(options) // insignificant running in initWather
   await initWorkers(options)
@@ -63,18 +22,17 @@ export async function devCommand() {
   void initServer(options)
 
   const endTime = new Date()
-  progress.close().then(() => {
-    console.log(asciis().join('\n'))
-    console.log(chalk.hex('#24B56A')(`△ `) + message())
-    console.log(chalk.hex('#24B56A')(`△ `) + chalk.hex('#E6E7E9')(`Time taken: `) + chalk.hex('#24B56A')(`${endTime.getTime() - startTime.getTime()}ms`))
-    console.log('')
-    console.log(chalk.hex('#24B56A')(`△ `) + chalk.hex('#24B56A')(`cookbook:\t\t`) + chalk.hex('#4988fc')(`http://localhost:${options.general.cookbookPort}/`))
-    // for (const projectName in options.projects) {
-    //   const project = options.projects[projectName]
-    //   console.log(chalk.hex('#24B56A')(`△ `) + chalk.hex('#24B56A')(`${projectName}:\t${projectName.length > 12 ? '' : '\t'}${projectName.length > 6 ? '' : '\t'}`) + chalk.hex('#4988fc')(`http://localhost:${project.port}/`))
-    // }
-  })
-}
+  await progress.close('Cookbook is ready.');
+  console.log(asciis().join('\n'))
+  console.log(chalk.hex('#24B56A')(`△ `) + message())
+  console.log(chalk.hex('#24B56A')(`△ `) + chalk.hex('#E6E7E9')(`Time taken: `) + chalk.hex('#24B56A')(`${endTime.getTime() - startTime.getTime()}ms`))
+  console.log('')
+  console.log(chalk.hex('#24B56A')(`△ `) + chalk.hex('#24B56A')(`cookbook:\t\t`) + chalk.hex('#4988fc')(`http://localhost:${options.general.cookbookPort}/`))
+  console.log('')
+
+  const resolvers = Promise.withResolvers()
+  await resolvers.promise // let the never exit
+})
 
 
 function asciis() {
