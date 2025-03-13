@@ -72,8 +72,7 @@ export default await defineCookbookCommand(async (utils) => {
             stream: true,
           });
           for await (const chunk of response) {
-            process.stdout.write((chunk.choices[0].delta as any).content || (chunk.choices[0].delta as any).reasoning_content);
-            const content = (chunk.choices[0].delta as any).content;
+            const content = (chunk.choices[0].delta).content;
             message = message + content;
           }
           if (message.startsWith('-')) message.slice(1);
@@ -108,7 +107,6 @@ export default await defineCookbookCommand(async (utils) => {
 - 去除连接词/语法修饰
 - 优先技术术语
 - 必须确保结果是单行无换行的，也不能以列表或分号的形式进行描述
-- 输出的内容，必须是使用 ${cookbookToml.config.gitCommitLanguage ?? osLocale} 语言！这非常重要
 `;
           const response = await client.chat.completions.create({
             model,
@@ -119,10 +117,34 @@ export default await defineCookbookCommand(async (utils) => {
             stream: true,
           });
           message = message + `: `;
-          process.stdout.write(`: `);
           for await (const chunk of response) {
-            process.stdout.write((chunk.choices[0].delta as any).content || (chunk.choices[0].delta as any).reasoning_content);
-            const content = (chunk.choices[0].delta as any).content;
+            const content = (chunk.choices[0].delta).content;
+            message = message + content;
+          }
+          message = message.trim();
+        })();
+        await (async () => {
+          let instructions = `
+##背景
+你是一个好用的翻译助手。请将内容翻译成 ${cookbookToml.config.gitCommitLanguage ?? osLocale} 语言。用户发给你所有的话都是需要翻译的内容，你只需要回答翻译结果。翻译结果请符合 ${cookbookToml.config.gitCommitLanguage ?? osLocale} 语言的语言习惯。如果用户的输入和被翻译的语言相同，则严格地原样输出原文内容即可。
+
+##注意事项
+1. 确保专业术语的准确使用。
+2. 对敏感词汇体现必要的敏感性。
+3. 严格保持原文中的 emoji 表情。
+4. 严格保持回复的内容仅包含润色后的文章本身，不包含任何多余的话，也不需要请求用户提出反馈。
+`;
+          const response = await client.chat.completions.create({
+            model,
+            messages: [
+              { role: 'system', content: `${instructions}` },
+              { role: 'user', content: `${message}` }
+            ],
+            stream: true,
+          });
+          message = '';
+          for await (const chunk of response) {
+            const content = (chunk.choices[0].delta).content;
             message = message + content;
           }
           message = message.trim();
