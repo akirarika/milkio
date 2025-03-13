@@ -52,10 +52,7 @@ export async function defaultCommand() {
 
   if (params.command === "index") {
     const commands = [] as Array<{ name: string; value: string; path?: string; description?: "global" | "npm-script" | "workspace" | "built-in" }>;
-
-    for (const path of paths) {
-      commands.push({ name: path, value: path, description: "built-in" });
-    }
+    commands.push({ name: 'dev', value: 'dev', description: "built-in" });
 
     if (await exists(join(env.HOME || env.USERPROFILE || "/", ".commands"))) {
       const dir = await readdir(join(env.HOME || env.USERPROFILE || "/", ".commands"));
@@ -79,11 +76,16 @@ export async function defaultCommand() {
       const dir = await readdir(join(cwd(), ".commands"));
       let temp = [] as typeof commands;
       for (const file of dir) {
-        if (!file.endsWith(".ts")) continue;
-        commands.push({ name: file.slice(0, -3), value: file, path: join(cwd(), ".commands", file), description: "workspace" });
+        if (!file.endsWith(".command.ts")) continue;
+        commands.push({ name: file.slice(0, -11), value: file, path: join(cwd(), ".commands", file), description: "workspace" });
       }
       temp.sort((a, b) => a.name.localeCompare(b.name));
       commands.push(...temp);
+    }
+
+    for (const path of paths) {
+      if (path === 'dev') continue;
+      commands.push({ name: path, value: path, description: "built-in" });
     }
 
     if (commands.length === 0) {
@@ -105,13 +107,13 @@ export async function defaultCommand() {
     if (command.description === 'built-in') await __router__(command.value!);
     else await run(params, command as any);
     exit(0);
-  } else if (await exists(join(cwd(), ".commands", `${params.command}.ts`))) {
-    const modulePath = join(cwd(), ".commands", `${params.command}.ts`);
+  } else if (await exists(join(cwd(), ".commands", `${params.command}.command.ts`))) {
+    const modulePath = join(cwd(), ".commands", `${params.command}.command.ts`);
     await run(params, { path: modulePath, description: "workspace" });
   } else if (packageJson?.scripts?.[params.command]) {
     run(params, { path: params.command, description: "npm-script" });
-  } else if (await exists(join(env.HOME || env.USERPROFILE || "/", ".commands", `${params.command}.ts`))) {
-    const modulePath = join(env.HOME || env.USERPROFILE || "/", ".commands", `${params.command}.ts`);
+  } else if (await exists(join(env.HOME || env.USERPROFILE || "/", ".commands", `${params.command}.command.ts`))) {
+    const modulePath = join(env.HOME || env.USERPROFILE || "/", ".commands", `${params.command}.command.ts`);
     await run(params, { path: modulePath, description: "global" });
   } else {
     // not found
