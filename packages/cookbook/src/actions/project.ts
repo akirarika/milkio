@@ -25,7 +25,25 @@ async function log(options: CookbookOptions, params: CookbookActionParams) {
     return worker.stdout.slice(firstIndex === -1 ? 0 : firstIndex, worker.stdout.length - 1)
 }
 
+async function stop(options: CookbookOptions, params: CookbookActionParams) {
+    if (params.type !== 'project@stop') return false
+    const worker = workers.get(params.key)
+    if (!worker) return false
+    await worker.kill()
+    return {}
+}
+
+async function start(options: CookbookOptions, params: CookbookActionParams) {
+    if (params.type !== 'project@start') return false
+    const worker = workers.get(params.key)
+    if (!worker) return false
+    await worker.run()
+    return {}
+}
+
 export const projectActions = [
     list,
     log,
+    stop,
+    start,
 ]

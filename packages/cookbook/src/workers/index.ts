@@ -66,20 +66,21 @@ export function createWorker(
     kill: async () => {
       if (worker.state === 'stopped') return
       emitter.emit('data', { type: 'workers@state', key, state: 'stopped', code: 'kill' })
-      worker.state = 'stopped'
-
       if (!spawnProcess) return Promise.resolve()
-      return new Promise((resolve) => {
-        spawnProcess?.once('exit', () => resolve())
+      const message = `--------------------------------\n# Stop ${key}\n--------------------------------`
+      worker.stdout.push([stdoutIndex++, Date.now(), 'stdout', message])
+      await new Promise((resolve) => {
+        spawnProcess?.once('exit', () => resolve(undefined))
         try {
           spawnProcess?.kill('SIGINT')
         } catch (error) {
         }
       })
+      worker.state = 'stopped'
     },
     run: () => {
       if (worker.state === 'running') return
-      const message = `--------------------------------\n# Starting ${key}...\n--------------------------------`
+      const message = `--------------------------------\n# Start ${key}\n--------------------------------`
       worker.stdout.push([stdoutIndex++, Date.now(), 'stdout', message])
       try {
         spawnProcess = spawn(options.command[0], options.command.slice(1), {

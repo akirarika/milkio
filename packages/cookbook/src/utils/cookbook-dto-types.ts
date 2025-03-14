@@ -14,6 +14,12 @@ export type CookbookActionParams = {
   type: 'project@log'
   key: string
   firstId: number
+} | {
+  type: 'project@stop'
+  key: string
+} | {
+  type: 'project@start'
+  key: string
 }
 
 export interface CookbookOptions {
