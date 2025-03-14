@@ -1,5 +1,9 @@
 export const __router__ = [
   {
+    commands: ["version"],
+    script: () => import("./version.ts"),
+  },
+  {
     commands: ["dev"],
     script: () => import("./dev.ts"),
   },
