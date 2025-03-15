@@ -11,16 +11,16 @@ export default await defineCookbookCommand(async (utils) => {
     if (!project) exit(0)
     const command = `${cookbookToml.general.packageManager} run prisma ${project?.prismaMigrateMode === 'push' ? 'db push' : 'migrate dev'}`
     consola.log(command)
-    try {
-        await $`${command}`.cwd(join(project.path))
-    } catch (error: any) {
-        if (!(error?.stderr?.includes('command not found'))) throw error;
-        consola.warn('Prisma CLI not detected! Let\'s fix this:');
-        consola.log(`1. Add script to ${join(project.path, 'package.json')}:\n   "scripts": { "prisma": "prisma" }\n`);
-        consola.log(`2. Install dependencies:\n   cd "${join(project.path)}"\n   ${cookbookToml.general.packageManager} i prisma @prisma/client\n`);
-        consola.log(`3. If the project has not yet configured prisma, refer to the official prisma website to configure: https://www.prisma.io/docs/getting-started\n`);
-        consola.log(`4. Try again.`);
-        consola.warn('Prisma CLI not detected!');
-    }
+    // try {
+    await $`${command}`.cwd(join(project.path))
+    // } catch (error: any) {
+    //     if (!(error?.stderr?.includes('command not found'))) throw error;
+    //     consola.warn('Prisma CLI not detected! Let\'s fix this:');
+    //     consola.log(`1. Add script to ${join(project.path, 'package.json')}:\n   "scripts": { "prisma": "prisma" }\n`);
+    //     consola.log(`2. Install dependencies:\n   cd "${join(project.path)}"\n   ${cookbookToml.general.packageManager} i prisma @prisma/client\n`);
+    //     consola.log(`3. If the project has not yet configured prisma, refer to the official prisma website to configure: https://www.prisma.io/docs/getting-started\n`);
+    //     consola.log(`4. Try again.`);
+    //     consola.warn('Prisma CLI not detected!');
+    // }
     exit(0)
 })
