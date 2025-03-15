@@ -31,16 +31,14 @@ export default await defineCookbookCommand(async (utils) => {
 
   const canUseAI = await utils.canUseAI();
 
-  while (true) {
-    try {
-      let messagePrefix = "";
-      let message = "";
-      let messageTranslated = "";
-      if (canUseAI && diff.length < 65535) {
-        const { client, model } = await utils.useAI();
-        await utils.openProgress(`Generating AI commit message (${model})..`);
-        await (async () => {
-          let instructions = `
+  let messagePrefix = "";
+  let message = "";
+  let messageTranslated = "";
+  if (canUseAI && diff.length < 65535) {
+    const { client, model } = await utils.useAI();
+    await utils.openProgress(`Generating AI commit message (${model})..`);
+    await (async () => {
+      let instructions = `
 # 角色
 你是一位专业的 git diff 分析员，能够精准接收用户提供的 git diff 信息，并根据其内容准确判断主要改动类型。从以下可选回复中，选择其中之一进行回复。可选回复由 emoji 和描述文字组成。
 
@@ -64,23 +62,23 @@ export default await defineCookbookCommand(async (utils) => {
 # 角色
 你是一个专业严谨的代码改动分析员，能够精准解析 git diff 结果并用结构化 emoji 格式描述核心改动
 `;
-          const response = await client.chat.completions.create({
-            model,
-            messages: [
-              { role: 'system', content: `${instructions}` },
-              { role: 'user', content: `${diff}` }
-            ],
-            stream: true,
-          });
-          for await (const chunk of response) {
-            const content = (chunk.choices[0].delta).content;
-            messagePrefix = messagePrefix + content;
-          }
-          if (messagePrefix.startsWith('-')) messagePrefix.slice(1);
-          messagePrefix = messagePrefix.trim();
-        })();
-        await (async () => {
-          let instructions = `
+      const response = await client.chat.completions.create({
+        model,
+        messages: [
+          { role: 'system', content: `${instructions}` },
+          { role: 'user', content: `${diff}` }
+        ],
+        stream: true,
+      });
+      for await (const chunk of response) {
+        const content = (chunk.choices[0].delta).content;
+        messagePrefix = messagePrefix + content;
+      }
+      if (messagePrefix.startsWith('-')) messagePrefix.slice(1);
+      messagePrefix = messagePrefix.trim();
+    })();
+    await (async () => {
+      let instructions = `
 # 角色
 你是一个专业的代码改动分析员，你将会收到所做改动的方向，和 git diff 的结果，你能够能够从这些内容中清晰、准确地描述本次的改动内容，并使用一句话，简练精准地描述本次改动的主要内容
 
@@ -109,22 +107,22 @@ export default await defineCookbookCommand(async (utils) => {
 - 优先技术术语
 - 必须确保结果是单行无换行的，也不能以列表或分号的形式进行描述
 `;
-          const response = await client.chat.completions.create({
-            model,
-            messages: [
-              { role: 'system', content: `${instructions}` },
-              { role: 'user', content: `${diff}` }
-            ],
-            stream: true,
-          });
-          for await (const chunk of response) {
-            const content = (chunk.choices[0].delta).content;
-            message = message + content;
-          }
-          message = message.trim();
-        })();
-        await (async () => {
-          let instructions = `
+      const response = await client.chat.completions.create({
+        model,
+        messages: [
+          { role: 'system', content: `${instructions}` },
+          { role: 'user', content: `${diff}` }
+        ],
+        stream: true,
+      });
+      for await (const chunk of response) {
+        const content = (chunk.choices[0].delta).content;
+        message = message + content;
+      }
+      message = message.trim();
+    })();
+    await (async () => {
+      let instructions = `
 ##背景
 你是一个好用的翻译助手。请将内容翻译成 ${cookbookToml.config.gitCommitLanguage ?? osLocale} 语言。用户发给你所有的话都是需要翻译的内容，你只需要回答翻译结果。翻译结果请符合 ${cookbookToml.config.gitCommitLanguage ?? osLocale} 语言的语言习惯。如果用户的输入和被翻译的语言相同，则严格地原样输出原文内容即可。
 
@@ -134,48 +132,46 @@ export default await defineCookbookCommand(async (utils) => {
 3. 必须确保所有的单词都是小写的。
 5. 严格保持回复的内容仅包含翻译后的内容本身，不包含任何多余的话，也不需要请求用户提出反馈。
 `;
-          const response = await client.chat.completions.create({
-            model,
-            messages: [
-              { role: 'system', content: `${instructions}` },
-              { role: 'user', content: `${message}` }
-            ],
-            stream: true,
-          });
-          for await (const chunk of response) {
-            const content = (chunk.choices[0].delta).content;
-            messageTranslated = messageTranslated + content;
-          }
-          messageTranslated = messageTranslated.trim();
-        })();
-        await utils.closeProgress(`Generated!`);
+      const response = await client.chat.completions.create({
+        model,
+        messages: [
+          { role: 'system', content: `${instructions}` },
+          { role: 'user', content: `${message}` }
+        ],
+        stream: true,
+      });
+      for await (const chunk of response) {
+        const content = (chunk.choices[0].delta).content;
+        messageTranslated = messageTranslated + content;
       }
+      messageTranslated = messageTranslated.trim();
+    })();
+    await utils.closeProgress(`Generated!`);
+  }
 
-      if (diff.length >= 65535) consola.warn(`The diff result is too long, so this commit is no longer automatically generated using AI.`)
-      console.log('')
-      const messageMixed = `${messagePrefix}: ${messageTranslated}`;
-      console.log(messageMixed);
-      let inputMessage = "";
-      if (await utils.inputBoolean({
-        env: 'is-it-adopted',
-        message: `Is it adopted?`,
-      })) {
-        inputMessage = messageMixed;
-      } else {
-        inputMessage = await utils.inputString({
-          env: "message",
-          message: "Enter commit message",
-          placeholder: messageMixed,
-        })
-        if (!inputMessage || typeof inputMessage !== 'string') exit(0);
-      }
+  if (diff.length >= 65535) consola.warn(`The diff result is too long, so this commit is no longer automatically generated using AI.`)
+  console.log('')
+  const messageMixed = `${messagePrefix}: ${messageTranslated}`;
+  console.log(messageMixed);
+  let inputMessage = "";
+  if (await utils.inputBoolean({
+    env: 'is-it-adopted',
+    message: `Is it adopted?`,
+  })) {
+    inputMessage = messageMixed;
+  } else {
+    inputMessage = await utils.inputString({
+      env: "message",
+      message: "Enter commit message",
+      placeholder: messageMixed,
+    })
+    if (!inputMessage || typeof inputMessage !== 'string') exit(0);
+  }
 
+  while (true) {
+    try {
       await $`${{ raw: `git commit -m '${inputMessage.replaceAll("'", '"')}'` }}`;
       await $`git push -u origin ${branch}`;
-
-      consola.log("Attempting to pull remote code changes...");
-      await $`git pull origin ${branch}:${branch}`;
-      consola.success(`Code synchronization completed for branch '${branch}'.`);
 
       break;
     } catch (error) {
@@ -188,4 +184,8 @@ export default await defineCookbookCommand(async (utils) => {
       }
     }
   }
+
+  consola.log("Attempting to pull remote code changes...");
+  await $`git pull origin ${branch}:${branch}`;
+  consola.success(`Code synchronization completed for branch '${branch}'.`);
 })
