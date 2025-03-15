@@ -5,8 +5,9 @@ import { existsSync } from 'node:fs'
 import type { progress } from '../progress'
 import { checkPort } from '../utils/check-port'
 import { killPort } from '../utils/kill-port'
+import type { CookbookOptions } from './cookbook-dto-types'
 
-export async function getCookbookToml(p?: typeof progress) {
+export async function getCookbookToml(p?: typeof progress): Promise<CookbookOptions> {
   const cookbookToml = Bun.file(join(cwd(), 'cookbook.toml'))
   if (!(await cookbookToml.exists())) {
     consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`)

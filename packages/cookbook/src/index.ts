@@ -8,7 +8,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { env } from "bun";
 import { getCookbookToml } from "./utils/get-cookbook-toml";
 import { __router__ } from "./commands/__router__";
-import { uniqBy, uniqWith } from "lodash-es";
+import { uniqWith } from "lodash-es";
 import type OpenAI from "openai";
 import { progress } from "./progress";
 
@@ -48,7 +48,6 @@ export async function cookbook() {
   if (params.command.startsWith("--")) params.command = params.command.slice(2);
   if (params.command.startsWith("-") && params.command !== "-") params.command = params.command.slice(1);
 
-
   const packageJson = (await exists(join(cwd(), "package.json"))) ? JSON.parse(await readFile(join(cwd(), "package.json"), "utf-8")) : undefined;
   exists(join(env.HOME || env.USERPROFILE || "/", ".commands"));
   if (!(await exists(join(env.HOME || env.USERPROFILE || "/", ".commands")))) await mkdir(join(env.HOME || env.USERPROFILE || "/", ".commands"));
@@ -58,7 +57,7 @@ export async function cookbook() {
     let commands = [] as Array<{ name: string; value: string; path?: string; description?: "global" | "npm-script" | "workspace" | "built-in" }>;
 
     for (const command of __router__) {
-      commands.push({ name: command.commands[0], value: command.commands[0], description: "built-in" });
+      if(command.hidden !== true) commands.push({ name: command.commands[0], value: command.commands[0], description: "built-in" });
     }
 
     if (await exists(join(cwd(), "package.json"))) {
@@ -98,12 +97,56 @@ export async function cookbook() {
       return;
     }
 
+    const containsCharsInOrder = (input: string, target: string): boolean => {
+      let inputIndex = 0;
+      for (const char of target) {
+        if (char === input[inputIndex]) {
+          inputIndex++;
+          if (inputIndex === input.length) break;
+        }
+      }
+      return inputIndex === input.length;
+    };
+    const calculateScore = (input: string, target: string) => {
+      let maxContiguous = 0;
+      let currentContiguous = 0;
+      let firstMatchIndex = -1;
+    
+      let inputIndex = 0;
+      for (let i = 0; i < target.length; i++) {
+        if (target[i] === input[inputIndex]) {
+          if (firstMatchIndex === -1) firstMatchIndex = i;
+          currentContiguous++;
+          inputIndex++;
+          maxContiguous = Math.max(maxContiguous, currentContiguous);
+        } else {
+          currentContiguous = 0;
+        }
+      }
+    
+      return { maxContiguous, firstMatchIndex };
+    };
     const selected = await search({
-      message: "Which command to execute?",
+      message: "What kind of command:",
       source: async (input) => {
-        return uniqWith(commands, (a, b) => (a.value === b.value)).filter((command) => {
-          return command.name.startsWith(input ?? "");
-        });
+        if (!input) return commands;
+        const filtered = commands.filter((command) => 
+          containsCharsInOrder(input.toLowerCase(), command.name.toLowerCase())
+        );
+    
+        return uniqWith(filtered, (a, b) => a.value === b.value)
+          .sort((a, b) => {
+            const scoreA = calculateScore(input, a.name);
+            const scoreB = calculateScore(input, b.name);
+    
+            // 优先按最长连续匹配降序排序
+            if (scoreB.maxContiguous !== scoreA.maxContiguous) {
+              return scoreB.maxContiguous - scoreA.maxContiguous;
+            }
+    
+            // 连续长度相同时，按匹配起始位置升序排序
+            return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
+          });
       },
     });
 
@@ -254,7 +297,7 @@ async function createCommandUtils(params: Params, options: { path?: string; desc
   }
 
   const openProgress = (message: string) => progress.open(message)
-  const closeProgress =  (message: string) => progress.close(message)
+  const closeProgress = (message: string) => progress.close(message)
 
   return {
     log,

@@ -37,6 +37,7 @@ export interface CookbookOptions {
     autoStart?: boolean
     autoStartDelay?: number
     connectTestUrl?: string
+    prismaMigrateMode?: 'migrate-dev' | 'push'
   }>
   general: {
     start: string

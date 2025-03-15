@@ -6,6 +6,10 @@ import { initServer } from '../server'
 import { generator } from '../generator'
 import { progress } from '../progress'
 import { getCookbookToml } from '../utils/get-cookbook-toml'
+import { exists } from 'node:fs/promises';
+import { join } from 'node:path';
+import { cwd } from 'node:process';
+import { $ } from 'bun';
 
 export default await defineCookbookCommand(async (utils) => {
   progress.open('cookbook is generating..')

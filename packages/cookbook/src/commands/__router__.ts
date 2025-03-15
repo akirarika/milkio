@@ -1,19 +1,7 @@
 export const __router__ = [
   {
-    commands: ["version"],
-    script: () => import("./version.ts"),
-  },
-  {
     commands: ["dev"],
     script: () => import("./dev.ts"),
-  },
-  {
-    commands: ["init"],
-    script: () => import("./init.ts"),
-  },
-  {
-    commands: ["upgrade", "up"],
-    script: () => import("./upgrade.ts"),
   },
   {
     commands: ["git:commit", "gc"],
@@ -22,5 +10,24 @@ export const __router__ = [
   {
     commands: ["git:pull", "gp"],
     script: () => import("./git-pull.ts"),
+  },
+  {
+    commands: ["prisma:migrate"],
+    script: () => import("./prisma-migrate.ts"),
+  },
+  {
+    hidden: true,
+    commands: ["init"],
+    script: () => import("./init.ts"),
+  },
+  {
+    hidden: true,
+    commands: ["upgrade", "up"],
+    script: () => import("./upgrade.ts"),
+  },
+  {
+    hidden: true,
+    commands: ["version"],
+    script: () => import("./version.ts"),
   },
 ]

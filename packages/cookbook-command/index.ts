@@ -52,6 +52,7 @@ export interface CookbookToml {
     }>
     general: {
       start: string
+      packageManager: string
       cookbookPort: number
     },
     config: {
