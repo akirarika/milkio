@@ -186,6 +186,10 @@ export default await defineCookbookCommand(async (utils) => {
   }
 
   consola.log("Attempting to pull remote code changes...");
+  try {
   await $`git pull origin ${branch}:${branch}`;
+  } catch (error) {
+    consola.warn(`Git has completed the commit and push, but the attempt to pull failed.`);
+  }
   consola.success(`Code synchronization completed for branch '${branch}'.`);
 })
