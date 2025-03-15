@@ -22,6 +22,11 @@ export const __router__ = [
   },
   {
     hidden: true,
+    commands: ["install", "i"],
+    script: () => import("./install.ts"),
+  },
+  {
+    hidden: true,
     commands: ["upgrade", "up"],
     script: () => import("./upgrade.ts"),
   },

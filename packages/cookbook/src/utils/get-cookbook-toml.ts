@@ -56,5 +56,10 @@ export async function getCookbookToml(p?: typeof progress): Promise<CookbookOpti
     }
   }
 
+  if (!options.general.packageManager) {
+    consola.error(`Please specify "packageManager" in [general] of ${join(cwd(), 'cookbook.toml')}, such as "npm", "pnpm", or "bun".`)
+    exit(1)
+  }
+
   return options
 }

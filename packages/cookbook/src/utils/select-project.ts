@@ -37,7 +37,7 @@ export async function selectProject(cookbookToml: CookbookOptions): Promise<null
     
     const project = projects.find((project) => project.value === selected);
     if (!project) return null;
-    return { ...project, path: join(cwd(), project.value) } as any;
+    return { ...project, path: join(cwd(), 'projects', project.value) } as any;
 }
 
 const containsCharsInOrder = (input: string, target: string): boolean => {

@@ -1,9 +1,11 @@
+import os from 'node:os'
 import { join } from 'node:path'
 import { cwd } from 'node:process'
 import { emitter } from '../emitter'
 import type { CookbookOptions } from '../utils/cookbook-dto-types'
 import { spawn, type ChildProcess } from 'node:child_process'
 
+const platform = os.platform()
 export const workers = new Map<string, Worker>()
 
 export interface Worker {
@@ -67,7 +69,7 @@ export function createWorker(
       if (worker.state === 'stopped') return
       emitter.emit('data', { type: 'workers@state', key, state: 'stopped', code: 'kill' })
       if (!spawnProcess) return Promise.resolve()
-      const message = `--------------------------------\n# Stop ${key}\n--------------------------------`
+      const message = `\n--------------------------------\n# Stop ${key}\n--------------------------------`
       worker.stdout.push([stdoutIndex++, Date.now(), 'stdout', message])
       emitter.emit('data', { type: 'workers@stdout', key, chunk: message })
       await new Promise((resolve) => {
@@ -81,11 +83,11 @@ export function createWorker(
     },
     run: () => {
       if (worker.state === 'running') return
-      const message = `--------------------------------\n# Start ${key}\n--------------------------------`
+      const message = `\n--------------------------------\n# Start ${key}\n--------------------------------`
       emitter.emit('data', { type: 'workers@stdout', key, chunk: message })
       worker.stdout.push([stdoutIndex++, Date.now(), 'stdout', message])
       try {
-        spawnProcess = spawn(options.command[0], options.command.slice(1), {
+        spawnProcess = spawn(platform === 'win32' ? "powershell.exe" : "bash", ['-c', options.command.join(' ')], {
           cwd: options.cwd,
           env: options.env,
           stdio: [

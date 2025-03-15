@@ -1,4 +1,5 @@
 import consola from 'consola'
+import { exit } from 'node:process'
 
 export const progress = {
   rate: 0,
