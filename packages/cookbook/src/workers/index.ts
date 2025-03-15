@@ -22,7 +22,7 @@ export interface Worker {
 export async function initWorkers(options: CookbookOptions) {
   for (const projectName in options.projects) {
     const project = options.projects[projectName]
-    const worker = createWorker(projectName, { command: project.start, max: 0, cwd: join(cwd(), 'projects', projectName), port: project.port, connectTestUrl: project?.connectTestUrl ?? (project.type !== 'milkio' ? `http://localhost:${project.port}/` : `http://localhost:${project.port}/generate_204`) })
+    const worker = createWorker(projectName, { command: project.start ?? [options.general.packageManager, 'run', 'dev'], max: 0, cwd: join(cwd(), 'projects', projectName), port: project.port, connectTestUrl: project?.connectTestUrl ?? (project.type !== 'milkio' ? `http://localhost:${project.port}/` : `http://localhost:${project.port}/generate_204`) })
     workers.set(projectName, worker)
     if (project.autoStart) setTimeout(() => worker.run(), (project.autoStartDelay ?? 0) * 1000);
   }
@@ -44,7 +44,7 @@ export function createWorker(
 ): Worker {
   const textDecoder = new TextDecoder()
   let spawnProcess: ChildProcess | null = null
-  
+
   const handleExit = (code: number | null, signal: string) => {
     const message = 'Process exited with:' + (code ?? null)
     process.stdout.write(message)
@@ -69,6 +69,7 @@ export function createWorker(
       if (!spawnProcess) return Promise.resolve()
       const message = `--------------------------------\n# Stop ${key}\n--------------------------------`
       worker.stdout.push([stdoutIndex++, Date.now(), 'stdout', message])
+      emitter.emit('data', { type: 'workers@stdout', key, chunk: message })
       await new Promise((resolve) => {
         spawnProcess?.once('exit', () => resolve(undefined))
         try {
@@ -81,6 +82,7 @@ export function createWorker(
     run: () => {
       if (worker.state === 'running') return
       const message = `--------------------------------\n# Start ${key}\n--------------------------------`
+      emitter.emit('data', { type: 'workers@stdout', key, chunk: message })
       worker.stdout.push([stdoutIndex++, Date.now(), 'stdout', message])
       try {
         spawnProcess = spawn(options.command[0], options.command.slice(1), {
@@ -101,10 +103,8 @@ export function createWorker(
         const handleMessage = (chunk: ArrayBuffer) => {
           const str = textDecoder.decode(chunk)
           worker.stdout.push([stdoutIndex++, Date.now(), 'stdout', str])
-
-          if (options.max !== 0) {
-            emitter.emit('data', { type: 'workers@stdout', key, chunk: str })
-          }
+          process.stdout.write(str)
+          emitter.emit('data', { type: 'workers@stdout', key, chunk: str })
           if (worker.stdout.length >= (options.max ?? 1024 * 64)) {
             worker.stdout.splice(0, Math.ceil((options.max ?? 1024 * 64) * 0.2))
           }
@@ -113,10 +113,7 @@ export function createWorker(
         const handleError = (chunk: ArrayBuffer) => {
           const str = textDecoder.decode(chunk)
           worker.stdout.push([stdoutIndex++, Date.now(), 'stderr', str])
-
-          if (options.max !== 0) {
-            emitter.emit('data', { type: 'workers@stdout', key, chunk: str })
-          }
+          emitter.emit('data', { type: 'workers@stdout', key, chunk: str })
           if (worker.stdout.length >= (options.max ?? 1024 * 64)) {
             worker.stdout.splice(0, Math.ceil((options.max ?? 1024 * 64) * 0.2))
           }
@@ -158,35 +155,35 @@ export function createWorker(
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout ?? 4096);
       try {
-          const response = await fetch(connectTestUrl, {
-              ...options,
-              signal: controller.signal
-          });
-          clearTimeout(timeoutId);
-          if (response.status >= 500) {
-              worker.connect = false
-              return {
-                  success: false,
-                  error: `The HTTP status code is ${response.status}.`,
-              };
-          }
-          worker.connect = true
-          return {
-              success: true,
-          };
-      } catch (error) {
-          if (error instanceof Error && error.name === 'AbortError') {
-              worker.connect = false
-              return {
-                  success: false,
-                  error: `The request timed out.`,
-              };
-          }
+        const response = await fetch(connectTestUrl, {
+          ...options,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (response.status >= 500) {
           worker.connect = false
           return {
-              success: false,
-              error: (error?.toString () ?? JSON.stringify(error)) || 'Unknown error',
+            success: false,
+            error: `The HTTP status code is ${response.status}.`,
           };
+        }
+        worker.connect = true
+        return {
+          success: true,
+        };
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          worker.connect = false
+          return {
+            success: false,
+            error: `The request timed out.`,
+          };
+        }
+        worker.connect = false
+        return {
+          success: false,
+          error: (error?.toString() ?? JSON.stringify(error)) || 'Unknown error',
+        };
       }
     }
   }

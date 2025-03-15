@@ -20,15 +20,15 @@ async function list(options: CookbookOptions, params: CookbookActionParams) {
 async function log(options: CookbookOptions, params: CookbookActionParams) {
     if (params.type !== 'project@log') return false
     const worker = workers.get(params.key)
-    if (!worker) return false
-    const firstIndex = worker.stdout.findIndex(([timestamp]) => timestamp >= params.firstId)
-    return worker.stdout.slice(firstIndex === -1 ? 0 : firstIndex, worker.stdout.length - 1)
+    if (!worker) return { refresh: true }
+    const firstIndex = worker.stdout.findIndex(([id]) => id >= params.firstId)
+    return firstIndex === -1 ? [] : worker.stdout.slice(firstIndex, worker.stdout.length)
 }
 
 async function stop(options: CookbookOptions, params: CookbookActionParams) {
     if (params.type !== 'project@stop') return false
     const worker = workers.get(params.key)
-    if (!worker) return false
+    if (!worker) return { refresh: true }
     await worker.kill()
     return {}
 }
@@ -36,7 +36,7 @@ async function stop(options: CookbookOptions, params: CookbookActionParams) {
 async function start(options: CookbookOptions, params: CookbookActionParams) {
     if (params.type !== 'project@start') return false
     const worker = workers.get(params.key)
-    if (!worker) return false
+    if (!worker) return { refresh: true }
     await worker.run()
     return {}
 }

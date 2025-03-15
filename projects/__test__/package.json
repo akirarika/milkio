@@ -3,7 +3,9 @@
   "type": "module",
   "private": true,
   "module": "index.ts",
-  "scripts": {},
+  "scripts": {
+    "dev": "vite-node --watch ./runtime/node.ts"
+  },
   "trustedDependencies": [],
   "dependencies": {
     "@milkio/astra": "workspace:*",

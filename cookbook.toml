@@ -9,14 +9,3 @@ name = "Test"
 type = "milkio"
 typiaMode = "generation"
 autoStart = true
-start = [
-  "bun",
-  "run",
-  "--watch",
-  "./runtime/bun.ts"
-]
-build = [
-  "bun",
-  "run",
-  "./runtime/bun.ts"
-]

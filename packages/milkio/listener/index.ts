@@ -33,7 +33,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
     }
 
     if (options.request.url.endsWith('/generate_204')) {
-      return new Response('', {
+      return new Response(null, {
         status: 204,
         headers: {
           'Access-Control-Allow-Methods': runtime.cors?.corsAllowMethods ?? '*',

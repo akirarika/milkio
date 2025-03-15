@@ -41,6 +41,7 @@ export interface CookbookOptions {
   }>
   general: {
     start: string
+    packageManager: string
     cookbookPort: number
   },
   config: {
