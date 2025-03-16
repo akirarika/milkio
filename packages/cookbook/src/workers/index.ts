@@ -4,6 +4,7 @@ import { cwd } from 'node:process'
 import { emitter } from '../emitter'
 import type { CookbookOptions } from '../utils/cookbook-dto-types'
 import { spawn, type ChildProcess } from 'node:child_process'
+import { env } from 'bun'
 
 const platform = os.platform()
 export const workers = new Map<string, Worker>()
@@ -89,7 +90,7 @@ export function createWorker(
       try {
         spawnProcess = spawn(platform === 'win32' ? "powershell.exe" : "bash", ['-c', options.command.join(' ')], {
           cwd: options.cwd,
-          env: { ...options.env, MILKIO_DEVELOP: "ENABLE" },
+          env: { ...env, ...(options.env ?? {}), MILKIO_DEVELOP: "ENABLE" },
           stdio: [
             'ignore',
             options.stdout !== 'ignore' ? 'pipe' : 'ignore',
