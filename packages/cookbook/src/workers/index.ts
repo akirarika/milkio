@@ -89,7 +89,7 @@ export function createWorker(
       try {
         spawnProcess = spawn(platform === 'win32' ? "powershell.exe" : "bash", ['-c', options.command.join(' ')], {
           cwd: options.cwd,
-          env: options.env,
+          env: { ...options.env, MILKIO_DEVELOP: "ENABLE" },
           stdio: [
             'ignore',
             options.stdout !== 'ignore' ? 'pipe' : 'ignore',
