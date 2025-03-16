@@ -1,7 +1,7 @@
 {
   "name": "@milkio/astra",
   "type": "module",
-  "version": "1.0.0-alpha.90",
+  "version": "1.0.0-alpha.91",
   "module": "index.ts",
   "dependencies": {
     "@southern-aurora/tson": "*",
