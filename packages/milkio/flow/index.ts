@@ -14,12 +14,15 @@ export function createFlow<T extends unknown>(): MilkioFlow<T> {
     return {
         emit: (flow: T) => {
             if (flows.at(-1)?.blank === true) {
-                flows.at(-1)!.resolve(flow);
+                const item = flows.at(-1)!;
+                item.blank = false;
+                item.resolve(flow);
                 return;
+            } else {
+                const resolvers = Promise.withResolvers<T>();
+                resolvers.resolve(flow);
+                flows.push({ ...resolvers, blank: false });
             }
-            const resolvers = Promise.withResolvers<T>();
-            resolvers.resolve(flow);
-            flows.push({ ...resolvers, blank: false });
         },
         next: async () => {
             if (flows.length === 0) {
