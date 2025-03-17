@@ -4,7 +4,8 @@
   "private": true,
   "module": "index.ts",
   "scripts": {
-    "dev": "vite-node --watch ./runtime/node.ts"
+    "dev": "bun --watch ./runtime/bun.ts",
+    "dev:node": "vite-node --watch ./runtime/node.ts"
   },
   "trustedDependencies": [],
   "dependencies": {

@@ -2,7 +2,8 @@ import { TSON } from '@southern-aurora/tson'
 import { createLogger, exceptionHandler, reject } from '..'
 import type { Mixin, GeneratedInit, $types, ContextHttp, MilkioResponseReject, Results, MilkioResponseSuccess } from '..'
 import type { __initExecuter } from '../execute'
-import { createId } from '../utils/create-id'
+import { __createId } from '../utils/create-id'
+import { Trie } from '../utils/trie'
 
 export type MilkioHttpRequest = Request
 
@@ -16,7 +17,8 @@ export type MilkioHttpResponse = Mixin<
 >
 
 export function __initListener(generated: GeneratedInit, runtime: any, executer: ReturnType<typeof __initExecuter>) {
-  const port = runtime.port
+  const port = runtime.port;
+  const trie = new Trie<any>();
   const fetch = async (options: {
     request: MilkioHttpRequest
     envMode?: string
@@ -50,8 +52,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
     if (runtime.ignorePathLevel !== undefined && runtime.ignorePathLevel !== 0) pathArray = pathArray.slice(runtime.ignorePathLevel)
     const pathString = `/${pathArray.join('/')}`
 
-    const executeId = runtime?.executeId ? await runtime.executeId(options.request) : createId()
-    console.log('executeId', await runtime.executeId(options.request), createId())
+    const executeId = runtime?.executeId ? await runtime.executeId(options.request) : __createId()
+    console.log('executeId', await runtime.executeId(options.request), __createId())
 
     const logger = createLogger(runtime, pathString, executeId)
     runtime.runtime.request.set(executeId, { logger })
@@ -66,7 +68,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         'Content-Type': 'application/json',
       },
     }
-    
+
     let finales: Array<() => void | Promise<void>> = []
 
     try {
@@ -96,11 +98,18 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
       if (!options.request.headers.get('Accept')?.startsWith('text/event-stream')) {
         // action
-        const routeSchema = generated.routeSchema[http.path.string]
-        if (routeSchema === undefined) {
-          await runtime.emit('milkio:httpNotFound', { executeId, logger, path: http.path.string as string, http })
-          throw reject('NOT_FOUND', { path: http.path.string as string })
+        let routeSchema: any
+        routeSchema = trie.get(http.path.string as string)
+        if (routeSchema === null) {
+          routeSchema = generated.routeSchema?.[http.path.string]
+          if (routeSchema === undefined) {
+            await runtime.emit('milkio:httpNotFound', { executeId, logger, path: http.path.string as string, http })
+            throw reject('NOT_FOUND', { path: http.path.string as string })
+          }
+          routeSchema.module = await routeSchema.module()
+          trie.add(http.path.string as string, routeSchema)
         }
+
         if (routeSchema.type !== 'action') throw reject('UNACCEPTABLE', { expected: 'stream', message: `Not acceptable, the Accept in the request header should be "text/event-stream". If you are using the "@milkio/stargate" package, please add \`type: "stream"\` to the execute options.` })
 
         const executed = await executer.__execute(routeSchema, {
@@ -127,7 +136,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         }
 
         await runtime.emit('milkio:httpResponse', { executeId, logger, path: http.path.string as string, http, context: executed.context })
-        
+
         for (const handler of finales) {
           try {
             await handler()
@@ -141,8 +150,17 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
       }
       else {
         // stream
-        const routeSchema = generated.routeSchema[http.path.string]
-        if (routeSchema === undefined) throw reject('NOT_FOUND', { path: http.path.string as string })
+        let routeSchema: any
+        routeSchema = trie.get(http.path.string as string)
+        if (routeSchema === null) {
+          routeSchema = generated.routeSchema?.[http.path.string]
+          if (routeSchema === undefined) {
+            await runtime.emit('milkio:httpNotFound', { executeId, logger, path: http.path.string as string, http })
+            throw reject('NOT_FOUND', { path: http.path.string as string })
+          }
+          routeSchema.module = await routeSchema.module()
+          trie.add(http.path.string as string, routeSchema)
+        }
         if (routeSchema.type !== 'stream') throw reject('UNACCEPTABLE', { expected: 'stream', message: `Not acceptable, the Accept in the request header should be "application/json". If you are using the "@milkio/stargate" package, please remove \`type: "stream"\` to the execute options.` })
 
 

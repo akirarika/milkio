@@ -86,7 +86,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
       options.createdLogger.request(`headers - ${TSON.stringify(headers.toJSON())}`, `\nparams - ${TSON.stringify(params)}`)
     }
 
-    const module = await routeSchema.module()
+    const module = routeSchema.module
     const meta = (module.default?.meta ? module.default?.meta : {}) as unknown as Readonly<$meta>
 
     if (meta.typeSafety === undefined || meta.typeSafety === true) {
