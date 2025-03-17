@@ -4,11 +4,12 @@ import { uniqWith } from "lodash-es";
 import { join } from "node:path";
 import { cwd } from "node:process";
 
-export async function selectProject(cookbookToml: CookbookOptions): Promise<null | CookbookOptions['projects'][0] & { value: any, path: string }> {
+export async function selectProject(cookbookToml: CookbookOptions, filter?: (project: CookbookOptions['projects'][0] & { value: string }) => boolean | Promise<boolean>): Promise<null | CookbookOptions['projects'][0] & { value: any, path: string }> {
     const projects: Array<CookbookOptions['projects'] & { value: any }> = [];
     for (const projectName in cookbookToml.projects) {
-        const project = (cookbookToml.projects[projectName] as any);
-        projects.push({ ...project, name: project.name ?? project.key, value: projectName })
+        let project = (cookbookToml.projects[projectName] as any);
+        project = { ...project, name: project.name ?? project.key, value: projectName }
+        if (filter === undefined || await filter(project)) projects.push(project)
     }
 
     const selected = await search({
@@ -34,7 +35,7 @@ export async function selectProject(cookbookToml: CookbookOptions): Promise<null
                 });
         },
     });
-    
+
     const project = projects.find((project) => project.value === selected);
     if (!project) return null;
     return { ...project, path: join(cwd(), 'projects', project.value) } as any;

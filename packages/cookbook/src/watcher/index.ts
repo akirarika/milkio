@@ -1,3 +1,4 @@
+import consola from 'consola'
 import { debounce } from 'lodash-es'
 import { watch } from 'node:fs'
 import { join } from 'node:path'
@@ -6,7 +7,6 @@ import { emitter } from '../emitter'
 import { exit, cwd } from 'node:process'
 import { generator } from '../generator'
 import { workers } from '../workers'
-import consola from 'consola'
 import type { CookbookOptions } from '../utils/cookbook-dto-types'
 
 export async function initWatcher(options: CookbookOptions) {
