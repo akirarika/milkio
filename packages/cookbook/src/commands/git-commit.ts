@@ -47,7 +47,6 @@ export default await defineCookbookCommand(async (utils) => {
 - ✨ feat
 - 🧊 fix
 - 🦄 improve
-- 🧩 refactor
 - 📄 docs
 - ✅ test
 - 🔨 chore
@@ -105,7 +104,7 @@ export default await defineCookbookCommand(async (utils) => {
 - 禁止引导语（如"本次改动..."）
 - 去除连接词/语法修饰
 - 优先技术术语
-- 必须确保结果是单行无换行的，也不能以列表或分号的形式进行描述
+- 必须确保结果是单行无换行的，拥有多个功能点时不要以列表形式输出，而是以逗号的形式进行描述
 `;
       const response = await client.chat.completions.create({
         model,
