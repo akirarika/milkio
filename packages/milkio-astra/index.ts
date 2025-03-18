@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import type { CookbookOptions } from "./utils/cookbook-dto-types";
 
 export type AstraOptionsInit = {
-  stargate: { $types: any; execute: any; ping: any; cookbook: any };
+  stargate: { $types: any; execute: any; ping: any; __cookbook: any };
   bootstrap: () => Promise<Record<string, any>>;
 };
 
@@ -148,7 +148,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
           options.params.$milkioGenerateParams = "enable";
         }
 
-        const results = await this.options.stargate.cookbook.subscribe(`http://localhost:${cookbookOptions.general.cookbookPort}`);
+        const results = await this.options.stargate.__cookbook.subscribe(`http://localhost:${cookbookOptions.general.cookbookPort}`);
         void (async () => {
           for await (const result of results) {
             if (result.type !== "milkio@logger") continue;
