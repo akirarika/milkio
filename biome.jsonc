@@ -5,6 +5,10 @@
         "lineWidth": 320
     },
     "linter": {
+        "ignore": [
+            "node_modules",
+            "projects/**/.milkio"
+        ],
         "rules": {
             "suspicious": {
                 "noExplicitAny": "off"
@@ -16,6 +20,9 @@
             },
             "nursery": {
                 "noEnum": "error"
+            },
+            "complexity": {
+                "noBannedTypes": "off"
             }
         }
     },

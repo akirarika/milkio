@@ -1,4 +1,4 @@
-export type MilkioFlow<T> = AsyncIterator<T | undefined> & { emit: (flow: T) => void };
+export type MilkioFlow<T> = AsyncIterator<T | undefined> & { emit: (flow: T) => void; [Symbol.asyncIterator]: () => MilkioFlow<T> };
 
 export function createFlow<T>(): MilkioFlow<T> {
   const flows: Array<{
