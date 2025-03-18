@@ -91,7 +91,7 @@ export default await defineCookbookCommand(async (utils) => {
   console.clear();
 
   try {
-    console.log("检查 npm 版本是否存在..");
+    console.log(`检查 npm 版本是否存在.. npm view ${packageJson.name}@${newVersion} --json`);
     await $`npm view ${packageJson.name}@${newVersion} --json`.quiet();
     console.log("该版本已存在，跳过 npm 发布");
   } catch (error) {
