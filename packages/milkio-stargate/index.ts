@@ -331,7 +331,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
         }
       }
     },
-    __cookbook: {
+    cookbook: {
       subscribe: async (baseUrl: string) => {
         const headers = {
           "Content-Type": "application/json",
