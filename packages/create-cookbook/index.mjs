@@ -18,22 +18,23 @@ const color = gradient(["cyan", "#2d9b87"]);
 (async () => {
     const args = process.argv.slice(2);
     let version = "latest";
+    // biome-ignore lint/complexity/useOptionalChain: <explanation>
     if (args[0] && args[0].startsWith("--version=")) {
         version = args[0].slice(10);
     }
-    let workspace = process.platform === "win32" ? join(process.env.USERPROFILE, ".cookbook") : join(process.env.HOME, ".cookbook");
-    let tempspace = process.platform === "win32" ? join(process.env.USERPROFILE, ".cookbook", ".temp") : join(process.env.HOME, ".cookbook", ".temp");
+    const workspace = process.platform === "win32" ? join(process.env.USERPROFILE, ".cookbook") : join(process.env.HOME, ".cookbook");
+    const tempspace = process.platform === "win32" ? join(process.env.USERPROFILE, ".cookbook", ".temp") : join(process.env.HOME, ".cookbook", ".temp");
     if (!existsSync(workspace)) mkdirSync(workspace);
     if (!existsSync(tempspace)) mkdirSync(tempspace);
 
-    const uiName = `@milkio/cookbook-ui`;
+    const uiName = "@milkio/cookbook-ui";
     const cookbookName = `@milkio/cookbook-${process.platform}-${os.arch()}`;
     let uiPackageInfo;
     let cookbookPackageInfo;
     console.log("");
     for (const mirror of ["https://registry.npmjs.org/", "https://registry.npmmirror.com/", "https://mirrors.cloud.tencent.com/npm/", "https://cdn.jsdelivr.net/npm/"]) {
         try {
-            consola.start(color(`Checking (${mirror}${uiName})..`));
+            consola.start(color(`[1/2] Checking (${mirror}${uiName})..`));
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 8000);
             const response = await fetch(`${mirror}${uiName}`, {
@@ -49,6 +50,7 @@ const color = gradient(["cyan", "#2d9b87"]);
             };
             break;
         } catch (error) {
+            // biome-ignore lint/correctness/noUnnecessaryContinue: <explanation>
             continue;
         }
     }
@@ -58,7 +60,7 @@ const color = gradient(["cyan", "#2d9b87"]);
     }
     for (const mirror of ["https://registry.npmjs.org/", "https://registry.npmmirror.com/", "https://mirrors.cloud.tencent.com/npm/", "https://cdn.jsdelivr.net/npm/"]) {
         try {
-            consola.start(color(`Checking (${mirror}${cookbookName})..`));
+            consola.start(color(`[2/2] Checking (${mirror}${cookbookName})..`));
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 8000);
             const response = await fetch(`${mirror}${cookbookName}`, {
@@ -74,6 +76,7 @@ const color = gradient(["cyan", "#2d9b87"]);
             };
             break;
         } catch (error) {
+            // biome-ignore lint/correctness/noUnnecessaryContinue: <explanation>
             continue;
         }
     }
@@ -84,9 +87,9 @@ const color = gradient(["cyan", "#2d9b87"]);
 
     const uiUrl = `${cookbookPackageInfo.mirror}${uiName}/-/cookbook-ui-${version === 'latest' ? uiPackageInfo.json["dist-tags"].latest : version}.tgz`;
     consola.start(uiUrl);
-    consola.start(color(`Downloading Cookbook UI (${uiUrl})..`));
+    consola.start(color(`[1/2] Downloading Cookbook UI (${uiUrl})..`));
     await utils.downloadFile(uiUrl, tempspace, "ui.tgz");
-    consola.success(color("Downloaded!"));
+    consola.success(color("[1/2] Downloaded!"));
     const uiExtractPromise = ((async () => {
         if (!existsSync(join(tempspace, "ui"))) mkdirSync(join(tempspace, "ui"))
         await compressing.tgz.uncompress(join(tempspace, "ui.tgz"), join(tempspace, "ui"));
@@ -94,26 +97,26 @@ const color = gradient(["cyan", "#2d9b87"]);
 
     const cookbookUrl = `${cookbookPackageInfo.mirror}${cookbookName}/-/cookbook-${process.platform}-${os.arch()}-${version === 'latest' ? cookbookPackageInfo.json["dist-tags"].latest : version}.tgz`;
     consola.start(cookbookUrl);
-    consola.start(color(`Downloading Cookbook Core (${cookbookUrl})..`));
+    consola.start(color(`[2/2] Downloading Cookbook Core (${cookbookUrl})..`));
     await utils.downloadFile(cookbookUrl, tempspace, "cookbook.tgz");
-    consola.success(color("Downloaded!"));
+    consola.success(color("[2/2] Downloaded!"));
     const cookbookExtractPromise = ((async () => {
         await compressing.tgz.uncompress(join(tempspace, "cookbook.tgz"), tempspace);
     }))();
 
-    consola.start(color(`Extracting..`));
+    consola.start(color("[1/2] Extracting.."));
     await Promise.all([uiExtractPromise, cookbookExtractPromise]);
-    consola.success(color("Extracted!"));
+    consola.success(color("[1/2] Extracted!"));
 
-    consola.success(color("Installing.."));
+    consola.success(color("[2/2] Installing.."));
     await utils.mvToPathAndInstall(join(tempspace, "package"), process.platform === "win32" ? "co.exe" : "co", tempspace);
     await utils.mvUIDir(join(tempspace, "ui", "package"));
     await utils.tempspaceClean(tempspace);
-    consola.success(color("Installed!"));
+    consola.success(color("[2/2] Installed!"));
 
     console.log("");
-    consola.info(color(`Try run: co version`));
-    consola.info(colorLong(`* If you find that the co command does not exist, try restarting your Terminal or System`));
+    consola.info(color("Try run: co version"));
+    consola.info(colorLong("* If you find that the co command does not exist, try restarting your Terminal or System"));
 })();
 
 const utils = {
