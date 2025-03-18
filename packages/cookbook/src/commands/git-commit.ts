@@ -69,7 +69,6 @@ export default await defineCookbookCommand(async (utils) => {
         ],
         stream: true,
       });
-      console.log("qwq", response);
       for await (const chunk of response) {
         const content = chunk.choices[0].delta.content;
         messagePrefix = messagePrefix + content;
