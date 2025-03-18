@@ -1,0 +1,37 @@
+{
+    "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+    "formatter": {
+        "indentStyle": "space",
+        "lineWidth": 320
+    },
+    "linter": {
+        "rules": {
+            "suspicious": {
+                "noExplicitAny": "off"
+            },
+            "style": {
+                "noUselessElse": "off",
+                "noNonNullAssertion": "off",
+                "noNamespace": "error"
+            },
+            "nursery": {
+                "noEnum": "error"
+            }
+        }
+    },
+    "overrides": [
+        {
+            "include": [
+                "projects/**/*.action.ts",
+                "projects/**/*.stream.ts"
+            ],
+            "linter": {
+                "rules": {
+                    "nursery": {
+                        "useExplicitType": "error"
+                    }
+                }
+            }
+        }
+    ]
+}

@@ -9,7 +9,7 @@ import { format } from 'date-fns'
 import type { CookbookOptions } from './utils/cookbook-dto-types'
 
 export type AstraOptionsInit = {
-  stargate: { $types: any, execute: any, ping: any, cookbook: any }
+  stargate: { $types: any, execute: any, ping: any, __cookbook: any }
   bootstrap: () => Promise<Record<string, any>>
 }
 
@@ -112,7 +112,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
       const thisFilePath = join(fileURLToPath(importMetaUrl))
       const thisFileDirPath = join(dirname(thisFilePath)).replaceAll('\\', '/')
       const thisFileDirPathArr = thisFileDirPath.split('/')
-      let projectName: string = ''
+      let projectName = ''
 
       await (async () => {
         let isProjectsDirectory = false
@@ -149,7 +149,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
           options.params.$milkioGenerateParams = 'enable'
         }
 
-        const results = await this.options.stargate.cookbook.subscribe(`http://localhost:${cookbookOptions.general.cookbookPort}`)
+        const results = await this.options.stargate.__cookbook.subscribe(`http://localhost:${cookbookOptions.general.cookbookPort}`)
         void (async () => {
           for await (const result of results) {
             if (result.type !== 'milkio@logger') continue
@@ -167,6 +167,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
 
       const getNow = () => format(new Date(), '(yyyy-MM-dd hh:mm:ss)')
       const onLoggerInserting = (log: Log) => {
+        // biome-ignore lint/style/noParameterAssign: <explanation>
         log = [...log]
         log[0] = `\n${log[0]}` as any
         console.log(...log)

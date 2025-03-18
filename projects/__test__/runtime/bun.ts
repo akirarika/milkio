@@ -13,12 +13,6 @@ async function bootstrap() {
       })
     },
   })
-
-  let i = 0
-  console.log('hello world');
-  setInterval(() => {
-    console.log('hello world'+ ++i);
-  }, 2333)
   
 }
 

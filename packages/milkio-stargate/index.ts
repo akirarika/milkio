@@ -1,112 +1,112 @@
-import { TSON } from '@southern-aurora/tson'
+import { TSON } from "@southern-aurora/tson";
 
 export type MilkioStargateOptions = {
-  baseUrl: string | (() => string) | (() => Promise<string>)
-  timeout?: number
-  fetch?: typeof fetch
-  abort?: typeof AbortController
-}
+  baseUrl: string | (() => string) | (() => Promise<string>);
+  timeout?: number;
+  fetch?: typeof fetch;
+  abort?: typeof AbortController;
+};
 
-export type Mixin<T, U> = U & Omit<T, keyof U>
+export type Mixin<T, U> = U & Omit<T, keyof U>;
 
 export type ExecuteOptions = {
-  params?: Record<any, any>
-  headers?: Record<string, string>
-  timeout?: number
-  type?: 'action' | 'stream'
-  baseUrl?: string | (() => string) | (() => Promise<string>)
-}
+  params?: Record<any, any>;
+  headers?: Record<string, string>;
+  timeout?: number;
+  type?: "action" | "stream";
+  baseUrl?: string | (() => string) | (() => Promise<string>);
+};
 
-export type ExecuteResultsOption = { executeId: string }
+export type ExecuteResultsOption = { executeId: string };
 
 export type Ping =
   | [
-    {
-      connect: false
-      delay: number
-      error: any
-    },
-    null,
-  ]
+      {
+        connect: false;
+        delay: number;
+        error: any;
+      },
+      null,
+    ]
   | [
-    null,
-    {
-      connect: true
-      delay: number
-      serverTimestamp: number
-    },
-  ]
-export async function createStargate<Generated extends { routeSchema: any, rejectCode: any }>(stargateOptions: MilkioStargateOptions) {
-  const $fetch = stargateOptions.fetch ?? fetch
-  const $abort = stargateOptions.abort ?? AbortController
+      null,
+      {
+        connect: true;
+        delay: number;
+        serverTimestamp: number;
+      },
+    ];
+export async function createStargate<Generated extends { routeSchema: any; rejectCode: any }>(stargateOptions: MilkioStargateOptions) {
+  const $fetch = stargateOptions.fetch ?? fetch;
+  const $abort = stargateOptions.abort ?? AbortController;
 
   type StargateEvents = {
-    'milkio:executeBefore': { path: string, options: Mixin<ExecuteOptions, { headers: Record<string, string>, baseUrl: string }> }
-    'milkio:fetchBefore': { path: string, options: Mixin<ExecuteOptions, { headers: Record<string, string>, baseUrl: string }>, body: string }
-    'milkio:executeError': {
-      path: string
-      options: Mixin<ExecuteOptions, { headers: Record<string, string>, baseUrl: string }>
-      error: Partial<Generated['rejectCode']>
-      handleError: <K extends keyof Partial<Generated['rejectCode']>>(error: any, key: K, handler: (error: Partial<Generated['rejectCode'][K]>) => boolean | Promise<boolean>) => Promise<void>
-    }
-  }
+    "milkio:executeBefore": { path: string; options: Mixin<ExecuteOptions, { headers: Record<string, string>; baseUrl: string }> };
+    "milkio:fetchBefore": { path: string; options: Mixin<ExecuteOptions, { headers: Record<string, string>; baseUrl: string }>; body: string };
+    "milkio:executeError": {
+      path: string;
+      options: Mixin<ExecuteOptions, { headers: Record<string, string>; baseUrl: string }>;
+      error: Partial<Generated["rejectCode"]>;
+      handleError: <K extends keyof Partial<Generated["rejectCode"]>>(error: any, key: K, handler: (error: Partial<Generated["rejectCode"][K]>) => boolean | Promise<boolean>) => Promise<void>;
+    };
+  };
 
   const handleError: any = async (error: any, key: string, handler: (error: any) => boolean | Promise<boolean>) => {
     if (key in error) {
-      const handled = await handler(error[key])
-      if (handled) delete error[key]
+      const handled = await handler(error[key]);
+      if (handled) delete error[key];
     }
-  }
+  };
 
   const __initEventManager = () => {
-    const handlers = new Map<(event: any) => void, string>()
-    const indexed = new Map<string, Set<(event: any) => void>>()
+    const handlers = new Map<(event: any) => void, string>();
+    const indexed = new Map<string, Set<(event: any) => void>>();
 
     const eventManager = {
       on: <Key extends keyof StargateEvents, Handler extends (event: StargateEvents[Key]) => void>(key: Key, handler: Handler) => {
-        handlers.set(handler, key as string)
+        handlers.set(handler, key as string);
         if (indexed.has(key as string) === false) {
-          indexed.set(key as string, new Set())
+          indexed.set(key as string, new Set());
         }
-        const set = indexed.get(key as string)!
-        set.add(handler)
-        handlers.set(handler, key as string)
+        const set = indexed.get(key as string)!;
+        set.add(handler);
+        handlers.set(handler, key as string);
 
         return () => {
-          handlers.delete(handler)
-          set.delete(handler)
-        }
+          handlers.delete(handler);
+          set.delete(handler);
+        };
       },
       off: <Key extends keyof StargateEvents, Handler extends (event: StargateEvents[Key]) => void>(key: Key, handler: Handler) => {
-        const set = indexed.get(key as string)
-        if (!set) return
-        handlers.delete(handler)
-        set.delete(handler)
+        const set = indexed.get(key as string);
+        if (!set) return;
+        handlers.delete(handler);
+        set.delete(handler);
       },
       emit: async <Key extends keyof StargateEvents, Value extends StargateEvents[Key]>(key: Key, value: Value): Promise<void> => {
-        const h = indexed.get(key as string)
+        const h = indexed.get(key as string);
         if (h) {
           for (const handler of h) {
-            await handler(value)
+            await handler(value);
           }
         }
       },
-    }
+    };
 
-    return eventManager
-  }
+    return eventManager;
+  };
 
-  const eventManager = __initEventManager()
+  const eventManager = __initEventManager();
 
   const bootstrap = async () => {
-    let baseUrl = stargateOptions.baseUrl
-    if (typeof baseUrl === 'function') baseUrl = await baseUrl()
-    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1)
+    let baseUrl = stargateOptions.baseUrl;
+    if (typeof baseUrl === "function") baseUrl = await baseUrl();
+    if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1);
 
-    return baseUrl
-  }
+    return baseUrl;
+  };
 
-  const baseUrl: Promise<string> = bootstrap()
+  const baseUrl: Promise<string> = bootstrap();
 
   const stargate = {
     ...eventManager,
@@ -114,412 +114,601 @@ export async function createStargate<Generated extends { routeSchema: any, rejec
       generated: void 0 as unknown as Generated,
     },
     options: stargateOptions,
-    async execute<Path extends keyof Generated['routeSchema']>(
+    async execute<Path extends keyof Generated["routeSchema"]>(
       path: Path,
       options?: Mixin<
         ExecuteOptions,
         {
-          params?: Generated['routeSchema'][Path]['types']['params']
+          params?: Generated["routeSchema"][Path]["types"]["params"];
         }
       >,
     ): Promise<
-        Generated['routeSchema'][Path]['types']['🐣'] extends boolean
-          ? // action
-          [Partial<Generated['rejectCode']>, null, ExecuteResultsOption] | [null, Generated['routeSchema'][Path]['types']['result'], ExecuteResultsOption]
-          : // stream
-          [Partial<Generated['rejectCode']>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated['rejectCode']>, null] | [null, GeneratorGeneric<Generated['routeSchema'][Path]['types']['result']>], ExecuteResultsOption>]
-      > {
-      if (!options) options = {}
-      if (options.headers === undefined) options.headers = {}
+      Generated["routeSchema"][Path]["types"]["🐣"] extends boolean
+        ? // action
+          [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, Generated["routeSchema"][Path]["types"]["result"], ExecuteResultsOption]
+        : // stream
+          [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], ExecuteResultsOption>]
+    > {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
+      if (!options) options = {};
+      if (options.headers === undefined) options.headers = {};
 
-      let url: string
+      let url: string;
       if (options.baseUrl) {
-        let baseUrl = options.baseUrl
-        if (typeof baseUrl === 'function') baseUrl = await baseUrl()
-        if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1)
-        url = baseUrl + (path as string)
-      }
-      else {
-        url = (await baseUrl) + (path as string)
+        let baseUrl = options.baseUrl;
+        if (typeof baseUrl === "function") baseUrl = await baseUrl();
+        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1);
+        url = baseUrl + (path as string);
+      } else {
+        url = (await baseUrl) + (path as string);
       }
 
-      if (options.type !== 'stream') {
+      if (options.type !== "stream") {
         // action
-        if (options.headers.Accept === undefined) options.headers.Accept = 'application/json'
-        if (options.headers['Content-Type'] === undefined) options.headers['Content-Type'] = 'application/json'
-        let result: { value: Record<any, any> }
+        if (options.headers.Accept === undefined) options.headers.Accept = "application/json";
+        if (options.headers["Content-Type"] === undefined) options.headers["Content-Type"] = "application/json";
+        let result: { value: Record<any, any> };
 
         try {
-          await eventManager.emit('milkio:executeBefore', { path: path as string, options: options as any })
+          await eventManager.emit("milkio:executeBefore", { path: path as string, options: options as any });
 
-          const body = TSON.stringify(options.params) ?? ''
-          await eventManager.emit('milkio:fetchBefore', { path: path as string, options: options as any, body })
+          const body = TSON.stringify(options.params) ?? "";
+          await eventManager.emit("milkio:fetchBefore", { path: path as string, options: options as any, body });
 
+          // biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
           const response = await new Promise<string>(async (resolve, reject) => {
-            const timeout = options?.timeout ?? options?.timeout ?? 6000
+            const timeout = options?.timeout ?? options?.timeout ?? 6000;
             const timer = setTimeout(() => {
-              reject([{ REQUEST_TIMEOUT: { timeout, message: `Execute timeout after ${timeout}ms.` } }, null])
-            }, timeout)
+              reject([{ REQUEST_TIMEOUT: { timeout, message: `Execute timeout after ${timeout}ms.` } }, null]);
+            }, timeout);
 
             try {
-              const value = await (await $fetch(url, { method: 'POST', body, headers: options.headers })).text()
-              clearTimeout(timer)
-              resolve(value)
+              const value = await (await $fetch(url, { method: "POST", body, headers: options.headers })).text();
+              clearTimeout(timer);
+              resolve(value);
+            } catch (error) {
+              reject(error);
             }
-            catch (error) {
-              reject(error)
-            }
-          })
-          result = { value: TSON.parse(response) }
-        }
-        catch (error: any) {
+          });
+          result = { value: TSON.parse(response) };
+        } catch (error: any) {
           if (error?.[0]?.REQUEST_TIMEOUT) {
-            await eventManager.emit('milkio:executeError', { handleError, path: path as string, options: options as any, error })
-            return error
+            await eventManager.emit("milkio:executeError", { handleError, path: path as string, options: options as any, error });
+            return error;
           }
-          const errorPined = { REQUEST_FAIL: error }
-          await eventManager.emit('milkio:executeError', { handleError, path: path as string, options: options as any, error: errorPined })
-          return [errorPined, null, { executeId: 'unknown' }]
+          const errorPined = { REQUEST_FAIL: error };
+          await eventManager.emit("milkio:executeError", { handleError, path: path as string, options: options as any, error: errorPined });
+          return [errorPined, null, { executeId: "unknown" }];
         }
         if (result.value.success !== true) {
-          const error: any = {}
-          error[result.value.code] = result.value.reject ?? null
-          await eventManager.emit('milkio:executeError', { handleError, path: path as string, options: options as any, error })
-          return [error, null, { executeId: 'unknown' }]
+          const error: any = {};
+          error[result.value.code] = result.value.reject ?? null;
+          await eventManager.emit("milkio:executeError", { handleError, path: path as string, options: options as any, error });
+          return [error, null, { executeId: "unknown" }];
         }
 
-        return [null, result.value.data, { executeId: result.value.executeId }] as any
-      }
-      else {
+        return [null, result.value.data, { executeId: result.value.executeId }] as any;
+      } else {
         // stream
-        if (options.headers.Accept === undefined) options.headers.Accept = 'text/event-stream'
-        if (options.headers['Content-Type'] === undefined) options.headers['Content-Type'] = 'application/json'
+        if (options.headers.Accept === undefined) options.headers.Accept = "text/event-stream";
+        if (options.headers["Content-Type"] === undefined) options.headers["Content-Type"] = "application/json";
 
         const stacks: Map<
           number,
           {
-            done: boolean
-            promise: Promise<IteratorResult<any>>
-            resolve: (value: IteratorResult<any>) => void
-            reject: (reason: any) => void
+            done: boolean;
+            promise: Promise<IteratorResult<any>>;
+            resolve: (value: IteratorResult<any>) => void;
+            reject: (reason: any) => void;
           }
-        > = new Map()
-        let stacksIndex: number = 0
-        let iteratorIndex: number = 0
-        let streamResult: any
-        const streamResultFetched = withResolvers<undefined>()
+        > = new Map();
+        let stacksIndex = 0;
+        let iteratorIndex = 0;
+        let streamResult: any;
+        const streamResultFetched = withResolvers<undefined>();
 
-        const timeout = stargateOptions?.timeout ?? options?.timeout ?? 6000
+        const timeout = stargateOptions?.timeout ?? options?.timeout ?? 6000;
         const timer = setTimeout(() => {
-          streamResultFetched.reject([{ REQUEST_TIMEOUT: { timeout, message: `Execute timeout after ${timeout}ms.` } }, null, { executeId: 'unknown' }])
-        }, timeout)
+          streamResultFetched.reject([{ REQUEST_TIMEOUT: { timeout, message: `Execute timeout after ${timeout}ms.` } }, null, { executeId: "unknown" }]);
+        }, timeout);
 
         const onmessage = (event: EventSourceMessage) => {
-          if (event.data.startsWith('@')) {
+          if (event.data.startsWith("@")) {
             try {
-              streamResult = TSON.parse(event.data.slice(1))
-              streamResultFetched.resolve(undefined)
-              clearTimeout(timer)
+              streamResult = TSON.parse(event.data.slice(1));
+              streamResultFetched.resolve(undefined);
+              clearTimeout(timer);
+            } catch (error) {
+              streamResultFetched.reject([{ REQUEST_FAIL: error }, null, { executeId: "unknown" }]);
+              clearTimeout(timer);
             }
-            catch (error) {
-              streamResultFetched.reject([{ REQUEST_FAIL: error }, null, { executeId: 'unknown' }])
-              clearTimeout(timer)
-            }
-          }
-          else {
-            const index = ++stacksIndex
+          } else {
+            const index = ++stacksIndex;
             if (stacks.has(index)) {
-              const stack = stacks.get(index)
-              stack!.done = true
-              stack!.resolve({ done: false, value: TSON.parse(event.data) })
-            }
-            else {
-              const stack = withResolvers<IteratorResult<any>>()
-              stack.resolve({ done: false, value: TSON.parse(event.data) })
-              stacks.set(index, { ...stack, done: false })
+              const stack = stacks.get(index);
+              stack!.done = true;
+              stack!.resolve({ done: false, value: TSON.parse(event.data) });
+            } else {
+              const stack = withResolvers<IteratorResult<any>>();
+              stack.resolve({ done: false, value: TSON.parse(event.data) });
+              stacks.set(index, { ...stack, done: false });
             }
           }
-        }
+        };
 
-        let curRequestController: AbortController
+        let curRequestController: AbortController;
 
         async function create() {
-          curRequestController = new $abort()
-          curRequestController.signal.addEventListener('abort', () => {
-            iterator.return()
-          })
+          curRequestController = new $abort();
+          curRequestController.signal.addEventListener("abort", () => {
+            iterator.return();
+          });
           try {
-            await eventManager.emit('milkio:executeBefore', { path: path as string, options: options as any })
+            await eventManager.emit("milkio:executeBefore", { path: path as string, options: options as any });
 
-            const body = TSON.stringify(options!.params) ?? ''
-            await eventManager.emit('milkio:fetchBefore', { path: path as string, options: options as any, body })
+            const body = TSON.stringify(options!.params) ?? "";
+            await eventManager.emit("milkio:fetchBefore", { path: path as string, options: options as any, body });
 
             const response = await $fetch(url, {
-              method: 'POST',
+              method: "POST",
               headers: options!.headers,
               body,
               signal: curRequestController.signal,
-            })
+            });
 
-            const contentType = response.headers.get('Content-Type')
-            if (!contentType?.startsWith('text/event-stream')) {
-              throw new Error(`Expected content-type to be ${'text/event-stream'}, Actual: ${contentType}`)
+            const contentType = response.headers.get("Content-Type");
+            if (!contentType?.startsWith("text/event-stream")) {
+              throw new Error(`Expected content-type to be ${"text/event-stream"}, Actual: ${contentType}`);
             }
 
-            await getBytes(response.body!, getLines(getMessages(onmessage)))
+            await getBytes(response.body!, getLines(getMessages(onmessage)));
 
-            await iterator.return()
-          }
-          catch (err) {
-            if (!curRequestController.signal.aborted) curRequestController.abort()
-            const error = { REQUEST_FAIL: err }
-            await eventManager.emit('milkio:executeError', { handleError, path: path as string, options: options as any, error })
-            await iterator.throw(err)
-            streamResultFetched.reject([error, null, { executeId: 'unknown' }])
+            await iterator.return();
+          } catch (err) {
+            if (!curRequestController.signal.aborted) curRequestController.abort();
+            const error = { REQUEST_FAIL: err };
+            await eventManager.emit("milkio:executeError", { handleError, path: path as string, options: options as any, error });
+            await iterator.throw(err);
+            streamResultFetched.reject([error, null, { executeId: "unknown" }]);
           }
         }
 
-        void create()
+        void create();
 
         const iterator = {
           ...({
             next(): Promise<IteratorResult<unknown>> {
-              const index = ++iteratorIndex
-              if (stacks.has(index - 2)) stacks.delete(index - 2)
+              const index = ++iteratorIndex;
+              if (stacks.has(index - 2)) stacks.delete(index - 2);
               if (!stacks.has(index) && !curRequestController.signal.aborted) {
-                const stack = withResolvers<IteratorResult<any>>()
-                stacks.set(index, { ...stack, done: false })
-                return stack.promise
+                const stack = withResolvers<IteratorResult<any>>();
+                stacks.set(index, { ...stack, done: false });
+                return stack.promise;
               }
               if (!stacks.has(index) && curRequestController.signal.aborted) {
-                const stack = withResolvers<IteratorResult<any>>()
-                stack.resolve({ done: true, value: undefined })
-                return stack.promise
+                const stack = withResolvers<IteratorResult<any>>();
+                stack.resolve({ done: true, value: undefined });
+                return stack.promise;
               }
-              return stacks.get(index)!.promise
+              return stacks.get(index)!.promise;
             },
             async return(): Promise<IteratorResult<void>> {
-              if (!curRequestController.signal.aborted) curRequestController.abort()
-              for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined })
-              return { done: true, value: undefined }
+              if (!curRequestController.signal.aborted) curRequestController.abort();
+              for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined });
+              return { done: true, value: undefined };
             },
             async throw(err: any): Promise<IteratorResult<void>> {
               streamResult = {
                 success: false,
-                executeId: streamResult?.executeId ?? '',
+                executeId: streamResult?.executeId ?? "",
                 fail: {
-                  code: 'NETWORK_ERROR',
-                  message: 'Network Error',
+                  code: "NETWORK_ERROR",
+                  message: "Network Error",
                   fromClient: true,
                   data: err,
                 },
-              }
+              };
               for (const [_index, stack] of stacks) {
-                if (stack.done) continue
-                stack.done = true
-                stack.resolve({ done: true, value: undefined })
+                if (stack.done) continue;
+                stack.done = true;
+                stack.resolve({ done: true, value: undefined });
               }
-              if (!curRequestController.signal.aborted) curRequestController.abort()
-              for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined })
-              return { done: true, value: undefined }
+              if (!curRequestController.signal.aborted) curRequestController.abort();
+              for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined });
+              return { done: true, value: undefined };
             },
           } satisfies AsyncIterator<unknown>),
           [Symbol.asyncIterator]() {
-            return this
+            return this;
           },
-        }
+        };
 
         try {
-          await streamResultFetched.promise
-          return [null, iterator, { executeId: streamResult.executeId }] as any
-        }
-        catch (error) {
-          return error as any
+          await streamResultFetched.promise;
+          return [null, iterator, { executeId: streamResult.executeId }] as any;
+        } catch (error) {
+          return error as any;
         }
       }
     },
     cookbook: {
       subscribe: async (baseUrl: string) => {
         const headers = {
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-        }
-        const params = {}
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        };
+        const params = {};
 
-        const body = TSON.stringify(params) ?? ''
+        const body = TSON.stringify(params) ?? "";
         const stacks: Map<
           number,
           {
-            done: boolean
-            promise: Promise<IteratorResult<any>>
-            resolve: (value: IteratorResult<any>) => void
-            reject: (reason: any) => void
+            done: boolean;
+            promise: Promise<IteratorResult<any>>;
+            resolve: (value: IteratorResult<any>) => void;
+            reject: (reason: any) => void;
           }
-        > = new Map()
-        let stacksIndex: number = 0
-        let iteratorIndex: number = 0
+        > = new Map();
+        let stacksIndex = 0;
+        let iteratorIndex = 0;
 
         const onmessage = (event: EventSourceMessage) => {
-          const index = ++stacksIndex
+          const index = ++stacksIndex;
           if (stacks.has(index)) {
-            const stack = stacks.get(index)
-            stack!.resolve({ done: false, value: TSON.parse(event.data) })
+            const stack = stacks.get(index);
+            stack!.resolve({ done: false, value: TSON.parse(event.data) });
+          } else {
+            const stack = withResolvers<IteratorResult<any>>();
+            stack.resolve({ done: false, value: TSON.parse(event.data) });
+            stacks.set(index, { ...stack, done: false });
           }
-          else {
-            const stack = withResolvers<IteratorResult<any>>()
-            stack.resolve({ done: false, value: TSON.parse(event.data) })
-            stacks.set(index, { ...stack, done: false })
-          }
-        }
+        };
 
-        let curRequestController: AbortController
+        let curRequestController: AbortController;
 
         async function create() {
-          curRequestController = new $abort()
-          curRequestController.signal.addEventListener('abort', () => {
-            iterator.return()
-          })
+          curRequestController = new $abort();
+          curRequestController.signal.addEventListener("abort", () => {
+            iterator.return();
+          });
           try {
             const response = await $fetch(`${baseUrl}/$subscribe`, {
-              method: 'POST',
+              method: "POST",
               headers,
               body,
               signal: curRequestController.signal,
-            })
+            });
 
-            const contentType = response.headers.get('Content-Type')
-            if (!contentType?.startsWith('text/event-stream')) {
-              throw new Error(`Expected content-type to be ${'text/event-stream'}, Actual: ${contentType}`)
+            const contentType = response.headers.get("Content-Type");
+            if (!contentType?.startsWith("text/event-stream")) {
+              throw new Error(`Expected content-type to be ${"text/event-stream"}, Actual: ${contentType}`);
             }
 
-            await getBytes(response.body!, getLines(getMessages(onmessage)))
+            await getBytes(response.body!, getLines(getMessages(onmessage)));
 
-            await iterator.return()
-          }
-          catch (err) {
-            if (!curRequestController.signal.aborted) curRequestController.abort()
-            await iterator.throw(err)
+            await iterator.return();
+          } catch (err) {
+            if (!curRequestController.signal.aborted) curRequestController.abort();
+            await iterator.throw(err);
           }
         }
 
-        void create()
+        void create();
 
         const iterator = {
           ...({
             next(): Promise<IteratorResult<unknown>> {
-              const index = ++iteratorIndex
-              if (stacks.has(index - 2)) stacks.delete(index - 2)
+              const index = ++iteratorIndex;
+              if (stacks.has(index - 2)) stacks.delete(index - 2);
               if (!stacks.has(index) && !curRequestController.signal.aborted) {
-                const stack = withResolvers<IteratorResult<any>>()
-                stacks.set(index, { ...stack, done: false })
-                return stack.promise
+                const stack = withResolvers<IteratorResult<any>>();
+                stacks.set(index, { ...stack, done: false });
+                return stack.promise;
               }
               if (!stacks.has(index) && curRequestController.signal.aborted) {
-                const stack = withResolvers<IteratorResult<any>>()
-                stack.resolve({ done: true, value: undefined })
-                return stack.promise
+                const stack = withResolvers<IteratorResult<any>>();
+                stack.resolve({ done: true, value: undefined });
+                return stack.promise;
               }
-              return stacks.get(index)!.promise
+              return stacks.get(index)!.promise;
             },
             async return(): Promise<IteratorResult<void>> {
-              if (!curRequestController.signal.aborted) curRequestController.abort()
-              for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined })
-              return { done: true, value: undefined }
+              if (!curRequestController.signal.aborted) curRequestController.abort();
+              for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined });
+              return { done: true, value: undefined };
             },
             async throw(err: any): Promise<IteratorResult<void>> {
-              if (!curRequestController.signal.aborted) curRequestController.abort()
-              for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined })
-              return { done: true, value: undefined }
+              if (!curRequestController.signal.aborted) curRequestController.abort();
+              for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined });
+              return { done: true, value: undefined };
             },
           } satisfies AsyncIterator<unknown>),
           [Symbol.asyncIterator]() {
-            return this
+            return this;
           },
-        }
+        };
 
         try {
-          return iterator
-        }
-        catch (error) {
-          return error as any
+          return iterator;
+        } catch (error) {
+          return error as any;
         }
       },
     },
     async ping(options?: { timeout?: number }): Promise<Ping> {
+      // biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
       return await new Promise<Ping>(async (resolve) => {
-        const url = `${await baseUrl}/generate_204`
-        const timeout = stargateOptions?.timeout ?? options?.timeout ?? 6000
-        const startsTime = Date.now()
+        const url = `${await baseUrl}/generate_204`;
+        const timeout = stargateOptions?.timeout ?? options?.timeout ?? 6000;
+        const startsTime = Date.now();
         const timer = setTimeout(() => {
-          const endsTime = Date.now()
-          resolve([{ connect: false, delay: endsTime - startsTime, error: { REQUEST_TIMEOUT: { timeout, message: `Execute timeout after ${timeout}ms.` } } }, null])
-        }, timeout)
+          const endsTime = Date.now();
+          resolve([{ connect: false, delay: endsTime - startsTime, error: { REQUEST_TIMEOUT: { timeout, message: `Execute timeout after ${timeout}ms.` } } }, null]);
+        }, timeout);
 
         try {
-          const response = await await $fetch(url, { method: 'HEAD' })
-          const endsTime = Date.now()
-          clearTimeout(timer)
+          const response = await await $fetch(url, { method: "HEAD" });
+          const endsTime = Date.now();
+          clearTimeout(timer);
           if (response.status !== 204) {
-            resolve([{ connect: false, delay: endsTime - startsTime, error: { REQUEST_FAIL: { response, status: response.status, message: `Status code not 204` } } }, null])
+            resolve([{ connect: false, delay: endsTime - startsTime, error: { REQUEST_FAIL: { response, status: response.status, message: "Status code not 204" } } }, null]);
           }
 
-          resolve([null, { connect: true, delay: endsTime - startsTime, serverTimestamp: Number(response.headers.get('Content-Type')!.substring(17)) }])
+          resolve([null, { connect: true, delay: endsTime - startsTime, serverTimestamp: Number(response.headers.get("Content-Type")!.substring(17)) }]);
+        } catch (error: any) {
+          const endsTime = Date.now();
+          return [{ connect: false, delay: endsTime - startsTime, error }, null];
         }
-        catch (error: any) {
-          const endsTime = Date.now()
-          return [{ connect: false, delay: endsTime - startsTime, error }, null]
-        }
-      })
+      });
     },
-  }
+    async requestRaw<
+      T,
+      Options extends {
+        method: string;
+        type?: "action" | "stream";
+        params?: Record<any, any> | string;
+        headers?: Record<string, string>;
+        timeout?: number;
+      },
+    >(
+      path: string,
+      options: Options,
+    ): Promise<
+      Options["type"] extends "stream"
+        ? // stream
+          [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, T], ExecuteResultsOption>]
+        : // action
+          [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, T, ExecuteResultsOption]
+    > {
+      if (options.headers === undefined) options.headers = {};
 
-  return stargate
+      const url = path;
+
+      if (options.type !== "stream") {
+        // action
+        if (options.headers.Accept === undefined) options.headers.Accept = "application/json";
+        if (options.headers["Content-Type"] === undefined) options.headers["Content-Type"] = "application/json";
+        let result: { value: Record<any, any> };
+
+        try {
+          const body = TSON.stringify(options.params) ?? "";
+          // biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
+          const response = await new Promise<string>(async (resolve, reject) => {
+            const timeout = options?.timeout ?? options?.timeout ?? 6000;
+            const timer = setTimeout(() => {
+              reject([{ REQUEST_TIMEOUT: { timeout, message: `Execute timeout after ${timeout}ms.` } }, null]);
+            }, timeout);
+
+            try {
+              const value = await (await $fetch(url, { method: "POST", body, headers: options.headers })).text();
+              clearTimeout(timer);
+              resolve(value);
+            } catch (error) {
+              reject(error);
+            }
+          });
+          result = { value: TSON.parse(response) };
+        } catch (error: any) {
+          if (error?.[0]?.REQUEST_TIMEOUT) {
+            return error;
+          }
+          const errorPined = { REQUEST_FAIL: error };
+          return [errorPined, null, { executeId: "unknown" }];
+        }
+        if (result.value.success !== true) {
+          const error: any = {};
+          error[result.value.code] = result.value.reject ?? null;
+          return [error, null, { executeId: "unknown" }];
+        }
+
+        return [null, result.value.data, { executeId: result.value.executeId }] as any;
+      } else {
+        // stream
+        if (options.headers.Accept === undefined) options.headers.Accept = "text/event-stream";
+        if (options.headers["Content-Type"] === undefined) options.headers["Content-Type"] = "application/json";
+
+        const stacks: Map<
+          number,
+          {
+            done: boolean;
+            promise: Promise<IteratorResult<any>>;
+            resolve: (value: IteratorResult<any>) => void;
+            reject: (reason: any) => void;
+          }
+        > = new Map();
+        let stacksIndex = 0;
+        let iteratorIndex = 0;
+        let streamResult: any;
+        const streamResultFetched = withResolvers<undefined>();
+
+        const timeout = stargateOptions?.timeout ?? options?.timeout ?? 6000;
+        const timer = setTimeout(() => {
+          streamResultFetched.reject([{ REQUEST_TIMEOUT: { timeout, message: `Execute timeout after ${timeout}ms.` } }, null, { executeId: "unknown" }]);
+        }, timeout);
+
+        const onmessage = (event: EventSourceMessage) => {
+          if (event.data.startsWith("@")) {
+            try {
+              streamResult = TSON.parse(event.data.slice(1));
+              streamResultFetched.resolve(undefined);
+              clearTimeout(timer);
+            } catch (error) {
+              streamResultFetched.reject([{ REQUEST_FAIL: error }, null, { executeId: "unknown" }]);
+              clearTimeout(timer);
+            }
+          } else {
+            const index = ++stacksIndex;
+            if (stacks.has(index)) {
+              const stack = stacks.get(index);
+              stack!.done = true;
+              stack!.resolve({ done: false, value: TSON.parse(event.data) });
+            } else {
+              const stack = withResolvers<IteratorResult<any>>();
+              stack.resolve({ done: false, value: TSON.parse(event.data) });
+              stacks.set(index, { ...stack, done: false });
+            }
+          }
+        };
+
+        let curRequestController: AbortController;
+
+        async function create() {
+          curRequestController = new $abort();
+          curRequestController.signal.addEventListener("abort", () => {
+            iterator.return();
+          });
+          try {
+            const body = TSON.stringify(options!.params) ?? "";
+            const response = await $fetch(url, {
+              method: "POST",
+              headers: options!.headers,
+              body,
+              signal: curRequestController.signal,
+            });
+
+            const contentType = response.headers.get("Content-Type");
+            if (!contentType?.startsWith("text/event-stream")) {
+              throw new Error(`Expected content-type to be ${"text/event-stream"}, Actual: ${contentType}`);
+            }
+
+            await getBytes(response.body!, getLines(getMessages(onmessage)));
+
+            await iterator.return();
+          } catch (err) {
+            if (!curRequestController.signal.aborted) curRequestController.abort();
+            const error = { REQUEST_FAIL: err };
+            await iterator.throw(err);
+            streamResultFetched.reject([error, null, { executeId: "unknown" }]);
+          }
+        }
+
+        void create();
+
+        const iterator = {
+          ...({
+            next(): Promise<IteratorResult<unknown>> {
+              const index = ++iteratorIndex;
+              if (stacks.has(index - 2)) stacks.delete(index - 2);
+              if (!stacks.has(index) && !curRequestController.signal.aborted) {
+                const stack = withResolvers<IteratorResult<any>>();
+                stacks.set(index, { ...stack, done: false });
+                return stack.promise;
+              }
+              if (!stacks.has(index) && curRequestController.signal.aborted) {
+                const stack = withResolvers<IteratorResult<any>>();
+                stack.resolve({ done: true, value: undefined });
+                return stack.promise;
+              }
+              return stacks.get(index)!.promise;
+            },
+            async return(): Promise<IteratorResult<void>> {
+              if (!curRequestController.signal.aborted) curRequestController.abort();
+              for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined });
+              return { done: true, value: undefined };
+            },
+            async throw(err: any): Promise<IteratorResult<void>> {
+              streamResult = {
+                success: false,
+                executeId: streamResult?.executeId ?? "",
+                fail: {
+                  code: "NETWORK_ERROR",
+                  message: "Network Error",
+                  fromClient: true,
+                  data: err,
+                },
+              };
+              for (const [_index, stack] of stacks) {
+                if (stack.done) continue;
+                stack.done = true;
+                stack.resolve({ done: true, value: undefined });
+              }
+              if (!curRequestController.signal.aborted) curRequestController.abort();
+              for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined });
+              return { done: true, value: undefined };
+            },
+          } satisfies AsyncIterator<unknown>),
+          [Symbol.asyncIterator]() {
+            return this;
+          },
+        };
+
+        try {
+          await streamResultFetched.promise;
+          return [null, iterator, { executeId: streamResult.executeId }] as any;
+        } catch (error) {
+          return error as any;
+        }
+      }
+    },
+  };
+
+  return stargate;
 }
 
 export interface ExecuteStreamOptions {
-  headers?: Record<string, string>
-  timeout?: number
+  headers?: Record<string, string>;
+  timeout?: number;
 }
 
 export interface ApiSchemaExtend {
   apiValidator: {
-    generatedAt: number
-    validate: Record<any, any>
-  }
-  apiMethodsSchema: Record<any, any>
-  apiMethodsTypeSchema: Record<any, any>
-  apiTestsSchema: Record<any, any>
+    generatedAt: number;
+    validate: Record<any, any>;
+  };
+  apiMethodsSchema: Record<any, any>;
+  apiMethodsTypeSchema: Record<any, any>;
+  apiTestsSchema: Record<any, any>;
 }
 
-export type FailCodeExtend = Record<any, (...args: Array<any>) => any>
+export type FailCodeExtend = Record<any, (...args: Array<any>) => any>;
 
-export type BootstrapMiddleware = (data: { storage: ClientStorage }) => Promise<void> | void
-export type BeforeExecuteMiddleware = (data: { path: string, params: any, headers: Record<string, string>, storage: ClientStorage }) => Promise<void> | void
-export type AfterExecuteMiddleware = (data: { path: string, result: { value: any }, storage: ClientStorage }) => Promise<void> | void
+export type BootstrapMiddleware = (data: { storage: ClientStorage }) => Promise<void> | void;
+export type BeforeExecuteMiddleware = (data: { path: string; params: any; headers: Record<string, string>; storage: ClientStorage }) => Promise<void> | void;
+export type AfterExecuteMiddleware = (data: { path: string; result: { value: any }; storage: ClientStorage }) => Promise<void> | void;
 
 export interface MiddlewareOptions {
-  bootstrap?: BootstrapMiddleware
-  beforeExecute?: BeforeExecuteMiddleware
-  afterExecute?: AfterExecuteMiddleware
+  bootstrap?: BootstrapMiddleware;
+  beforeExecute?: BeforeExecuteMiddleware;
+  afterExecute?: AfterExecuteMiddleware;
 }
 
 export interface ClientStorage {
-  getItem: (key: string) => Promise<string | null>
-  setItem: (key: string, value: string) => Promise<void>
-  removeItem: (key: string) => Promise<void>
+  getItem: (key: string) => Promise<string | null>;
+  setItem: (key: string, value: string) => Promise<void>;
+  removeItem: (key: string) => Promise<void>;
 }
 
 export interface ExecuteResultSuccess<Result> {
-  executeId: string
-  success: true
-  data: Result
+  executeId: string;
+  success: true;
+  data: Result;
 }
 
-export type GeneratorGeneric<T> = T extends AsyncGenerator<infer I> ? I : never
+export type GeneratorGeneric<T> = T extends AsyncGenerator<infer I> ? I : never;
 
-export type FlattenKeys<T extends any, Prefix extends string = ''> = {
+export type FlattenKeys<T, Prefix extends string = ""> = {
   [K in keyof T]: T[K] extends object ? FlattenKeys<T[K], `${Prefix}${Exclude<K, symbol>}.`> : `$input.${Prefix}${Exclude<K, symbol>}`;
-}[keyof T]
+}[keyof T];
 
 // *** This part of the code is based on `@microsoft/fetch-event-source` rewrite, thanks to the work of Microsoft *** //
 // *** https://github.com/Azure/fetch-event-source/blob/main/src/parse.ts                                         *** //
@@ -529,7 +718,7 @@ export type FlattenKeys<T extends any, Prefix extends string = ''> = {
  * https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format
  */
 export interface EventSourceMessage {
-  data: string
+  data: string;
 }
 
 /**
@@ -539,18 +728,12 @@ export interface EventSourceMessage {
  * @returns {Promise<void>} A promise that will be resolved when the stream closes.
  */
 export async function getBytes(stream: ReadableStream<Uint8Array>, onChunk: (arr: Uint8Array) => void) {
-  const reader = stream.getReader()
-  let result: ReadableStreamReadResult<Uint8Array>
+  const reader = stream.getReader();
+  let result: ReadableStreamReadResult<Uint8Array>;
+  // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
   while (!(result = await reader.read()).done) {
-    onChunk(result.value)
+    onChunk(result.value);
   }
-}
-
-const enum ControlChars {
-  NewLine = 10,
-  CarriageReturn = 13,
-  Space = 32,
-  Colon = 58,
 }
 
 /**
@@ -560,75 +743,73 @@ const enum ControlChars {
  * @returns A function that should be called for each incoming byte chunk.
  */
 export function getLines(onLine: (line: Uint8Array, fieldLength: number) => void) {
-  let buffer: Uint8Array | undefined
-  let position: number // current read position
-  let fieldLength: number // length of the `field` portion of the line
-  let discardTrailingNewline = false
+  let buffer: Uint8Array | undefined;
+  let position: number; // current read position
+  let fieldLength: number; // length of the `field` portion of the line
+  let discardTrailingNewline = false;
 
   // return a function that can process each incoming byte chunk:
   return function onChunk(arr: Uint8Array) {
     if (buffer === undefined) {
-      buffer = arr
-      position = 0
-      fieldLength = -1
-    }
-    else {
+      buffer = arr;
+      position = 0;
+      fieldLength = -1;
+    } else {
       // we're still parsing the old line. Append the new bytes into buffer:
-      buffer = concat(buffer, arr)
+      buffer = concat(buffer, arr);
     }
 
-    const bufLength = buffer.length
-    let lineStart = 0 // index where the current line starts
+    const bufLength = buffer.length;
+    let lineStart = 0; // index where the current line starts
     while (position < bufLength) {
       if (discardTrailingNewline) {
-        if (buffer[position] === ControlChars.NewLine) {
-          lineStart = ++position // skip to next char
+        if (buffer[position] === 10) {
+          lineStart = ++position; // skip to next char
         }
 
-        discardTrailingNewline = false
+        discardTrailingNewline = false;
       }
 
       // start looking forward till the end of line:
-      let lineEnd = -1 // index of the \r or \n char
+      let lineEnd = -1; // index of the \r or \n char
       for (; position < bufLength && lineEnd === -1; ++position) {
         switch (buffer[position]) {
-          case ControlChars.Colon:
+          case 58:
             if (fieldLength === -1) {
               // first colon in line
-              fieldLength = position - lineStart
+              fieldLength = position - lineStart;
             }
-            break
-          // @ts-ignore:7029 \r case below should fallthrough to \n:
-          case ControlChars.CarriageReturn:
-            discardTrailingNewline = true
-          case ControlChars.NewLine:
-            lineEnd = position
-            break
+            break;
+          // biome-ignore lint/suspicious/noFallthroughSwitchClause: <explanation>
+          case 13:
+            discardTrailingNewline = true;
+          case 10:
+            lineEnd = position;
+            break;
         }
       }
 
       if (lineEnd === -1) {
         // We reached the end of the buffer but the line hasn't ended.
         // Wait for the next arr and then continue parsing:
-        break
+        break;
       }
 
       // we've reached the line end, send it out:
-      onLine(buffer.subarray(lineStart, lineEnd), fieldLength)
-      lineStart = position // we're now on the next line
-      fieldLength = -1
+      onLine(buffer.subarray(lineStart, lineEnd), fieldLength);
+      lineStart = position; // we're now on the next line
+      fieldLength = -1;
     }
 
     if (lineStart === bufLength) {
-      buffer = undefined // we've finished reading it
-    }
-    else if (lineStart !== 0) {
+      buffer = undefined; // we've finished reading it
+    } else if (lineStart !== 0) {
       // Create a new view into buffer beginning at lineStart so we don't
       // need to copy over the previous lines when we get the new arr:
-      buffer = buffer.subarray(lineStart)
-      position -= lineStart
+      buffer = buffer.subarray(lineStart);
+      position -= lineStart;
     }
-  }
+  };
 }
 
 /**
@@ -639,54 +820,53 @@ export function getLines(onLine: (line: Uint8Array, fieldLength: number) => void
  * @returns A function that should be called for each incoming line buffer.
  */
 export function getMessages(onMessage?: (msg: EventSourceMessage) => void) {
-  let message = newMessage()
-  const decoder = new TextDecoder()
+  let message = newMessage();
+  const decoder = new TextDecoder();
 
   // return a function that can process each incoming line buffer:
   return function onLine(line: Uint8Array, fieldLength: number) {
     if (line.length === 0) {
       // empty line denotes end of message. Trigger the callback and start a new message:
-      onMessage?.(message)
-      message = newMessage()
-    }
-    else if (fieldLength > 0) {
+      onMessage?.(message);
+      message = newMessage();
+    } else if (fieldLength > 0) {
       // exclude comments and lines with no values
       // line is of format "<field>:<value>" or "<field>: <value>"
       // https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation
-      const field = decoder.decode(line.subarray(0, fieldLength))
-      const valueOffset = fieldLength + (line[fieldLength + 1] === ControlChars.Space ? 2 : 1)
-      const value = decoder.decode(line.subarray(valueOffset))
+      const field = decoder.decode(line.subarray(0, fieldLength));
+      const valueOffset = fieldLength + (line[fieldLength + 1] === 32 ? 2 : 1);
+      const value = decoder.decode(line.subarray(valueOffset));
 
       switch (field) {
-        case 'data':
+        case "data":
           // if this message already has data, append the new value to the old.
           // otherwise, just set to the new value:
-          message.data = message.data ? `${message.data}\n${value}` : value // otherwise,
-          break
+          message.data = message.data ? `${message.data}\n${value}` : value; // otherwise,
+          break;
       }
     }
-  }
+  };
 }
 
 function concat(a: Uint8Array, b: Uint8Array) {
-  const res = new Uint8Array(a.length + b.length)
-  res.set(a)
-  res.set(b, a.length)
-  return res
+  const res = new Uint8Array(a.length + b.length);
+  res.set(a);
+  res.set(b, a.length);
+  return res;
 }
 
 function newMessage(): EventSourceMessage {
   return {
-    data: '',
-  }
+    data: "",
+  };
 }
 
 export function withResolvers<T = any>(): PromiseWithResolvers<T> {
-  let resolve: PromiseWithResolvers<T>['resolve']
-  let reject: PromiseWithResolvers<T>['reject']
+  let resolve: PromiseWithResolvers<T>["resolve"];
+  let reject: PromiseWithResolvers<T>["reject"];
   const promise = new Promise<T>((res, rej) => {
-    resolve = res
-    reject = rej
-  })
-  return { promise, resolve: resolve!, reject: reject! }
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve: resolve!, reject: reject! };
 }

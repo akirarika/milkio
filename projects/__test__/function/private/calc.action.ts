@@ -8,7 +8,7 @@ export default action({
       b: number
       throw?: boolean
     },
-  ) {
+  ): Promise<{ count: number }> {
     const count = Number(params.a) + params.b
     context.logger.info('count', count)
 
