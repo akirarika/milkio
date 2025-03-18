@@ -117,17 +117,17 @@ export default await defineCookbookCommand(async (utils) => {
       if (!(await existsSync(join(cwd, "../canto-projects/projects/cookbook-ui/package.json")))) throw new Error("未找到 cookbook-ui 项目");
       execFileSync("bun", ["run", "generate"], { stdio: "inherit", shell: true, cwd: join(cwd, "../canto-projects/projects/cookbook-ui") });
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      await writeFile(`../canto-projects/projects/cookbook-ui/.output/public/__cookbook_ui__.js`, `console.log("This package is used to distribute cookbook-ui binaries. You can run it directly.");`);
+      await writeFile("../canto-projects/projects/cookbook-ui/.output/public/__cookbook_ui__.js", `console.log("This package is used to distribute cookbook-ui binaries. You can run it directly.");`);
       await writeFile(
-        `../canto-projects/projects/cookbook-ui/.output/public/package.json`,
+        "../canto-projects/projects/cookbook-ui/.output/public/package.json",
         JSON.stringify({
-          name: `@milkio/cookbook-ui`,
+          name: "@milkio/cookbook-ui",
           type: "module",
           version: packageJson.version,
           module: "./__cookbook_ui__.js",
         }),
       );
-      execFileSync("powershell.exe", ["-Command", `npm publish --access public`], { stdio: "inherit", cwd: `../canto-projects/projects/cookbook-ui/.output/public` });
+      execFileSync("powershell.exe", ["-Command", "npm publish --access public"], { stdio: "inherit", cwd: "../canto-projects/projects/cookbook-ui/.output/public" });
       consola.success("cookbook-ui 静态资源打包并发布成功");
 
       // 打包 cookbook 的二进制文件并发布
@@ -161,7 +161,7 @@ export default await defineCookbookCommand(async (utils) => {
           },
         ];
 
-        if (!existsSync(`./packages/cookbook/dist`)) await mkdir(`./packages/cookbook/dist`);
+        if (!existsSync("./packages/cookbook/dist")) await mkdir("./packages/cookbook/dist");
         const packageJson = JSON.parse(await readFile("./packages/cookbook/package.json", "utf-8"));
 
         for (const platform of platforms) {
@@ -178,7 +178,7 @@ export default await defineCookbookCommand(async (utils) => {
               module: "./index.js",
             }),
           );
-          execFileSync("powershell.exe", ["-Command", `npm publish --access public`], { stdio: "inherit", cwd: `./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}` });
+          execFileSync("powershell.exe", ["-Command", "npm publish --access public"], { stdio: "inherit", cwd: `./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}` });
         }
         consola.success("cookbook 二进制文件打包并发布成功");
       })();
@@ -188,7 +188,7 @@ export default await defineCookbookCommand(async (utils) => {
         consola.log(`正在发布 ${childPackage} 到 npm..`);
         while (true) {
           try {
-            let command = `npm publish --access public`;
+            let command = "npm publish --access public";
             if (newVersion.includes("-rc")) command += " --tag rc";
             else if (newVersion.includes("-beta")) command += " --tag beta";
             else if (newVersion.includes("-alpha")) command += " --tag alpha";

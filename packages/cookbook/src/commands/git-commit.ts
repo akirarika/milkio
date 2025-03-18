@@ -1,28 +1,28 @@
-import { defineCookbookCommand } from '@milkio/cookbook-command'
-import { gitUserCheck } from '../utils/git-user-check'
-import { $ } from 'bun'
-import { exit } from 'node:process'
-import consola from 'consola'
-import * as osLocale from 'os-locale'
+import { defineCookbookCommand } from "@milkio/cookbook-command";
+import { gitUserCheck } from "../utils/git-user-check";
+import { $ } from "bun";
+import { exit } from "node:process";
+import consola from "consola";
+import * as osLocale from "os-locale";
 
 export default await defineCookbookCommand(async (utils) => {
   const cookbookToml = await utils.getCookbookToml();
   await gitUserCheck();
 
-  let branch;
+  let branch: string;
   try {
     branch = (await $`git rev-parse --abbrev-ref HEAD`.text()).trim();
   } catch (error) {
     branch = await utils.inputString({
-      env: 'branch',
-      message: 'Enter Git branch name',
-      placeholder: 'feature/your-feature-name'
-    })
+      env: "branch",
+      message: "Enter Git branch name",
+      placeholder: "feature/your-feature-name",
+    });
   }
 
   await $`git add --all`;
   consola.start("Checking git changes..");
-  const diff = (await $`git diff --staged`.text()).trim();
+  const diff = `${(await $`git diff`.text()).trim()}\n${(await $`git diff --staged`.text()).trim()}`;
 
   if (/$\s*^/g.test(diff)) {
     consola.success("No staged changes detected");
@@ -38,7 +38,7 @@ export default await defineCookbookCommand(async (utils) => {
     const { client, model } = await utils.useAI();
     await utils.openProgress(`Generating AI commit message (${model})..`);
     await (async () => {
-      let instructions = `
+      const instructions = `
 # 角色
 你是一位专业的 git diff 分析员，能够精准接收用户提供的 git diff 信息，并根据其内容准确判断主要改动类型。从以下可选回复中，选择其中之一进行回复。可选回复由 emoji 和描述文字组成。
 
@@ -64,20 +64,21 @@ export default await defineCookbookCommand(async (utils) => {
       const response = await client.chat.completions.create({
         model,
         messages: [
-          { role: 'system', content: `${instructions}` },
-          { role: 'user', content: `${diff}` }
+          { role: "system", content: `${instructions}` },
+          { role: "user", content: `${diff}` },
         ],
         stream: true,
       });
+      console.log("qwq", response);
       for await (const chunk of response) {
-        const content = (chunk.choices[0].delta).content;
+        const content = chunk.choices[0].delta.content;
         messagePrefix = messagePrefix + content;
       }
-      if (messagePrefix.startsWith('-')) messagePrefix.slice(1);
+      if (messagePrefix.startsWith("-")) messagePrefix.slice(1);
       messagePrefix = messagePrefix.trim();
     })();
     await (async () => {
-      let instructions = `
+      const instructions = `
 # 角色
 你是一个专业的代码改动分析员，你将会收到所做改动的方向，和 git diff 的结果，你能够能够从这些内容中清晰、准确地描述本次的改动内容，并使用一句话，简练精准地描述本次改动的主要内容
 
@@ -109,19 +110,19 @@ export default await defineCookbookCommand(async (utils) => {
       const response = await client.chat.completions.create({
         model,
         messages: [
-          { role: 'system', content: `${instructions}` },
-          { role: 'user', content: `${diff}` }
+          { role: "system", content: `${instructions}` },
+          { role: "user", content: `${diff}` },
         ],
         stream: true,
       });
       for await (const chunk of response) {
-        const content = (chunk.choices[0].delta).content;
+        const content = chunk.choices[0].delta.content;
         message = message + content;
       }
       message = message.trim();
     })();
     await (async () => {
-      let instructions = `
+      const instructions = `
 ##背景
 你是一个好用的翻译助手。请将内容翻译成 ${cookbookToml.config.gitCommitLanguage ?? osLocale} 语言。用户发给你所有的话都是需要翻译的内容，你只需要回答翻译结果。翻译结果请符合 ${cookbookToml.config.gitCommitLanguage ?? osLocale} 语言的语言习惯。如果用户的输入和被翻译的语言相同，则严格地原样输出原文内容即可。
 
@@ -134,37 +135,39 @@ export default await defineCookbookCommand(async (utils) => {
       const response = await client.chat.completions.create({
         model,
         messages: [
-          { role: 'system', content: `${instructions}` },
-          { role: 'user', content: `${message}` }
+          { role: "system", content: `${instructions}` },
+          { role: "user", content: `${message}` },
         ],
         stream: true,
       });
       for await (const chunk of response) {
-        const content = (chunk.choices[0].delta).content;
+        const content = chunk.choices[0].delta.content;
         messageTranslated = messageTranslated + content;
       }
       messageTranslated = messageTranslated.trim();
     })();
-    await utils.closeProgress(`Generated!`);
+    await utils.closeProgress("Generated!");
   }
 
-  if (diff.length >= 65535) consola.warn(`The diff result is too long, so this commit is no longer automatically generated using AI.`)
-  console.log('')
+  if (diff.length >= 65535) consola.warn("The diff result is too long, so this commit is no longer automatically generated using AI.");
+  console.log("");
   const messageMixed = `${messagePrefix}: ${messageTranslated}`;
   console.log(messageMixed);
   let inputMessage = "";
-  if (await utils.inputBoolean({
-    env: 'is-it-adopted',
-    message: `Is it adopted?`,
-  })) {
+  if (
+    await utils.inputBoolean({
+      env: "is-it-adopted",
+      message: "Is it adopted?",
+    })
+  ) {
     inputMessage = messageMixed;
   } else {
     inputMessage = await utils.inputString({
       env: "message",
       message: "Enter commit message",
       placeholder: messageMixed,
-    })
-    if (!inputMessage || typeof inputMessage !== 'string') exit(0);
+    });
+    if (!inputMessage || typeof inputMessage !== "string") exit(0);
   }
 
   while (true) {
@@ -175,10 +178,12 @@ export default await defineCookbookCommand(async (utils) => {
       break;
     } catch (error) {
       consola.error(error);
-      if (!await utils.inputBoolean({
-        env: 'retry',
-        message: 'I encountered the above error during push, do you want to try again? Usually the problem may be a network problem.'
-      })) {
+      if (
+        !(await utils.inputBoolean({
+          env: "retry",
+          message: "I encountered the above error during push, do you want to try again? Usually the problem may be a network problem.",
+        }))
+      ) {
         exit(0);
       }
     }
@@ -186,9 +191,9 @@ export default await defineCookbookCommand(async (utils) => {
 
   consola.log("Attempting to pull remote code changes...");
   try {
-  await $`git pull origin ${branch}:${branch}`;
+    await $`git pull origin ${branch}:${branch}`;
   } catch (error) {
-    consola.warn(`Git has completed the commit and push, but the attempt to pull failed.`);
+    consola.warn("Git has completed the commit and push, but the attempt to pull failed.");
   }
   consola.success(`Code synchronization completed for branch '${branch}'.`);
-})
+});
