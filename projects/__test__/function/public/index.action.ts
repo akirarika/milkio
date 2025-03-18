@@ -1,15 +1,15 @@
-import { action } from 'milkio'
+import { action } from "milkio";
 
 export default action({
   async handler(
     context,
     params: {
-      a: string
-      b: number
+      a: string;
+      b: number;
     },
-  ) {
-    const count = Number(params.a) + params.b
-    context.logger.info('count', count)
-    return { count }
+  ): Promise<{ count: number }> {
+    const count = Number(params.a) + params.b;
+    context.logger.info("count", count);
+    return { count };
   },
-})
+});

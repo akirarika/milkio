@@ -13,6 +13,9 @@
             "suspicious": {
                 "noExplicitAny": "off"
             },
+            "correctness": {
+                "useYield": "off"
+            },
             "style": {
                 "noUselessElse": "off",
                 "noNonNullAssertion": "off",

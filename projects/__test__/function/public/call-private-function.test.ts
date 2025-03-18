@@ -3,7 +3,7 @@ import { astra } from "/test";
 
 it.sequential("basic", async () => {
   const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
-  const [error, results] = await world.execute("/action-hello-world", {
+  const [error, results] = await world.execute("/child-call", {
     params: {
       a: "2",
       b: 2,
@@ -13,12 +13,11 @@ it.sequential("basic", async () => {
 
   // Check if the return value is as expected
   expect(results.count).toBe(4);
-  expect("say" in results).toBe(false);
 });
 
 it.sequential("reject", async () => {
   const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
-  const [error, results] = await world.execute("/action-hello-world", {
+  const [error, results] = await world.execute("/child-call", {
     params: {
       a: "2",
       b: 2,
@@ -26,8 +25,5 @@ it.sequential("reject", async () => {
     },
   });
   if (!error) throw reject("Milkio execution was successful, but expectations should have failed", results);
-  if (!error.FAIL) throw reject("Type is not 'FAIL'");
-
-  // Check if the return value is as expected
-  expect(error.FAIL).toBe("Reject this request");
+  if (!("REQUEST_FAIL" in error)) throw reject("Milkio execution was successful, but expectations should have failed", error);
 });

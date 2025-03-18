@@ -1,4 +1,4 @@
-import { action, reject, typeSafety } from 'milkio'
+import { action, reject, typeSafety } from "milkio";
 
 export default action({
   meta: {
@@ -7,17 +7,17 @@ export default action({
   async handler(
     context,
     params: {
-      a: string
-      b: number
-      throw?: boolean
+      a: string;
+      b: number;
+      throw?: boolean;
     },
-  ) {
+  ): Promise<{ count: number }> {
     const results = {
       count: 2 + params.b,
-      say: 'hello world',
-    }
-    if (params.throw) throw reject('FAIL', 'Reject this request')
+      say: "hello world",
+    };
+    if (params.throw) throw reject("FAIL", "Reject this request");
 
-    return typeSafety(results).type<{ count: number }>()
+    return typeSafety(results).type<{ count: number }>();
   },
-})
+});
