@@ -128,7 +128,6 @@ export default await defineCookbookCommand(async (utils) => {
         }),
       });
       for await (const chunk of response) {
-        console.log("foo", JSON.stringify(chunk));
         const content = chunk.data?.choices?.at(0)?.message?.content ?? "";
         message = message + content;
       }
