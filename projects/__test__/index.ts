@@ -1,6 +1,6 @@
-import { createWorld } from 'milkio'
-import { generated } from './.milkio'
-import { configSchema } from './.milkio/config-schema'
+import { createWorld } from "milkio";
+import { generated } from "./.milkio";
+import { configSchema } from "./.milkio/config-schema";
 
 export async function create() {
   const world = await createWorld(generated, configSchema, {
@@ -10,9 +10,9 @@ export async function create() {
     // argv: process.argv,
     develop: true,
     argv: [],
-  })
+  });
 
-  return world
+  return world;
 }
 
-export type World = Awaited<ReturnType<typeof create>>
+export type World = Awaited<ReturnType<typeof create>>;

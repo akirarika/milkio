@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "Attach to Node Process",
+            "port": 9229, // 与终端输出的端口一致
+            "protocol": "inspector",
+            "restart": true,
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        }
+    ]
+}

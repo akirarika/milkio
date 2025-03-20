@@ -29,14 +29,13 @@ export default await defineCookbookCommand(async (utils) => {
     exit(0);
   }
 
-  const canUseAI = await utils.canUseAI();
+  const ai = await utils.canUseAI();
 
   let messagePrefix = "";
   let message = "";
   let messageTranslated = "";
-  if (canUseAI && diff.length < 65535) {
-    const { client, model } = await utils.useAI();
-    await utils.openProgress(`Generating AI commit message (${model})..`);
+  if (ai && diff.length < 65535) {
+    await utils.openProgress(`Generating AI commit message (${ai.aiModel})..`);
     await (async () => {
       const instructions = `
 # 角色
@@ -61,16 +60,23 @@ export default await defineCookbookCommand(async (utils) => {
 # 角色
 你是一个专业严谨的代码改动分析员，能够精准解析 git diff 结果并用结构化 emoji 格式描述核心改动
 `;
-      const response = await client.chat.completions.create({
-        model,
-        messages: [
-          { role: "system", content: `${instructions}` },
-          { role: "user", content: `${diff}` },
-        ],
-        stream: true,
+      const response = await utils.fetchEventSource(ai.aiBaseUrl, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ai.aiApiKey}`,
+        },
+        method: "POST",
+        body: JSON.stringify({
+          model: "abab6.5s-chat",
+          messages: [
+            { role: "system", content: instructions },
+            { role: "user", content: diff },
+          ],
+          stream: true,
+        }),
       });
       for await (const chunk of response) {
-        const content = chunk.choices[0].delta.content;
+        const content = chunk.data?.choices?.at(0)?.message?.content ?? "";
         messagePrefix = messagePrefix + content;
       }
       if (messagePrefix.startsWith("-")) messagePrefix.slice(1);
@@ -106,16 +112,24 @@ export default await defineCookbookCommand(async (utils) => {
 - 优先技术术语
 - 必须确保结果是单行无换行的，拥有多个功能点时不要以列表形式输出，而是以逗号的形式进行描述
 `;
-      const response = await client.chat.completions.create({
-        model,
-        messages: [
-          { role: "system", content: `${instructions}` },
-          { role: "user", content: `${diff}` },
-        ],
-        stream: true,
+      const response = await utils.fetchEventSource(ai.aiBaseUrl, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ai.aiApiKey}`,
+        },
+        method: "POST",
+        body: JSON.stringify({
+          model: "abab6.5s-chat",
+          messages: [
+            { role: "system", content: instructions },
+            { role: "user", content: diff },
+          ],
+          stream: true,
+        }),
       });
       for await (const chunk of response) {
-        const content = chunk.choices[0].delta.content;
+        console.log("foo", JSON.stringify(chunk));
+        const content = chunk.data?.choices?.at(0)?.message?.content ?? "";
         message = message + content;
       }
       message = message.trim();
@@ -131,16 +145,23 @@ export default await defineCookbookCommand(async (utils) => {
 3. 必须确保所有的单词都是小写的。
 5. 严格保持回复的内容仅包含翻译后的内容本身，不包含任何多余的话，也不需要请求用户提出反馈。
 `;
-      const response = await client.chat.completions.create({
-        model,
-        messages: [
-          { role: "system", content: `${instructions}` },
-          { role: "user", content: `${message}` },
-        ],
-        stream: true,
+      const response = await utils.fetchEventSource(ai.aiBaseUrl, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ai.aiApiKey}`,
+        },
+        method: "POST",
+        body: JSON.stringify({
+          model: "abab6.5s-chat",
+          messages: [
+            { role: "system", content: instructions },
+            { role: "user", content: diff },
+          ],
+          stream: true,
+        }),
       });
       for await (const chunk of response) {
-        const content = chunk.choices[0].delta.content;
+        const content = chunk.data?.choices?.at(0)?.message?.content ?? "";
         messageTranslated = messageTranslated + content;
       }
       messageTranslated = messageTranslated.trim();
@@ -154,10 +175,11 @@ export default await defineCookbookCommand(async (utils) => {
   console.log(messageMixed);
   let inputMessage = "";
   if (
-    await utils.inputBoolean({
+    messageMixed.trim() !== ":" &&
+    (await utils.inputBoolean({
       env: "is-it-adopted",
       message: "Is it adopted?",
-    })
+    }))
   ) {
     inputMessage = messageMixed;
   } else {

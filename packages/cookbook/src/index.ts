@@ -9,8 +9,8 @@ import { env } from "bun";
 import { getCookbookToml } from "./utils/get-cookbook-toml";
 import { __router__ } from "./commands/__router__";
 import { uniqWith } from "lodash-es";
-import type OpenAI from "openai";
 import { progress } from "./progress";
+import { fetchEventSource } from "./utils/fetch-event-source";
 
 type Params = {
   command: string;
@@ -43,7 +43,7 @@ export async function cookbook() {
       params.commands.push(v);
     }
   }
-  if (argv.length === 2) params.command = `index`;
+  if (argv.length === 2) params.command = "index";
   if (argv.length !== 2) params.command = `${argv[2] ?? "index"}`;
   if (params.command.startsWith("--")) params.command = params.command.slice(2);
   if (params.command.startsWith("-") && params.command !== "-") params.command = params.command.slice(1);
@@ -51,13 +51,14 @@ export async function cookbook() {
   const packageJson = (await exists(join(cwd(), "package.json"))) ? JSON.parse(await readFile(join(cwd(), "package.json"), "utf-8")) : undefined;
   exists(join(env.HOME || env.USERPROFILE || "/", ".commands"));
   if (!(await exists(join(env.HOME || env.USERPROFILE || "/", ".commands")))) await mkdir(join(env.HOME || env.USERPROFILE || "/", ".commands"));
-  if (!(await exists(join(env.HOME || env.USERPROFILE || "/", ".commands", "package.json")))) await writeFile(join(env.HOME || env.USERPROFILE || "/", ".commands", "package.json"), JSON.stringify({ name: "commands", private: true, scripts: {}, dependencies: { '@milkio/cookbook-command': '*' }, devDependencies: {} }, null, 2));
+  if (!(await exists(join(env.HOME || env.USERPROFILE || "/", ".commands", "package.json"))))
+    await writeFile(join(env.HOME || env.USERPROFILE || "/", ".commands", "package.json"), JSON.stringify({ name: "commands", private: true, scripts: {}, dependencies: { "@milkio/cookbook-command": "*" }, devDependencies: {} }, null, 2));
 
   if (params.command === "index") {
-    let commands = [] as Array<{ name: string; value: string; path?: string; description?: "global" | "npm-script" | "workspace" | "built-in" }>;
+    const commands = [] as Array<{ name: string; value: string; path?: string; description?: "global" | "npm-script" | "workspace" | "built-in" }>;
 
     for (const command of __router__) {
-      if(command.hidden !== true) commands.push({ name: command.commands[0], value: command.commands[0], description: "built-in" });
+      if (command.hidden !== true) commands.push({ name: command.commands[0], value: command.commands[0], description: "built-in" });
     }
 
     if (await exists(join(cwd(), "package.json"))) {
@@ -69,7 +70,7 @@ export async function cookbook() {
 
     if (await exists(join(cwd(), ".commands"))) {
       const dir = await readdir(join(cwd(), ".commands"));
-      let temp = [] as typeof commands;
+      const temp = [] as typeof commands;
       for (const file of dir) {
         if (!file.endsWith(".command.ts")) continue;
         const key = file.slice(0, -11);
@@ -81,7 +82,7 @@ export async function cookbook() {
 
     if (await exists(join(env.HOME || env.USERPROFILE || "/", ".commands"))) {
       const dir = await readdir(join(env.HOME || env.USERPROFILE || "/", ".commands"));
-      let temp = [] as typeof commands;
+      const temp = [] as typeof commands;
       for (const file of dir) {
         if (!file.endsWith(".command.ts")) continue;
         const key = file.slice(0, -11);
@@ -93,7 +94,7 @@ export async function cookbook() {
 
     if (commands.length === 0) {
       consola.warn("There is no command yet.");
-      consola.info(`Docs: https://github.com/akirarika/co`);
+      consola.info("Docs: https://github.com/akirarika/co");
       return;
     }
 
@@ -111,7 +112,7 @@ export async function cookbook() {
       let maxContiguous = 0;
       let currentContiguous = 0;
       let firstMatchIndex = -1;
-    
+
       let inputIndex = 0;
       for (let i = 0; i < target.length; i++) {
         if (target[i] === input[inputIndex]) {
@@ -123,30 +124,27 @@ export async function cookbook() {
           currentContiguous = 0;
         }
       }
-    
+
       return { maxContiguous, firstMatchIndex };
     };
     const selected = await search({
       message: "What kind of command:",
       source: async (input) => {
         if (!input) return commands;
-        const filtered = commands.filter((command) => 
-          containsCharsInOrder(input.toLowerCase(), command.name.toLowerCase())
-        );
-    
-        return uniqWith(filtered, (a, b) => a.value === b.value)
-          .sort((a, b) => {
-            const scoreA = calculateScore(input, a.name);
-            const scoreB = calculateScore(input, b.name);
-    
-            // 优先按最长连续匹配降序排序
-            if (scoreB.maxContiguous !== scoreA.maxContiguous) {
-              return scoreB.maxContiguous - scoreA.maxContiguous;
-            }
-    
-            // 连续长度相同时，按匹配起始位置升序排序
-            return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
-          });
+        const filtered = commands.filter((command) => containsCharsInOrder(input.toLowerCase(), command.name.toLowerCase()));
+
+        return uniqWith(filtered, (a, b) => a.value === b.value).sort((a, b) => {
+          const scoreA = calculateScore(input, a.name);
+          const scoreB = calculateScore(input, b.name);
+
+          // 优先按最长连续匹配降序排序
+          if (scoreB.maxContiguous !== scoreA.maxContiguous) {
+            return scoreB.maxContiguous - scoreA.maxContiguous;
+          }
+
+          // 连续长度相同时，按匹配起始位置升序排序
+          return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
+        });
       },
     });
 
@@ -154,7 +152,7 @@ export async function cookbook() {
     params.command = selected;
   }
 
-  const built = __router__.find((command) => command.commands.includes(params.command))
+  const built = __router__.find((command) => command.commands.includes(params.command));
   if (built) {
     await run(params, { script: built.script, description: "built-in" });
   } else if (packageJson?.scripts?.[params.command]) {
@@ -173,12 +171,12 @@ export async function cookbook() {
   }
 }
 
-export async function run(params: Params, options: { path?: string; script?: () => Promise<any>, description?: "global" | "npm-script" | "workspace" | "built-in" }) {
+export async function run(params: Params, options: { path?: string; script?: () => Promise<any>; description?: "global" | "npm-script" | "workspace" | "built-in" }) {
   if (options.description === "npm-script") {
     if (!(await exists(join(cwd(), "cookbook.toml")))) await run(params, { path: "init", description: "workspace" });
     const config: any = Bun.TOML.parse(await Bun.file(join(cwd(), "cookbook.toml")).text());
     if (!config.general.packageManager) {
-      consola.error("You need to specify which package manager to use to run this command, modify your cookbook.toml file, and [general] bar to packageManager = \"npm\" or any custom package manager you like.");
+      consola.error('You need to specify which package manager to use to run this command, modify your cookbook.toml file, and [general] bar to packageManager = "npm" or any custom package manager you like.');
       exit(1);
     }
 
@@ -216,7 +214,7 @@ export async function run(params: Params, options: { path?: string; script?: () 
       await module.default(await createCommandUtils(params, options));
       exit(0);
     } catch (error: any) {
-      consola.error(error.toString ? (error.toString()) : (error?.message ?? "Running Error"));
+      consola.error(error.toString ? error.toString() : (error?.message ?? "Running Error"));
       exit(1);
     }
   }
@@ -230,7 +228,7 @@ export async function run(params: Params, options: { path?: string; script?: () 
     await module.default(await createCommandUtils(params, options));
     exit(0);
   } catch (error: any) {
-    consola.error(error.toString ? (error.toString()) : (error?.message ?? "Running Error"));
+    consola.error(error.toString ? error.toString() : (error?.message ?? "Running Error"));
     exit(1);
   }
 }
@@ -250,54 +248,35 @@ async function createCommandUtils(params: Params, options: { path?: string; desc
   const getScriptPath = () => options.path!;
   const getWorkspacePath = () => cwd();
   const getParams = () => params;
-  const inputBoolean = async (options: { env: string, message: string, placeholder?: string }) => {
+  const inputBoolean = async (options: { env: string; message: string; placeholder?: string }) => {
     if (options.env in params.options) return params.options[options.env] === "1";
     return await consola.prompt(options.message, {
       type: "confirm",
       placeholder: options.placeholder,
-    })
+    });
   };
-  const inputString = async (options: { env: string, message: string, placeholder?: string }) => {
+  const inputString = async (options: { env: string; message: string; placeholder?: string }) => {
     if (options.env in params.options) return params.options[options.env];
     return await consola.prompt(options.message, {
       type: "text",
       placeholder: options.placeholder,
-    })
+    });
   };
 
   let cookbookToml: any;
 
-  let ai: OpenAI;
-  const useAI = async () => {
-    if (!cookbookToml) cookbookToml = await getCookbookToml();
-    if (!ai) {
-      const OpenAI = await import('openai');
-      ai = new OpenAI.default({
-        baseURL: cookbookToml.config.aiBaseUrl,
-        apiKey: cookbookToml.config.aiApiKey,
-      });
-    }
-    if (!cookbookToml.config || !cookbookToml.config.aiModel) {
-      consola.error(`AI model not configured. Please add 'aiModel = "Your-Model-Name"' under [config] section in cookbook.toml`);
-      exit(1);
-    }
-    if (!cookbookToml.config.aiBaseUrl) {
-      consola.error(`AI base url not configured. Please add 'aiBaseUrl = "https://api.example.com/chat"' under [config] section in cookbook.toml`);
-      exit(1);
-    }
-    if (!cookbookToml.config.aiApiKey) {
-      consola.error(`AI api key not configured. Please add 'aiApiKey = "xxxx-xxxx-xxxx-xxxx' under [config] section in cookbook.toml`);
-      exit(1);
-    }
-    return { client: ai, model: cookbookToml.config.aiModel };
-  }
   const canUseAI = async () => {
     if (!cookbookToml) cookbookToml = await getCookbookToml();
-    return cookbookToml?.config?.aiModel && cookbookToml?.config?.aiBaseUrl && cookbookToml?.config?.aiApiKey;
-  }
+    if (!cookbookToml?.config?.aiModel && cookbookToml?.config?.aiBaseUrl && cookbookToml?.config?.aiApiKey) return false;
+    return {
+      aiBaseUrl: cookbookToml?.config?.aiBaseUrl,
+      aiApiKey: cookbookToml?.config?.aiApiKey,
+      aiModel: cookbookToml?.config?.aiModel,
+    };
+  };
 
-  const openProgress = (message: string) => progress.open(message)
-  const closeProgress = (message: string) => progress.close(message)
+  const openProgress = (message: string) => progress.open(message);
+  const closeProgress = (message: string) => progress.close(message);
 
   return {
     log,
@@ -317,14 +296,14 @@ async function createCommandUtils(params: Params, options: { path?: string; desc
     inputBoolean,
     inputString,
     canUseAI,
-    useAI,
     openProgress,
     closeProgress,
+    fetchEventSource,
     getCookbookToml: async () => {
       if (cookbookToml) return cookbookToml;
       cookbookToml = await getCookbookToml();
-      if (!cookbookToml.config) cookbookToml.config = {}
+      if (!cookbookToml.config) cookbookToml.config = {};
       return cookbookToml;
-    }
-  }
+    },
+  };
 }

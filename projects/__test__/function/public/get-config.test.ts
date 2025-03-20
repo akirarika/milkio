@@ -3,7 +3,7 @@ import { astra } from "/test";
 
 it.sequential("basic", async () => {
   const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
-  const [error, results] = await world.execute("/config", {
+  const [error, results] = await world.execute("/get-config", {
     params: {},
   });
   if (error) throw reject("Milkio did not execute successfully", error);
