@@ -155,7 +155,7 @@ export default await defineCookbookCommand(async (utils) => {
           model: "abab6.5s-chat",
           messages: [
             { role: "system", content: instructions },
-            { role: "user", content: diff },
+            { role: "user", content: message },
           ],
           stream: true,
         }),
@@ -172,7 +172,6 @@ export default await defineCookbookCommand(async (utils) => {
   if (diff.length >= 65535) consola.warn("The diff result is too long, so this commit is no longer automatically generated using AI.");
   console.log("");
   const messageMixed = `${messagePrefix}: ${messageTranslated}`;
-  console.log(messageMixed);
   let inputMessage = "";
   if (
     messageMixed.trim() !== ":" &&
