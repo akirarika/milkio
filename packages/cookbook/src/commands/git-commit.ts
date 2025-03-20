@@ -34,7 +34,7 @@ export default await defineCookbookCommand(async (utils) => {
   let messagePrefix = "";
   let message = "";
   let messageTranslated = "";
-  if (ai && diff.length < 65535) {
+  if (ai && diff.length < 131071) {
     await utils.openProgress(`Generating AI commit message (${ai.aiModel})..`);
     await (async () => {
       const instructions = `
@@ -173,6 +173,7 @@ export default await defineCookbookCommand(async (utils) => {
   console.log("");
   const messageMixed = `${messagePrefix}: ${messageTranslated}`;
   let inputMessage = "";
+  console.log(messageMixed);
   if (
     messageMixed.trim() !== ":" &&
     (await utils.inputBoolean({
