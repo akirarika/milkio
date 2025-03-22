@@ -5,18 +5,18 @@ import { createRequestListener } from "@mjackson/node-fetch-server";
 
 export type VitePluginMilkioOptions = {
   command: "build" | "serve";
-  milkio: { _: { cookbook: { cookbookPort: number } } };
 };
 
 export function useVitePluginMilkio(options: VitePluginMilkioOptions) {
   return {
-    milkioPlugin: {
+    milkioPlugin: (milkio: () => Promise<{ create: () => any }>) => ({
       name: "vite-plugin-milkio",
       async configureServer(server: any) {
         server.middlewares.use(async (req: any, res: any, next: any) => {
           try {
             return await createRequestListener(async (request: Request) => {
-              return await (options.milkio as any).listener.fetch({
+              const world: any = await milkio();
+              return await world.listener.fetch({
                 request,
                 env: env,
                 envMode: env.MILKIO_DEVELOP === "ENABLE" ? "development" : "production",
@@ -27,7 +27,7 @@ export function useVitePluginMilkio(options: VitePluginMilkioOptions) {
           }
         });
       },
-    },
+    }),
     ssr: // Make vite package dependencies together
       options.command === "serve"
         ? void 0

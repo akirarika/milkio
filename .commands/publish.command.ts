@@ -197,6 +197,7 @@ export default await defineCookbookCommand(async (utils) => {
           try {
             await $`bun ../../node_modules/typescript/bin/tsc index.ts --declaration --emitDeclarationOnly --outDir ./dist --module nodenext --moduleResolution nodenext --allowImportingTsExtensions`.cwd(join(cwd, "packages", childPackage)).quiet();
           } catch (error) {}
+          await Bun.write(join(cwd, "packages", childPackage, "dist", "LICENSE"), await Bun.file(join(cwd, "LICENSE")).text());
           const packageJson = JSON.parse(await readFile(join(cwd, "packages", childPackage, "package.json"), "utf-8"));
           const dependencies: Record<string, any> = {};
           if (childPackage === "milkio") dependencies["@southern-aurora/tson"] = "*";
@@ -235,6 +236,7 @@ export default await defineCookbookCommand(async (utils) => {
           }
         } else {
           consola.log(`正在直接发布 ${childPackage} 到 npm..`);
+          await Bun.write(join(cwd, "packages", childPackage, "dist", "LICENSE"), await Bun.file(join(cwd, "LICENSE")).text());
           while (true) {
             try {
               let command = "npm publish --access public";
