@@ -4,7 +4,8 @@
   "version": "1.0.0-alpha.110",
   "module": "index.ts",
   "dependencies": {
-    "@mjackson/node-fetch-server": "^0.6.1"
+    "@mjackson/node-fetch-server": "0.6.1",
+    "vite-plugin-node": "4.0.0"
   },
   "devDependencies": {}
 }

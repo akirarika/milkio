@@ -192,7 +192,7 @@ export default await defineCookbookCommand(async (utils) => {
             format: "esm",
             splitting: true,
             sourcemap: "inline",
-            minify: true,
+            minify: false,
           });
           try {
             await $`bun ../../node_modules/typescript/bin/tsc index.ts --declaration --emitDeclarationOnly --outDir ./dist --module nodenext --moduleResolution nodenext --allowImportingTsExtensions`.cwd(join(cwd, "packages", childPackage)).quiet();

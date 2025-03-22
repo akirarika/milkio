@@ -1,40 +1,51 @@
 import { join } from "node:path";
 import { cwd, env } from "node:process";
 import { existsSync, readdirSync } from "node:fs";
+import { VitePluginNode } from "vite-plugin-node";
 import { createRequestListener } from "@mjackson/node-fetch-server";
+import type { PluginOption } from "vite";
 
-export type VitePluginMilkioOptions = {
-  command: "build" | "serve";
-};
-
-export function useVitePluginMilkio(options: VitePluginMilkioOptions) {
-  return {
-    milkioPlugin: (milkio: () => Promise<{ create: (...args: Array<any>) => any }>) => ({
-      name: "vite-plugin-milkio",
-      async configureServer(server: any) {
-        server.middlewares.use(async (req: any, res: any, next: any) => {
-          try {
-            return await createRequestListener(async (request: Request) => {
-              const world: any = await (await milkio()).create({ develop: env.MILKIO_DEVELOP === "ENABLE", argv: process.argv, env });
-              return await world.listener.fetch({
-                request,
-                env: env,
-                envMode: env.MILKIO_DEVELOP === "ENABLE" ? "development" : "production",
-              });
-            })(req, res);
-          } catch (e) {
-            return next(e);
-          }
+export function useVitePluginMilkio() {
+  return [
+    ...VitePluginNode({
+      async adapter({ app, server, req, res, next }) {
+        const milkio = await await app({
+          develop: env.MILKIO_DEVELOP === "ENABLE",
+          argv: process.argv,
         });
+        try {
+          return await createRequestListener(async (request: Request) => {
+            return await milkio.listener.fetch({
+              request,
+              env: env,
+              envMode: env.MILKIO_DEVELOP === "ENABLE" ? "development" : "production",
+            });
+          })(req, res);
+        } catch (e) {
+          return next(e);
+        }
       },
+      appPath: "./index.ts",
+      exportName: "create",
+      initAppOnBoot: true,
     }),
-    ssr: // Make vite package dependencies together
-      options.command === "serve"
-        ? void 0
-        : {
-            noExternal: [...(existsSync(join(cwd(), "node_modules")) ? readdirSync(join(cwd(), "node_modules")) : []), ...(existsSync(join(cwd(), "..", "..", "node_modules")) ? readdirSync(join(cwd(), "..", "..", "node_modules")) : [])]
-              .filter((dependency) => ["electron"].find((lib) => lib === dependency))
-              .map((dependency) => (dependency.startsWith("@") ? new RegExp(`^${dependency}/`) : dependency)),
-          },
-  };
+    {
+      name: "vite-plugin-milkio",
+      config(config, { command }) {
+        if (command !== "build") return;
+        const main = "./runtime/node.ts";
+        if (!config.build) config.build = {};
+        config.build.ssr = main;
+        if (!config.build.rollupOptions) config.build.rollupOptions = {};
+        config.build.rollupOptions.input = main;
+        if (!config.build.rollupOptions.output) config.build.rollupOptions.output = {};
+        (config.build.rollupOptions.output as any).format = "es";
+        config.ssr = {
+          noExternal: [...(existsSync(join(cwd(), "node_modules")) ? readdirSync(join(cwd(), "node_modules")) : []), ...(existsSync(join(cwd(), "..", "..", "node_modules")) ? readdirSync(join(cwd(), "..", "..", "node_modules")) : [])]
+            .filter((dependency) => !dependency.startsWith(".") && ["electron"].find((lib) => lib !== dependency))
+            .map((dependency) => (dependency.startsWith("@") ? new RegExp(`^${dependency}/`) : dependency)),
+        };
+      },
+    },
+  ] satisfies PluginOption[];
 }
