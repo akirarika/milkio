@@ -57,8 +57,7 @@ export default await defineCookbookCommand(async (utils) => {
 ## 限制
 - 仅输出给定的可选回复，杜绝任何其他无关内容。
 - 务必确保分析结果的准确性，杜绝误判。 
-# 角色
-你是一个专业严谨的代码改动分析员，能够精准解析 git diff 结果并用结构化 emoji 格式描述核心改动
+- 输出的 emoji 和英文单词之间必须有空格。
 `;
       const response = await utils.fetchEventSource(ai.aiBaseUrl, {
         headers: {
@@ -81,15 +80,6 @@ export default await defineCookbookCommand(async (utils) => {
       }
       if (messagePrefix.startsWith("-")) messagePrefix.slice(1);
       messagePrefix = messagePrefix.trim();
-      const messagePrefixArray = messagePrefix.split("");
-      for (let index = 0; index < messagePrefixArray.length; index++) {
-        const char = messagePrefixArray[index];
-        if (/^[a-zA-Z]$/.test(char)) {
-          if (messagePrefixArray[index - 1] !== " ") messagePrefixArray.splice(index, 0, " ");
-          break;
-        }
-      }
-      messagePrefix = messagePrefixArray.join("");
     })();
     await (async () => {
       const instructions = `
