@@ -3,17 +3,13 @@
     "composite": true,
     "target": "esnext",
     "jsx": "preserve",
-    "erasableSyntaxOnly":true,
-    "lib": [
-      "ESNext"
-    ],
+    "erasableSyntaxOnly": true,
+    "lib": ["ESNext"],
     "moduleDetection": "force",
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
-      "/*": [
-        "./*"
-      ]
+      "/*": ["./*"]
     },
     "allowImportingTsExtensions": true,
     "allowJs": true,
@@ -32,8 +28,5 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true
   },
-  "include": [
-    "./.milkio/**/*",
-    "./**/*"
-  ]
+  "include": ["./.milkio/**/*", "./**/*"]
 }

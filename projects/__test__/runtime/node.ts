@@ -1,19 +1,21 @@
-import { createServer } from "@hattip/adapter-node";
-import { create } from "..";
+import * as http from "node:http";
+import { createRequestListener } from "@mjackson/node-fetch-server";
+import { create } from "../index.ts";
+import { env } from "node:process";
 
 async function bootstrap() {
   const world = await create();
 
-  createServer(async ({ request, env }) => {
+  function handler(request: Request) {
     return world.listener.fetch({
       request,
       env,
-      envMode: env("MILKIO_DEVELOP") === 'ENABLE' ? 'development' : 'production',
-    })
-  },
-  ).listen(world.listener.port, "0.0.0.0", () => {
-    console.log(`Server listening on http://localhost:${world.listener.port}`);
-  });
+      envMode: env.MILKIO_DEVELOP === "ENABLE" ? "development" : "production",
+    });
+  }
+
+  const server = http.createServer(createRequestListener(handler));
+  server.listen(world.listener.port);
 }
 
-void bootstrap()
+void bootstrap();

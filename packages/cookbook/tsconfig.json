@@ -2,23 +2,17 @@
   "compilerOptions": {
     "target": "ESNext",
     "jsx": "react-jsx",
-    "erasableSyntaxOnly":true,
-    // Enable latest features
-    "lib": [
-      "ESNext"
-    ],
+    "erasableSyntaxOnly": true,
+    "lib": ["ESNext"],
     "moduleDetection": "force",
-    "module": "ESNext",
-    // Bundler mode
-    "moduleResolution": "bundler",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "allowImportingTsExtensions": true,
     "allowJs": true,
-    // Best practices
     "strict": true,
     "strictNullChecks": true,
     "noFallthroughCasesInSwitch": true,
     "noPropertyAccessFromIndexSignature": false,
-    // Some stricter flags (disabled by default)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noEmit": true,

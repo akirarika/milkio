@@ -3,10 +3,10 @@ export interface $meta {
    * type safety
    * @default ["params","results"]
    */
-  typeSafety?: boolean
+  typeSafety?: boolean;
   /**
    * methods
    * @default ["POST"]
    */
-  methods?: Array<'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | string>
+  methods?: Array<"GET" | "POST" | "PUT" | "DELETE" | "PATCH" | string>;
 }

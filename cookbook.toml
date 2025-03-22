@@ -9,3 +9,4 @@ name = "Test"
 type = "milkio"
 typiaMode = "generation"
 autoStart = true
+watch = true

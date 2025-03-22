@@ -3,22 +3,16 @@
     "composite": true,
     "target": "esnext",
     "jsx": "react-jsx",
-    "erasableSyntaxOnly":true,
-    "lib": [
-      "ESNext"
-    ],
+    "erasableSyntaxOnly": true,
+    "lib": ["ESNext"],
     "moduleDetection": "force",
     "rootDir": "./../../../",
-    "module": "esnext",
-    "moduleResolution": "bundler",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "paths": {
-      "../../*": [
-        "../../*"
-      ]
+      "../../*": ["../../*"]
     },
-    "types": [
-      "bun-types"
-    ],
+    "types": ["bun-types"],
     "allowImportingTsExtensions": true,
     "allowJs": true,
     "strict": true,

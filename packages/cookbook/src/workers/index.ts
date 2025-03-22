@@ -1,10 +1,11 @@
 import os from "node:os";
 import { join } from "node:path";
 import { cwd } from "node:process";
-import { emitter } from "../emitter";
-import type { CookbookOptions } from "../utils/cookbook-dto-types";
+import { emitter } from "../emitter/index.ts";
+import type { CookbookOptions } from "../utils/cookbook-dto-types.ts";
 import { spawn, type ChildProcess } from "node:child_process";
 import { env } from "bun";
+import killPort from "kill-port";
 
 const platform = os.platform();
 export const workers = new Map<string, Worker>();
@@ -14,9 +15,9 @@ export interface Worker {
   stdout: Array<[number, number, "stdout" | "stderr", string]>;
   state: "running" | "stopped";
   connect: boolean;
-  meta: Record<string, string>;
+  meta: CookbookOptions["projects"][keyof CookbookOptions["projects"]]["meta"];
   kill: () => Promise<void>;
-  run: () => void;
+  run: (meta?: CookbookOptions["projects"][keyof CookbookOptions["projects"]]["meta"]) => void;
   testConnect: (timeout?: number) => Promise<{
     success: boolean;
     error?: string;
@@ -27,7 +28,7 @@ export async function initWorkers(options: CookbookOptions) {
   for (const projectName in options.projects) {
     const project = options.projects[projectName];
     const worker = createWorker(projectName, {
-      command: project.start ?? [options.general.packageManager, "run", "dev"],
+      command: project.start ?? `${options.general.packageManager} run dev`,
       max: 0,
       cwd: join(cwd(), "projects", projectName),
       port: project.port,
@@ -43,7 +44,7 @@ let stdoutIndex = 0;
 export function createWorker(
   key: string,
   options: {
-    command: string[];
+    command: string;
     cwd?: string;
     env?: NodeJS.ProcessEnv;
     stdout?: "pipe" | "ignore";
@@ -57,7 +58,6 @@ export function createWorker(
 
   const handleExit = (code: number | null, signal: string) => {
     const message = `Process exited with:${code ?? null}`;
-    process.stdout.write(message);
     worker.stdout.push([stdoutIndex++, Date.now(), "stdout", message]);
     if (code !== 0 && options.stdout !== "ignore" && options.max !== 0) {
       const message = `\n-- code: ${code ?? signal}\n`;
@@ -73,31 +73,43 @@ export function createWorker(
     stdout: [],
     state: "stopped",
     connect: false,
-    meta: {},
+    meta: {
+      inspect: false,
+    },
     kill: async () => {
       if (worker.state === "stopped") return;
       emitter.emit("data", { type: "workers@state", key, state: "stopped", code: "kill" });
       if (!spawnProcess) return Promise.resolve();
-      const message = `\n--------------------------------\n# Stop ${key}\n--------------------------------`;
-      worker.stdout.push([stdoutIndex++, Date.now(), "stdout", message]);
-      emitter.emit("data", { type: "workers@stdout", key, chunk: message });
-      await new Promise((resolve) => {
-        spawnProcess?.once("exit", () => resolve(undefined));
-        try {
-          spawnProcess?.kill("SIGINT");
-        } catch (error) {}
-      });
+      await Promise.all([
+        new Promise((resolve) => {
+          spawnProcess?.once("exit", () => resolve(undefined));
+        }),
+        (async () => {
+          try {
+            spawnProcess?.kill("SIGINT");
+            if (options.port) await killPort(options.port);
+          } catch (error) {}
+        })(),
+      ]);
       worker.state = "stopped";
     },
-    run: () => {
+    run: (meta?: CookbookOptions["projects"][keyof CookbookOptions["projects"]]["meta"]) => {
       if (worker.state === "running") return;
+      if (meta) {
+        worker.meta = {
+          ...worker.meta,
+          ...meta,
+        };
+      }
       const message = `\n--------------------------------\n# Start ${key}\n--------------------------------`;
       emitter.emit("data", { type: "workers@stdout", key, chunk: message });
       worker.stdout.push([stdoutIndex++, Date.now(), "stdout", message]);
       try {
-        spawnProcess = spawn(platform === "win32" ? "powershell.exe" : "bash", ["-c", options.command.join(" ")], {
+        const envMixed: Record<string, string> = { ...env, ...(options.env ?? {}), MILKIO_DEVELOP: "ENABLE" };
+        if (worker.meta.inspect) envMixed.NODE_OPTIONS = "--inspect";
+        spawnProcess = spawn(platform === "win32" ? "powershell.exe" : "bash", ["-c", options.command], {
           cwd: options.cwd,
-          env: { ...env, ...(options.env ?? {}), MILKIO_DEVELOP: "ENABLE" },
+          env: envMixed,
           stdio: ["ignore", options.stdout !== "ignore" ? "pipe" : "ignore", "pipe"],
         });
 
@@ -109,7 +121,6 @@ export function createWorker(
         const handleMessage = (chunk: ArrayBuffer) => {
           const str = textDecoder.decode(chunk);
           worker.stdout.push([stdoutIndex++, Date.now(), "stdout", str]);
-          process.stdout.write(str);
           emitter.emit("data", { type: "workers@stdout", key, chunk: str });
           if (worker.stdout.length >= (options.max ?? 1024 * 64)) {
             worker.stdout.splice(0, Math.ceil((options.max ?? 1024 * 64) * 0.2));
@@ -118,12 +129,7 @@ export function createWorker(
 
         const handleError = (chunk: ArrayBuffer) => {
           const str = textDecoder.decode(chunk);
-          if (str.includes("https://debug.bun.sh/#")) {
-            const inspect = str.match(/https:\/\/debug\.bun\.sh\/#\S*/g)?.at(0);
-            if (inspect) worker.meta.inspect = inspect;
-          }
           worker.stdout.push([stdoutIndex++, Date.now(), "stderr", str]);
-          process.stderr.write(str);
           emitter.emit("data", { type: "workers@stdout", key, chunk: str });
           if (worker.stdout.length >= (options.max ?? 1024 * 64)) {
             worker.stdout.splice(0, Math.ceil((options.max ?? 1024 * 64) * 0.2));

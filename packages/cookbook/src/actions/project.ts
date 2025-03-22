@@ -1,6 +1,6 @@
 import { cloneDeep } from "lodash-es";
-import type { CookbookActionParams, CookbookOptions } from "../utils/cookbook-dto-types";
-import { workers } from "../workers";
+import type { CookbookActionParams, CookbookOptions } from "../utils/cookbook-dto-types.ts";
+import { workers } from "../workers/index.ts";
 
 async function list(options: CookbookOptions, params: CookbookActionParams) {
   if (params.type !== "project@list") return false;
@@ -45,4 +45,40 @@ async function start(options: CookbookOptions, params: CookbookActionParams) {
   return {};
 }
 
-export const projectActions = [list, log, stop, start];
+async function inspect(options: CookbookOptions, params: CookbookActionParams) {
+  if (params.type !== "project@inspect") return false;
+  const tasks: Array<Promise<any>> = [];
+  const runningWorkerIds: Array<string> = [];
+  for (const [id, worker] of workers) {
+    tasks.push(
+      (async () => {
+        if (worker.state !== "running") return;
+        runningWorkerIds.push(id);
+        await worker.kill();
+      })(),
+    );
+  }
+
+  await Promise.all(tasks);
+
+  for (const workerId of runningWorkerIds) {
+    const worker = workers.get(workerId);
+    if (!worker) continue;
+    if (params.key === workerId) worker.run({ inspect: true });
+    else worker.run({ inspect: false });
+  }
+}
+
+async function stopInspect(options: CookbookOptions, params: CookbookActionParams) {
+  if (params.type !== "project@stop-inspect") return false;
+
+  const worker = workers.get(params.key);
+  if (!worker) return { refresh: true };
+  await worker.kill();
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  worker.run({ inspect: false });
+
+  return {};
+}
+
+export const projectActions = [list, log, stop, start, inspect, stopInspect];

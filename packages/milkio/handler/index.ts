@@ -1,7 +1,7 @@
-import type { MilkioWorld } from '..'
+import type { MilkioWorld } from "../index.ts";
 
 export function handler<HandlerInitT extends HandlerInit>(init: HandlerInitT): HandlerInitT {
-  return init
+  return init;
 }
 
-export type HandlerInit = (world: MilkioWorld) => Promise<void> | void
+export type HandlerInit = (world: MilkioWorld) => Promise<void> | void;

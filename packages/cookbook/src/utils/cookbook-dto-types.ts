@@ -27,6 +27,14 @@ export type CookbookActionParams =
   | {
       type: "project@start";
       key: string;
+    }
+  | {
+      type: "project@inspect";
+      key: string;
+    }
+  | {
+      type: "project@stop-inspect";
+      key: string;
     };
 
 export interface CookbookOptions {
@@ -35,9 +43,11 @@ export interface CookbookOptions {
     {
       type: "milkio" | "custom";
       port: number;
-      start: Array<string>;
-      build: Array<string>;
-      meta: Record<string, string>;
+      start: string;
+      build: string;
+      meta: Partial<{
+        inspect: boolean;
+      }>;
       name?: string;
       watch?: boolean;
       lazyRoutes?: boolean;

@@ -1,28 +1,28 @@
-import net from 'node:net'
+import net from "node:net";
 
 export async function checkPort(port: number): Promise<boolean> {
   return await new Promise((resolve) => {
     const handler = (fail: boolean) => {
-      clearTimeout(timer)
-      resolve(!fail)
-    }
+      clearTimeout(timer);
+      resolve(!fail);
+    };
     const tester = net
       .createServer()
-      .once('error', (err: any) => {
-        if (err.code != 'EADDRINUSE') return handler(false)
-        handler(true)
+      .once("error", (err: any) => {
+        if (err.code !== "EADDRINUSE") return handler(false);
+        handler(true);
       })
-      .once('listening', () => {
+      .once("listening", () => {
         tester
-          .once('close', () => {
-            handler(false)
+          .once("close", () => {
+            handler(false);
           })
-          .close()
+          .close();
       })
-      .listen(port)
-    let timer = setTimeout(() => {
-      handler(true)
-      tester.close()
-    }, 6000)
-  })
+      .listen(port);
+    const timer = setTimeout(() => {
+      handler(true);
+      tester.close();
+    }, 6000);
+  });
 }

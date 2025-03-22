@@ -1,11 +1,3 @@
-import { defineIdGenerator } from 'milkid'
+import { nanoid } from "nanoid";
 
-const idGenerator = defineIdGenerator({
-  length: 32,
-  hyphen: false,
-  fingerprint: false,
-  timestamp: true,
-  sequential: false,
-})
-
-export const __createId = idGenerator.createId
+export const __createId = () => nanoid();

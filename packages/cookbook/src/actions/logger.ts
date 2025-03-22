@@ -1,14 +1,12 @@
-import type { CookbookActionParams, CookbookOptions } from "../utils/cookbook-dto-types";
-import { emitter } from '../emitter'
+import type { CookbookActionParams, CookbookOptions } from "../utils/cookbook-dto-types.ts";
+import { emitter } from "../emitter/index.ts";
 
 async function logger(options: CookbookOptions, params: CookbookActionParams) {
-    if (params.type !== 'milkio@logger') return false
-    emitter.emit('data', {
-      type: 'milkio@logger',
-      log: params.log,
-    })
+  if (params.type !== "milkio@logger") return false;
+  emitter.emit("data", {
+    type: "milkio@logger",
+    log: params.log,
+  });
 }
 
-export const loggerActions = [
-  logger,
-]
+export const loggerActions = [logger];

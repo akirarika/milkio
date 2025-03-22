@@ -1,6 +1,6 @@
 import { createWorld } from "milkio";
-import { generated } from "./.milkio";
-import { configSchema } from "./.milkio/config-schema";
+import { generated } from "./.milkio/index.ts";
+import { configSchema } from "./.milkio/config-schema.ts";
 
 export async function create() {
   const world = await createWorld(generated, configSchema, {
