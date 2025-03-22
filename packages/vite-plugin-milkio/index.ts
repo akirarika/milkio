@@ -11,7 +11,7 @@ export type VitePluginMilkioOptions = {
 export function useVitePluginMilkio(options: VitePluginMilkioOptions) {
   return {
     milkioPlugin: {
-      name: "server",
+      name: "vite-plugin-milkio",
       async configureServer(server: any) {
         server.middlewares.use(async (req: any, res: any, next: any) => {
           try {
