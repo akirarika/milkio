@@ -193,6 +193,7 @@ export default await defineCookbookCommand(async (utils) => {
             splitting: true,
             sourcemap: "inline",
             minify: false,
+            external: ["vite-plugin-node", "@mjackson/node-fetch-server"],
           });
           try {
             await $`bun ../../node_modules/typescript/bin/tsc index.ts --declaration --emitDeclarationOnly --outDir ./dist --module nodenext --moduleResolution nodenext --allowImportingTsExtensions`.cwd(join(cwd, "packages", childPackage)).quiet();
@@ -201,6 +202,8 @@ export default await defineCookbookCommand(async (utils) => {
           const packageJson = JSON.parse(await readFile(join(cwd, "packages", childPackage, "package.json"), "utf-8"));
           const dependencies: Record<string, any> = {};
           if (childPackage === "milkio") dependencies["@southern-aurora/tson"] = "*";
+          if (childPackage === "vite-plugin-milkio") dependencies["vite-plugin-node"] = packageJson.dependencies["vite-plugin-node"];
+          if (childPackage === "vite-plugin-milkio") dependencies["@mjackson/node-fetch-server"] = packageJson.dependencies["@mjackson/node-fetch-server"];
           await writeFile(
             join(cwd, "packages", childPackage, "dist", "package.json"),
             JSON.stringify({
