@@ -110,22 +110,22 @@ export default await defineCookbookCommand(async (utils) => {
       }
 
       // 将 cookbook-ui 的静态资源打包并发布
-      // consola.log("正在打包 cookbook-ui 的静态资源..");
-      // if (!(await existsSync(join(cwd, "../canto-projects/projects/cookbook-ui/package.json")))) throw new Error("未找到 cookbook-ui 项目");
-      // execFileSync("bun", ["run", "generate"], { stdio: "inherit", shell: true, cwd: join(cwd, "../canto-projects/projects/cookbook-ui") });
-      // await new Promise((resolve) => setTimeout(resolve, 1000));
-      // await writeFile("../canto-projects/projects/cookbook-ui/.output/public/__cookbook_ui__.js", `console.log("This package is used to distribute cookbook-ui binaries. You can run it directly.");`);
-      // await writeFile(
-      //   "../canto-projects/projects/cookbook-ui/.output/public/package.json",
-      //   JSON.stringify({
-      //     name: "@milkio/cookbook-ui",
-      //     type: "module",
-      //     version: packageJson.version,
-      //     module: "./__cookbook_ui__.js",
-      //   }),
-      // );
-      // execFileSync("powershell.exe", ["-Command", "npm publish --access public"], { stdio: "inherit", cwd: "../canto-projects/projects/cookbook-ui/.output/public" });
-      // consola.success("cookbook-ui 静态资源打包并发布成功");
+      consola.log("正在打包 cookbook-ui 的静态资源..");
+      if (!(await existsSync(join(cwd, "../canto-projects/projects/cookbook-ui/package.json")))) throw new Error("未找到 cookbook-ui 项目");
+      execFileSync("npm", ["run", "generate"], { stdio: "inherit", shell: true, cwd: join(cwd, "../canto-projects/projects/cookbook-ui") });
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await writeFile("../canto-projects/projects/cookbook-ui/.output/public/__cookbook_ui__.js", `console.log("This package is used to distribute cookbook-ui binaries. You can run it directly.");`);
+      await writeFile(
+        "../canto-projects/projects/cookbook-ui/.output/public/package.json",
+        JSON.stringify({
+          name: "@milkio/cookbook-ui",
+          type: "module",
+          version: packageJson.version,
+          module: "./__cookbook_ui__.js",
+        }),
+      );
+      execFileSync("powershell.exe", ["-Command", "npm publish --access public"], { stdio: "inherit", cwd: "../canto-projects/projects/cookbook-ui/.output/public" });
+      consola.success("cookbook-ui 静态资源打包并发布成功");
 
       // 打包 cookbook 的二进制文件并发布
       await (async () => {
@@ -204,7 +204,6 @@ export default await defineCookbookCommand(async (utils) => {
               name: packageJson.name,
               version: packageJson.version,
               type: "module",
-              main: "./index.js",
               module: "./index.js",
               types: "./index.d.ts",
             }),
