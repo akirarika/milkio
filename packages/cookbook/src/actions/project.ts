@@ -53,7 +53,7 @@ async function inspect(options: CookbookOptions, params: CookbookActionParams) {
     tasks.push(
       (async () => {
         if (worker.state !== "running") return;
-        if (worker.meta.inspect !== true) return;
+        if (worker.meta.inspect !== true && params.key !== worker.key) return;
         runningWorkerIds.push(id);
         await worker.kill();
       })(),
