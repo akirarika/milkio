@@ -24,6 +24,10 @@ export function reject<Code extends keyof $rejectCode, RejectData extends $rejec
 export type MilkioRejectError<Code extends keyof $rejectCode = keyof $rejectCode, RejectData extends $rejectCode[Code] = $rejectCode[Code]> = { code: Code; data: RejectData; stack: string; $milkioReject: true };
 
 export function exceptionHandler(executeId: string, logger: Logger, error: MilkioRejectError<any, any> | any): MilkioResponseReject {
+  try {
+    if ("viteServer" in globalThis) (globalThis as any).viteServer.ssrFixStacktrace(error); // fix vite ssr stacktrace
+  } catch (error) {}
+  if (error instanceof Error && "viteServer" in globalThis) (globalThis as any).viteServer.ssrFixStacktrace(error);
   const name = error?.code ?? error?.name ?? error?.constructor?.name ?? "Unnamed Exception";
 
   if (error?.$milkioReject === true && error?.code === "NOT_FOUND") {

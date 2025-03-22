@@ -9,6 +9,7 @@ export function useVitePluginMilkio() {
   return [
     ...VitePluginNode({
       async adapter({ app, server, req, res, next }) {
+        (globalThis as any).viteServer = server;
         const milkio = await await app({
           develop: env.MILKIO_DEVELOP === "ENABLE",
           argv: process.argv,
@@ -22,13 +23,13 @@ export function useVitePluginMilkio() {
             });
           })(req, res);
         } catch (e) {
+          if (e instanceof Error) server.ssrFixStacktrace(e);
           return next(e);
         }
       },
       appPath: "./index.ts",
       exportName: "create",
       initAppOnBoot: true,
-      tsCompiler: "swc",
     }),
     {
       name: "vite-plugin-milkio",
