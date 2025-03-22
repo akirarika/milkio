@@ -89,6 +89,7 @@ export default await defineCookbookCommand(async (utils) => {
           break;
         }
       }
+      messagePrefix = messagePrefixArray.join("");
     })();
     await (async () => {
       const instructions = `
