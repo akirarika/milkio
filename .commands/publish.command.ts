@@ -9,6 +9,7 @@ import { cli } from "./utils/cli.ts";
 import consola from "consola";
 import { existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { rmSync } from "fs-extra";
 
 const mainPackage = "milkio";
 const childPackages = ["cookbook", "create-cookbook", "cookbook-command", "milkio-astra", "milkio-redis", "milkio-stargate", "milkio-eslint"];
@@ -181,6 +182,34 @@ export default await defineCookbookCommand(async (utils) => {
 
       // 将包发布到 npm
       for (const childPackage of [mainPackage, ...childPackages]) {
+        if (childPackage !== "cookbook" && childPackage !== "cookbook-ui" && childPackage !== "create-cookbook") {
+          consola.log(`正在打包 ${childPackage} 到 dist..`);
+          rmSync(join(cwd, "packages", childPackage, "dist"), { recursive: true, force: true });
+          await Bun.build({
+            entrypoints: [join(cwd, "packages", childPackage, "index.ts")],
+            outdir: join(cwd, "packages", childPackage, "dist"),
+            target: "node",
+            format: "esm",
+            splitting: true,
+            sourcemap: "inline",
+            minify: true,
+          });
+          try {
+            await $`bun ../../node_modules/typescript/bin/tsc index.ts --declaration --emitDeclarationOnly --outDir ./dist --module nodenext --moduleResolution nodenext --allowImportingTsExtensions`.cwd(join(cwd, "packages", childPackage, "index.ts")).quiet();
+          } catch (error) {}
+          const packageJson = JSON.parse(await readFile(join(cwd, "packages", childPackage, "package.json"), "utf-8"));
+          await writeFile(
+            join(cwd, "packages", childPackage, "dist", "package.json"),
+            JSON.stringify({
+              name: packageJson.name,
+              version: packageJson.version,
+              type: "module",
+              main: "./index.js",
+              module: "./index.js",
+              types: "./index.d.ts",
+            }),
+          );
+        }
         consola.log(`正在发布 ${childPackage} 到 npm..`);
         while (true) {
           try {

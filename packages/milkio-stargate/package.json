@@ -6,7 +6,5 @@
   "dependencies": {
     "@southern-aurora/tson": "^2.0.2"
   },
-  "devDependencies": {
-    "@types/bun": "latest"
-  }
+  "devDependencies": {}
 }

@@ -3,11 +3,12 @@
   "type": "module",
   "module": "index.ts",
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.8.2"
   },
   "dependencies": {
     "@milkio/cookbook-command": "^1.0.0-alpha.79",
     "@octokit/core": "^6.1.2",
+    "bun-plugin-dts": "^0.3.0",
     "consola": "^3.4.0",
     "openai": "^4.73.0"
   },

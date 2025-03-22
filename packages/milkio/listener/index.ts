@@ -10,7 +10,8 @@ export type MilkioHttpRequest = Request;
 export type MilkioHttpResponse = Mixin<
   ResponseInit,
   {
-    body: string | Blob | FormData | URLSearchParams | ReadableStream<Uint8Array>;
+    // body: string | Blob | FormData | URLSearchParams | ReadableStream<Uint8Array>;
+    body: any;
     status: number;
     headers: Record<string, string>;
   }
@@ -181,15 +182,17 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
           paramsType: "string",
         });
         finales = executed.finales;
+        // @ts-ignore: bun
         let stream: ReadableStream;
+        // @ts-ignore: bun
         let control: ReadableStreamDirectController | ReadableStreamDefaultController;
 
+        // @ts-ignore: bun
         if (typeof Bun !== "undefined") {
-          console.log("qwqqqq bun 有");
-
           // @ts-ignore: bun
           stream = new ReadableStream({
             type: "direct",
+            // @ts-ignore: bun
             async pull(controller: ReadableStreamDirectController) {
               control = controller;
               try {
@@ -218,16 +221,17 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
               await handleClose();
               control.close();
             },
-          });
+          } as any);
         } else {
           // node.js or others
+          // @ts-ignore: bun
           stream = new ReadableStream({
+            // @ts-ignore: bun
             async pull(controller) {
               control = controller;
               try {
                 controller.enqueue(`data:@${JSON.stringify({ success: true, data: undefined, executeId } satisfies MilkioResponseSuccess<any>)}\n\n`);
                 for await (const value of executed.results.value) {
-                  console.log("qwqqqq close", options.request.signal.aborted);
                   if (!options.request.signal.aborted) {
                     const result: string = JSON.stringify([null, TSON.encode(value)]);
                     controller.enqueue(`data:${result}\n\n`);
@@ -251,7 +255,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
               await handleClose();
               control.close();
             },
-          });
+          } as any);
         }
 
         response.body = stream;

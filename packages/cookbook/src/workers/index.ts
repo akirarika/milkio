@@ -1,6 +1,6 @@
 import os from "node:os";
 import { join } from "node:path";
-import { cwd } from "node:process";
+import { cwd, stderr, stdout } from "node:process";
 import { emitter } from "../emitter/index.ts";
 import type { CookbookOptions } from "../utils/cookbook-dto-types.ts";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -99,7 +99,7 @@ export function createWorker(
       ]);
       worker.state = "stopped";
     },
-    run: (meta?: CookbookOptions["projects"][keyof CookbookOptions["projects"]]["meta"]) => {
+    run: async (meta?: CookbookOptions["projects"][keyof CookbookOptions["projects"]]["meta"]) => {
       if (worker.state === "running") return;
       if (meta) {
         worker.meta = {
@@ -107,6 +107,9 @@ export function createWorker(
           ...meta,
         };
       }
+      try {
+        if (options.port) await killPort(options.port);
+      } catch (error) {}
       const message = `\n--------------------------------\n# Start ${key}\n--------------------------------`;
       emitter.emit("data", { type: "workers@stdout", key, chunk: message });
       worker.stdout.push([stdoutIndex++, Date.now(), "stdout", message]);
@@ -127,6 +130,7 @@ export function createWorker(
         const handleMessage = (chunk: ArrayBuffer) => {
           const str = textDecoder.decode(chunk);
           worker.stdout.push([stdoutIndex++, Date.now(), "stdout", str]);
+          stdout.write(str);
           emitter.emit("data", { type: "workers@stdout", key, chunk: str });
           if (worker.stdout.length >= (options.max ?? 1024 * 64)) {
             worker.stdout.splice(0, Math.ceil((options.max ?? 1024 * 64) * 0.2));
@@ -136,6 +140,7 @@ export function createWorker(
         const handleError = (chunk: ArrayBuffer) => {
           const str = textDecoder.decode(chunk);
           worker.stdout.push([stdoutIndex++, Date.now(), "stderr", str]);
+          stderr.write(str);
           emitter.emit("data", { type: "workers@stdout", key, chunk: str });
           if (worker.stdout.length >= (options.max ?? 1024 * 64)) {
             worker.stdout.splice(0, Math.ceil((options.max ?? 1024 * 64) * 0.2));

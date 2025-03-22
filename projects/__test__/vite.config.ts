@@ -1,11 +1,13 @@
 import { defineConfig } from "vite";
 import { join } from "node:path";
 import { cwd, env } from "node:process";
-import { getRequestListener } from "@hono/node-server";
 import { existsSync, readdirSync } from "node:fs";
 import { createRequestListener } from "@mjackson/node-fetch-server";
 
 export default defineConfig(({ command }) => ({
+  server: {
+    port: 9000,
+  },
   build: {
     manifest: true,
     sourcemap: true,
@@ -14,16 +16,18 @@ export default defineConfig(({ command }) => ({
     {
       name: "server",
       async configureServer(server) {
-        const milkio = await (await import("./index.ts")).create();
+        const milkio = await (await import("./index.ts")).create({
+          develop: env.MILKIO_DEVELOP === "ENABLE",
+          argv: process.argv,
+        });
         server.middlewares.use(async (req, res, next) => {
           try {
             return await createRequestListener(async (request: Request) => {
-              milkio.listener.fetch({
+              return await milkio.listener.fetch({
                 request,
                 env: env,
                 envMode: env.MILKIO_DEVELOP === "ENABLE" ? "development" : "production",
               });
-              return new Response("Hello, world!");
             })(req, res);
           } catch (e) {
             return next(e);

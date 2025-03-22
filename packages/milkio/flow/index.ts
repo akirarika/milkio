@@ -25,7 +25,7 @@ export function createFlow<T>(): MilkioFlow<T> {
       } else {
         const resolvers = Promise.withResolvers<T>();
         resolvers.resolve(flow);
-        flows.push({ ...resolvers, blank: false });
+        flows.push({ ...resolvers, blank: false } as any);
       }
     },
     ...({
@@ -33,7 +33,7 @@ export function createFlow<T>(): MilkioFlow<T> {
         if (status !== "pending") return { done: true, value: null };
         if (flows.length === 0) {
           const resolvers = Promise.withResolvers<T>();
-          flows.push({ ...resolvers, blank: true });
+          flows.push({ ...resolvers, blank: true } as any);
         }
         const flow = flows.at(0)!;
         const result = await flow.promise;
@@ -52,7 +52,7 @@ export function createFlow<T>(): MilkioFlow<T> {
         status = "rejected";
         if (flows.length === 0) {
           const resolvers = Promise.withResolvers<T>();
-          flows.push({ ...resolvers, blank: true });
+          flows.push({ ...resolvers, blank: true } as any);
         }
         for (const flow of flows) {
           flow.blank = false;

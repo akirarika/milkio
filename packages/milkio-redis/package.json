@@ -5,7 +5,6 @@
   "module": "index.ts",
   "devDependencies": {
     "@southern-aurora/tson": "*",
-    "@types/bun": "latest",
     "redis": "^4.7.0"
   }
 }

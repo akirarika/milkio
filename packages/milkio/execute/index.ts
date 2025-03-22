@@ -78,10 +78,6 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
     } as unknown as $context;
     const results: Results<any> = { value: undefined };
 
-    if (runtime.develop) {
-      options.createdLogger.request(`headers - ${TSON.stringify(headers.toJSON())}`, `\nparams - ${TSON.stringify(params)}`);
-    }
-
     const module = routeSchema.module;
     const meta = (module.default?.meta ? module.default?.meta : {}) as unknown as Readonly<$meta>;
 

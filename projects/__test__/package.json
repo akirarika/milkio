@@ -4,7 +4,8 @@
   "private": true,
   "module": "index.ts",
   "scripts": {
-    "dev": "vite-node ./runtime/node.ts",
+    "dev": "npm run dev:node",
+    "dev:node": "vite dev",
     "build": "vite build --ssr ./runtime/node.ts",
     "prisma": "prisma"
   },
