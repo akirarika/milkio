@@ -5,7 +5,7 @@
     "lineWidth": 320
   },
   "linter": {
-    "ignore": ["node_modules", ".milkio", "dist"],
+    "ignore": ["node_modules", ".milkio", "dist", "dev.ts"],
     "rules": {
       "performance": {
         "noDelete": "off"

@@ -1,5 +1,5 @@
 import { defineCookbookCommand } from "@milkio/cookbook-command";
-import { gitUserCheck } from "../utils/git-user-check";
+import { gitUserCheck } from "../utils/git-user-check.ts";
 import { $ } from "bun";
 import { exit } from "node:process";
 import consola from "consola";
@@ -81,6 +81,7 @@ export default await defineCookbookCommand(async (utils) => {
       }
       if (messagePrefix.startsWith("-")) messagePrefix.slice(1);
       messagePrefix = messagePrefix.trim();
+      messagePrefix = messagePrefix.replace(/(\S)(?=[a-zA-Z])/, "$1 ");
     })();
     await (async () => {
       const instructions = `
@@ -164,6 +165,10 @@ export default await defineCookbookCommand(async (utils) => {
         messageTranslated = messageTranslated + content;
       }
       messageTranslated = messageTranslated.trim();
+      if (messageTranslated.endsWith(".")) messageTranslated = messageTranslated.slice(0, -1);
+      if (messageTranslated.endsWith("!")) messageTranslated = messageTranslated.slice(0, -1);
+      if (messageTranslated.endsWith("?")) messageTranslated = messageTranslated.slice(0, -1);
+      if (messageTranslated.endsWith(";")) messageTranslated = messageTranslated.slice(0, -1);
     })();
     await utils.closeProgress("Generated!");
   }

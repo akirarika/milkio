@@ -53,8 +53,11 @@ export interface CookbookToml {
     {
       type: "milkio" | "custom";
       port: number;
-      start: Array<string>;
-      build: Array<string>;
+      start: string;
+      build: string;
+      meta: Partial<{
+        inspect: boolean;
+      }>;
       name?: string;
       watch?: boolean;
       lazyRoutes?: boolean;
@@ -64,6 +67,7 @@ export interface CookbookToml {
       autoStart?: boolean;
       autoStartDelay?: number;
       connectTestUrl?: string;
+      prismaMigrateMode?: "migrate-dev" | "push";
     }
   >;
   general: {
