@@ -12,7 +12,7 @@ import { execFileSync } from "node:child_process";
 import { rmSync } from "fs-extra";
 
 const mainPackage = "milkio";
-const childPackages = ["cookbook", "create-cookbook", "cookbook-command", "milkio-astra", "milkio-redis", "milkio-stargate"];
+const childPackages = ["cookbook", "create-cookbook", "cookbook-command", "milkio-astra", "milkio-redis", "milkio-stargate", "vite-plugin-milkio"];
 
 export default await defineCookbookCommand(async (utils) => {
   console.log("");
@@ -198,6 +198,8 @@ export default await defineCookbookCommand(async (utils) => {
             await $`bun ../../node_modules/typescript/bin/tsc index.ts --declaration --emitDeclarationOnly --outDir ./dist --module nodenext --moduleResolution nodenext --allowImportingTsExtensions`.cwd(join(cwd, "packages", childPackage)).quiet();
           } catch (error) {}
           const packageJson = JSON.parse(await readFile(join(cwd, "packages", childPackage, "package.json"), "utf-8"));
+          const dependencies: Record<string, any> = {};
+          if (childPackage === "milkio") dependencies["@southern-aurora/tson"] = "*";
           await writeFile(
             join(cwd, "packages", childPackage, "dist", "package.json"),
             JSON.stringify({
@@ -206,6 +208,7 @@ export default await defineCookbookCommand(async (utils) => {
               type: "module",
               module: "./index.js",
               types: "./index.d.ts",
+              dependencies,
             }),
           );
 
