@@ -28,6 +28,7 @@ export function useVitePluginMilkio() {
       appPath: "./index.ts",
       exportName: "create",
       initAppOnBoot: true,
+      tsCompiler: "swc",
     }),
     {
       name: "vite-plugin-milkio",

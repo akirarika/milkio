@@ -5,6 +5,7 @@
   "module": "index.ts",
   "dependencies": {
     "@mjackson/node-fetch-server": "0.6.1",
+    "@swc/core": "^1.11.11",
     "vite-plugin-node": "4.0.0"
   },
   "devDependencies": {}

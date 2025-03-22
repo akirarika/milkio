@@ -107,7 +107,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http });
             throw reject("NOT_FOUND", { path: http.path.string as string });
           }
-          routeSchema.module = await routeSchema.module();
+          if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
+          else routeSchema.module = await routeSchema.module();
           trie.add(http.path.string as string, routeSchema);
         }
 
@@ -156,7 +157,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http });
             throw reject("NOT_FOUND", { path: http.path.string as string });
           }
-          routeSchema.module = await routeSchema.module();
+          if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
+          else routeSchema.module = await routeSchema.module();
           trie.add(http.path.string as string, routeSchema);
         }
         if (routeSchema.type !== "stream") throw reject("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "application/json". If you are using the "@milkio/stargate" package, please remove \`type: "stream"\` to the execute options.` });
