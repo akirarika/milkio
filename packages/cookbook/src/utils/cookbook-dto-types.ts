@@ -57,7 +57,16 @@ export interface CookbookOptions {
       autoStart?: boolean;
       autoStartDelay?: number;
       connectTestUrl?: string;
-      prismaMigrateMode?: "migrate-dev" | "push";
+      prisma?: Array<{
+        mode: string;
+        databaseUrl: string;
+        migrateMode: "migrate" | "push";
+      }>;
+      drizzle?: Array<{
+        mode: string;
+        databaseUrl: string;
+        migrateMode: "migrate" | "push";
+      }>;
     }
   >;
   general: {

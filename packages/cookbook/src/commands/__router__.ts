@@ -12,8 +12,8 @@ export const __router__ = [
     script: () => import("./git-pull.ts"),
   },
   {
-    commands: ["prisma:migrate"],
-    script: () => import("./prisma-migrate.ts"),
+    commands: ["prisma"],
+    script: () => import("./prisma.ts"),
   },
   {
     hidden: true,
@@ -35,4 +35,4 @@ export const __router__ = [
     commands: ["version"],
     script: () => import("./version.ts"),
   },
-]
+];

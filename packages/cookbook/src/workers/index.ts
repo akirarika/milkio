@@ -6,6 +6,7 @@ import type { CookbookOptions } from "../utils/cookbook-dto-types.ts";
 import { spawn, type ChildProcess } from "node:child_process";
 import { env } from "bun";
 import killPort from "kill-port";
+import { getMode } from "../utils/get-mode.ts";
 
 const platform = os.platform();
 export const workers = new Map<string, Worker>();
@@ -27,7 +28,12 @@ export interface Worker {
 export async function initWorkers(options: CookbookOptions) {
   for (const projectName in options.projects) {
     const project = options.projects[projectName];
+    const mode = getMode();
+    const env: Record<string, string | undefined> = {};
+    if (project.prisma) env.DATABASE_URL = project.prisma?.find((p) => p.mode === mode)?.databaseUrl ?? undefined;
+    if (project.drizzle) env.DATABASE_URL = project.drizzle?.find((d) => d.mode === mode)?.databaseUrl ?? undefined;
     const worker = createWorker(projectName, {
+      env,
       command: project.start ?? `${options.general.packageManager} run dev`,
       max: 0,
       cwd: join(cwd(), "projects", projectName),

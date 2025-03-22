@@ -10,3 +10,7 @@ type = "milkio"
 typiaMode = "generation"
 autoStart = true
 watch = true
+prisma = [
+    { mode = "development", migrateMode = "push", databaseUrl = "file:./dev.db" },
+    { mode = "production", migrateMode = "push", databaseUrl = "file:./prod.db" },
+]

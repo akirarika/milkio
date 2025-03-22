@@ -81,7 +81,14 @@ export default await defineCookbookCommand(async (utils) => {
       }
       if (messagePrefix.startsWith("-")) messagePrefix.slice(1);
       messagePrefix = messagePrefix.trim();
-      messagePrefix = messagePrefix.replace(/(\S)(?=[a-zA-Z])/, "$1 ");
+      const messagePrefixArray = messagePrefix.split("");
+      for (let index = 0; index < messagePrefixArray.length; index++) {
+        const char = messagePrefixArray[index];
+        if (/^[a-zA-Z]$/.test(char)) {
+          if (messagePrefixArray[index - 1] !== " ") messagePrefixArray.splice(index, 0, " ");
+          break;
+        }
+      }
     })();
     await (async () => {
       const instructions = `

@@ -6,6 +6,7 @@ import { initServer } from "../server";
 import { generator } from "../generator";
 import { progress } from "../progress";
 import { getCookbookToml } from "../utils/get-cookbook-toml";
+import { getMode } from "../utils/get-mode";
 
 export default await defineCookbookCommand(async (utils) => {
   progress.open("cookbook is generating..");
@@ -22,10 +23,11 @@ export default await defineCookbookCommand(async (utils) => {
   void initServer(options);
 
   const endTime = new Date();
+  const mode = getMode();
   await progress.close("Cookbook is ready.");
   console.log(asciis().join("\n"));
-  console.log(chalk.hex("#24B56A")("△ ") + message());
   console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Time taken: ") + chalk.hex("#24B56A")(`${endTime.getTime() - startTime.getTime()}ms`));
+  console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Operating mode: ") + chalk.hex("#24B56A")(mode));
   console.log("");
   console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#24B56A")("cookbook:\t\t") + chalk.hex("#4988fc")(`http://localhost:${options.general.cookbookPort}/`));
   console.log("");
@@ -54,32 +56,4 @@ function asciis() {
         "00AE66",
       )(`\\`)}${chalk.hex("00AE5B")(`_`)}${chalk.hex("00AEA6")(`|`)}${chalk.hex("00AE47")(`\\`)}${chalk.hex("00AE3D")(`_`)}${chalk.hex("00AE33")(`_`)}${chalk.hex("00AE28")(`_`)}${chalk.hex("00AE1E")(`/`)}`,
   ];
-}
-
-function message() {
-  return (
-    chalk.hex("#00AEF5")("I ") +
-    chalk.hex("#00AEEC")("w") +
-    chalk.hex("#00AEE3")("i") +
-    chalk.hex("#00AEDA")("l") +
-    chalk.hex("#00AED1")("l ") +
-    chalk.hex("#00AEC8")("b") +
-    chalk.hex("#00AEBF")("e ") +
-    chalk.hex("#00AEB6")("t") +
-    chalk.hex("#00AEAD")("h") +
-    chalk.hex("#00AEA3")("e ") +
-    chalk.hex("#00AE9A")("b") +
-    chalk.hex("#00AE91")("e") +
-    chalk.hex("#00AE88")("s") +
-    chalk.hex("#00AE7F")("t ") +
-    chalk.hex("#00AE76")("a") +
-    chalk.hex("#00AE6D")("s") +
-    chalk.hex("#00AE64")("t") +
-    chalk.hex("#00AE5B")("r") +
-    chalk.hex("#00AE51")("o") +
-    chalk.hex("#00AE48")("n") +
-    chalk.hex("#00AE3F")("a") +
-    chalk.hex("#00AE36")("u") +
-    chalk.hex("#00AE2D")("t!")
-  );
 }

@@ -1,7 +1,6 @@
 import { search } from "@inquirer/prompts";
 import { argv, cwd, exit } from "node:process";
 import consola from "consola";
-import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { exists, mkdir, writeFile } from "node:fs/promises";
 import { readdir, readFile } from "node:fs/promises";
@@ -11,6 +10,7 @@ import { __router__ } from "./commands/__router__";
 import { uniqWith } from "lodash-es";
 import { progress } from "./progress";
 import { fetchEventSource } from "./utils/fetch-event-source";
+import { execScript } from "./utils/exec-script";
 
 type Params = {
   command: string;
@@ -55,7 +55,13 @@ export async function cookbook() {
     await writeFile(join(env.HOME || env.USERPROFILE || "/", ".commands", "package.json"), JSON.stringify({ name: "commands", private: true, scripts: {}, dependencies: { "@milkio/cookbook-command": "*" }, devDependencies: {} }, null, 2));
 
   if (params.command === "index") {
-    const commands = [] as Array<{ name: string; value: string; path?: string; description?: "global" | "npm-script" | "workspace" | "built-in" }>;
+    const commands = [
+      {
+        name: "<cancel>",
+        value: "<cancel>",
+        description: "built-in",
+      },
+    ] as Array<{ name: string; value: string; path?: string; description?: "global" | "npm-script" | "workspace" | "built-in" }>;
 
     for (const command of __router__) {
       if (command.hidden !== true) commands.push({ name: command.commands[0], value: command.commands[0], description: "built-in" });
@@ -137,18 +143,19 @@ export async function cookbook() {
           const scoreA = calculateScore(input, a.name);
           const scoreB = calculateScore(input, b.name);
 
-          // 优先按最长连续匹配降序排序
           if (scoreB.maxContiguous !== scoreA.maxContiguous) {
             return scoreB.maxContiguous - scoreA.maxContiguous;
           }
 
-          // 连续长度相同时，按匹配起始位置升序排序
           return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
         });
       },
     });
 
-    if (!selected) exit(0);
+    if (!selected || selected === "<cancel>") {
+      consola.success("Cookbook cancelled");
+      exit(0);
+    }
     params.command = selected;
   }
 
@@ -182,23 +189,23 @@ export async function run(params: Params, options: { path?: string; script?: () 
 
     try {
       if (config.general.packageManager === "bun") {
-        execFileSync("bun", ["run", options.path!, ...params.raw], { stdio: "inherit", shell: true, env: { TERM: "xterm-256color", ...process.env } });
+        execScript(`bun run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
       if (config.general.packageManager === "npm") {
-        execFileSync("npm", ["run", options.path!, ...params.raw], { stdio: "inherit", shell: true, env: { TERM: "xterm-256color", ...process.env } });
+        execScript(`npm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
       if (config.general.packageManager === "cnpm") {
-        execFileSync("cnpm", ["run", options.path!, ...params.raw], { stdio: "inherit", shell: true, env: { TERM: "xterm-256color", ...process.env } });
+        execScript(`cnpm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
       if (config.general.packageManager === "yarn") {
-        execFileSync("yarn", ["run", options.path!, ...params.raw], { stdio: "inherit", shell: true, env: { TERM: "xterm-256color", ...process.env } });
+        execScript(`yarn run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
       if (config.general.packageManager === "pnpm") {
-        execFileSync("pnpm", ["run", options.path!, ...params.raw], { stdio: "inherit", shell: true, env: { TERM: "xterm-256color", ...process.env } });
+        execScript(`pnpm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
       exit(0);
