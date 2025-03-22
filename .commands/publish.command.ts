@@ -70,8 +70,7 @@ export default await defineCookbookCommand(async (utils) => {
 
   if ((await $`git status --porcelain`.text()).trim()) {
     console.log("当前目录存在未提交的变更，请先提交再发布版本");
-    if ((await cli.select("是否进行 Git 提交？", ["是", "否"])) !== "是") process.exit(0);
-    execFileSync("co", ["git:commit"], { stdio: "inherit", shell: true });
+    process.exit(0);
   }
 
   const packageJson = JSON.parse(await readFile(join(cwd, "packages", mainPackage, "package.json"), "utf-8"));
@@ -209,25 +208,48 @@ export default await defineCookbookCommand(async (utils) => {
               types: "./index.d.ts",
             }),
           );
-        }
-        consola.log(`正在发布 ${childPackage} 到 npm..`);
-        while (true) {
-          try {
-            let command = "npm publish --access public";
-            if (newVersion.includes("-rc")) command += " --tag rc";
-            else if (newVersion.includes("-beta")) command += " --tag beta";
-            else if (newVersion.includes("-alpha")) command += " --tag alpha";
-            await $`${{ raw: command }}`.cwd(join(cwd, "packages", childPackage));
-            await Bun.sleep(1000);
-            break;
-          } catch (error: any) {
-            console.log(error);
-            console.log(error?.message ?? "");
-            if ((await cli.select(`\n${childPackage} 发布失败，可能是网络异常，是否重试？`, ["是", "否"])) === "是") {
-              console.log("好的，即将重试..");
-            } else {
-              console.log("已退出发布");
-              process.exit(0);
+
+          consola.log(`正在发布 ${childPackage} 的 dist到 npm..`);
+          while (true) {
+            try {
+              let command = "npm publish --access public";
+              if (newVersion.includes("-rc")) command += " --tag rc";
+              else if (newVersion.includes("-beta")) command += " --tag beta";
+              else if (newVersion.includes("-alpha")) command += " --tag alpha";
+              await $`${{ raw: command }}`.cwd(join(cwd, "packages", childPackage, "dist"));
+              await Bun.sleep(1000);
+              break;
+            } catch (error: any) {
+              console.log(error);
+              console.log(error?.message ?? "");
+              if ((await cli.select(`\n${childPackage} 发布失败，可能是网络异常，是否重试？`, ["是", "否"])) === "是") {
+                console.log("好的，即将重试..");
+              } else {
+                console.log("已退出发布");
+                process.exit(0);
+              }
+            }
+          }
+        } else {
+          consola.log(`正在直接发布 ${childPackage} 到 npm..`);
+          while (true) {
+            try {
+              let command = "npm publish --access public";
+              if (newVersion.includes("-rc")) command += " --tag rc";
+              else if (newVersion.includes("-beta")) command += " --tag beta";
+              else if (newVersion.includes("-alpha")) command += " --tag alpha";
+              await $`${{ raw: command }}`.cwd(join(cwd, "packages", childPackage));
+              await Bun.sleep(1000);
+              break;
+            } catch (error: any) {
+              console.log(error);
+              console.log(error?.message ?? "");
+              if ((await cli.select(`\n${childPackage} 发布失败，可能是网络异常，是否重试？`, ["是", "否"])) === "是") {
+                console.log("好的，即将重试..");
+              } else {
+                console.log("已退出发布");
+                process.exit(0);
+              }
             }
           }
         }
