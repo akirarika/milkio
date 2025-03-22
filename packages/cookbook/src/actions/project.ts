@@ -53,6 +53,7 @@ async function inspect(options: CookbookOptions, params: CookbookActionParams) {
     tasks.push(
       (async () => {
         if (worker.state !== "running") return;
+        if (worker.meta.inspect !== true) return;
         runningWorkerIds.push(id);
         await worker.kill();
       })(),
@@ -61,11 +62,9 @@ async function inspect(options: CookbookOptions, params: CookbookActionParams) {
 
   await Promise.all(tasks);
 
-  for (const workerId of runningWorkerIds) {
-    const worker = workers.get(workerId);
-    if (!worker) continue;
+  for (const [workerId, worker] of workers) {
     if (params.key === workerId) worker.run({ inspect: true });
-    else worker.run({ inspect: false });
+    if (runningWorkerIds.includes(workerId)) worker.run({ inspect: false });
   }
 }
 
