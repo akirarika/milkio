@@ -9,13 +9,13 @@ export type VitePluginMilkioOptions = {
 
 export function useVitePluginMilkio(options: VitePluginMilkioOptions) {
   return {
-    milkioPlugin: (milkio: () => Promise<{ create: () => any }>) => ({
+    milkioPlugin: (milkio: () => Promise<{ create: (...args: Array<any>) => any }>) => ({
       name: "vite-plugin-milkio",
       async configureServer(server: any) {
         server.middlewares.use(async (req: any, res: any, next: any) => {
           try {
             return await createRequestListener(async (request: Request) => {
-              const world: any = await milkio();
+              const world: any = await (await milkio()).create({ develop: env.MILKIO_DEVELOP === "ENABLE", argv: process.argv, env });
               return await world.listener.fetch({
                 request,
                 env: env,
