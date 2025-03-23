@@ -32,8 +32,8 @@ export const __router__ = [
   },
   {
     hidden: true,
-    commands: ["generate"],
-    script: () => import("./generate.ts"),
+    commands: ["build"],
+    script: () => import("./build.ts"),
   },
   {
     hidden: true,
