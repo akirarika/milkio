@@ -10,6 +10,6 @@ type = "milkio"
 typiaMode = "generation"
 autoStart = true
 prisma = [
-    { mode = "development", migrateMode = "push", databaseUrl = "file:./dev.db" },
-    { mode = "production", migrateMode = "push", databaseUrl = "file:./prod.db" },
+    { mode = "development", migrateMode = "push", migrateDatabaseUrl = "file:./dev.db" },
+    { mode = "production", migrateMode = "push", migrateDatabaseUrl = "file:./prod.db" },
 ]

@@ -182,10 +182,10 @@ const utils = {
             if (!existsSync(pathChecked)) mkdirSync(pathChecked);
             if (existsSync(join(pathChecked, filename))) {
                 if (pathChecked.startsWith("/home")) await utils.executeBash(`rm -f ${join(pathChecked, filename)}`);
-                else await utils.executeBash(`sudo rm -f ${join(pathChecked, filename)}`);
+                else await utils.executeBash(`rm -f ${join(pathChecked, filename)}`);
             }
             if (pathChecked.startsWith("/home")) await utils.executeBash(`mv ${join(workspace, filename)} ${pathChecked} && chmod +x ${join(pathChecked, filename)}`);
-            else await utils.executeBash(`sudo mv ${join(workspace, filename)} ${pathChecked} && sudo chmod +x ${join(pathChecked, filename)}`);
+            else await utils.executeBash(`mv ${join(workspace, filename)} ${pathChecked} && chmod +x ${join(pathChecked, filename)}`);
         }
         if (process.platform === "darwin") {
             const paths = [join(process.env.HOME, "bin"), join(process.env.HOME, ".bin"), join(process.env.HOME, ".local", "bin"), "/usr/local/bin"];
@@ -203,10 +203,10 @@ const utils = {
             if (!existsSync(pathChecked)) mkdirSync(pathChecked);
             if (existsSync(join(pathChecked, filename))) {
                 if (pathChecked.startsWith("/Users")) await utils.executeBash(`rm -f ${join(pathChecked, filename)}`);
-                else await utils.executeBash(`sudo rm -f ${join(pathChecked, filename)}`);
+                else await utils.executeBash(`rm -f ${join(pathChecked, filename)}`);
             }
             if (pathChecked.startsWith("/Users")) await utils.executeBash(`mv ${join(workspace, filename)} ${pathChecked} && chmod +x ${join(pathChecked, filename)}`);
-            else await utils.executeBash(`sudo mv ${join(workspace, filename)} ${pathChecked} && sudo chmod +x ${join(pathChecked, filename)}`);
+            else await utils.executeBash(`mv ${join(workspace, filename)} ${pathChecked} && chmod +x ${join(pathChecked, filename)}`);
         }
     },
     executePowershell: async (script) => {
@@ -215,7 +215,8 @@ const utils = {
         });
     },
     executeBash: (script) => {
-        return execFileSync("bash", ["-c", script], {
+
+        return execFileSync("bash", ["-c", `if command -v sudo &>/dev/null; then sudo ${script}; else ${script}; fi`], {
             stdio: "inherit",
         });
     },

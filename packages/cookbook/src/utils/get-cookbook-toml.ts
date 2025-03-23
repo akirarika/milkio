@@ -31,8 +31,8 @@ export async function getCookbookToml(p?: typeof progress): Promise<CookbookOpti
           consola.error(`This project "${projectName}" has a prisma configuration, but the "mode" is not specified.`);
           exit(0);
         }
-        if (!prisma.databaseUrl) {
-          consola.error(`This project "${projectName}" has a prisma configuration, but the "databaseUrl" is not specified.`);
+        if (!prisma.migrateDatabaseUrl) {
+          consola.error(`This project "${projectName}" has a prisma configuration, but the "migrateDatabaseUrl" is not specified.`);
           exit(0);
         }
         if (!prisma.migrateMode) {

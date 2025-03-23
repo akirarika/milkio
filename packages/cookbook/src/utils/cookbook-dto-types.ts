@@ -59,12 +59,12 @@ export interface CookbookOptions {
       connectTestUrl?: string;
       prisma?: Array<{
         mode: string;
-        databaseUrl: string;
+        migrateDatabaseUrl: string;
         migrateMode: "migrate" | "push";
       }>;
       drizzle?: Array<{
         mode: string;
-        databaseUrl: string;
+        migrateDatabaseUrl: string;
         migrateMode: "migrate" | "push";
       }>;
     }

@@ -24,7 +24,7 @@ export default await defineCookbookCommand(async (utils) => {
     cwd: project.path,
     env: {
       ...env,
-      DATABASE_URL: mode.databaseUrl,
+      DATABASE_URL: mode.migrateDatabaseUrl,
     },
   });
   exit(0);
