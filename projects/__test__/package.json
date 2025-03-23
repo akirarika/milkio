@@ -4,9 +4,8 @@
   "private": true,
   "module": "index.ts",
   "scripts": {
-    "dev": "npm run dev:node",
-    "dev:node": "vite dev",
-    "build": "vite build --ssr ./runtime/node.ts",
+    "dev": "vite dev",
+    "build": "vite build",
     "prisma": "prisma"
   },
   "trustedDependencies": [],
