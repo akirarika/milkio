@@ -45,6 +45,8 @@ export type CookbookCommandHandler = (utils: {
   openProgress: (message: string) => Promise<void>;
   closeProgress: (message: string) => Promise<void>;
   getCookbookToml: () => Promise<CookbookToml>;
+  gotoGitCommitCommand: () => Promise<void>;
+  gotoPrismaCommand: () => Promise<void>;
 }) => Promise<void>;
 
 export interface CookbookToml {

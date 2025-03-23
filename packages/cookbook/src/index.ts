@@ -285,7 +285,7 @@ async function createCommandUtils(params: Params, options: { path?: string; desc
   const openProgress = (message: string) => progress.open(message);
   const closeProgress = (message: string) => progress.close(message);
 
-  return {
+  const utils = {
     log,
     info,
     warn,
@@ -312,5 +312,15 @@ async function createCommandUtils(params: Params, options: { path?: string; desc
       if (!cookbookToml.config) cookbookToml.config = {};
       return cookbookToml;
     },
+    gotoGitCommitCommand: async () => {
+      const module = await import("./commands/git-commit");
+      return await module.default(utils as any);
+    },
+    gotoPrismaCommand: async () => {
+      const module = await import("./commands/prisma");
+      return await module.default(utils as any);
+    },
   };
+
+  return utils;
 }

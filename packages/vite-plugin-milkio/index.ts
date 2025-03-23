@@ -1,11 +1,13 @@
 import { join } from "node:path";
 import { cwd, env } from "node:process";
 import { existsSync, readdirSync } from "node:fs";
-import { VitePluginNode } from "vite-plugin-node";
+import { VitePluginNode, type ModuleFormat } from "vite-plugin-node";
 import { createRequestListener } from "@mjackson/node-fetch-server";
 import type { PluginOption } from "vite";
 
-export function useVitePluginMilkio() {
+export function useVitePluginMilkio(options?: {
+  outputFormat?: ModuleFormat;
+}) {
   return [
     ...VitePluginNode({
       async adapter({ app, server, req, res, next }) {
@@ -30,6 +32,7 @@ export function useVitePluginMilkio() {
       appPath: "./index.ts",
       exportName: "create",
       initAppOnBoot: true,
+      outputFormat: options?.outputFormat ?? "cjs",
     }),
     {
       name: "vite-plugin-milkio",
@@ -40,8 +43,6 @@ export function useVitePluginMilkio() {
         config.build.ssr = main;
         if (!config.build.rollupOptions) config.build.rollupOptions = {};
         config.build.rollupOptions.input = main;
-        if (!config.build.rollupOptions.output) config.build.rollupOptions.output = {};
-        (config.build.rollupOptions.output as any).format = "es";
         config.ssr = {
           noExternal: [...(existsSync(join(cwd(), "node_modules")) ? readdirSync(join(cwd(), "node_modules")) : []), ...(existsSync(join(cwd(), "..", "..", "node_modules")) ? readdirSync(join(cwd(), "..", "..", "node_modules")) : [])]
             .filter((dependency) => !dependency.startsWith(".") && ["electron"].find((lib) => lib !== dependency))
