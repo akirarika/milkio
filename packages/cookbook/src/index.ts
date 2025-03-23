@@ -316,7 +316,7 @@ async function createCommandUtils(params: Params, options: { path?: string; desc
       const module = await import("./commands/git-commit");
       return await module.default(utils as any);
     },
-    gotoPrismaCommand: async () => {
+    gotoPrismaCommand: async (project?: string) => {
       const module = await import("./commands/prisma");
       return await module.default(utils as any);
     },

@@ -6,8 +6,8 @@ export function execScript(script: string, options: ExecFileSyncOptionsWithBuffe
   const shell = platform === "win32" ? "powershell.exe" : "bash";
   const shellOptions = platform === "win32" ? "-Command" : "-c";
   let scriptRaw = script;
-  if (platform !== "win32") scriptRaw = `"${scriptRaw.replaceAll('"', '\\"')}"`;
   if (platform === "win32") scriptRaw = `$ErrorActionPreference = "Stop"; ${scriptRaw.replaceAll("&&", ";")}`;
+  scriptRaw = `"${scriptRaw.replaceAll('"', '\\"')}"`;
   consola.start(scriptRaw);
   return execFileSync(shell, [shellOptions, scriptRaw], {
     shell: true,

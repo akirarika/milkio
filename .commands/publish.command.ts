@@ -70,8 +70,8 @@ export default await defineCookbookCommand(async (utils) => {
 
   if ((await $`git status --porcelain`.text()).trim()) {
     console.log("当前目录存在未提交的变更，请先提交再发布版本");
-    console.log("co git:commit");
-    process.exit(0);
+    // @ts-ignore
+    await utils.gotoGitCommitCommand();
   }
 
   const packageJson = JSON.parse(await readFile(join(cwd, "packages", mainPackage, "package.json"), "utf-8"));
