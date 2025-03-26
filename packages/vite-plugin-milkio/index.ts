@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { cwd, env } from "node:process";
 import { existsSync, readdirSync } from "node:fs";
 import { VitePluginNode, type ModuleFormat } from "vite-plugin-node";

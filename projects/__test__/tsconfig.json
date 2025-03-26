@@ -9,7 +9,7 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
-      "/*": ["./*"]
+      "@/*": ["./*"]
     },
     "allowImportingTsExtensions": true,
     "allowJs": true,

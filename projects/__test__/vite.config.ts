@@ -1,5 +1,7 @@
 import { defineConfig } from "vite";
 import { useVitePluginMilkio } from "@milkio/vite-plugin-milkio";
+import { join } from "node:path";
+import { cwd } from "node:process";
 // import { join } from "node:path";
 // import { cwd, env } from "node:process";
 // import { existsSync, readdirSync } from "node:fs";
@@ -15,6 +17,9 @@ export default defineConfig(async ({ command }) => {
       manifest: true,
       sourcemap: true,
     },
+    // resolve: {
+    //   alias: { "@": join(cwd()) },
+    // },
     plugins: [
       ...useVitePluginMilkio(),
 
