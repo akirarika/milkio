@@ -188,7 +188,7 @@ export default await defineCookbookCommand(async (utils) => {
           const external: Array<string> = [];
           if (childPackage === "vite-plugin-milkio") external.push("vite-plugin-node");
           if (childPackage === "vite-plugin-milkio") external.push("@mjackson/node-fetch-server");
-          if (childPackage === "vite-plugin-milkio") external.push("@swc/core");
+
           await Bun.build({
             entrypoints: [join(cwd, "packages", childPackage, "index.ts")],
             outdir: join(cwd, "packages", childPackage, "dist"),
@@ -208,7 +208,7 @@ export default await defineCookbookCommand(async (utils) => {
           if (childPackage === "milkio") dependencies["@southern-aurora/tson"] = "*";
           if (childPackage === "vite-plugin-milkio") dependencies["vite-plugin-node"] = packageJson.dependencies["vite-plugin-node"];
           if (childPackage === "vite-plugin-milkio") dependencies["@mjackson/node-fetch-server"] = packageJson.dependencies["@mjackson/node-fetch-server"];
-          if (childPackage === "vite-plugin-milkio") dependencies["@swc/core"] = packageJson.dependencies["@swc/core"];
+
           await writeFile(
             join(cwd, "packages", childPackage, "dist", "package.json"),
             JSON.stringify({

@@ -17,9 +17,9 @@ export default defineConfig(async ({ command }) => {
       manifest: true,
       sourcemap: true,
     },
-    // resolve: {
-    //   alias: { "@": join(cwd()) },
-    // },
+    resolve: {
+      // alias: { "/": join(cwd()) },
+    },
     plugins: [
       ...useVitePluginMilkio(),
 

@@ -32,7 +32,7 @@ export function useVitePluginMilkio(options?: {
       appPath: "./index.ts",
       exportName: "create",
       initAppOnBoot: true,
-      outputFormat: options?.outputFormat ?? "cjs",
+      // outputFormat: options?.outputFormat ?? "cjs",
     }),
     {
       name: "vite-plugin-milkio",
@@ -43,6 +43,10 @@ export function useVitePluginMilkio(options?: {
         config.build.ssr = main;
         if (!config.build.rollupOptions) config.build.rollupOptions = {};
         config.build.rollupOptions.input = main;
+        if (!config.resolve) config.resolve = {};
+        config.resolve.alias = {
+          ...(config.resolve.alias ?? {}),
+        };
         config.ssr = {
           noExternal: [...(existsSync(join(cwd(), "node_modules")) ? readdirSync(join(cwd(), "node_modules")) : []), ...(existsSync(join(cwd(), "..", "..", "node_modules")) ? readdirSync(join(cwd(), "..", "..", "node_modules")) : [])]
             .filter((dependency) => !dependency.startsWith(".") && ["electron"].find((lib) => lib !== dependency))
