@@ -129,7 +129,7 @@ export function createWorker(
           // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
           const str = strRaw.replace(/\x1b\[\d*;?]*m/g, '');
           worker.stdout.push([stdoutIndex++, Date.now(), "stdout", str]);
-          stdoutWrite(strRaw, "info");
+          stdoutWrite(strRaw);
           emitter.emit("data", { type: "workers@stdout", key, chunk: str });
           if (worker.stdout.length >= (options.max ?? 1024 * 64)) {
             worker.stdout.splice(0, Math.ceil((options.max ?? 1024 * 64) * 0.2));
@@ -141,7 +141,7 @@ export function createWorker(
           // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
           const str = strRaw.replace(/\x1b\[\d*;?]*m/g, '');
           worker.stdout.push([stdoutIndex++, Date.now(), "stderr", str]);
-          stdoutWrite(strRaw, "error");
+          stdoutWrite(strRaw);
           emitter.emit("data", { type: "workers@stdout", key, chunk: str });
           if (worker.stdout.length >= (options.max ?? 1024 * 64)) {
             worker.stdout.splice(0, Math.ceil((options.max ?? 1024 * 64) * 0.2));
