@@ -22,13 +22,13 @@ export const __router__ = [
   },
   {
     hidden: true,
-    commands: ["install", "i"],
+    commands: ["install", "i", "add"],
     script: () => import("./install.ts"),
   },
   {
     hidden: true,
-    commands: ["upgrade", "up"],
-    script: () => import("./upgrade.ts"),
+    commands: ["uninstall", "remove", "rm"],
+    script: () => import("./uninstall.ts"),
   },
   {
     hidden: true,

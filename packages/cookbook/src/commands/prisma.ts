@@ -9,7 +9,9 @@ import { env } from "bun";
 
 export default await defineCookbookCommand(async (utils) => {
   const cookbookToml = await utils.getCookbookToml();
-  const project = await selectProject(cookbookToml, async (project) => await exists(join(cwd(), "projects", project.value, "prisma")));
+  const project = await selectProject(cookbookToml, {
+    filter: async (project) => await exists(join(cwd(), "projects", project.value, "prisma"))
+  });
   if (!project) exit(0);
   const packageJson = await readFile(join(cwd(), "projects", project.value, "package.json"), "utf-8");
   const packageJsonParsed = JSON.parse(packageJson);

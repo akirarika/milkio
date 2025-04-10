@@ -13,7 +13,7 @@ export default await defineCookbookCommand(async (utils) => {
     })
     path = project.path
   }
-  const command = `${cookbookToml.general.packageManager} install ${params.raw.join(" ")}`;
+  const command = `${cookbookToml.general.packageManager} uninstall ${params.raw.join(" ")}`;
   execScript(command, {
     cwd: path,
   });
