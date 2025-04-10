@@ -6,10 +6,12 @@ import { exit } from 'node:process'
 import type { CookbookOptions } from '../utils/cookbook-dto-types'
 import { checkPath } from './utils'
 import { calcHash } from '../utils/calc-hash'
-import { progress } from '../progress'
+import { getRate } from '../progress'
+import { unlinkIfTooLong } from '../utils/unlink-if-too-long'
 
 export async function routeSchema(options: CookbookOptions, paths: { cwd: string, milkio: string, generated: string }, project: CookbookOptions['projects']['key']) {
   if (!paths.milkio) return
+
   const milkioRawPath = join(paths.cwd, '.milkio', 'raw')
   const milkioRawRoutesPath = join(milkioRawPath, 'routes')
   if (!(await exists(milkioRawPath))) await mkdir(milkioRawPath)
@@ -49,25 +51,30 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
       const routeSchemaFolderPath = join(paths.cwd, '.milkio', 'raw', 'routes', `${importName}`)
       const routeGeneratedSchemaFolderPath = join(paths.cwd, '.milkio', 'generated', 'routes', `${importName}`)
       const routeSchemaPath = join(paths.cwd, '.milkio', 'raw', 'routes', `${importName}`, `${fileHash}.ts`)
+      const routeSchemaGeneratedPath = join(paths.cwd, '.milkio', 'generated', 'routes', `${importName}`, `${fileHash}.ts`)
       hashes.set(file, { importName, fileHash })
       if (!(await exists(routeSchemaFolderPath))) {
         await mkdir(routeSchemaFolderPath)
         changeType = 'file-create-or-delete'
       }
-      if (!(await exists(routeSchemaPath))) {
+
+      const rules: Array<Promise<boolean>> = []
+      rules.push((exists(routeSchemaPath)))
+      rules.push((exists(routeSchemaGeneratedPath)))
+      if ((await Promise.all(rules)).filter((bool) => bool === true).length !== rules.length) {
         if (changeType !== 'file-create-or-delete') changeType = 'file-change'
 
-        let routeFileImports = `/* eslint-disable */\n// route-schema`
+        let routeFileImports = "/* eslint-disable */\n// route-schema"
         routeFileImports += `\nimport typia, { type IValidation } from "typia";`
         routeFileImports += `\nimport { TSON, type TSONEncode } from "@southern-aurora/tson";`
         let routeFileExports = 'export default { '
         routeFileExports += `type: "${type}", `
-        routeFileExports += `types: undefined as any as { `
+        routeFileExports += "types: undefined as any as { "
         routeFileExports += `"🐣": ${type === 'action' ? 'boolean' : 'number'}, `
         routeFileExports += `meta: typeof ${importName}["meta"], `
         routeFileExports += `params: Parameters<typeof ${importName}["handler"]>[1], `
         routeFileExports += `result: Awaited<ReturnType<typeof ${importName}["handler"]>> `
-        routeFileExports += `},`
+        routeFileExports += "},"
         if (project?.lazyRoutes === undefined || project?.lazyRoutes === true) {
           routeFileImports += `\nimport type ${importName} from "../../../../function/${file}";`
           routeFileExports += `module: () => import("../../../../function/${file}"), `
@@ -80,15 +87,17 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
         routeFileExports += `randomParams: (): IValidation<Parameters<typeof ${importName}["handler"]>[1]> => typia.random<Parameters<typeof ${importName}["handler"]>[1]>() as any, `
         routeFileExports += `validateResults: (results: any): IValidation<Awaited<ReturnType<typeof ${importName}["handler"]>>> => typia.misc.validatePrune<Awaited<ReturnType<typeof ${importName}["handler"]>>>(results) as any, `
         routeFileExports += `resultsToJSON: (results: any): Awaited<ReturnType<typeof ${importName}["handler"]>> => typia.json.stringify<TSONEncode<Awaited<ReturnType<typeof ${importName}["handler"]>>>>(TSON.encode(results)) as any, `
-        routeFileExports += `};`
+        routeFileExports += "};"
 
         const oldFiles = await readdir(routeSchemaFolderPath)
         await writeFile(routeSchemaPath, `${routeFileImports}\n\n${routeFileExports}`)
 
         const deleteTasks: Array<Promise<any>> = []
         for (const oldFile of oldFiles) {
-          deleteTasks.push(unlink(join(paths.cwd, '.milkio', 'raw', 'routes', `${importName}`, oldFile)))
-          deleteTasks.push(unlink(join(paths.cwd, '.milkio', 'generated', 'routes', `${importName}`, oldFile)))
+          const oldFilePath = join(paths.cwd, '.milkio', 'raw', 'routes', `${importName}`, oldFile)
+          const oldFileGeneratedPath = join(paths.cwd, '.milkio', 'generated', 'routes', `${importName}`, oldFile)
+          if (await exists(oldFilePath)) deleteTasks.push(unlinkIfTooLong(oldFilePath))
+          if (await exists(oldFileGeneratedPath)) deleteTasks.push(unlinkIfTooLong(oldFileGeneratedPath))
         }
         await Promise.all(deleteTasks)
 
@@ -100,7 +109,7 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
             await $`node ${typiaPath} generate --input ${routeSchemaFolderPath} --output ${routeGeneratedSchemaFolderPath} --project ${join(paths.cwd, 'tsconfig.json')}`.cwd(join(paths.cwd)).quiet()
           }
 
-          consola.info(`[${(progress.rate++ / 10).toFixed(1)}%] route schema generated: ${file}`)
+          consola.info(`[${getRate()}] route schema generated: ${file}`)
         }
       }
     }
@@ -111,7 +120,7 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
   if (changeType) {
     const routeSchemaPath = join(paths.cwd, '.milkio', 'route-schema.ts')
 
-    let routeSchemaFileImports = `/* eslint-disable */\n// route-schema`
+    let routeSchemaFileImports = "/* eslint-disable */\n// route-schema"
     let routeSchemaFileExports = 'export default {'
 
     const routePaths: Array<string> = []
@@ -151,10 +160,8 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
       else routeSchemaFileImports += `\nimport ${importName} from "./raw/routes/${importName}/${fileHash}.ts";`
       routeSchemaFileExports += `\n  "/${routePath}": ${importName},`
     }
-    routeSchemaFileExports += `\n};`
+    routeSchemaFileExports += "\n};"
 
     await writeFile(routeSchemaPath, `${routeSchemaFileImports}\n\n${routeSchemaFileExports}`)
-
-    consola.info(`[${(progress.rate++ / 10).toFixed(1)}%] route schema all generated.`)
   }
 }

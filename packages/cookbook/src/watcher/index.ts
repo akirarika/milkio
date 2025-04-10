@@ -25,7 +25,7 @@ export async function initWatcher(options: CookbookOptions) {
       }
     }
 
-    consola.success("[cookbook] regenerating..");
+    consola.start("[cookbook] regenerating..");
     await generator.significant(options);
     for (const [filename, event] of changes) {
       emitter.emit("data", {

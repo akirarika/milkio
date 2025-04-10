@@ -1,12 +1,12 @@
 import { join, resolve } from "node:path";
 import { cwd, env } from "node:process";
 import { existsSync, readdirSync } from "node:fs";
-import { VitePluginNode, type ModuleFormat } from "vite-plugin-node";
+import { VitePluginNode } from "vite-plugin-node";
 import { createRequestListener } from "@mjackson/node-fetch-server";
 import type { PluginOption } from "vite";
 
 export function useVitePluginMilkio(options?: {
-  outputFormat?: ModuleFormat;
+  outputFormat?: "esm" | "cjs";
 }) {
   return [
     ...VitePluginNode({
@@ -32,7 +32,7 @@ export function useVitePluginMilkio(options?: {
       appPath: "./index.ts",
       exportName: "create",
       initAppOnBoot: true,
-      // outputFormat: options?.outputFormat ?? "cjs",
+      outputFormat: options?.outputFormat ?? "cjs",
     }),
     {
       name: "vite-plugin-milkio",
@@ -48,9 +48,13 @@ export function useVitePluginMilkio(options?: {
           ...(config.resolve.alias ?? {}),
         };
         config.ssr = {
-          noExternal: [...(existsSync(join(cwd(), "node_modules")) ? readdirSync(join(cwd(), "node_modules")) : []), ...(existsSync(join(cwd(), "..", "..", "node_modules")) ? readdirSync(join(cwd(), "..", "..", "node_modules")) : [])]
-            .filter((dependency) => !dependency.startsWith(".") && ["electron"].find((lib) => lib !== dependency))
-            .map((dependency) => (dependency.startsWith("@") ? new RegExp(`^${dependency}/`) : dependency)),
+          noExternal: [
+            "bun",
+            /^bun:/,
+            ...[...(existsSync(join(cwd(), "node_modules")) ? readdirSync(join(cwd(), "node_modules")) : []), ...(existsSync(join(cwd(), "..", "..", "node_modules")) ? readdirSync(join(cwd(), "..", "..", "node_modules")) : [])]
+              .filter((dependency) => !dependency.startsWith(".") && ["electron"].find((lib) => lib !== dependency))
+              .map((dependency) => (dependency.startsWith("@") ? new RegExp(`^${dependency}/`) : dependency)),
+          ],
         };
       },
     },

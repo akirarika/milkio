@@ -1,5 +1,4 @@
 import consola from 'consola'
-import { exit } from 'node:process'
 
 export const progress = {
   rate: 0,
@@ -18,7 +17,7 @@ export const progress = {
     progress.timeWaste = 0
     progress.time = 0
     progress.rate = 0
-    consola.start(`[${(progress.rate++ / 10).toFixed(1)}%] ${message}`)
+    consola.start(`[${getRate()}] ${message}`)
 
     progress.intervalId = setInterval(() => {
       progress.time += intervalFrequency
@@ -30,7 +29,7 @@ export const progress = {
       progress.rate = Math.floor(progress.current * 1000)
     }, intervalFrequency)
     progress.textIntervalId = setInterval(() => {
-      if (progress.rate < 1000) consola.start(`[${(progress.rate++ / 10).toFixed(1)}%] ${message}`)
+      if (progress.rate < 1000) consola.start(`[${getRate()}] ${message}`)
     }, 334)
   },
   async close(message: string) {
@@ -45,4 +44,10 @@ export const progress = {
 
     consola.success(`[100.0%] ${message}`)
   },
+}
+
+export function getRate() {
+  let rate = progress.rate++ / 10
+  if (rate > 100) rate = 100
+  return `${rate.toFixed(1)}%`
 }

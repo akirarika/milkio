@@ -54,5 +54,4 @@ export async function configSchema(options: CookbookOptions, paths: { cwd: strin
 
   progress.rate++;
   if (progress.rate > 1000) progress.rate = 1000;
-  consola.info(`[${(progress.rate / 10).toFixed(1)}%] config schema generated.`);
 }

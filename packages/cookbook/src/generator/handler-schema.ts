@@ -1,7 +1,7 @@
 import { Glob } from 'bun'
 import consola from 'consola'
 import { join } from 'node:path'
-import { exists, mkdir,  } from 'node:fs/promises'
+import { exists, mkdir, } from 'node:fs/promises'
 import { exit } from 'node:process'
 import type { CookbookOptions } from '../utils/cookbook-dto-types'
 import { checkPath } from './utils'
@@ -46,5 +46,4 @@ export async function handlerSchema(options: CookbookOptions, paths: { cwd: stri
 
   progress.rate++
   if (progress.rate > 1000) progress.rate = 1000
-  consola.info(`[${(progress.rate / 10).toFixed(1)}%] handler schema generated.`)
 }

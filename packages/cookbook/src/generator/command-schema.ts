@@ -36,5 +36,4 @@ export async function commandSchema(options: CookbookOptions, paths: { cwd: stri
 
   progress.rate++
   if (progress.rate > 1000) progress.rate = 1000
-  consola.info(`[${(progress.rate / 10).toFixed(1)}%] command schema generated.`)
 }

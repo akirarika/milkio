@@ -64,7 +64,7 @@ async function inspect(options: CookbookOptions, params: CookbookActionParams) {
 
   for (const [workerId, worker] of workers) {
     if (params.key === workerId) worker.run({ inspect: true });
-    if (runningWorkerIds.includes(workerId)) worker.run({ inspect: false });
+    else if (runningWorkerIds.includes(workerId)) worker.run({ inspect: false });
   }
 }
 
