@@ -13,3 +13,4 @@ prisma = [
     { mode = "development", migrateMode = "push", migrateDatabaseUrl = "file:./dev.db" },
     { mode = "production", migrateMode = "push", migrateDatabaseUrl = "file:./prod.db" },
 ]
+watcher = ["echo hello world"]

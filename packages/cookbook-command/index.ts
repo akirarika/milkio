@@ -29,10 +29,10 @@ export type CookbookCommandHandler = (utils: {
   canUseAI: () => Promise<
     | false
     | {
-        aiBaseUrl: string;
-        aiApiKey: string;
-        aiModel: string;
-      }
+      aiBaseUrl: string;
+      aiApiKey: string;
+      aiModel: string;
+    }
   >;
   fetchEventSource: (
     input: string | URL | globalThis.Request,
@@ -61,11 +61,9 @@ export interface CookbookToml {
         inspect: boolean;
       }>;
       name?: string;
-      watch?: boolean;
       lazyRoutes?: boolean;
       typiaMode?: "generation" | "bundler";
-      significant?: Array<string>;
-      insignificant?: Array<string>;
+      watcher?: Array<string>;
       autoStart?: boolean;
       autoStartDelay?: number;
       connectTestUrl?: string;

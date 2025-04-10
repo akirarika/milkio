@@ -12,7 +12,6 @@ import type { CookbookOptions } from "../utils/cookbook-dto-types.ts";
 export async function initWatcher(options: CookbookOptions) {
   let waiting: ReturnType<typeof Promise.withResolvers> = Promise.withResolvers();
   const changes = new Map<string, "rename" | "change">();
-  void generator.insignificant(options).then(waiting.resolve);
 
   const emit = debounce(async () => {
     await waiting.promise;
@@ -20,13 +19,10 @@ export async function initWatcher(options: CookbookOptions) {
 
     for (const projectName in options.projects) {
       const project = options.projects[projectName];
-      if (project?.watch) {
-        await workers.get(projectName)!.kill();
-      }
     }
 
     consola.start("[cookbook] regenerating..");
-    await generator.significant(options);
+    await generator.watcher(options);
     for (const [filename, event] of changes) {
       emitter.emit("data", {
         type: "watcher@change",
@@ -35,14 +31,6 @@ export async function initWatcher(options: CookbookOptions) {
       });
     }
     await Bun.sleep(128);
-    for (const projectName in options.projects) {
-      const project = options.projects[projectName];
-      if (project?.watch) {
-        consola.success(`[cookbook] ${projectName} reloading..`);
-        workers.get(projectName)!.run();
-      }
-    }
-    void generator.insignificant(options);
 
     consola.success("[cookbook] regenerated!");
     waiting.resolve();

@@ -9,11 +9,9 @@ export interface CookbookOptions {
         port: number;
         start: Array<string>;
         build: Array<string>;
-        watch?: boolean;
         lazyRoutes?: boolean;
         typiaMode?: 'generation' | 'bundler';
-        significant?: Array<string>;
-        insignificant?: Array<string>;
+        watcher?: Array<string>;
     }>;
     general: {
         start: string;

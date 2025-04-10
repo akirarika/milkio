@@ -3,30 +3,31 @@ import { cwd } from 'node:process'
 import { exists, mkdir } from 'node:fs/promises'
 import { routeSchema } from './route-schema'
 import { commandSchema } from './command-schema'
-import { $ } from 'bun'
 import type { CookbookOptions } from '../utils/cookbook-dto-types'
 import { configSchema } from './config-schema'
 import { checkPort } from '../utils/check-port'
 import killPort from 'kill-port'
 import { handlerSchema } from './handler-schema'
 import { declares } from './declares'
+import { $ } from 'bun'
+import consola from 'consola'
 
 let firstGenerate = true
 
 export const generator = {
-  async significant(options: CookbookOptions) {
-    const tasks: Array<Promise<void>> = []
+  async watcher(options: CookbookOptions) {
+    let tasks: Array<Promise<void>> = []
     for (const projectName in options.projects) {
       const project = options.projects[projectName]
-      if (project.watch || firstGenerate) {
+      if (project.type !== 'milkio') return
+      if (firstGenerate) {
         if (!(await checkPort(project.port))) {
           try {
             await killPort(project.port)
           }
-          catch (error) {}
+          catch (error) { }
         }
       }
-      if (project.type !== 'milkio') continue
       const handler = async () => {
         const paths = {
           cwd: join(cwd(), 'projects', projectName),
@@ -63,36 +64,26 @@ export const generator = {
           handlerSchema(options, paths, project),
         ])
         await declares(options, paths, project)
-        if (project?.significant && project.significant.length > 0) {
-          for (const script of project.significant) {
-            await $`${{ raw: script }}`.cwd(join(paths.cwd))
-          }
-        }
       }
       tasks.push(handler())
     }
     await Promise.all(tasks)
-    firstGenerate = false
-  },
-  async insignificant(options: CookbookOptions) {
-    const tasks: Array<Promise<void>> = []
+
+    tasks = []
     for (const projectName in options.projects) {
       const project = options.projects[projectName]
-      if (project.type !== 'milkio') continue
       const handler = async () => {
-        const paths = {
-          cwd: join(cwd(), 'projects', projectName),
-          milkio: join(cwd(), 'projects', projectName, '.milkio'),
-          generated: join(cwd(), 'projects', projectName, '.milkio'),
-        }
-        if (project?.insignificant && project.insignificant.length > 0) {
-          for (const script of project.insignificant) {
-            await $`${{ raw: script }}`.cwd(paths.cwd)
+        if (project?.watcher && project.watcher.length > 0) {
+          for (const script of project.watcher) {
+            consola.start(script)
+            await $`${{ raw: script }}`.cwd(join(cwd(), 'projects', projectName))
           }
         }
       }
       tasks.push(handler())
     }
     await Promise.all(tasks)
+
+    firstGenerate = false
   },
 }

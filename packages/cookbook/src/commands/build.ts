@@ -9,8 +9,7 @@ import { execScript } from "../utils/exec-script";
 export default await defineCookbookCommand(async (utils) => {
   consola.start("Cookbook building..");
   const options = await getCookbookToml();
-  await generator.significant(options);
-  await generator.insignificant(options);
+  await generator.watcher(options);
 
   for (const key in options.projects) {
     const project = options.projects[key];
