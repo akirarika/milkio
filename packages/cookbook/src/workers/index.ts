@@ -6,7 +6,7 @@ import type { CookbookOptions } from "../utils/cookbook-dto-types.ts";
 import { spawn, type ChildProcess } from "node:child_process";
 import { env } from "bun";
 import killPort from "kill-port";
-import { getMode } from "../utils/get-mode.ts";
+import { stdoutWrite } from "../utils/stdout-write.ts";
 
 const platform = os.platform();
 export const workers = new Map<string, Worker>();
@@ -91,7 +91,7 @@ export function createWorker(
           try {
             spawnProcess?.kill("SIGINT");
             if (options.port) await killPort(options.port);
-          } catch (error) {}
+          } catch (error) { }
         })(),
       ]);
       worker.state = "stopped";
@@ -106,7 +106,7 @@ export function createWorker(
       }
       try {
         if (options.port) await killPort(options.port);
-      } catch (error) {}
+      } catch (error) { }
       const message = `\n--------------------------------\n# Start ${key}\n--------------------------------`;
       emitter.emit("data", { type: "workers@stdout", key, chunk: message });
       worker.stdout.push([stdoutIndex++, Date.now(), "stdout", message]);
@@ -125,9 +125,11 @@ export function createWorker(
         };
 
         const handleMessage = (chunk: ArrayBuffer) => {
-          const str = textDecoder.decode(chunk);
+          const strRaw = textDecoder.decode(chunk)
+          // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
+          const str = strRaw.replace(/\x1b\[\d*;?]*m/g, '');
           worker.stdout.push([stdoutIndex++, Date.now(), "stdout", str]);
-          stdout.write(str);
+          stdoutWrite(strRaw, "info");
           emitter.emit("data", { type: "workers@stdout", key, chunk: str });
           if (worker.stdout.length >= (options.max ?? 1024 * 64)) {
             worker.stdout.splice(0, Math.ceil((options.max ?? 1024 * 64) * 0.2));
@@ -135,9 +137,11 @@ export function createWorker(
         };
 
         const handleError = (chunk: ArrayBuffer) => {
-          const str = textDecoder.decode(chunk);
+          const strRaw = textDecoder.decode(chunk)
+          // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
+          const str = strRaw.replace(/\x1b\[\d*;?]*m/g, '');
           worker.stdout.push([stdoutIndex++, Date.now(), "stderr", str]);
-          stderr.write(str);
+          stdoutWrite(strRaw, "error");
           emitter.emit("data", { type: "workers@stdout", key, chunk: str });
           if (worker.stdout.length >= (options.max ?? 1024 * 64)) {
             worker.stdout.splice(0, Math.ceil((options.max ?? 1024 * 64) * 0.2));

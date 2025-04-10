@@ -12,11 +12,11 @@ export default await defineCookbookCommand(async (utils) => {
   progress.open("cookbook is generating..");
   const startTime = new Date();
   const options = await getCookbookToml(progress);
+  (globalThis as any).__COOKBOOK_OPTIONS__ = options;
 
   await generator.watcher(options);
   await initWorkers(options);
   await Promise.all([
-    // UwU
     initWatcher(options),
   ]);
 
@@ -28,9 +28,6 @@ export default await defineCookbookCommand(async (utils) => {
   console.log(asciis().join("\n"));
   console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Time taken: ") + chalk.hex("#24B56A")(`${endTime.getTime() - startTime.getTime()}ms`));
   console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Operating mode: ") + chalk.hex("#24B56A")(mode));
-  console.log("");
-  console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#24B56A")("cookbook:\t\t") + chalk.hex("#4988fc")(`http://localhost:${options.general.cookbookPort}/`));
-  console.log("");
 
   const resolvers = Promise.withResolvers();
   await resolvers.promise; // let the never exit
