@@ -57,7 +57,6 @@ export const generator = {
         })()
 
         await Promise.all([
-          // UwU
           routeSchema(options, paths, project),
           commandSchema(options, paths, project),
           configSchema(options, paths, project),
