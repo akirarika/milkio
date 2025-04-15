@@ -4,8 +4,9 @@
   "version": "1.0.0-beta.16",
   "module": "index.ts",
   "dependencies": {
+    "@iarna/toml": "^2.2.5",
     "@mjackson/node-fetch-server": "0.6.1",
-    "vite-plugin-node": "4.0.0"
+    "glob": "^11.0.1"
   },
   "devDependencies": {}
 }

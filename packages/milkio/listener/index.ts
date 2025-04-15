@@ -24,6 +24,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
     request: MilkioHttpRequest;
     envMode?: string;
     env?: Record<any, any>;
+    routeSchema?: any;
   }): Promise<Response> => {
     if (options.request.method === "OPTIONS") {
       return new Response(undefined, {
@@ -99,20 +100,22 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
       if (!options.request.headers.get("Accept")?.startsWith("text/event-stream")) {
         // action
-        let routeSchema: any;
-        routeSchema = trie.get(http.path.string as string);
-        if (routeSchema === null) {
-          routeSchema = generated.routeSchema?.[http.path.string];
-          if (routeSchema === undefined) {
-            await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http });
-            throw reject("NOT_FOUND", { path: http.path.string as string });
+        let routeSchema = options.routeSchema;
+        if (!routeSchema) {
+          routeSchema = trie.get(http.path.string as string);
+          if (routeSchema === null) {
+            routeSchema = generated.routeSchema?.[http.path.string];
+            if (routeSchema === undefined) {
+              await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http });
+              throw reject("NOT_FOUND", { path: http.path.string as string });
+            }
+            if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
+            else routeSchema.module = await routeSchema.module();
+            trie.add(http.path.string as string, routeSchema);
           }
-          if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
-          else routeSchema.module = await routeSchema.module();
-          trie.add(http.path.string as string, routeSchema);
-        }
 
-        if (routeSchema.type !== "action") throw reject("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "text/event-stream". If you are using the "@milkio/stargate" package, please add \`type: "stream"\` to the execute options.` });
+          if (routeSchema.type !== "action") throw reject("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "text/event-stream". If you are using the "@milkio/stargate" package, please add \`type: "stream"\` to the execute options.` });
+        }
 
         const executed = await executer.__execute(routeSchema, {
           createdExecuteId: executeId,
@@ -149,19 +152,21 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         return new Response(response.body, response);
       } else {
         // stream
-        let routeSchema: any;
-        routeSchema = trie.get(http.path.string as string);
-        if (routeSchema === null) {
-          routeSchema = generated.routeSchema?.[http.path.string];
-          if (routeSchema === undefined) {
-            await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http });
-            throw reject("NOT_FOUND", { path: http.path.string as string });
+        let routeSchema = options.routeSchema;
+        if (!routeSchema) {
+          routeSchema = trie.get(http.path.string as string);
+          if (routeSchema === null) {
+            routeSchema = generated.routeSchema?.[http.path.string];
+            if (routeSchema === undefined) {
+              await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http });
+              throw reject("NOT_FOUND", { path: http.path.string as string });
+            }
+            if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
+            else routeSchema.module = await routeSchema.module();
+            trie.add(http.path.string as string, routeSchema);
           }
-          if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
-          else routeSchema.module = await routeSchema.module();
-          trie.add(http.path.string as string, routeSchema);
+          if (routeSchema.type !== "stream") throw reject("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "application/json". If you are using the "@milkio/stargate" package, please remove \`type: "stream"\` to the execute options.` });
         }
-        if (routeSchema.type !== "stream") throw reject("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "application/json". If you are using the "@milkio/stargate" package, please remove \`type: "stream"\` to the execute options.` });
 
         const handleClose = async () => {
           runtime.runtime.request.delete(executeId);

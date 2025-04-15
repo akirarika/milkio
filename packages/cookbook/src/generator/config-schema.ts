@@ -12,8 +12,8 @@ export async function configSchema(options: CookbookOptions, paths: { cwd: strin
   let modeFiles: AsyncIterableIterator<string> | Array<string> = [];
   let globalModeFiles: AsyncIterableIterator<string> | Array<string> = [];
   if (await exists(scanner)) {
-    modeFiles = new Glob(`{config,configs,function}/**/{${mode},*.${mode}}.config.ts`).scan({ cwd: scanner, onlyFiles: true });
-    globalModeFiles = new Glob("{config,configs,function}/**/{global,*.global}.config.ts").scan({ cwd: scanner, onlyFiles: true });
+    modeFiles = new Glob(`{config,configs,service,controller}/**/{${mode},*.${mode}}.config.ts`).scan({ cwd: scanner, onlyFiles: true });
+    globalModeFiles = new Glob("{config,configs,service,controller}/**/{global,*.global}.config.ts").scan({ cwd: scanner, onlyFiles: true });
   }
 
   let typescriptImports = "/* eslint-disable */\n// config-schema";

@@ -6,20 +6,16 @@ import { exists } from "node:fs/promises";
 import { emitter } from "../emitter/index.ts";
 import { exit, cwd } from "node:process";
 import { generator } from "../generator/index.ts";
-import { workers } from "../workers/index.ts";
 import type { CookbookOptions } from "../utils/cookbook-dto-types.ts";
 
 export async function initWatcher(options: CookbookOptions) {
   let waiting: ReturnType<typeof Promise.withResolvers> = Promise.withResolvers();
   const changes = new Map<string, "rename" | "change">();
+  waiting.resolve();
 
   const emit = debounce(async () => {
     await waiting.promise;
     waiting = Promise.withResolvers();
-
-    for (const projectName in options.projects) {
-      const project = options.projects[projectName];
-    }
 
     consola.start("[cookbook] regenerating..");
     await generator.watcher(options);
@@ -30,11 +26,10 @@ export async function initWatcher(options: CookbookOptions) {
         path: filename,
       });
     }
-    await Bun.sleep(128);
 
     consola.success("[cookbook] regenerated!");
     waiting.resolve();
-  }, 300);
+  }, 512);
 
   const watcherForProjects = watch(join(cwd(), "projects"), { persistent: true, recursive: true }, (event, filename) => {
     if (!filename) return;
@@ -49,6 +44,7 @@ export async function initWatcher(options: CookbookOptions) {
       if (project.type !== "milkio" && f.startsWith(`${projectName}/`)) return;
       if (f.startsWith(`${projectName}/.milkio/`)) return;
     }
+
     changes.set(`projects/${f}`, event);
     emit();
   });

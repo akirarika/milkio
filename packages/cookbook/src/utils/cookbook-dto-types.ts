@@ -1,41 +1,41 @@
 export type CookbookActionParams =
   | {
-    type: "milkio@ping";
-  }
+      type: "milkio@ping";
+    }
   | {
-    type: "milkio@logger";
-    log: Array<any>;
-  }
+      type: "milkio@logger";
+      log: Array<any>;
+    }
   | {
-    type: "milkio@template";
-    name: string;
-    fsPath: string;
-    template: string;
-  }
+      type: "milkio@template";
+      name: string;
+      fsPath: string;
+      template: string;
+    }
   | {
-    type: "project@list";
-  }
+      type: "project@list";
+    }
   | {
-    type: "project@log";
-    key: string;
-    firstId: number;
-  }
+      type: "project@log";
+      key: string;
+      firstId: number;
+    }
   | {
-    type: "project@stop";
-    key: string;
-  }
+      type: "project@stop";
+      key: string;
+    }
   | {
-    type: "project@start";
-    key: string;
-  }
+      type: "project@start";
+      key: string;
+    }
   | {
-    type: "project@inspect";
-    key: string;
-  }
+      type: "project@inspect";
+      key: string;
+    }
   | {
-    type: "project@stop-inspect";
-    key: string;
-  };
+      type: "project@stop-inspect";
+      key: string;
+    };
 
 export interface CookbookOptions {
   projects: Record<
@@ -48,6 +48,7 @@ export interface CookbookOptions {
       meta: Partial<{
         inspect: boolean;
       }>;
+      platform?: "node" | "bun" | "edge-one";
       name?: string;
       lazyRoutes?: boolean;
       typiaMode?: "generation" | "bundler";
@@ -79,22 +80,22 @@ export interface CookbookOptions {
 
 export type CookbookSubscribeEmits =
   | {
-    type: "workers@stdout";
-    key: string;
-    chunk: string;
-  }
+      type: "workers@stdout";
+      key: string;
+      chunk: string;
+    }
   | {
-    type: "workers@state";
-    key: string;
-    state: "running" | "stopped";
-    code: number | null | "kill" | "running";
-  }
+      type: "workers@state";
+      key: string;
+      state: "running" | "stopped";
+      code: number | null | "kill" | "running";
+    }
   | {
-    type: "watcher@change";
-    event: "rename" | "change";
-    path: string;
-  }
+      type: "watcher@change";
+      event: "rename" | "change";
+      path: string;
+    }
   | {
-    type: "milkio@logger";
-    log: Array<any>;
-  };
+      type: "milkio@logger";
+      log: Array<any>;
+    };

@@ -7,6 +7,7 @@ cookbookPort = 8000
 port = 9000
 name = "Test"
 type = "milkio"
+platform = "edge-one"
 typiaMode = "generation"
 autoStart = true
 prisma = [

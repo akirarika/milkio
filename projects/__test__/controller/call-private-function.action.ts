@@ -9,7 +9,7 @@ export default action({
       throw?: boolean;
     },
   ): Promise<{ count: number }> {
-    const result = await context.call(import("../private/private-calc.action"), {
+    const result = await context.call(import("../service/private-calc.action"), {
       a: params.a,
       b: params.b,
       throw: params.throw,

@@ -3,3 +3,9 @@ node_modules
 .env
 *.db
 *.db-journal
+# Tencent Cloud EdgeOne
+.env
+.edgeone
+.edgeone/*
+.tef_dist/*
+  

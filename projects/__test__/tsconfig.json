@@ -4,7 +4,7 @@
     "target": "esnext",
     "jsx": "preserve",
     "erasableSyntaxOnly": true,
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "WebWorker"],
     "moduleDetection": "force",
     "module": "esnext",
     "moduleResolution": "bundler",
