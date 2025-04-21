@@ -27,7 +27,6 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
   const glob = new Glob("{controller,service}/**/*.{action,stream}.ts");
   const filesAsyncGenerator = glob.scan({ cwd: scanner, onlyFiles: true });
   const files: Array<string> = [];
-  let tasks: Array<Promise<any>> = [];
   let changeType: "file-change" | "file-create-or-delete" | null = null;
 
   /**
@@ -36,10 +35,9 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
    * ------------------------------------------------------------------------------------------------
    */
   const nodeHandler = async () => {
-    if (!(await exists(join(paths.cwd, ".platform-node")))) await mkdir(join(paths.cwd, ".platform-node"));
-    if (!(await exists(join(paths.cwd, ".platform-node", "index.ts")))) {
+    if (!(await exists(join(paths.milkio, "run.ts")))) {
       await writeFile(
-        join(paths.cwd, ".platform-node", "index.ts"),
+        join(paths.milkio, "run.ts"),
         `#!/usr/bin/env node
 import * as http from "node:http";
 import { createRequestListener } from "@mjackson/node-fetch-server";
@@ -75,10 +73,9 @@ void bootstrap();`,
    * ------------------------------------------------------------------------------------------------
    */
   const bunHandler = async () => {
-    if (!(await exists(join(paths.cwd, ".platform-bun")))) await mkdir(join(paths.cwd, ".platform-bun"));
-    if (!(await exists(join(paths.cwd, ".platform-bun", "index.ts")))) {
+    if (!(await exists(join(paths.milkio, "run.ts")))) {
       writeFile(
-        join(paths.cwd, ".platform-bun", "index.ts"),
+        join(paths.milkio, "run.ts"),
         `#!/usr/bin/env bun
 import { create } from "../index.ts";
 import { env } from "bun";
@@ -105,11 +102,13 @@ void bootstrap();`,
     }
   };
 
-  tasks.push(nodeHandler());
-  tasks.push(bunHandler());
-  await Promise.all(tasks);
+  if (project?.runtime === undefined || project?.runtime === "node") {
+    await nodeHandler();
+  } else if (project.runtime === "bun") {
+    await bunHandler();
+  }
 
-  tasks = [];
+  const tasks: Array<Promise<any>> = [];
 
   /**
    * ------------------------------------------------------------------------------------------------

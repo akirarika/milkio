@@ -48,7 +48,8 @@ export interface CookbookOptions {
       meta: Partial<{
         inspect: boolean;
       }>;
-      platform?: "node" | "bun" | "edge-one";
+      runtime?: "node" | "bun" | "edge-one";
+      adapter?: string;
       name?: string;
       lazyRoutes?: boolean;
       typiaMode?: "generation" | "bundler";

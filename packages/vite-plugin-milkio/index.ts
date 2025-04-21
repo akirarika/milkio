@@ -6,6 +6,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { createRequestListener } from "@mjackson/node-fetch-server";
 import type { PluginOption } from "vite";
 import { readFile, writeFile } from "node:fs/promises";
+import { adapters } from "./adapters/index.ts";
 
 export function useVitePluginMilkio(options?: {
   outputFormat?: "esm" | "cjs";
@@ -40,54 +41,50 @@ export function useVitePluginMilkio(options?: {
       if (command !== "build") return;
       const project = await getCookbookTomlProject();
 
-      let format: "esm" | "cjs";
-      let mode: "chunk" | "bundle";
-      let prefix = "";
-      if (project.platform === "node") {
-        format = options?.outputFormat ?? "cjs";
-        mode = "chunk";
-      } else if (project.platform === "bun") {
-        format = options?.outputFormat ?? "esm";
-        mode = "chunk";
-      } else if (project.platform === "edge-one") {
-        format = options?.outputFormat ?? "esm";
-        mode = "bundle";
-        prefix = "functions/";
-      } else throw new Error("Platform not supported");
-
       // config.build
       if (!config.build) config.build = {};
       config.build.ssr = true;
+      config.build.target = "es2024";
       // config.build.rollupOptions
       if (!config.build.rollupOptions) config.build.rollupOptions = {};
-      // config.build.rollupOptions.input
-      if (mode === "chunk") {
-        config.build.rollupOptions.input = {
-          index: `.platform-${project.platform}/index.ts`,
-        };
-      } else {
-        config.build.rollupOptions.input = {};
-        const results = await glob("controller/**/*.{action,stream}.ts");
-        for (const path of results) {
-          const name = path
-            .replaceAll("\\", "/")
-            .slice(0, path.length - 10) // 10 === ".action.ts".length or ".stream.ts".length
-            .split("/")
-            .slice(1)
-            .join("/");
-          config.build.rollupOptions.input[name] = path;
-        }
-      }
-
       // config.build.rollupOptions.output
       if (!config.build.rollupOptions.output) config.build.rollupOptions.output = {};
-      for (const output of Array.isArray(config.build.rollupOptions.output) ? config.build.rollupOptions.output : [config.build.rollupOptions.output]) {
-        output.chunkFileNames = `${prefix}.milkio/[name]-[hash].js`;
-        output.assetFileNames = `${prefix}.milkio/[name]-[hash][extname]`;
-        output.format = format;
-        output.sourcemap = "inline";
-        output.preserveModules = false;
-        output.entryFileNames = `${prefix}[name].js`;
+      // config.build.rollupOptions.input
+      config.build.rollupOptions.input = {
+        index: ".milkio/run.ts",
+      };
+
+      if (!project.adapter) {
+        let format: "esm" | "cjs" = "esm";
+        let mode: "chunk" | "bundle" = "bundle";
+        if (project.runtime === "node") {
+          format = options?.outputFormat ?? "cjs";
+          mode = "chunk";
+        } else if (project.runtime === "bun") {
+          format = options?.outputFormat ?? "esm";
+          mode = "chunk";
+        } else throw new Error("runtime not supported");
+        for (const output of Array.isArray(config.build.rollupOptions.output) ? config.build.rollupOptions.output : [config.build.rollupOptions.output]) {
+          output.format = format;
+          output.sourcemap = "inline";
+          output.preserveModules = false;
+        }
+      } else {
+        let find = false;
+        for (const adapter of adapters) {
+          if (adapter.name === project.adapter) {
+            find = true;
+            const result = await adapter.adapter({
+              project,
+              command,
+              config,
+            });
+            config.build.rollupOptions.input = result.input;
+            config.build.rollupOptions.output = result.output;
+            break;
+          }
+        }
+        if (!find) throw new Error(`adapter "${project.adapter}" not found`);
       }
 
       // config.server
