@@ -12,7 +12,6 @@
     "@southern-aurora/tson": "*",
     "chalk": "^5.3.0",
     "date-fns": "^4.1.0",
-    "nanoid": "^5.1.5",
     "typia": "*"
   },
   "devDependencies": {

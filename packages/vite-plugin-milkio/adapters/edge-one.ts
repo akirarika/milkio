@@ -51,13 +51,13 @@ export function edgeOneAdapter(): MilkioAdapter {
               `import { create } from "${backToRoot}index.ts";
 import routeSchema from "${backToRoot}${routePath.replaceAll("\\", "/")}";
 
-const world = await create({
+const world = create({
   develop: ${env.MILKIO_DEVELOP === "ENABLE" ? "true" : "false"},
   argv: [],
 });
 
-export function onRequest(context) {
-  return world.listener.fetch({
+export async function onRequest(context) {
+  return await (await world).listener.fetch({
     request: context.request,
     env: context.env,
     envMode: "${env.MILKIO_DEVELOP === "ENABLE" ? "development" : "production"}",
