@@ -16,8 +16,8 @@ export function useVitePluginMilkio(options?: {
   return {
     name: "vite-plugin-milkio",
     async configureServer(server) {
-      const app = await server.ssrLoadModule("index.ts", { fixStacktrace: false });
       server.middlewares.use(async (req, res, next) => {
+        const app = await server.ssrLoadModule("index.ts", { fixStacktrace: false });
         const milkio = await app.create({
           develop: env.MILKIO_DEVELOP === "ENABLE",
           argv: process.argv,
