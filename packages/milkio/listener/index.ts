@@ -55,7 +55,6 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
     const pathString = `/${pathArray.join("/")}`;
 
     const executeId = runtime?.executeId ? await runtime.executeId(options.request) : __createId();
-    console.log("executeId", await runtime.executeId(options.request), __createId());
 
     const logger = createLogger(runtime, pathString, executeId);
     runtime.runtime.request.set(executeId, { logger });
