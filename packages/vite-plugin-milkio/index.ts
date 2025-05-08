@@ -1,4 +1,3 @@
-import { glob } from "glob";
 import TOML from "@iarna/toml";
 import { join } from "node:path";
 import { cwd, env } from "node:process";
