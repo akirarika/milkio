@@ -1,17 +1,17 @@
 import os from "node:os";
 import { join } from "node:path";
-import { cwd, stderr, stdout } from "node:process";
+import { cwd, stdout } from "node:process";
 import { emitter } from "../emitter/index.ts";
 import type { CookbookOptions } from "../utils/cookbook-dto-types.ts";
 import { spawn, type ChildProcess } from "node:child_process";
 import { env } from "bun";
 import killPort from "kill-port";
-import { stdoutWrite } from "../utils/stdout-write.ts";
-import chalk from "chalk";
+import { outputPrefix, setMaxNameLength } from "../utils/output-prefix.ts";
 
 const platform = os.platform();
+let workerId = 1;
+let stdoutIndex = 0;
 export const workers = new Map<string, Worker>();
-
 export interface Worker {
   id: number;
   key: string;
@@ -44,9 +44,6 @@ export async function initWorkers(options: CookbookOptions) {
   }
 }
 
-let workerId = 0;
-let stdoutIndex = 0;
-
 export function createWorker(
   key: string,
   options: {
@@ -59,6 +56,7 @@ export function createWorker(
   },
 ): Worker {
   let spawnProcess: ChildProcess | null = null;
+  setMaxNameLength(key);
 
   const handleExit = (code: number | null, signal: string) => {
     const message = `Process exited with:${code ?? null}`;
@@ -195,7 +193,6 @@ export function createWorker(
   return worker;
 }
 
-const colors = ["448aff", "ff4081", "7c4dff", "b2ff59", "ffd740"];
 const textDecoder = new TextDecoder();
 const handleMessage = (worker: Worker, key: string, chunk: ArrayBuffer, type: "stdout" | "stderr") => {
   const strRaw = textDecoder.decode(chunk);
@@ -203,7 +200,7 @@ const handleMessage = (worker: Worker, key: string, chunk: ArrayBuffer, type: "s
   const str = strRaw.replace(/\x1b\[\d*;?]*m/g, "");
   worker.stdout.push([stdoutIndex++, Date.now(), "stdout", str]);
 
-  const prefix = `${chalk.hex("a626a4")("◐ ")}${chalk.hex(colors[worker.id % colors.length])(`[${worker.key}] `)}`;
+  const prefix = outputPrefix(key, worker.id);
   stdout.write(replaceNewlines(strRaw, prefix));
 
   emitter.emit("data", { type: "workers@stdout", key, chunk: str });
