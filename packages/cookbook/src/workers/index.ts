@@ -7,11 +7,13 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { env } from "bun";
 import killPort from "kill-port";
 import { stdoutWrite } from "../utils/stdout-write.ts";
+import chalk from "chalk";
 
 const platform = os.platform();
 export const workers = new Map<string, Worker>();
 
 export interface Worker {
+  id: number;
   key: string;
   stdout: Array<[number, number, "stdout" | "stderr", string]>;
   state: "running" | "stopped";
@@ -23,6 +25,7 @@ export interface Worker {
     success: boolean;
     error?: string;
   }>;
+  __firstOutput: boolean;
 }
 
 export async function initWorkers(options: CookbookOptions) {
@@ -32,7 +35,6 @@ export async function initWorkers(options: CookbookOptions) {
     const worker = createWorker(projectName, {
       env,
       command: project.start ?? `${options.general.packageManager} run dev`,
-      max: 0,
       cwd: join(cwd(), "projects", projectName),
       port: project.port,
       connectTestUrl: project?.connectTestUrl ?? (project.type !== "milkio" ? `http://localhost:${project.port}/` : `http://localhost:${project.port}/generate_204`),
@@ -42,6 +44,7 @@ export async function initWorkers(options: CookbookOptions) {
   }
 }
 
+let workerId = 0;
 let stdoutIndex = 0;
 
 export function createWorker(
@@ -51,18 +54,16 @@ export function createWorker(
     cwd?: string;
     env?: NodeJS.ProcessEnv;
     stdout?: "pipe" | "ignore";
-    max?: number;
     connectTestUrl?: string;
     port?: number;
   },
 ): Worker {
-  const textDecoder = new TextDecoder();
   let spawnProcess: ChildProcess | null = null;
 
   const handleExit = (code: number | null, signal: string) => {
     const message = `Process exited with:${code ?? null}`;
     worker.stdout.push([stdoutIndex++, Date.now(), "stdout", message]);
-    if (code !== 0 && options.stdout !== "ignore" && options.max !== 0) {
+    if (code !== 0 && options.stdout !== "ignore") {
       const message = `\n-- code: ${code ?? signal}\n`;
       emitter.emit("data", { type: "workers@stdout", key, chunk: message });
     }
@@ -72,6 +73,7 @@ export function createWorker(
   };
 
   const worker: Worker = {
+    id: workerId++,
     key,
     stdout: [],
     state: "stopped",
@@ -79,6 +81,7 @@ export function createWorker(
     meta: {
       inspect: false,
     },
+    __firstOutput: true,
     kill: async () => {
       if (worker.state === "stopped") return;
       emitter.emit("data", { type: "workers@state", key, state: "stopped", code: "kill" });
@@ -91,7 +94,7 @@ export function createWorker(
           try {
             spawnProcess?.kill("SIGINT");
             if (options.port) await killPort(options.port);
-          } catch (error) { }
+          } catch (error) {}
         })(),
       ]);
       worker.state = "stopped";
@@ -106,7 +109,7 @@ export function createWorker(
       }
       try {
         if (options.port) await killPort(options.port);
-      } catch (error) { }
+      } catch (error) {}
       const message = `\n--------------------------------\n# Start ${key}\n--------------------------------`;
       emitter.emit("data", { type: "workers@stdout", key, chunk: message });
       worker.stdout.push([stdoutIndex++, Date.now(), "stdout", message]);
@@ -124,35 +127,11 @@ export function createWorker(
           handleExit(1, "SIGERR");
         };
 
-        const handleMessage = (chunk: ArrayBuffer) => {
-          const strRaw = textDecoder.decode(chunk)
-          // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
-          const str = strRaw.replace(/\x1b\[\d*;?]*m/g, '');
-          worker.stdout.push([stdoutIndex++, Date.now(), "stdout", str]);
-          stdoutWrite(strRaw);
-          emitter.emit("data", { type: "workers@stdout", key, chunk: str });
-          if (worker.stdout.length >= (options.max ?? 1024 * 64)) {
-            worker.stdout.splice(0, Math.ceil((options.max ?? 1024 * 64) * 0.2));
-          }
-        };
-
-        const handleError = (chunk: ArrayBuffer) => {
-          const strRaw = textDecoder.decode(chunk)
-          // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
-          const str = strRaw.replace(/\x1b\[\d*;?]*m/g, '');
-          worker.stdout.push([stdoutIndex++, Date.now(), "stderr", str]);
-          stdoutWrite(strRaw);
-          emitter.emit("data", { type: "workers@stdout", key, chunk: str });
-          if (worker.stdout.length >= (options.max ?? 1024 * 64)) {
-            worker.stdout.splice(0, Math.ceil((options.max ?? 1024 * 64) * 0.2));
-          }
-        };
-
         if (spawnProcess.stdout) {
-          spawnProcess.stdout.on("data", handleMessage).on("error", handleStreamError);
+          spawnProcess.stdout.on("data", (chunk) => handleMessage(worker, key, chunk, "stdout")).on("error", handleStreamError);
         }
         if (spawnProcess.stderr) {
-          spawnProcess.stderr.on("data", handleError).on("error", handleStreamError);
+          spawnProcess.stderr.on("data", (chunk) => handleMessage(worker, key, chunk, "stderr")).on("error", handleStreamError);
         }
         spawnProcess
           .on("error", (err) => {
@@ -214,4 +193,33 @@ export function createWorker(
   };
 
   return worker;
+}
+
+const colors = ["448aff", "ff4081", "7c4dff", "b2ff59", "ffd740"];
+const textDecoder = new TextDecoder();
+const handleMessage = (worker: Worker, key: string, chunk: ArrayBuffer, type: "stdout" | "stderr") => {
+  const strRaw = textDecoder.decode(chunk);
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
+  const str = strRaw.replace(/\x1b\[\d*;?]*m/g, "");
+  worker.stdout.push([stdoutIndex++, Date.now(), "stdout", str]);
+
+  const prefix = chalk.hex(colors[worker.id % colors.length])(`[${worker.key}] `);
+  stdout.write(replaceNewlines(strRaw, prefix));
+
+  emitter.emit("data", { type: "workers@stdout", key, chunk: str });
+  if (worker.stdout.length >= 1024 * 64) {
+    worker.stdout.splice(0, Math.ceil(1024 * 64 * 0.2));
+  }
+};
+
+function replaceNewlines(str: string, prefix: string): string {
+  const parts = str.split("\n");
+  const newlineCount = parts.length - 1;
+
+  if (newlineCount <= 1) {
+    return `${prefix}${str}`;
+  }
+
+  const processed = `${parts.slice(0, -1).join(`\n${prefix}`)}\n${parts[parts.length - 1]}`;
+  return `${prefix}${processed}`;
 }

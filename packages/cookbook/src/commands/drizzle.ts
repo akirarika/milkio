@@ -6,7 +6,6 @@ import { exists, mkdir, readFile, writeFile } from "node:fs/promises";
 import { execScript } from "../utils/exec-script";
 import { select } from "../utils/select";
 import { env, Glob } from "bun";
-import consola from "consola";
 
 export default await defineCookbookCommand(async (utils) => {
   const cookbookToml = await utils.getCookbookToml();
