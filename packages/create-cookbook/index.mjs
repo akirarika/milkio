@@ -90,15 +90,15 @@ const color = gradient(["cyan", "#2d9b87"]);
     exit(1);
   }
 
-  const uiUrl = `${cookbookPackageInfo.mirror}${uiName}/-/cookbook-ui-${version === "latest" ? uiPackageInfo.json["dist-tags"].latest : version}.tgz`;
-  consola.start(uiUrl);
-  consola.start(color(`[1/2] Downloading Cookbook UI (${uiUrl})..`));
-  await utils.downloadFile(uiUrl, tempspace, "ui.tgz");
-  consola.success(color("[1/2] Downloaded!"));
-  const uiExtractPromise = (async () => {
-    if (!existsSync(join(tempspace, "ui"))) mkdirSync(join(tempspace, "ui"));
-    await compressing.tgz.uncompress(join(tempspace, "ui.tgz"), join(tempspace, "ui"));
-  })();
+  // const uiUrl = `${cookbookPackageInfo.mirror}${uiName}/-/cookbook-ui-${version === "latest" ? uiPackageInfo.json["dist-tags"].latest : version}.tgz`;
+  // consola.start(uiUrl);
+  // consola.start(color(`[1/2] Downloading Cookbook UI (${uiUrl})..`));
+  // await utils.downloadFile(uiUrl, tempspace, "ui.tgz");
+  // consola.success(color("[1/2] Downloaded!"));
+  // const uiExtractPromise = (async () => {
+  //   if (!existsSync(join(tempspace, "ui"))) mkdirSync(join(tempspace, "ui"));
+  //   await compressing.tgz.uncompress(join(tempspace, "ui.tgz"), join(tempspace, "ui"));
+  // })();
 
   const cookbookUrl = `${cookbookPackageInfo.mirror}${cookbookName}/-/cookbook-${process.platform}-${os.arch()}-${version === "latest" ? cookbookPackageInfo.json["dist-tags"].latest : version}.tgz`;
   consola.start(cookbookUrl);
@@ -109,9 +109,9 @@ const color = gradient(["cyan", "#2d9b87"]);
     await compressing.tgz.uncompress(join(tempspace, "cookbook.tgz"), tempspace);
   })();
 
-  consola.start(color("[1/2] Extracting.."));
-  await Promise.all([uiExtractPromise, cookbookExtractPromise]);
-  consola.success(color("[1/2] Extracted!"));
+  // consola.start(color("[1/2] Extracting.."));
+  // await Promise.all([uiExtractPromise, cookbookExtractPromise]);
+  // consola.success(color("[1/2] Extracted!"));
 
   consola.success(color("[2/2] Installing.."));
   await utils.mvToPathAndInstall(installPath, join(tempspace, "package"), process.platform === "win32" ? "co.exe" : "co");
