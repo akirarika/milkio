@@ -16,6 +16,10 @@ export const __router__ = [
     script: () => import("./prisma.ts"),
   },
   {
+    commands: ["drizzle"],
+    script: () => import("./drizzle.ts"),
+  },
+  {
     hidden: true,
     commands: ["init"],
     script: () => import("./init.ts"),
