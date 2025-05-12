@@ -6,6 +6,7 @@ import { exists, mkdir, readFile, writeFile } from "node:fs/promises";
 import { execScript } from "../utils/exec-script";
 import { select } from "../utils/select";
 import { env, Glob } from "bun";
+import consola from "consola";
 
 export default await defineCookbookCommand(async (utils) => {
   const cookbookToml = await utils.getCookbookToml();
@@ -73,6 +74,31 @@ export default await defineCookbookCommand(async (utils) => {
       DATABASE_URL: mode.migrateDatabaseUrl,
     },
   });
+
+  const journal = JSON.parse(
+    await readFile(
+      join(
+        cwd(),
+        "projects",
+        project.value,
+        "drizzle",
+        "meta",
+        "_journal.json"
+      ),
+      "utf-8"
+    )
+  );
+  for (const entry of journal.entries) {
+    entry.sql = await readFile(
+      join(cwd(), "projects", project.value, "drizzle", `${entry.tag}.sql`),
+      "utf-8"
+    );
+  }
+
+  await writeFile(
+    join(cwd(), "projects", project.value, ".milkio", "drizzle-migrations.ts"),
+    `export const drizzleMigrations = ${JSON.stringify(journal)}`
+  );
 
   exit(0);
 });
