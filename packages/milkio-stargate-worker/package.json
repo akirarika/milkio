@@ -1,5 +1,5 @@
 {
-  "name": "@milkio/stargate",
+  "name": "@milkio/stargate-worker",
   "type": "module",
   "version": "1.0.0-beta.23",
   "module": "index.ts",
