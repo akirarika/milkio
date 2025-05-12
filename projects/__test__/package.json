@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "prisma": "prisma"
+    "prisma": "prisma",
+    "drizzle": "drizzle-kit"
   },
   "trustedDependencies": [],
   "dependencies": {

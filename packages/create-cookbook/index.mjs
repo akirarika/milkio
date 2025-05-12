@@ -115,7 +115,7 @@ const color = gradient(["cyan", "#2d9b87"]);
 
   consola.success(color("[2/2] Installing.."));
   await utils.mvToPathAndInstall(installPath, join(tempspace, "package"), process.platform === "win32" ? "co.exe" : "co");
-  await utils.mvUIDir(join(tempspace, "ui", "package"));
+  // await utils.mvUIDir(join(tempspace, "ui", "package"));
   await utils.tempspaceClean(tempspace);
   consola.success(color("[2/2] Installed!"));
 

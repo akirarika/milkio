@@ -10,18 +10,30 @@ import { env } from "bun";
 export default await defineCookbookCommand(async (utils) => {
   const cookbookToml = await utils.getCookbookToml();
   const project = await selectProject(cookbookToml, {
-    filter: async (project) => await exists(join(cwd(), "projects", project.value, "prisma"))
+    filter: async (project) =>
+      await exists(join(cwd(), "projects", project.value, "prisma")),
   });
   if (!project) exit(0);
-  const packageJson = await readFile(join(cwd(), "projects", project.value, "package.json"), "utf-8");
+  const packageJson = await readFile(
+    join(cwd(), "projects", project.value, "package.json"),
+    "utf-8"
+  );
   const packageJsonParsed = JSON.parse(packageJson);
-  if (packageJsonParsed?.scripts?.prisma === undefined || packageJsonParsed.scripts.prisma === "") {
+  if (
+    packageJsonParsed?.scripts?.prisma === undefined ||
+    packageJsonParsed.scripts.prisma === ""
+  ) {
     if (!packageJsonParsed) packageJsonParsed.scripts = {};
     packageJsonParsed.scripts.prisma = "prisma";
-    await writeFile(join(cwd(), "projects", project.value, "package.json"), JSON.stringify(packageJsonParsed, null, 2));
+    await writeFile(
+      join(cwd(), "projects", project.value, "package.json"),
+      JSON.stringify(packageJsonParsed, null, 2)
+    );
   }
   const mode = await select("Select the mode:", project.prisma ?? [], "mode");
-  const command = `${cookbookToml.general.packageManager} run prisma ${mode?.migrateMode === "push" ? "db push" : "migrate dev"}`;
+  const command = `${cookbookToml.general.packageManager} run prisma ${
+    mode?.migrateMode === "push" ? "db push" : "migrate dev"
+  }`;
   execScript(command, {
     cwd: project.path,
     env: {
@@ -29,4 +41,6 @@ export default await defineCookbookCommand(async (utils) => {
       DATABASE_URL: mode.migrateDatabaseUrl,
     },
   });
+
+  exit(0);
 });

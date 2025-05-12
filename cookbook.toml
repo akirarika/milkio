@@ -15,4 +15,8 @@ prisma = [
     { mode = "development", migrateMode = "push", migrateDatabaseUrl = "file:./dev.db" },
     { mode = "production", migrateMode = "push", migrateDatabaseUrl = "file:./prod.db" },
 ]
+drizzle = [
+    { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
+    { mode = "production", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
+]
 watcher = ["echo hello world"]

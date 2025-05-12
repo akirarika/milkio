@@ -66,6 +66,7 @@ export interface CookbookOptions {
         mode: string;
         migrateDatabaseUrl: string;
         migrateMode: "migrate" | "push";
+        schemaDir?: string;
       }>;
     }
   >;

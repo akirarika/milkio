@@ -6,7 +6,11 @@ import type { CookbookOptions } from "../utils/cookbook-dto-types";
 import consola from "consola";
 import { progress } from "../progress";
 
-export async function commandSchema(options: CookbookOptions, paths: { cwd: string; milkio: string; generated: string }, project: CookbookOptions["projects"]["key"]) {
+export async function commandSchema(
+  options: CookbookOptions,
+  paths: { cwd: string; milkio: string; generated: string },
+  project: CookbookOptions["projects"]["key"]
+) {
   const scanner = join(paths.cwd, "command");
   let files: AsyncIterableIterator<string> | Array<string> = [];
   if (await exists(scanner)) {
@@ -14,7 +18,7 @@ export async function commandSchema(options: CookbookOptions, paths: { cwd: stri
     files = glob.scan({ cwd: scanner, onlyFiles: true });
   }
 
-  let typescriptImports = "/* eslint-disable */\n// command-schema";
+  let typescriptImports = "// command-schema";
   let typescriptExports = "export default {";
   typescriptExports += "\n  commands: {";
   let len = 0;
