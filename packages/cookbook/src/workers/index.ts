@@ -203,7 +203,7 @@ const handleMessage = (worker: Worker, key: string, chunk: ArrayBuffer, type: "s
   const str = strRaw.replace(/\x1b\[\d*;?]*m/g, "");
   worker.stdout.push([stdoutIndex++, Date.now(), "stdout", str]);
 
-  const prefix = chalk.hex(colors[worker.id % colors.length])(`[${worker.key}] `);
+  const prefix = `${chalk.hex("a626a4")("◐ ")}${chalk.hex(colors[worker.id % colors.length])(`[${worker.key}] `)}`;
   stdout.write(replaceNewlines(strRaw, prefix));
 
   emitter.emit("data", { type: "workers@stdout", key, chunk: str });
