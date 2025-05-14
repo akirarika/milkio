@@ -49,7 +49,7 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
           [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], ExecuteResultsOption>]
     > {
       // biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
-      return new Promise(async (resolve, reject) => {
+      return new Promise(async (resolve) => {
         await connect;
         const executeId = __createId();
         if (options?.type === "action" || !options?.type) {
@@ -73,7 +73,6 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
           const handler = (event: { data: any }) => {
             if (typeof event.data !== "object") return;
             if (event.data.executeId !== executeId) return;
-            stargateOptions.port.removeEventListener("message", handler);
             if (!flow) {
               flow = createFlow();
               if (!event.data.success) resolve([event.data.error, null, { executeId }]);
@@ -104,11 +103,6 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
   return stargate;
 }
 
-type Deferred<T> = {
-  resolve: (value: T | PromiseLike<T>) => void;
-  reject: (reason?: any) => void;
-};
-
 export type MilkioFlow<T, TReturn = any, TNext = any> = {
   emit: (flow: T) => void;
   [Symbol.asyncIterator]: () => MilkioFlow<T>;
@@ -134,7 +128,7 @@ export function createFlow<T>(): MilkioFlow<T> {
         item.resolve(flow);
         return;
       } else {
-        const resolvers = Promise.withResolvers<T>();
+        const resolvers = withResolvers<T>();
         resolvers.resolve(flow);
         flows.push({ ...resolvers, blank: false } as any);
       }
@@ -143,7 +137,7 @@ export function createFlow<T>(): MilkioFlow<T> {
       async next(): Promise<IteratorResult<T>> {
         if (status !== "pending") return { done: true, value: null };
         if (flows.length === 0) {
-          const resolvers = Promise.withResolvers<T>();
+          const resolvers = withResolvers<T>();
           flows.push({ ...resolvers, blank: true } as any);
         }
         const flow = flows.at(0)!;
@@ -162,7 +156,7 @@ export function createFlow<T>(): MilkioFlow<T> {
       async throw(err: any): Promise<IteratorResult<void>> {
         status = "rejected";
         if (flows.length === 0) {
-          const resolvers = Promise.withResolvers<T>();
+          const resolvers = withResolvers<T>();
           flows.push({ ...resolvers, blank: true } as any);
         }
         for (const flow of flows) {
@@ -178,4 +172,14 @@ export function createFlow<T>(): MilkioFlow<T> {
   };
 
   return iterator as MilkioFlow<T>;
+}
+
+function withResolvers<T = any>(): PromiseWithResolvers<T> {
+  let resolve: PromiseWithResolvers<T>["resolve"];
+  let reject: PromiseWithResolvers<T>["reject"];
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve: resolve!, reject: reject! };
 }
