@@ -383,7 +383,6 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
           port.postMessage({ success: true, data: undefined, executeId: options.executeId, done: false });
           for await (const value of executed.results.value) {
             const data = { success: true, data: [null, value], executeId: options.executeId, done: false };
-            console.log(5, data);
             port.postMessage(data);
           }
           port.postMessage({ success: true, data: undefined, executeId: options.executeId, done: true });

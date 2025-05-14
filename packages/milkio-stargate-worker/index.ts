@@ -70,22 +70,23 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
         }
         if (options?.type === "stream") {
           let flow: ReturnType<typeof createFlow> | undefined;
-          console.log(1);
           const handler = (event: { data: any }) => {
-            console.log(2, JSON.stringify(event.data));
             if (typeof event.data !== "object") return;
             if (event.data.executeId !== executeId) return;
             stargateOptions.port.removeEventListener("message", handler);
-            console.log(3, event.data);
             if (!flow) {
               flow = createFlow();
               if (!event.data.success) resolve([event.data.error, null, { executeId }]);
               if (event.data.success) resolve([null, flow, { executeId }] as any);
             } else {
-              console.log(4, event.data);
-              if (event.data.done) flow.return();
-              else if (event.data.success) flow.emit(event.data.data);
-              else if (!event.data.success) flow.throw(event.data.data);
+              if (event.data.done) {
+                stargateOptions.port.removeEventListener("message", handler);
+                flow.return();
+              } else if (event.data.success) flow.emit(event.data.data);
+              else if (!event.data.success) {
+                stargateOptions.port.removeEventListener("message", handler);
+                flow.throw(event.data.data);
+              }
             }
           };
           stargateOptions.port.addEventListener("message", handler);
