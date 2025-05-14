@@ -69,7 +69,7 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
           });
         }
         if (options?.type === "stream") {
-          let generator: ReturnType<typeof createControllableAsyncGenerator> | undefined;
+          let flow: ReturnType<typeof createFlow> | undefined;
           console.log(1);
           const handler = (event: { data: any }) => {
             console.log(2, JSON.stringify(event.data));
@@ -77,15 +77,15 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
             if (event.data.executeId !== executeId) return;
             stargateOptions.port.removeEventListener("message", handler);
             console.log(3, event.data);
-            if (!generator) {
-              generator = createControllableAsyncGenerator();
+            if (!flow) {
+              flow = createFlow();
               if (!event.data.success) resolve([event.data.error, null, { executeId }]);
-              if (event.data.success) resolve([null, generator.generator, { executeId }] as any);
+              if (event.data.success) resolve([null, flow, { executeId }] as any);
             } else {
               console.log(4, event.data);
-              if (event.data.done) generator.complete();
-              else if (event.data.success) generator.push(event.data.data);
-              else if (!event.data.success) generator.error(event.data.data);
+              if (event.data.done) flow.return();
+              else if (event.data.success) flow.emit(event.data.data);
+              else if (!event.data.success) flow.throw(event.data.data);
             }
           };
           stargateOptions.port.addEventListener("message", handler);
@@ -108,73 +108,73 @@ type Deferred<T> = {
   reject: (reason?: any) => void;
 };
 
-function createControllableAsyncGenerator<T>(): {
-  generator: AsyncGenerator<T>;
-  push: (value: T) => void;
-  complete: (returnValue?: T) => void;
-  error: (error: Error) => void;
-} {
-  const queue: Array<{ value?: T; done?: boolean; error?: Error }> = [];
-  let deferred: Deferred<IteratorResult<T>> | null = null;
-  let finished = false;
+export type MilkioFlow<T, TReturn = any, TNext = any> = {
+  emit: (flow: T) => void;
+  [Symbol.asyncIterator]: () => MilkioFlow<T>;
+  next(...[value]: [] | [TNext]): Promise<IteratorResult<T, TReturn>>;
+  return(): Promise<IteratorResult<T, TReturn>>;
+  throw(error: any): Promise<IteratorResult<T, TReturn>>;
+};
 
-  const processQueue = () => {
-    if (deferred && queue.length > 0) {
-      const item = queue.shift()!;
-      if (item.error) {
-        deferred.reject(item.error);
+export function createFlow<T>(): MilkioFlow<T> {
+  let status: "pending" | "resolved" | "rejected" = "pending";
+  const flows: Array<{
+    blank: boolean;
+    promise: Promise<T>;
+    resolve: (value?: T | PromiseLike<T>) => void;
+    reject: (reason?: any) => void;
+  }> = [];
+
+  const iterator = {
+    emit: (flow: T) => {
+      if (flows.at(-1)?.blank === true) {
+        const item = flows.at(-1)!;
+        item.blank = false;
+        item.resolve(flow);
+        return;
       } else {
-        deferred.resolve({ value: item.value!, done: item.done || false });
+        const resolvers = Promise.withResolvers<T>();
+        resolvers.resolve(flow);
+        flows.push({ ...resolvers, blank: false } as any);
       }
-      deferred = null;
-    }
-  };
-
-  const generator: AsyncGenerator<T> = {
+    },
+    ...({
+      async next(): Promise<IteratorResult<T>> {
+        if (status !== "pending") return { done: true, value: null };
+        if (flows.length === 0) {
+          const resolvers = Promise.withResolvers<T>();
+          flows.push({ ...resolvers, blank: true } as any);
+        }
+        const flow = flows.at(0)!;
+        const result = await flow.promise;
+        flows.shift();
+        return { done: status !== "pending", value: result };
+      },
+      async return(): Promise<IteratorResult<void>> {
+        status = "resolved";
+        for (const flow of flows) {
+          flow.blank = false;
+          flow.resolve(undefined);
+        }
+        return { done: true, value: null };
+      },
+      async throw(err: any): Promise<IteratorResult<void>> {
+        status = "rejected";
+        if (flows.length === 0) {
+          const resolvers = Promise.withResolvers<T>();
+          flows.push({ ...resolvers, blank: true } as any);
+        }
+        for (const flow of flows) {
+          flow.blank = false;
+          flow.reject(err);
+        }
+        return { done: true, value: null };
+      },
+    } satisfies AsyncIterator<unknown>),
     [Symbol.asyncIterator]() {
-      return generator;
-    },
-
-    async next(): Promise<IteratorResult<T>> {
-      if (finished) return { value: undefined, done: true };
-
-      return new Promise((resolve, reject) => {
-        deferred = { resolve, reject };
-        processQueue();
-      });
-    },
-
-    async return(value?: T): Promise<IteratorResult<T>> {
-      finished = true;
-      queue.length = 0;
-      return { value, done: true };
-    },
-
-    async throw(error?: Error): Promise<IteratorResult<T>> {
-      finished = true;
-      queue.length = 0;
-      return Promise.reject(error);
-    },
-  } as any;
-
-  return {
-    generator,
-    push: (value: T) => {
-      if (finished) return;
-      queue.push({ value });
-      processQueue();
-    },
-    complete: (value?: T) => {
-      if (finished) return;
-      finished = true;
-      queue.push({ done: true, value });
-      processQueue();
-    },
-    error: (err: Error) => {
-      if (finished) return;
-      finished = true;
-      queue.push({ error: err });
-      processQueue();
+      return this;
     },
   };
+
+  return iterator as MilkioFlow<T>;
 }
