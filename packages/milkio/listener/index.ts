@@ -54,7 +54,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
     if (runtime.ignorePathLevel !== undefined && runtime.ignorePathLevel !== 0) pathArray = pathArray.slice(runtime.ignorePathLevel);
     const pathString = `/${pathArray.join("/")}`;
 
-    const executeId = runtime?.executeId ? await runtime.executeId(options.request) : __createId();
+    const executeId = runtime?.executeId ? await runtime.executeId(options.request.headers) : __createId();
 
     const logger = createLogger(runtime, pathString, executeId);
     runtime.runtime.request.set(executeId, { logger });
@@ -74,7 +74,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
     try {
       const http = (await (async () => {
-        const ip = runtime.realIp ? runtime.realIp(options.request) : "::1";
+        const ip = runtime.realIp ? runtime.realIp(options.request.headers) : "::1";
         const params = {
           string: await options.request.text(),
           parsed: undefined,
@@ -121,7 +121,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
           createdLogger: logger,
           path: http.path.string as string,
           headers: options.request.headers as Headers,
-          mixinContext: { http },
+          mixinContext: { http, headers: http.request.headers },
           params: http.params.string,
           paramsType: "string",
         });
@@ -137,7 +137,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
           }
         }
 
-        await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, context: executed.context });
+        await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: executed.context });
 
         for (const handler of finales) {
           try {
@@ -183,7 +183,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
           createdLogger: logger,
           path: http.path.string as string,
           headers: options.request.headers as Headers,
-          mixinContext: { http },
+          mixinContext: { http, headers: http.request.headers },
           params: http.params.string,
           paramsType: "string",
         });
@@ -268,7 +268,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         response.headers["Content-Type"] = "text/event-stream";
         response.headers["Cache-Control"] = "no-cache";
 
-        await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, context: executed.context });
+        await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: executed.context });
 
         return new Response(response.body, response);
       }
@@ -283,8 +283,123 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
     }
   };
 
+  const handleMessage = async (
+    port: { postMessage(message: any): void },
+    options:
+      | {
+          executeId: string;
+          path: string;
+          params?: Record<any, any>;
+          headers?: Record<string, string>;
+        }
+      | "PING",
+  ) => {
+    if (options === "PING") {
+      port.postMessage("PONG");
+      return;
+    }
+    let routeSchema = trie.get(options.path);
+    if (routeSchema === null) {
+      routeSchema = generated.routeSchema?.[options.path];
+      if (routeSchema === undefined) {
+        throw reject("NOT_FOUND", { path: options.path });
+      }
+      if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
+      else routeSchema.module = await routeSchema.module();
+      trie.add(options.path, routeSchema);
+    }
+
+    const headers = new Headers(options.headers);
+    const params = options.params ?? {};
+    const logger = createLogger(runtime, options.path, options.executeId);
+    let finales: Array<() => void | Promise<void>> = [];
+
+    const http = new Proxy(
+      {},
+      {
+        get: () => {
+          throw reject("UNACCEPTABLE", { expected: "context.http", message: "This request was invoked through the execute method. Since no actual request was generated, the HTTP methods under the context cannot be accessed." });
+        },
+        set: () => {
+          throw reject("UNACCEPTABLE", { expected: "context.http", message: "This request was invoked through the execute method. Since no actual request was generated, the HTTP methods under the context cannot be accessed." });
+        },
+      },
+    );
+
+    const handleClose = async () => {
+      runtime.runtime.request.delete(options.executeId);
+      for (const handler of finales) {
+        try {
+          await handler();
+        } catch (error) {
+          logger.error("An error occurred inside onFinally.", error);
+        }
+      }
+    };
+
+    try {
+      if (routeSchema.type === "action") {
+        const executed = await executer.__execute(routeSchema, {
+          createdExecuteId: options.executeId,
+          createdLogger: logger,
+          path: options.path,
+          headers,
+          mixinContext: { http: http, headers },
+          params,
+          paramsType: "raw",
+        });
+        finales = executed.finales;
+
+        await handleClose();
+
+        if (executed.emptyResult) {
+          port.postMessage({
+            executeId: options.executeId,
+            success: true,
+            data: undefined,
+          });
+        } else {
+          port.postMessage({
+            executeId: options.executeId,
+            success: true,
+            data: executed.results.value,
+          });
+        }
+      }
+      if (routeSchema.type === "stream") {
+        const executed = await executer.__execute(routeSchema, {
+          createdExecuteId: options.executeId,
+          createdLogger: logger,
+          path: options.path,
+          headers,
+          mixinContext: { http: http, headers },
+          params,
+          paramsType: "raw",
+        });
+        finales = executed.finales;
+
+        try {
+          port.postMessage({ success: true, data: undefined, executeId: options.executeId, done: false });
+          for await (const value of executed.results.value) {
+            port.postMessage({ success: true, data: [null, value], executeId: options.executeId, done: false });
+          }
+          port.postMessage({ success: true, data: undefined, executeId: options.executeId, done: true });
+        } catch (error) {
+          const exception = exceptionHandler(options.executeId, logger, error);
+          const result: any = {};
+          result[exception.code] = exception.reject;
+          port.postMessage({ success: false, data: [TSON.encode(result), null], executeId: options.executeId, done: true });
+        }
+        await handleClose();
+      }
+    } catch (error) {
+      throw exceptionHandler(options.executeId, logger, error);
+    }
+  };
+
   return {
     port,
     fetch,
+    handleMessage,
   };
 }

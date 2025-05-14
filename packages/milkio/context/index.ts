@@ -8,6 +8,7 @@ export interface $context {
   path: string;
   logger: Logger;
   http: ContextHttp<Record<any, any>>;
+  headers: Headers;
   config: Readonly<Awaited<ReturnType<$types["configSchema"]["get"]>>>;
   call: <Module extends Promise<{ default: Action<any> }>>(module: Module, params: Parameters<Awaited<Module>["default"]["handler"]>[1]) => Promise<ReturnType<Awaited<Module>["default"]["handler"]>>;
   onFinally: (handler: () => void | Promise<void>) => void;

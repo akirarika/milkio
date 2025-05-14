@@ -13,8 +13,8 @@ export interface MilkioInit {
     corsAllowOrigin?: string;
   };
   ignorePathLevel?: number;
-  realIp?: (request: Request) => string;
-  executeId?: (request: Request) => string | Promise<string>;
+  realIp?: (headers: Headers) => string;
+  executeId?: (headers: Headers) => string | Promise<string>;
   onLoggerSubmitting?: LoggerSubmittingHandler;
   onLoggerInserting?: LoggerInsertingHandler;
   bootstraps?: Array<(world: MilkioWorld) => Promise<void> | void>;
@@ -23,7 +23,7 @@ export interface MilkioInit {
 export type MilkioRuntimeInit<T extends MilkioInit> = Mixin<
   T,
   {
-    executeId: (request: Request) => string | Promise<string>;
+    executeId: (headers: Headers) => string | Promise<string>;
     runtime: {
       request: Map<ExecuteId, { logger: Logger }>;
       config: Awaited<ReturnType<$types["generated"]["configSchema"]>>;

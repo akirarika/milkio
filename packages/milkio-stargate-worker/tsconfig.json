@@ -3,7 +3,7 @@
     "target": "ESNext",
     "jsx": "react-jsx",
     "erasableSyntaxOnly": true,
-    "lib": ["ESNext", "DOM"],
+    "lib": ["ESNext", "DOM", "WebWorker"],
     "moduleDetection": "force",
     "module": "nodenext",
     "moduleResolution": "nodenext",
