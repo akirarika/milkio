@@ -63,7 +63,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
       if (paramsRand === undefined || paramsRand === null) paramsRand = {};
       params = { ...paramsRand, ...params };
     }
-    if (options.mixinContext?.http?.params?.string) options.mixinContext.http.params.parsed = params; // listen でパースしたパラメータを渡す
+    if (!options.mixinContext?.http?.notFound && options.mixinContext?.http?.params?.string) options.mixinContext.http.params.parsed = params; // listen でパースしたパラメータを渡す
     const context = {
       ...(options.mixinContext ? options.mixinContext : {}),
       develop: runtime.develop,

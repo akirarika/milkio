@@ -317,7 +317,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
     const http = new Proxy(
       {},
       {
-        get: () => {
+        get: (target, property) => {
+          if (property === "notFound") return true;
           throw reject("UNACCEPTABLE", { expected: "context.http", message: "This request was invoked through the execute method. Since no actual request was generated, the HTTP methods under the context cannot be accessed." });
         },
         set: () => {
