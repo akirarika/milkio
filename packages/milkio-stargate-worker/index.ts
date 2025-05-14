@@ -72,7 +72,7 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
           let generator: ReturnType<typeof createControllableAsyncGenerator> | undefined;
           console.log(1);
           const handler = (event: { data: any }) => {
-            console.log(2, event.data);
+            console.log(2, JSON.stringify(event.data));
             if (typeof event.data !== "object") return;
             if (event.data.executeId !== executeId) return;
             stargateOptions.port.removeEventListener("message", handler);
@@ -132,7 +132,7 @@ function createControllableAsyncGenerator<T>(): {
 
   const generator: AsyncGenerator<T> = {
     [Symbol.asyncIterator]() {
-      return this;
+      return generator;
     },
 
     async next(): Promise<IteratorResult<T>> {
