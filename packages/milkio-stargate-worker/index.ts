@@ -157,7 +157,7 @@ export function createFlow<T>(stargateOptions: MilkioStargateOptions, executeId:
       },
       async return(_: undefined, disablePostCloseMessage?: true): Promise<IteratorResult<void>> {
         status = "resolved";
-        if (disablePostCloseMessage) stargateOptions.port.postMessage(`CLOSE_STREAM:${executeId}`);
+        if (!disablePostCloseMessage) stargateOptions.port.postMessage(`CLOSE_STREAM:${executeId}`);
         for (const flow of flows) {
           flow.blank = false;
           flow.resolve(undefined);
@@ -166,7 +166,7 @@ export function createFlow<T>(stargateOptions: MilkioStargateOptions, executeId:
       },
       async throw(err: any, disablePostCloseMessage?: true): Promise<IteratorResult<void>> {
         status = "rejected";
-        if (disablePostCloseMessage) stargateOptions.port.postMessage(`CLOSE_STREAM:${executeId}`);
+        if (!disablePostCloseMessage) stargateOptions.port.postMessage(`CLOSE_STREAM:${executeId}`);
         if (flows.length === 0) {
           const resolvers = withResolvers<T>();
           flows.push({ ...resolvers, blank: true } as any);

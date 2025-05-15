@@ -283,7 +283,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
     }
   };
 
-  const streamClosers: Map<string, any> = new Map();
+  const streamClosers: Map<string, { generator: AsyncGenerator; handleClose: any }> = new Map();
   const handleMessage = async (
     port: { postMessage(message: any): void },
     options:
@@ -302,7 +302,10 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
       if (options.startsWith("CLOSE_STREAM:")) {
         const executeId = options.split("CLOSE_STREAM:")[1];
         const streamCloser = streamClosers.get(executeId);
-        if (streamCloser) streamCloser("stream");
+        if (streamCloser) {
+          streamCloser.generator.return(undefined);
+          streamCloser.handleClose("stream");
+        }
       }
       return;
     }
@@ -390,7 +393,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
         try {
           port.postMessage({ success: true, data: undefined, executeId: options.executeId, done: false });
-          streamClosers.set(options.executeId, handleClose);
+          streamClosers.set(options.executeId, { generator: executed.results.value, handleClose });
           for await (const value of executed.results.value) {
             const data = { success: true, data: [null, value], executeId: options.executeId, done: false };
             port.postMessage(data);
