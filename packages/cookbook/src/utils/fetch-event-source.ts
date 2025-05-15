@@ -1,5 +1,3 @@
-import consola from "consola";
-
 export type SSEMessage = {
   data: any;
   event?: string;

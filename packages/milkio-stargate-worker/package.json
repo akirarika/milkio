@@ -3,6 +3,8 @@
   "type": "module",
   "version": "1.0.0-beta.37",
   "module": "index.ts",
-  "dependencies": {},
+  "peerDependencies": {
+    "vue": ">3.4.0"
+  },
   "devDependencies": {}
 }

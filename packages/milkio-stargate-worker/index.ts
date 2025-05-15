@@ -21,6 +21,7 @@ export type ExecuteResultsOption = { executeId: string };
 export type GeneratorGeneric<T> = T extends AsyncGenerator<infer I> ? I : never;
 
 export async function createStargateWorker<Generated extends { routeSchema: any; rejectCode: any }>(stargateOptions: MilkioStargateOptions) {
+  const executeIds = new Set<string>();
   const connect = new Promise((resolve) => {
     const handler = (event: { data: any }) => {
       if (event.data !== "PONG") return;
@@ -33,6 +34,12 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
     const timer = setInterval(() => stargateOptions.port.postMessage("PING"), 42);
   });
   const stargate = {
+    close() {
+      for (const executeId of executeIds) {
+        stargateOptions.port.postMessage(`CLOSE_STREAM:${executeId}`);
+      }
+      stargateOptions.port.postMessage("CLOSED");
+    },
     async execute<Path extends keyof Generated["routeSchema"]>(
       path: Path,
       options?: Mixin<
@@ -46,16 +53,18 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
         ? // action
           [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, Generated["routeSchema"][Path]["types"]["result"], ExecuteResultsOption]
         : // stream
-          [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], ExecuteResultsOption>]
+          [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], undefined>, ExecuteResultsOption]
     > {
       // biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
       return new Promise(async (resolve) => {
         await connect;
         const executeId = __createId();
+        executeIds.add(executeId);
         if (options?.type === "action" || !options?.type) {
           const handler = (event: { data: any }) => {
             if (typeof event.data !== "object") return;
             if (event.data.executeId !== executeId) return;
+            executeIds.delete(executeId);
             stargateOptions.port.removeEventListener("message", handler);
             if (!event.data.success) resolve([event.data.error, null, { executeId }]);
             if (event.data.success) resolve([null, event.data.data, { executeId }] as any);
@@ -74,18 +83,19 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
             if (typeof event.data !== "object") return;
             if (event.data.executeId !== executeId) return;
             if (!flow) {
-              flow = createFlow();
+              flow = createFlow(stargateOptions, executeId);
               if (!event.data.success) resolve([event.data.error, null, { executeId }]);
               if (event.data.success) resolve([null, flow, { executeId }] as any);
             } else {
               if (event.data.done) {
                 stargateOptions.port.removeEventListener("message", handler);
-                flow.return();
-              } else if (event.data.success) flow.emit(event.data.data);
-              else if (!event.data.success) {
+                executeIds.delete(executeId);
+                flow.return(undefined, true);
+              } else if (!event.data.success) {
                 stargateOptions.port.removeEventListener("message", handler);
-                flow.throw(event.data.data);
-              }
+                executeIds.delete(executeId);
+                flow.throw(event.data.data, true);
+              } else if (event.data.success) flow.emit(event.data.data);
             }
           };
           stargateOptions.port.addEventListener("message", handler);
@@ -107,11 +117,11 @@ export type MilkioFlow<T, TReturn = any, TNext = any> = {
   emit: (flow: T) => void;
   [Symbol.asyncIterator]: () => MilkioFlow<T>;
   next(...[value]: [] | [TNext]): Promise<IteratorResult<T, TReturn>>;
-  return(): Promise<IteratorResult<T, TReturn>>;
-  throw(error: any): Promise<IteratorResult<T, TReturn>>;
+  return(data: undefined, disablePostCloseMessage?: true): Promise<IteratorResult<T, TReturn>>;
+  throw(error: any, disablePostCloseMessage?: true): Promise<IteratorResult<T, TReturn>>;
 };
 
-export function createFlow<T>(): MilkioFlow<T> {
+export function createFlow<T>(stargateOptions: MilkioStargateOptions, executeId: string): MilkioFlow<T> {
   let status: "pending" | "resolved" | "rejected" = "pending";
   const flows: Array<{
     blank: boolean;
@@ -145,16 +155,18 @@ export function createFlow<T>(): MilkioFlow<T> {
         flows.shift();
         return { done: status !== "pending", value: result };
       },
-      async return(): Promise<IteratorResult<void>> {
+      async return(_: undefined, disablePostCloseMessage?: true): Promise<IteratorResult<void>> {
         status = "resolved";
+        if (disablePostCloseMessage) stargateOptions.port.postMessage(`CLOSE_STREAM:${executeId}`);
         for (const flow of flows) {
           flow.blank = false;
           flow.resolve(undefined);
         }
         return { done: true, value: null };
       },
-      async throw(err: any): Promise<IteratorResult<void>> {
+      async throw(err: any, disablePostCloseMessage?: true): Promise<IteratorResult<void>> {
         status = "rejected";
+        if (disablePostCloseMessage) stargateOptions.port.postMessage(`CLOSE_STREAM:${executeId}`);
         if (flows.length === 0) {
           const resolvers = withResolvers<T>();
           flows.push({ ...resolvers, blank: true } as any);

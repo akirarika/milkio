@@ -94,6 +94,12 @@ export function useVitePluginMilkio(options?: {
       // config.optimizeDeps
       if (!config.optimizeDeps) config.optimizeDeps = {};
       config.optimizeDeps.noDiscovery = true;
+      if (!config.optimizeDeps.exclude) config.optimizeDeps.exclude = [];
+      config.optimizeDeps.exclude.push("@electric-sql/pglite");
+
+      // config.worker
+      if (!config.worker) config.worker = {};
+      config.worker.format = "es";
 
       // config.resolve
       if (!config.resolve) config.resolve = {};
