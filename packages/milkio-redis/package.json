@@ -1,7 +1,7 @@
 {
   "name": "@milkio/redis",
   "type": "module",
-  "version": "1.0.0-beta.38",
+  "version": "1.0.0-beta.39",
   "module": "index.ts",
   "devDependencies": {
     "@southern-aurora/tson": "*",
