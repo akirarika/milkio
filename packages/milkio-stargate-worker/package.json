@@ -1,7 +1,7 @@
 {
   "name": "@milkio/stargate-worker",
   "type": "module",
-  "version": "1.0.0-beta.37",
+  "version": "1.0.0-beta.38",
   "module": "index.ts",
   "peerDependencies": {
     "vue": ">3.4.0"
