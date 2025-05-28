@@ -43,6 +43,7 @@ export function useVitePluginMilkio(options?: {
       // config.build
       if (!config.build) config.build = {};
       config.build.ssr = true;
+      config.build.sourcemap = "inline";
       config.build.target = "es2024";
       // config.build.rollupOptions
       if (!config.build.rollupOptions) config.build.rollupOptions = {};
@@ -65,7 +66,6 @@ export function useVitePluginMilkio(options?: {
         } else throw new Error("runtime not supported");
         for (const output of Array.isArray(config.build.rollupOptions.output) ? config.build.rollupOptions.output : [config.build.rollupOptions.output]) {
           output.format = format;
-          output.sourcemap = "inline";
           output.preserveModules = false;
         }
       } else {
