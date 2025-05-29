@@ -66,8 +66,8 @@ export default await defineCookbookCommand(async (utils) => {
 
   await writeFile(join(cwd(), "projects", project.value, ".milkio", "drizzle-migrations.ts"), `export const drizzleMigrations = ${JSON.stringify(journal)}`);
 
-  if (existsSync(join(cwd(), "projects", project.value, "drizzle", "drizzle.migrate.ts"))) {
-    await import(join(cwd(), "projects", project.value, "drizzle", "drizzle.migrate.ts"));
+  if (existsSync(join(cwd(), "projects", project.value, "drizzle.migrate.ts"))) {
+    await import(join(cwd(), "projects", project.value, "drizzle.migrate.ts"));
   }
 
   exit(0);
