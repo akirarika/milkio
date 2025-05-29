@@ -48,6 +48,9 @@ export default await defineCookbookCommand(async (utils) => {
   const typescript = `${typescriptImports}`;
   await writeFile(join(cwd(), "projects", project.value, ".milkio", "drizzle-schema.ts"), typescript);
 
+  env.DATABASE_URL = mode.migrateDatabaseUrl;
+  process.env.DATABASE_URL = mode.migrateDatabaseUrl;
+
   execScript(command, {
     cwd: project.path,
     env: {
