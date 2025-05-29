@@ -204,6 +204,7 @@ export default await defineCookbookCommand(async (utils) => {
                 stdio: "inherit",
                 cwd: `./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}`,
               });
+              break;
             } catch (error) {
               consola.error(error);
               if ((await cli.select("\n发布失败，可能是网络异常，是否重试？", ["是", "否"])) !== "是") {
