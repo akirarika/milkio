@@ -182,25 +182,35 @@ export default await defineCookbookCommand(async (utils) => {
 
         for (const platform of platforms) {
           consola.log(`正在打包 ${platform.platform} ${platform.arch} 的二进制文件..`);
-          const command = `bun build ./packages/cookbook/cookbook.ts --outfile ./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/co --compile --minify --sourcemap=inline --env=COOKBOOK_* --target=${platform.target} --external vue --external react`;
-          execFileSync("powershell.exe", ["-Command", command], {
-            stdio: "inherit",
-            env: { ...process.env, COOKBOOK_PRODUCTION: "true" },
-          });
-          await writeFile(`./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/index.js`, `console.log("This package is used to distribute cookbook binaries. You can run it directly.");`);
-          await writeFile(
-            `./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/package.json`,
-            JSON.stringify({
-              name: `@milkio/cookbook-${platform.platform}-${platform.arch}`,
-              type: "module",
-              version: packageJson.version,
-              module: "./index.js",
-            }),
-          );
-          execFileSync("powershell.exe", ["-Command", "npm publish --access public"], {
-            stdio: "inherit",
-            cwd: `./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}`,
-          });
+          while (true) {
+            try {
+              const command = `bun build ./packages/cookbook/cookbook.ts --outfile ./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/co --compile --minify --sourcemap=inline --env=COOKBOOK_* --target=${platform.target} --external vue --external react`;
+              execFileSync("powershell.exe", ["-Command", command], {
+                stdio: "inherit",
+                env: { ...process.env, COOKBOOK_PRODUCTION: "true" },
+              });
+              await writeFile(`./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/index.js`, `console.log("This package is used to distribute cookbook binaries. You can run it directly.");`);
+              await writeFile(
+                `./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/package.json`,
+                JSON.stringify({
+                  name: `@milkio/cookbook-${platform.platform}-${platform.arch}`,
+                  type: "module",
+                  version: packageJson.version,
+                  module: "./index.js",
+                }),
+              );
+
+              execFileSync("powershell.exe", ["-Command", "npm publish --access public"], {
+                stdio: "inherit",
+                cwd: `./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}`,
+              });
+            } catch (error) {
+              consola.error(error);
+              if ((await cli.select("\n发布失败，可能是网络异常，是否重试？", ["是", "否"])) !== "是") {
+                process.exit(1);
+              }
+            }
+          }
         }
         consola.success("cookbook 二进制文件打包并发布成功");
       })();
