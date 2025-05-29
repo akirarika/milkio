@@ -70,6 +70,4 @@ export default await defineCookbookCommand(async (utils, projectUsed?: string, m
   if (existsSync(join(cwd(), "projects", project.value, "drizzle.migrate.ts"))) {
     await import(join(cwd(), "projects", project.value, "drizzle.migrate.ts"));
   }
-
-  exit(0);
 });
