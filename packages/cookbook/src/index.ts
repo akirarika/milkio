@@ -320,6 +320,10 @@ async function createCommandUtils(params: Params, options: { path?: string; desc
       const module = await import("./commands/prisma");
       return await module.default(utils as any);
     },
+    gotoDrizzleCommand: async (project?: string, mode?: string) => {
+      const module = await import("./commands/drizzle");
+      return await module.default(utils as any, project, mode);
+    },
   };
 
   return utils;

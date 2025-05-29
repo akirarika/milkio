@@ -29,10 +29,10 @@ export type CookbookCommandHandler = (utils: {
   canUseAI: () => Promise<
     | false
     | {
-      aiBaseUrl: string;
-      aiApiKey: string;
-      aiModel: string;
-    }
+        aiBaseUrl: string;
+        aiApiKey: string;
+        aiModel: string;
+      }
   >;
   fetchEventSource: (
     input: string | URL | globalThis.Request,
@@ -47,6 +47,7 @@ export type CookbookCommandHandler = (utils: {
   getCookbookToml: () => Promise<CookbookToml>;
   gotoGitCommitCommand: () => Promise<void>;
   gotoPrismaCommand: () => Promise<void>;
+  gotoDrizzleCommand: (project?: string, mode?: string) => Promise<void>;
 }) => Promise<void>;
 
 export interface CookbookToml {

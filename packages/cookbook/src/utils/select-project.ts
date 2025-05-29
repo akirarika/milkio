@@ -5,10 +5,14 @@ import { join } from "node:path";
 import { cwd, exit } from "node:process";
 import consola from "consola";
 
-export async function selectProject(cookbookToml: CookbookOptions, options?: {
-  withRoot?: boolean
-  filter?: (project: CookbookOptions["projects"][0] & { value: string }) => boolean | Promise<boolean>
-}): Promise<(CookbookOptions["projects"][0] & { value: any; path: string })> {
+export async function selectProject(
+  cookbookToml: CookbookOptions,
+  options?: {
+    withRoot?: boolean;
+    filter?: (project: CookbookOptions["projects"][0] & { value: string }) => boolean | Promise<boolean>;
+    projectUsed?: string;
+  },
+): Promise<CookbookOptions["projects"][0] & { value: any; path: string }> {
   const projects: Array<CookbookOptions["projects"] & { value: any }> = [{ value: "<cancel>", description: "Cancel and exit cookbook" } as any];
   if (options?.withRoot === true) {
     projects.push({ value: "<root>", description: `Select project root directory: ${cwd()}` } as any);
@@ -19,21 +23,23 @@ export async function selectProject(cookbookToml: CookbookOptions, options?: {
     if (options?.filter === undefined || (await options.filter(project))) projects.push(project);
   }
 
-  const selected = await search({
-    message: "Select the project to operate on:",
-    source: async (input) => {
-      if (!input) return projects;
-      const filtered = projects.filter((project) => containsCharsInOrder(input.toLowerCase(), project.value.toLowerCase()));
-      return uniqWith(filtered, (a, b) => a.value === b.value).sort((a, b) => {
-        const scoreA = calculateScore(input, a.value);
-        const scoreB = calculateScore(input, b.value);
-        if (scoreB.maxContiguous !== scoreA.maxContiguous) {
-          return scoreB.maxContiguous - scoreA.maxContiguous;
-        }
-        return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
-      });
-    },
-  });
+  const selected =
+    options?.projectUsed ??
+    (await search({
+      message: "Select the project to operate on:",
+      source: async (input) => {
+        if (!input) return projects;
+        const filtered = projects.filter((project) => containsCharsInOrder(input.toLowerCase(), project.value.toLowerCase()));
+        return uniqWith(filtered, (a, b) => a.value === b.value).sort((a, b) => {
+          const scoreA = calculateScore(input, a.value);
+          const scoreB = calculateScore(input, b.value);
+          if (scoreB.maxContiguous !== scoreA.maxContiguous) {
+            return scoreB.maxContiguous - scoreA.maxContiguous;
+          }
+          return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
+        });
+      },
+    }));
 
   if (selected === "<cancel>") {
     consola.success("Cookbook cancelled");

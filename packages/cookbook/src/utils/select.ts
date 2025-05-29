@@ -3,7 +3,7 @@ import consola from "consola";
 import { uniqWith } from "lodash-es";
 import { exit } from "node:process";
 
-export async function select<Data extends Record<any, any>>(message: `${string}:`, data: Array<Data>, key: keyof Data): Promise<Data> {
+export async function select<Data extends Record<any, any>>(message: `${string}:`, data: Array<Data>, key: keyof Data, used?: string): Promise<Data> {
   const items: Array<{ value: string }> = [];
   const cancel: any = {};
   cancel.value = "<cancel>";
@@ -14,22 +14,24 @@ export async function select<Data extends Record<any, any>>(message: `${string}:
     items.push({ value: item[key] });
   }
 
-  const selected = await search({
-    message: message,
-    source: async (input) => {
-      if (!input) return items;
-      const filtered = items.filter((item) => containsCharsInOrder(input.toLowerCase(), item.value.toLowerCase()));
+  const selected =
+    used ??
+    (await search({
+      message: message,
+      source: async (input) => {
+        if (!input) return items;
+        const filtered = items.filter((item) => containsCharsInOrder(input.toLowerCase(), item.value.toLowerCase()));
 
-      return uniqWith(filtered, (a, b) => a.value === b.value).sort((a, b) => {
-        const scoreA = calculateScore(input, a.value);
-        const scoreB = calculateScore(input, b.value);
-        if (scoreB.maxContiguous !== scoreA.maxContiguous) {
-          return scoreB.maxContiguous - scoreA.maxContiguous;
-        }
-        return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
-      });
-    },
-  });
+        return uniqWith(filtered, (a, b) => a.value === b.value).sort((a, b) => {
+          const scoreA = calculateScore(input, a.value);
+          const scoreB = calculateScore(input, b.value);
+          if (scoreB.maxContiguous !== scoreA.maxContiguous) {
+            return scoreB.maxContiguous - scoreA.maxContiguous;
+          }
+          return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
+        });
+      },
+    }));
 
   if (selected === "<cancel>") {
     consola.success("Cookbook cancelled");

@@ -8,12 +8,13 @@ import { select } from "../utils/select";
 import { env, Glob } from "bun";
 import { existsSync } from "fs-extra";
 
-export default await defineCookbookCommand(async (utils) => {
+export default await defineCookbookCommand(async (utils, projectUsed?: string, modeUsed?: string) => {
   const cookbookToml = await utils.getCookbookToml();
   const project = await selectProject(cookbookToml, {
     filter: async (project) => {
       return (await exists(join(cwd(), "projects", project.value, "drizzle"))) || (await exists(join(cwd(), "projects", project.value, "drizzle.config.ts")));
     },
+    projectUsed,
   });
   if (!project) exit(0);
   const packageJson = await readFile(join(cwd(), "projects", project.value, "package.json"), "utf-8");
@@ -23,7 +24,7 @@ export default await defineCookbookCommand(async (utils) => {
     packageJsonParsed.scripts.drizzle = "drizzle-kit";
     await writeFile(join(cwd(), "projects", project.value, "package.json"), JSON.stringify(packageJsonParsed, null, 2));
   }
-  const mode = await select("Select the mode:", project.drizzle ?? [], "mode");
+  const mode = await select("Select the mode:", project.drizzle ?? [], "mode", modeUsed);
   const command = `${cookbookToml.general.packageManager} run drizzle ${mode?.migrateMode === "push" ? "push" : "generate"}`;
 
   const schemaDir = mode?.schemaDir ?? "database";
