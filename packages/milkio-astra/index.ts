@@ -6,7 +6,7 @@ import { cwd } from "node:process";
 import { load } from "js-toml";
 import { TSON } from "@southern-aurora/tson";
 import { format } from "date-fns";
-import type { CookbookOptions } from "./utils/cookbook-dto-types";
+import type { CookbookOptions } from "./utils/cookbook-dto-types.ts";
 
 export type AstraOptionsInit = {
   stargate: { $types: any; execute: any; ping: any; __cookbook: any };
