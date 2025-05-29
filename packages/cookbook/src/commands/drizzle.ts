@@ -6,40 +6,25 @@ import { exists, mkdir, readFile, writeFile } from "node:fs/promises";
 import { execScript } from "../utils/exec-script";
 import { select } from "../utils/select";
 import { env, Glob } from "bun";
+import { existsSync } from "fs-extra";
 
 export default await defineCookbookCommand(async (utils) => {
   const cookbookToml = await utils.getCookbookToml();
   const project = await selectProject(cookbookToml, {
     filter: async (project) => {
-      return (
-        (await exists(join(cwd(), "projects", project.value, "drizzle"))) ||
-        (await exists(
-          join(cwd(), "projects", project.value, "drizzle.config.ts")
-        ))
-      );
+      return (await exists(join(cwd(), "projects", project.value, "drizzle"))) || (await exists(join(cwd(), "projects", project.value, "drizzle.config.ts")));
     },
   });
   if (!project) exit(0);
-  const packageJson = await readFile(
-    join(cwd(), "projects", project.value, "package.json"),
-    "utf-8"
-  );
+  const packageJson = await readFile(join(cwd(), "projects", project.value, "package.json"), "utf-8");
   const packageJsonParsed = JSON.parse(packageJson);
-  if (
-    packageJsonParsed?.scripts?.drizzle === undefined ||
-    packageJsonParsed.scripts.drizzle === ""
-  ) {
+  if (packageJsonParsed?.scripts?.drizzle === undefined || packageJsonParsed.scripts.drizzle === "") {
     if (!packageJsonParsed) packageJsonParsed.scripts = {};
     packageJsonParsed.scripts.drizzle = "drizzle-kit";
-    await writeFile(
-      join(cwd(), "projects", project.value, "package.json"),
-      JSON.stringify(packageJsonParsed, null, 2)
-    );
+    await writeFile(join(cwd(), "projects", project.value, "package.json"), JSON.stringify(packageJsonParsed, null, 2));
   }
   const mode = await select("Select the mode:", project.drizzle ?? [], "mode");
-  const command = `${cookbookToml.general.packageManager} run drizzle ${
-    mode?.migrateMode === "push" ? "push" : "generate"
-  }`;
+  const command = `${cookbookToml.general.packageManager} run drizzle ${mode?.migrateMode === "push" ? "push" : "generate"}`;
 
   const schemaDir = mode?.schemaDir ?? "database";
   if (!(await exists(join(cwd(), "projects", project.value, schemaDir)))) {
@@ -61,10 +46,7 @@ export default await defineCookbookCommand(async (utils) => {
   }
 
   const typescript = `${typescriptImports}`;
-  await writeFile(
-    join(cwd(), "projects", project.value, ".milkio", "drizzle-schema.ts"),
-    typescript
-  );
+  await writeFile(join(cwd(), "projects", project.value, ".milkio", "drizzle-schema.ts"), typescript);
 
   execScript(command, {
     cwd: project.path,
@@ -74,30 +56,16 @@ export default await defineCookbookCommand(async (utils) => {
     },
   });
 
-  const journal = JSON.parse(
-    await readFile(
-      join(
-        cwd(),
-        "projects",
-        project.value,
-        "drizzle",
-        "meta",
-        "_journal.json"
-      ),
-      "utf-8"
-    )
-  );
+  const journal = JSON.parse(await readFile(join(cwd(), "projects", project.value, "drizzle", "meta", "_journal.json"), "utf-8"));
   for (const entry of journal.entries) {
-    entry.sql = await readFile(
-      join(cwd(), "projects", project.value, "drizzle", `${entry.tag}.sql`),
-      "utf-8"
-    );
+    entry.sql = await readFile(join(cwd(), "projects", project.value, "drizzle", `${entry.tag}.sql`), "utf-8");
   }
 
-  await writeFile(
-    join(cwd(), "projects", project.value, ".milkio", "drizzle-migrations.ts"),
-    `export const drizzleMigrations = ${JSON.stringify(journal)}`
-  );
+  await writeFile(join(cwd(), "projects", project.value, ".milkio", "drizzle-migrations.ts"), `export const drizzleMigrations = ${JSON.stringify(journal)}`);
+
+  if (existsSync(join(cwd(), "projects", project.value, "drizzle", "drizzle.migrate.ts"))) {
+    await import(join(cwd(), "projects", project.value, "drizzle", "drizzle.migrate.ts"));
+  }
 
   exit(0);
 });
