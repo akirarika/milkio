@@ -1,23 +1,43 @@
 import { consola } from "consola";
-import { cwd, platform } from "node:process";
-import { execFileSync, type ExecFileSyncOptionsWithBufferEncoding } from "node:child_process";
-import { $ } from "bun";
+import { platform } from "node:process";
+import type { ExecFileSyncOptionsWithBufferEncoding } from "node:child_process";
+import { Buffer } from "node:buffer";
 
-export async function execScript(script: string, options: ExecFileSyncOptionsWithBufferEncoding) {
-  // const shell = platform === "win32" ? "powershell.exe" : "bash";
-  // const shellOptions = platform === "win32" ? "-Command" : "-c";
-  // let scriptRaw = script;
-  // let scriptDisplay = scriptRaw;
+export function execScript(script: string, options: ExecFileSyncOptionsWithBufferEncoding) {
+  const isWin = platform === "win32";
+  const shell = isWin ? "powershell.exe" : "bash";
+  const shellOption = isWin ? "-Command" : "-c";
 
-  // if (platform === "win32") scriptDisplay = `${scriptRaw.replaceAll("&&", ";")}`;
-  // consola.start(`${scriptDisplay}`);
+  let scriptRaw = script;
+  let scriptDisplay = scriptRaw;
 
-  // if (platform === "win32") scriptRaw = `$ErrorActionPreference = "Stop"; ${scriptRaw.replaceAll("&&", ";")}`;
-  // scriptRaw = `"${scriptRaw.replaceAll('"', '\\"')}"`.trim();
-  // return execFileSync(shell, [shellOptions, scriptRaw], {
-  //   shell: true,
-  //   stdio: "inherit",
-  //   ...options,
-  // });
-  await $`${{ raw: script }}`.cwd(`${options.cwd}` || cwd());
+  if (isWin) {
+    scriptDisplay = `${scriptRaw.replaceAll("&&", ";")}`;
+  }
+  consola.start(`${scriptDisplay}`);
+
+  if (isWin) {
+    scriptRaw = `$ErrorActionPreference = "Stop"; ${scriptRaw.replaceAll("&&", ";")}`;
+  }
+
+  const proc = Bun.spawnSync({
+    cmd: [shell, shellOption, scriptRaw],
+    cwd: options.cwd as string,
+    env: {
+      ...process.env,
+      ...options.env,
+      ...(process.stdout.isTTY
+        ? {
+            TERM: process.env.TERM || "xterm-256color",
+            COLORTERM: process.env.COLORTERM || "1",
+          }
+        : {}),
+    },
+    stdio: ["inherit", "inherit", "inherit"],
+    tty: true,
+  });
+
+  if (!proc.success) consola.error(`Command failed with exit code ${proc.exitCode}`);
+
+  return Buffer.from(proc.stdout || "");
 }
