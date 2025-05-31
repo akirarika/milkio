@@ -52,7 +52,7 @@ export default await defineCookbookCommand(async (utils, projectUsed?: string, m
   env.DATABASE_URL = mode.migrateDatabaseUrl;
   process.env.DATABASE_URL = mode.migrateDatabaseUrl;
 
-  execScript(command, {
+  await execScript(command, {
     cwd: project.path,
     env: {
       ...env,

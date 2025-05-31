@@ -22,7 +22,7 @@ export default await defineCookbookCommand(async (utils) => {
   }
   const mode = await select("Select the mode:", project.prisma ?? [], "mode");
   const command = `${cookbookToml.general.packageManager} run prisma ${mode?.migrateMode === "push" ? "db push" : "migrate dev"}`;
-  execScript(command, {
+  await execScript(command, {
     cwd: project.path,
     env: {
       ...env,

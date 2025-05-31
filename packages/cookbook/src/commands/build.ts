@@ -20,7 +20,7 @@ export default await defineCookbookCommand(async (utils) => {
 
   for (const key in options.projects) {
     const project = options.projects[key];
-    execScript(`${project.build ?? `${options.general.packageManager} run build`}`, {
+    await execScript(`${project.build ?? `${options.general.packageManager} run build`}`, {
       cwd: join(cwd(), "projects", key),
     });
   }

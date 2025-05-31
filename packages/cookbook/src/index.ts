@@ -189,23 +189,23 @@ export async function run(params: Params, options: { path?: string; script?: () 
 
     try {
       if (config.general.packageManager === "bun") {
-        execScript(`bun run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
+        await execScript(`bun run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
       if (config.general.packageManager === "npm") {
-        execScript(`npm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
+        await execScript(`npm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
       if (config.general.packageManager === "cnpm") {
-        execScript(`cnpm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
+        await execScript(`cnpm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
       if (config.general.packageManager === "yarn") {
-        execScript(`yarn run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
+        await execScript(`yarn run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
       if (config.general.packageManager === "pnpm") {
-        execScript(`pnpm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
+        await execScript(`pnpm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
       exit(0);

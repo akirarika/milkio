@@ -9,12 +9,12 @@ export default await defineCookbookCommand(async (utils) => {
   let path = cwd();
   if (params.commands.length !== 0) {
     const project = await selectProject(cookbookToml, {
-      withRoot: true
-    })
-    path = project.path
+      withRoot: true,
+    });
+    path = project.path;
   }
   const command = `${cookbookToml.general.packageManager} uninstall ${params.raw.join(" ")}`;
-  execScript(command, {
+  await execScript(command, {
     cwd: path,
   });
 });
