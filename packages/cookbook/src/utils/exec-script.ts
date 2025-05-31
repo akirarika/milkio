@@ -1,28 +1,29 @@
 import { consola } from "consola";
 import { platform } from "node:process";
-import type { ExecFileSyncOptionsWithBufferEncoding } from "node:child_process";
-import { Buffer } from "node:buffer";
+import { spawn, type SpawnOptionsWithoutStdio } from "node:child_process";
+import * as readline from "node:readline";
 
-export function execScript(script: string, options: ExecFileSyncOptionsWithBufferEncoding) {
-  const isWin = platform === "win32";
-  const shell = isWin ? "powershell.exe" : "bash";
-  const shellOption = isWin ? "-Command" : "-c";
+export async function execScript(script: string, options: SpawnOptionsWithoutStdio) {
+  const shell = platform === "win32" ? "powershell.exe" : "bash";
+  const shellOptions = platform === "win32" ? "-Command" : "-c";
 
-  let scriptRaw = script;
-  let scriptDisplay = scriptRaw;
-
-  if (isWin) {
-    scriptDisplay = `${scriptRaw.replaceAll("&&", ";")}`;
+  let scriptDisplay = script;
+  if (platform === "win32") {
+    scriptDisplay = `${script.replaceAll("&&", ";")}`;
   }
+
   consola.start(`${scriptDisplay}`);
 
-  if (isWin) {
-    scriptRaw = `$ErrorActionPreference = "Stop"; ${scriptRaw.replaceAll("&&", ";")}`;
+  let scriptRaw = script;
+  if (platform === "win32") {
+    scriptRaw = `$ErrorActionPreference = "Stop"; ${script.replaceAll("&&", ";")}`;
   }
+  scriptRaw = `"${scriptRaw.replaceAll('"', '\\"')}"`.trim();
 
-  const proc = Bun.spawnSync({
-    cmd: [shell, shellOption, scriptRaw],
-    cwd: options.cwd as string,
+  const child = spawn(shell, [shellOptions, scriptRaw], {
+    ...options,
+    shell: true,
+    stdio: "pipe",
     env: {
       ...process.env,
       ...options.env,
@@ -32,12 +33,43 @@ export function execScript(script: string, options: ExecFileSyncOptionsWithBuffe
             COLORTERM: process.env.COLORTERM || "1",
           }
         : {}),
+      ...(options.env || {}),
     },
-    stdio: ["inherit", "inherit", "inherit"],
-    tty: true,
   });
 
-  if (!proc.success) consola.error(`Command failed with exit code ${proc.exitCode}`);
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: true,
+  });
 
-  return Buffer.from(proc.stdout || "");
+  rl.on("line", (line) => {
+    child.stdin.write(`${line}\n`);
+  });
+
+  process.stdin.on("data", (data) => {
+    if (!child.stdin.destroyed) {
+      child.stdin.write(data);
+    }
+  });
+
+  child.stdout.pipe(process.stdout);
+  child.stderr.pipe(process.stderr);
+
+  await new Promise<number>((resolve) => {
+    child.on("exit", (code, signal) => {
+      rl.close();
+      if (child.stdin.writable) child.stdin.end();
+
+      resolve(code !== null ? code : signal ? 1 : 0);
+    });
+
+    const handleSignal = (signal: NodeJS.Signals) => {
+      if (!child.killed) {
+        child.kill(signal);
+      }
+    };
+    process.on("SIGINT", handleSignal);
+    process.on("SIGTERM", handleSignal);
+  });
 }
