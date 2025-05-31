@@ -316,13 +316,34 @@ async function createCommandUtils(params: Params, options: { path?: string; desc
       const module = await import("./commands/git-commit");
       return await module.default(utils as any);
     },
-    gotoPrismaCommand: async (project?: string) => {
-      const module = await import("./commands/prisma");
-      return await module.default(utils as any);
-    },
     gotoDrizzleCommand: async (project?: string, mode?: string) => {
       const module = await import("./commands/drizzle");
       return await module.default(utils as any, project, mode);
+    },
+    toCamelCase: (str: string) => {
+      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(str)) {
+        throw new Error(`Invalid hyphen string: ${str}. Only lowercase letters, numbers and hyphens allowed, and must be in hyphen-case format`);
+      }
+      return str.replace(/-([a-z0-9])/g, (_, letter) => letter.toUpperCase());
+    },
+    toPascalCase: (str: string) => {
+      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(str)) {
+        throw new Error(`Invalid hyphen string: ${str}. Only lowercase letters, numbers and hyphens allowed, and must be in hyphen-case format`);
+      }
+      const camel = str.replace(/-([a-z0-9])/g, (_, letter) => letter.toUpperCase());
+      return camel.charAt(0).toUpperCase() + camel.slice(1);
+    },
+    toSnakeCase: (str: string) => {
+      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(str)) {
+        throw new Error(`Invalid hyphen string: ${str}. Only lowercase letters, numbers and hyphens allowed, and must be in hyphen-case format`);
+      }
+      return str.replace(/-/g, "_").toLowerCase();
+    },
+    toConstantCase: (str: string) => {
+      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(str)) {
+        throw new Error(`Invalid hyphen string: ${str}. Only lowercase letters, numbers and hyphens allowed, and must be in hyphen-case format`);
+      }
+      return str.replace(/-/g, "_").toUpperCase();
     },
   };
 

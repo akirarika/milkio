@@ -12,10 +12,6 @@ export const __router__ = [
     script: () => import("./git-pull.ts"),
   },
   {
-    commands: ["prisma"],
-    script: () => import("./prisma.ts"),
-  },
-  {
     commands: ["drizzle"],
     script: () => import("./drizzle.ts"),
   },
