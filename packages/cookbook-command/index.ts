@@ -44,6 +44,11 @@ export type CookbookCommandHandler = (utils: {
   }>;
   openProgress: (message: string) => Promise<void>;
   closeProgress: (message: string) => Promise<void>;
+  selectProject: (options?: {
+    withRoot?: boolean;
+    projectUsed?: string;
+    filter?: (project: CookbookToml["projects"][0] & { value: string }) => boolean | Promise<boolean>;
+  }) => Promise<CookbookToml["projects"][0] & { value: any; path: string }>;
   getCookbookToml: () => Promise<CookbookToml>;
   gotoGitCommitCommand: () => Promise<void>;
   gotoDrizzleCommand: (project?: string, mode?: string) => Promise<void>;

@@ -11,6 +11,7 @@ import { uniqWith } from "lodash-es";
 import { progress } from "./progress";
 import { fetchEventSource } from "./utils/fetch-event-source";
 import { execScript } from "./utils/exec-script";
+import { selectProject } from "./utils/select-project";
 
 type Params = {
   command: string;
@@ -306,6 +307,9 @@ async function createCommandUtils(params: Params, options: { path?: string; desc
     openProgress,
     closeProgress,
     fetchEventSource,
+    selectProject: async (options?: Parameters<typeof selectProject>[1]) => {
+      return await selectProject(await getCookbookToml(), options);
+    },
     getCookbookToml: async () => {
       if (cookbookToml) return cookbookToml;
       cookbookToml = await getCookbookToml();
