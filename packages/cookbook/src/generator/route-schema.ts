@@ -220,7 +220,7 @@ void bootstrap();`,
       }
       routePath = routePath.split(".")[0];
       if (routePath.startsWith("controller/")) routePath = routePath.slice(11); // 11 === "controller/".length
-      if (routePath.startsWith("module/")) routePath = `_${routePath.slice(7)}`; // 7 === "module".length
+      if (routePath.startsWith("module/")) routePath = `_${routePath.slice(6)}`; // 6 === "module".length
       if (routePath !== "/" && routePath.endsWith("/")) routePath = routePath.slice(0, routePath.length - 1);
       routePaths.push(routePath);
 

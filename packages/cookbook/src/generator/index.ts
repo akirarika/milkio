@@ -11,6 +11,7 @@ import { handlerSchema } from "./handler-schema";
 import { declares } from "./declares";
 import { $ } from "bun";
 import consola from "consola";
+import { drizzleSchema } from "./drizzle-schema";
 
 let firstGenerate = true;
 
@@ -55,7 +56,14 @@ export const generator = {
           await Bun.write(join(paths.milkio, "index.ts"), indexFile);
         })();
 
-        await Promise.all([routeSchema(options, paths, project), commandSchema(options, paths, project), configSchema(options, paths, project), handlerSchema(options, paths, project)]);
+        await Promise.all([
+          //
+          routeSchema(options, paths, project),
+          commandSchema(options, paths, project),
+          configSchema(options, paths, project),
+          handlerSchema(options, paths, project),
+          drizzleSchema(paths),
+        ]);
         await declares(options, paths, project);
       };
       tasks.push(handler());
