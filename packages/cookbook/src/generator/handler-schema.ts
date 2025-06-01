@@ -7,26 +7,13 @@ import type { CookbookOptions } from "../utils/cookbook-dto-types";
 import { checkPath } from "./utils";
 import { progress } from "../progress";
 
-export async function handlerSchema(
-  options: CookbookOptions,
-  paths: { cwd: string; milkio: string; generated: string },
-  project: CookbookOptions["projects"]["key"]
-) {
+export async function handlerSchema(options: CookbookOptions, paths: { cwd: string; milkio: string; generated: string }, project: CookbookOptions["projects"]["key"]) {
   if (!paths.milkio) return;
 
-  let typiaPath = join(
-    paths.cwd,
-    "./node_modules/typia/lib/executable/typia.js"
-  );
-  if (!(await exists(typiaPath)))
-    typiaPath = join(
-      paths.cwd,
-      "../../node_modules/typia/lib/executable/typia.js"
-    );
+  let typiaPath = join(paths.cwd, "./node_modules/typia/lib/executable/typia.js");
+  if (!(await exists(typiaPath))) typiaPath = join(paths.cwd, "../../node_modules/typia/lib/executable/typia.js");
   if (!(await exists(typiaPath))) {
-    consola.error(
-      `Typia is not installed, so it cannot be found in the following path: ${typiaPath}`
-    );
+    consola.error(`Typia is not installed, so it cannot be found in the following path: ${typiaPath}`);
     exit(1);
   }
 
@@ -35,7 +22,7 @@ export async function handlerSchema(
     consola.error(`The directory does not exist: ${scanner}`);
     exit(1);
   }
-  const glob = new Glob("{service,controller,handler}/**/*.handler.ts");
+  const glob = new Glob("{module,controller,handler}/**/*.handler.ts");
   const filesAsyncGenerator = glob.scan({ cwd: scanner, onlyFiles: true });
 
   let typescriptImports = "// handler-schema";
@@ -47,10 +34,7 @@ export async function handlerSchema(
     checkPath(paths, path, "handler");
 
     const nameWithPath = path.slice(0, path.length - 3); // 3 === ".ts".length
-    const name = nameWithPath
-      .replaceAll("/", "__")
-      .replaceAll("-", "_")
-      .replaceAll(".", "$");
+    const name = nameWithPath.replaceAll("/", "__").replaceAll("-", "_").replaceAll(".", "$");
     typescriptImports += `\nimport ${name} from "../${nameWithPath}";`;
     typescriptExports += `\n    ${name}(world),`;
     ++len;

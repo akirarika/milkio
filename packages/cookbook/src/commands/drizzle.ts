@@ -27,14 +27,14 @@ export default await defineCookbookCommand(async (utils, projectUsed?: string, m
   const mode = await select("Select the mode:", project.drizzle ?? [], "mode", modeUsed);
   const command = `${cookbookToml.general.packageManager} run drizzle ${mode?.migrateMode === "push" ? "push" : "generate"}`;
 
-  const schemaDir = mode?.schemaDir ?? "database";
+  const schemaDir = mode?.schemaDir ?? "";
   if (!(await exists(join(cwd(), "projects", project.value, schemaDir)))) {
     await mkdir(join(cwd(), "projects", project.value, schemaDir), {
       recursive: true,
     });
   }
 
-  const tables = new Glob("**/*.table.ts").scan({
+  const tables = new Glob("{database,module}/**/*.table.ts").scan({
     cwd: join(cwd(), "projects", project.value, schemaDir),
     onlyFiles: true,
   });
@@ -43,7 +43,7 @@ export default await defineCookbookCommand(async (utils, projectUsed?: string, m
   for await (let path of tables) {
     path = path.replaceAll("\\", "/");
     const nameWithPath = path.slice(0, path.length - 9); // 9 === ".table.ts".length
-    typescriptImports += `\nexport * from "../${schemaDir}/${nameWithPath}.table";`;
+    typescriptImports += `\nexport * from "..${schemaDir}/${nameWithPath}.table";`;
   }
 
   const typescript = `${typescriptImports}`;

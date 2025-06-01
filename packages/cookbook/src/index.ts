@@ -12,8 +12,9 @@ import { progress } from "./progress";
 import { fetchEventSource } from "./utils/fetch-event-source";
 import { execScript } from "./utils/exec-script";
 import { selectProject } from "./utils/select-project";
+import { createCommandUtils } from "./commands/__utils__";
 
-type Params = {
+export type Params = {
   command: string;
   commands: Array<string>;
   options: Record<string, string | true>;
@@ -239,117 +240,4 @@ export async function run(params: Params, options: { path?: string; script?: () 
     consola.error(error.toString ? error.toString() : (error?.message ?? "Running Error"));
     exit(1);
   }
-}
-
-async function createCommandUtils(params: Params, options: { path?: string; description?: "global" | "npm-script" | "workspace" | "built-in" }) {
-  const log = consola.log;
-  const info = consola.info;
-  const warn = consola.warn;
-  const error = consola.error;
-  const success = consola.success;
-  const debug = consola.debug;
-  const fatal = consola.fatal;
-  const trace = consola.trace;
-  const start = consola.start;
-  const box = consola.box;
-  const prompt = consola.prompt;
-  const getScriptPath = () => options.path!;
-  const getWorkspacePath = () => cwd();
-  const getParams = () => params;
-  const inputBoolean = async (options: { env: string; message: string; placeholder?: string }) => {
-    if (options.env in params.options) return params.options[options.env] === "1";
-    return await consola.prompt(options.message, {
-      type: "confirm",
-      placeholder: options.placeholder,
-    });
-  };
-  const inputString = async (options: { env: string; message: string; placeholder?: string }) => {
-    if (options.env in params.options) return params.options[options.env];
-    return await consola.prompt(options.message, {
-      type: "text",
-      placeholder: options.placeholder,
-    });
-  };
-
-  let cookbookToml: any;
-
-  const canUseAI = async () => {
-    if (!cookbookToml) cookbookToml = await getCookbookToml();
-    if (!cookbookToml?.config?.aiModel && cookbookToml?.config?.aiBaseUrl && cookbookToml?.config?.aiApiKey) return false;
-    return {
-      aiBaseUrl: cookbookToml?.config?.aiBaseUrl,
-      aiApiKey: cookbookToml?.config?.aiApiKey,
-      aiModel: cookbookToml?.config?.aiModel,
-    };
-  };
-
-  const openProgress = (message: string) => progress.open(message);
-  const closeProgress = (message: string) => progress.close(message);
-
-  const utils = {
-    log,
-    info,
-    warn,
-    error,
-    success,
-    debug,
-    fatal,
-    trace,
-    start,
-    box,
-    prompt,
-    getScriptPath,
-    getWorkspacePath,
-    getParams,
-    inputBoolean,
-    inputString,
-    canUseAI,
-    openProgress,
-    closeProgress,
-    fetchEventSource,
-    selectProject: async (options?: Parameters<typeof selectProject>[1]) => {
-      return await selectProject(await getCookbookToml(), options);
-    },
-    getCookbookToml: async () => {
-      if (cookbookToml) return cookbookToml;
-      cookbookToml = await getCookbookToml();
-      if (!cookbookToml.config) cookbookToml.config = {};
-      return cookbookToml;
-    },
-    gotoGitCommitCommand: async () => {
-      const module = await import("./commands/git-commit");
-      return await module.default(utils as any);
-    },
-    gotoDrizzleCommand: async (project?: string, mode?: string) => {
-      const module = await import("./commands/drizzle");
-      return await module.default(utils as any, project, mode);
-    },
-    toCamelCase: (str: string) => {
-      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(str)) {
-        throw new Error(`Invalid hyphen string: ${str}. Only lowercase letters, numbers and hyphens allowed, and must be in hyphen-case format`);
-      }
-      return str.replace(/-([a-z0-9])/g, (_, letter) => letter.toUpperCase());
-    },
-    toPascalCase: (str: string) => {
-      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(str)) {
-        throw new Error(`Invalid hyphen string: ${str}. Only lowercase letters, numbers and hyphens allowed, and must be in hyphen-case format`);
-      }
-      const camel = str.replace(/-([a-z0-9])/g, (_, letter) => letter.toUpperCase());
-      return camel.charAt(0).toUpperCase() + camel.slice(1);
-    },
-    toSnakeCase: (str: string) => {
-      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(str)) {
-        throw new Error(`Invalid hyphen string: ${str}. Only lowercase letters, numbers and hyphens allowed, and must be in hyphen-case format`);
-      }
-      return str.replace(/-/g, "_").toLowerCase();
-    },
-    toConstantCase: (str: string) => {
-      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(str)) {
-        throw new Error(`Invalid hyphen string: ${str}. Only lowercase letters, numbers and hyphens allowed, and must be in hyphen-case format`);
-      }
-      return str.replace(/-/g, "_").toUpperCase();
-    },
-  };
-
-  return utils;
 }

@@ -6,34 +6,24 @@ import consola from "consola";
 import { progress } from "../progress";
 import { getMode } from "../utils/get-mode";
 
-export async function configSchema(
-  options: CookbookOptions,
-  paths: { cwd: string; milkio: string; generated: string },
-  project: CookbookOptions["projects"]["key"]
-) {
+export async function configSchema(options: CookbookOptions, paths: { cwd: string; milkio: string; generated: string }, project: CookbookOptions["projects"]["key"]) {
   const mode = getMode();
   const scanner = join(paths.cwd);
   let modeFiles: AsyncIterableIterator<string> | Array<string> = [];
   let globalModeFiles: AsyncIterableIterator<string> | Array<string> = [];
   if (await exists(scanner)) {
-    modeFiles = new Glob(
-      `{config,configs,service,controller}/**/{${mode},*.${mode}}.config.ts`
-    ).scan({ cwd: scanner, onlyFiles: true });
-    globalModeFiles = new Glob(
-      "{config,configs,service,controller}/**/{global,*.global}.config.ts"
-    ).scan({ cwd: scanner, onlyFiles: true });
+    modeFiles = new Glob(`{config,configs,module,controller}/**/{${mode},*.${mode}}.config.ts`).scan({ cwd: scanner, onlyFiles: true });
+    globalModeFiles = new Glob("{config,configs,module,controller}/**/{global,*.global}.config.ts").scan({ cwd: scanner, onlyFiles: true });
   }
 
   let typescriptImports = "// config-schema";
   let typescriptExports = `const mode = "${mode}";`;
-  typescriptExports +=
-    "\n\nexport const configSchema = { get: async () => {\n  return {";
+  typescriptExports += "\n\nexport const configSchema = { get: async () => {\n  return {";
 
   for await (let path of globalModeFiles) {
     path = path.replaceAll("\\", "/");
     let nameWithPath = path.slice(0, path.length - 10); // 10 === ".config.ts".length
-    if (nameWithPath.endsWith("/index") || nameWithPath === "index")
-      nameWithPath = nameWithPath.slice(0, nameWithPath.length - 5); // 5 === "index".length
+    if (nameWithPath.endsWith("/index") || nameWithPath === "index") nameWithPath = nameWithPath.slice(0, nameWithPath.length - 5); // 5 === "index".length
     const name = path
       .slice(0, path.length - 10)
       .replaceAll("/", "__")
@@ -47,8 +37,7 @@ export async function configSchema(
   for await (let path of modeFiles) {
     path = path.replaceAll("\\", "/");
     let nameWithPath = path.slice(0, path.length - 10); // 10 === ".config.ts".length
-    if (nameWithPath.endsWith("/index") || nameWithPath === "index")
-      nameWithPath = nameWithPath.slice(0, nameWithPath.length - 5); // 5 === "index".length
+    if (nameWithPath.endsWith("/index") || nameWithPath === "index") nameWithPath = nameWithPath.slice(0, nameWithPath.length - 5); // 5 === "index".length
     const name = path
       .slice(0, path.length - 10)
       .replaceAll("/", "__")
