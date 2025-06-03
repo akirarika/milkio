@@ -53,25 +53,32 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
         const project = cookbookOptions.projects[projectName];
         if (project.type !== "milkio") continue;
         projectStatus.set(projectName, withResolvers());
-        let counter = 32;
-        let timer: Timer | null = setInterval(async () => {
+        let error: any;
+        let counter = 16;
+        const handler = async () => {
           if (--counter <= 0) {
             clearInterval(timer!);
             timer = null;
+            console.error(error);
             console.warn(`[cookbook] Your project ${projectName} (http://localhost:${project.port}/) HTTP server hasn't started for too long.`);
             projectStatus.get(projectName)!.resolve(undefined);
             return;
           }
           try {
-            console.log("\n[ASTRA]", `connecting.. ${counter >= 32 ? "" : `(${counter - 1})`}`);
+            console.log("\n[ASTRA]", `connecting.. ${counter >= 16 ? "" : `(${counter - 1})`}`);
             const response = await fetchWithTimeout(`http://localhost:${project.port}/generate_204`, { method: "HEAD", timeout: 1024 });
-            if (response.status === 204) {
-              if (timer) clearInterval(timer);
+            const status = Number(response.status);
+            if (status >= 200 && status < 300) {
+              clearInterval(timer!);
               timer = null;
               return projectStatus.get(projectName)!.resolve(undefined);
             }
-          } catch (error) {}
-        }, 100);
+          } catch (e) {
+            error = e;
+          }
+        };
+        let timer: Timer | null = setInterval(handler, 1024);
+        handler();
       }
       return Array.from(projectStatus.values()).map((v) => v.promise);
     })(),
@@ -166,7 +173,6 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
 
       const getNow = () => format(new Date(), "(yyyy-MM-dd hh:mm:ss)");
       const onLoggerInserting = (log: Log) => {
-        // biome-ignore lint/style/noParameterAssign: <explanation>
         log = [...log];
         log[0] = `\n${log[0]}` as any;
         console.log(...log);

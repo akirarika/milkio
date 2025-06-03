@@ -3,6 +3,7 @@ import { TSON } from "@southern-aurora/tson";
 import { reject } from "../index.ts";
 import type { $context, $meta, Logger, Results, GeneratedInit } from "../index.ts";
 import { headersToJSON } from "../utils/headers-to-json.ts";
+import { mergeDeep } from "../utils/merge-deep.ts";
 
 export function __initExecuter(generated: GeneratedInit, runtime: any) {
   const __execute = async (
@@ -61,7 +62,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
       delete params.$milkioGenerateParams;
       let paramsRand = routeSchema.randomParams();
       if (paramsRand === undefined || paramsRand === null) paramsRand = {};
-      params = { ...paramsRand, ...params };
+      params = mergeDeep(paramsRand, params);
     }
     if (!options.mixinContext?.http?.notFound && options.mixinContext?.http?.params?.string) options.mixinContext.http.params.parsed = params; // listen でパースしたパラメータを渡す
     const context = {
