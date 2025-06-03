@@ -160,24 +160,32 @@ export async function cookbook() {
 
   const built = __router__.find((command) => command.commands.includes(params.command));
 
-  const pkgMgr = await handleNonCookbookPkgMgr();
-  if (pkgMgr) {
-    run(params, { path: params.command, description: "npm-script", pkgMgr });
-  } else if (built) {
-    await run(params, { script: built.script, description: "built-in" });
-  } else if (packageJson?.scripts?.[params.command]) {
-    run(params, { path: params.command, description: "npm-script" });
-  } else if (await exists(join(cwd(), ".commands", `${params.command}.command.ts`))) {
-    const modulePath = join(cwd(), ".commands", `${params.command}.command.ts`);
-    await run(params, { path: modulePath, description: "workspace" });
-  } else if (await exists(join(env.HOME || env.USERPROFILE || "/", ".commands", `${params.command}.command.ts`))) {
-    const modulePath = join(env.HOME || env.USERPROFILE || "/", ".commands", `${params.command}.command.ts`);
-    await run(params, { path: modulePath, description: "global" });
+  if (built) {
+    if (params.command === "dev") {
+      const pkgMgr = await handleNonCookbookPkgMgr();
+      if (!pkgMgr) await run(params, { script: built.script, description: "built-in" });
+      else await run(params, { path: params.command, description: "npm-script", pkgMgr });
+    } else {
+      await run(params, { script: built.script, description: "built-in" });
+    }
   } else {
-    // not found
-    consola.error(`Command not found: ${params.command}`);
-    console.log("");
-    exit(1);
+    const pkgMgr = await handleNonCookbookPkgMgr();
+    if (pkgMgr) {
+      await run(params, { path: params.command, description: "npm-script", pkgMgr });
+    } else if (packageJson?.scripts?.[params.command]) {
+      await run(params, { path: params.command, description: "npm-script" });
+    } else if (await exists(join(cwd(), ".commands", `${params.command}.command.ts`))) {
+      const modulePath = join(cwd(), ".commands", `${params.command}.command.ts`);
+      await run(params, { path: modulePath, description: "workspace" });
+    } else if (await exists(join(env.HOME || env.USERPROFILE || "/", ".commands", `${params.command}.command.ts`))) {
+      const modulePath = join(env.HOME || env.USERPROFILE || "/", ".commands", `${params.command}.command.ts`);
+      await run(params, { path: modulePath, description: "global" });
+    } else {
+      // not found
+      consola.error(`Command not found: ${params.command}`);
+      console.log("");
+      exit(1);
+    }
   }
 }
 
