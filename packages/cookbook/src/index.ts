@@ -5,14 +5,11 @@ import { join } from "node:path";
 import { exists, mkdir, writeFile } from "node:fs/promises";
 import { readdir, readFile } from "node:fs/promises";
 import { env } from "bun";
-import { getCookbookToml } from "./utils/get-cookbook-toml";
 import { __router__ } from "./commands/__router__";
 import { uniqWith } from "lodash-es";
-import { progress } from "./progress";
-import { fetchEventSource } from "./utils/fetch-event-source";
 import { execScript } from "./utils/exec-script";
-import { selectProject } from "./utils/select-project";
 import { createCommandUtils } from "./commands/__utils__";
+import { handleNonCookbookPkgMgr } from "./utils/handle-non-cookbook-pkg-mgr";
 
 export type Params = {
   command: string;
@@ -162,7 +159,11 @@ export async function cookbook() {
   }
 
   const built = __router__.find((command) => command.commands.includes(params.command));
-  if (built) {
+
+  const pkgMgr = await handleNonCookbookPkgMgr();
+  if (pkgMgr) {
+    run(params, { path: params.command, description: "npm-script", pkgMgr });
+  } else if (built) {
     await run(params, { script: built.script, description: "built-in" });
   } else if (packageJson?.scripts?.[params.command]) {
     run(params, { path: params.command, description: "npm-script" });
@@ -180,33 +181,39 @@ export async function cookbook() {
   }
 }
 
-export async function run(params: Params, options: { path?: string; script?: () => Promise<any>; description?: "global" | "npm-script" | "workspace" | "built-in" }) {
+export async function run(params: Params, options: { path?: string; script?: () => Promise<any>; description?: "global" | "npm-script" | "workspace" | "built-in"; pkgMgr?: string }) {
+  let packageManager: any;
   if (options.description === "npm-script") {
-    if (!(await exists(join(cwd(), "cookbook.toml")))) await run(params, { path: "init", description: "workspace" });
-    const config: any = Bun.TOML.parse(await Bun.file(join(cwd(), "cookbook.toml")).text());
-    if (!config.general.packageManager) {
-      consola.error('You need to specify which package manager to use to run this command, modify your cookbook.toml file, and [general] bar to packageManager = "npm" or any custom package manager you like.');
-      exit(1);
+    if (!options.pkgMgr) {
+      if (!(await exists(join(cwd(), "cookbook.toml")))) await run(params, { path: "init", description: "workspace" });
+      const config: any = Bun.TOML.parse(await Bun.file(join(cwd(), "cookbook.toml")).text());
+      if (!config.general.packageManager) {
+        consola.error('You need to specify which package manager to use to run this command, modify your cookbook.toml file, and [general] bar to packageManager = "npm" or any custom package manager you like.');
+        exit(1);
+      }
+      packageManager = config.general.packageManager;
+    } else {
+      packageManager = options.pkgMgr;
     }
 
     try {
-      if (config.general.packageManager === "bun") {
+      if (packageManager === "bun") {
         await execScript(`bun run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
-      if (config.general.packageManager === "npm") {
+      if (packageManager === "npm") {
         await execScript(`npm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
-      if (config.general.packageManager === "cnpm") {
+      if (packageManager === "cnpm") {
         await execScript(`cnpm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
-      if (config.general.packageManager === "yarn") {
+      if (packageManager === "yarn") {
         await execScript(`yarn run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 
-      if (config.general.packageManager === "pnpm") {
+      if (packageManager === "pnpm") {
         await execScript(`pnpm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
       }
 

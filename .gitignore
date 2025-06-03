@@ -11,3 +11,4 @@ dist
 .edgeone/*
 .tef_dist/*
 .platform-*
+.database-*
