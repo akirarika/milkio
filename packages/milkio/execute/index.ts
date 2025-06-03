@@ -62,7 +62,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
       delete params.$milkioGenerateParams;
       let paramsRand = routeSchema.randomParams();
       if (paramsRand === undefined || paramsRand === null) paramsRand = {};
-      params = mergeDeep(paramsRand, params);
+      params = mergeDeep(params, paramsRand);
     }
     if (!options.mixinContext?.http?.notFound && options.mixinContext?.http?.params?.string) options.mixinContext.http.params.parsed = params; // listen でパースしたパラメータを渡す
     const context = {
