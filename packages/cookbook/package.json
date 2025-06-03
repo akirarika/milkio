@@ -1,7 +1,7 @@
 {
   "name": "@milkio/cookbook",
   "type": "module",
-  "version": "1.0.0-beta.67",
+  "version": "1.0.0-beta.68",
   "module": "./exports.ts",
   "bin": {
     "cookbook": "./cookbook.ts"
