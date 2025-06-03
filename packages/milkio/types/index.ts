@@ -78,3 +78,25 @@ export interface MilkioResponseSuccess<Path extends keyof Generated["routeSchema
   data: Generated["routeSchema"][Path]["result"];
   executeId: string;
 }
+
+export type BreadBrowse<T, U extends Record<any, any> = {}> = Omit<
+  {
+    data: Array<T>;
+  },
+  keyof U
+> &
+  U;
+
+export type BreadRead<T, U extends Record<any, any> = {}> = Omit<
+  {
+    data: T | undefined;
+  },
+  keyof U
+> &
+  U;
+
+export type BreadEdit<U extends Record<any, any> = {}> = U;
+
+export type BreadAdd<U extends Record<any, any> = {}> = U;
+
+export type BreadDelete<U extends Record<any, any> = {}> = U;

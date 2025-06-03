@@ -50,7 +50,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
   // wait for all milkio projects to start and can be accessed
   // the reason why stargate's ping method is not used directly is that even if only one project is tested, it is necessary to wait for all milkio projects to start
 
-  console.log("\n[ASTRA]", "connecting..");
+  console.log("・[astra]", "connecting..");
   await Promise.all([
     ...(() => {
       const projectStatus = new Map<string, { promise: Promise<undefined>; resolve: (value?: undefined | PromiseLike<undefined>) => void; reject: (reason?: any) => void }>();
@@ -173,7 +173,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
         const response = await this.options.stargate.execute(path, options);
 
         await new Promise((resolve) => setTimeout(resolve, 40));
-        context.logger.response(path as string, `\n・ERROR - ${TSON.stringify(response[0])}`, `\n・RESULT - ${typeof response[1]?.next === "function" ? "AsyncGenerator" : TSON.stringify(response[1])}`);
+        context.logger.response(path as string, `\n・> (error) - ${TSON.stringify(response[0])}`, `\n・> (response) - ${typeof response[1]?.next === "function" ? "AsyncGenerator" : TSON.stringify(response[1])}`);
 
         return response;
       };
