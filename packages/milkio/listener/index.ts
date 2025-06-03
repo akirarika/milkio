@@ -40,6 +40,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
       return new Response(null, {
         status: 204,
         headers: {
+          Server: "milkio",
           "Access-Control-Allow-Methods": runtime.cors?.corsAllowMethods ?? "*",
           "Access-Control-Allow-Origin": runtime.cors?.corsAllowOrigin ?? "*",
           "Access-Control-Allow-Headers": runtime.cors?.corsAllowHeaders ?? "*",

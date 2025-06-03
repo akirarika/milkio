@@ -7,7 +7,6 @@ import { emitter } from "../emitter/index.ts";
 import { exit, cwd } from "node:process";
 import { generator } from "../generator/index.ts";
 import type { CookbookOptions } from "../utils/cookbook-dto-types.ts";
-import { outputPrefix } from "../utils/output-prefix.ts";
 
 export async function initWatcher(options: CookbookOptions) {
   let waiting: ReturnType<typeof Promise.withResolvers> = Promise.withResolvers();
@@ -18,7 +17,6 @@ export async function initWatcher(options: CookbookOptions) {
     await waiting.promise;
     waiting = Promise.withResolvers();
 
-    consola.start(`${outputPrefix("cookbook", 0, "")}regenerating..`);
     await generator.watcher(options);
     for (const [filename, event] of changes) {
       emitter.emit("data", {
@@ -28,7 +26,6 @@ export async function initWatcher(options: CookbookOptions) {
       });
     }
 
-    consola.success(`${outputPrefix("cookbook", 0, "")}regenerated!`);
     waiting.resolve();
   }, 512);
 

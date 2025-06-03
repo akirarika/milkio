@@ -41,11 +41,15 @@ type Log = [string /* executeId */, "[DEBUG]" | "[INFO]" | "[WARN]" | "[ERROR]" 
 
 type Reject = (description: string, ...params: Array<unknown>) => Error;
 
+type DeepPartial<T> = T extends Function ? T : T extends object ? { [P in keyof T]?: DeepPartial<T[P]> } : T;
+
 export async function createAstra<AstraOptions extends AstraOptionsInit, Generated extends AstraOptions["stargate"]["$types"]["generated"]>(astraOptions: AstraOptions) {
   if (!existsSync(join(cwd(), "cookbook.toml"))) throw new Error(`The "cookbook.toml" file does not exist in the current directory. If you are running the test with the VS Code extension, make sure it exists in the root directory of the folder you are opening with VS Code.`);
   const cookbookOptions = load((await readFile(join(cwd(), "cookbook.toml"))).toString()) as CookbookOptions;
   // wait for all milkio projects to start and can be accessed
   // the reason why stargate's ping method is not used directly is that even if only one project is tested, it is necessary to wait for all milkio projects to start
+
+  console.log("\n[ASTRA]", "connecting..");
   await Promise.all([
     ...(() => {
       const projectStatus = new Map<string, { promise: Promise<undefined>; resolve: (value?: undefined | PromiseLike<undefined>) => void; reject: (reason?: any) => void }>();
@@ -65,14 +69,16 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
             return;
           }
           try {
-            console.log("\n[ASTRA]", `connecting.. ${counter >= 16 ? "" : `(${counter - 1})`}`);
             const response = await fetchWithTimeout(`http://localhost:${project.port}/generate_204`, { method: "HEAD", timeout: 1024 });
             const status = Number(response.status);
-            if (status >= 200 && status < 300) {
+            if (status === 204 && response.headers.get("Server") === "milkio") {
               clearInterval(timer!);
               timer = null;
               return projectStatus.get(projectName)!.resolve(undefined);
             }
+            throw new Error(
+              `[cookbook] Your project ${projectName} (http://localhost:${project.port}/) doesn't seem to be a Milkio project, because it didn't respond to milkio-astra correctly. It returned the status code ${status} instead of 204. However, this project has specified type = "milkio" for it in cookbook.toml. If this is incorrect, please fix it and replace it with type = "custom".`,
+            );
           } catch (e) {
             error = e;
           }
@@ -92,7 +98,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
           params?: Generated["routeSchema"][Path]["types"]["params"];
         }
       | {
-          params?: Partial<Generated["routeSchema"][Path]["types"]["params"]>;
+          params?: DeepPartial<Generated["routeSchema"][Path]["types"]["params"]>;
           generateParams: true;
         }
     >,
