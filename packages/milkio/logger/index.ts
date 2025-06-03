@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import type { $context, MilkioInit, MilkioRuntimeInit } from "../index.ts";
 import { sendCookbookEvent } from "../utils/send-cookbook-event.ts";
 
-export type Log = ["[DEBUG]" | "[INFO]" | "[WARN]" | "[ERROR]" | "[REQUEST]" | "[RESPONSE]", string /* executeId */, string, string, string, ...Array<unknown>];
+export type Log = ["(debug)" | "(info)" | "(warn)" | "(error)" | "(request)" | "(response)", string /* executeId */, string, string, string, ...Array<unknown>];
 
 export interface Logger {
   _: {
@@ -67,12 +67,12 @@ export function createLogger<MilkioRuntime extends MilkioRuntimeInit<MilkioRunti
 
   const getNow = () => `${format(new Date(), "(yyyy-MM-dd hh:mm:ss)")}`;
 
-  logger.debug = (description: string, ...params: Array<unknown>) => __logPush(["[DEBUG]", path, executeId, getNow(), `\n${description}`, ...params]);
-  logger.info = (description: string, ...params: Array<unknown>) => __logPush(["[INFO]", path, executeId, getNow(), `\n${description}`, ...params]);
-  logger.warn = (description: string, ...params: Array<unknown>) => __logPush(["[WARN]", path, executeId, getNow(), `\n${description}`, ...params]);
-  logger.error = (description: string, ...params: Array<unknown>) => __logPush(["[ERROR]", path, executeId, getNow(), `\n${description}`, ...params]);
-  logger.request = (description: string, ...params: Array<unknown>) => __logPush(["[REQUEST]", path, executeId, getNow(), `\n${description}`, ...params]);
-  logger.response = (description: string, ...params: Array<unknown>) => __logPush(["[RESPONSE]", path, executeId, getNow(), `\n${description}`, ...params]);
+  logger.debug = (description: string, ...params: Array<unknown>) => __logPush(["(debug)", path, executeId, getNow(), `\n${description}`, ...params]);
+  logger.info = (description: string, ...params: Array<unknown>) => __logPush(["(info)", path, executeId, getNow(), `\n${description}`, ...params]);
+  logger.warn = (description: string, ...params: Array<unknown>) => __logPush(["(warn)", path, executeId, getNow(), `\n${description}`, ...params]);
+  logger.error = (description: string, ...params: Array<unknown>) => __logPush(["(error)", path, executeId, getNow(), `\n${description}`, ...params]);
+  logger.request = (description: string, ...params: Array<unknown>) => __logPush(["(request)", path, executeId, getNow(), `\n${description}`, ...params]);
+  logger.response = (description: string, ...params: Array<unknown>) => __logPush(["(response)", path, executeId, getNow(), `\n${description}`, ...params]);
 
   return logger;
 }

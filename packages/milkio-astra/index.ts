@@ -37,7 +37,8 @@ type Logger = {
   response: (description: string, ...params: Array<unknown>) => Log;
 };
 
-type Log = [string /* executeId */, "[DEBUG]" | "[INFO]" | "[WARN]" | "[ERROR]" | "[RESPONSE]", string, string, ...Array<unknown>];
+// type Log = [string /* executeId */, "[DEBUG]" | "[INFO]" | "[WARN]" | "[ERROR]" | "[RESPONSE]", string, string, ...Array<unknown>];
+type Log = [string, "(debug)" | "(info)" | "(warn)" | "(error)" | "(response)", string, string, ...Array<unknown>];
 
 type Reject = (description: string, ...params: Array<unknown>) => Error;
 
@@ -165,14 +166,14 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
         void (async () => {
           for await (const result of results) {
             if (result.type !== "milkio@logger") continue;
-            console.log("\n[MILKIO]", ...(result.log ?? []));
+            console.log("\n・[milkio]", ...(result.log ?? []));
           }
         })();
 
         const response = await this.options.stargate.execute(path, options);
 
         await new Promise((resolve) => setTimeout(resolve, 40));
-        context.logger.response(path as string, `\nerror - ${TSON.stringify(response[0])}`, `\nresult - ${typeof response[1]?.next === "function" ? "AsyncGenerator" : TSON.stringify(response[1])}`);
+        context.logger.response(path as string, `\n・ERROR - ${TSON.stringify(response[0])}`, `\n・RESULT - ${typeof response[1]?.next === "function" ? "AsyncGenerator" : TSON.stringify(response[1])}`);
 
         return response;
       };
@@ -188,27 +189,27 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
       const context = {
         logger: {
           debug: (description: string, ...params: Array<unknown>): Log => {
-            const log: Log = ["[TEST]", "[DEBUG]", description, getNow(), ...params];
+            const log: Log = ["・[astra]", "(debug)", description, getNow(), ...params];
             onLoggerInserting(log);
             return log;
           },
           info: (description: string, ...params: Array<unknown>): Log => {
-            const log: Log = ["[TEST]", "[INFO]", description, getNow(), ...params];
+            const log: Log = ["・[astra]", "(info)", description, getNow(), ...params];
             onLoggerInserting(log);
             return log;
           },
           warn: (description: string, ...params: Array<unknown>): Log => {
-            const log: Log = ["[TEST]", "[WARN]", description, getNow(), ...params];
+            const log: Log = ["・[astra]", "(warn)", description, getNow(), ...params];
             onLoggerInserting(log);
             return log;
           },
           error: (description: string, ...params: Array<unknown>): Log => {
-            const log: Log = ["[TEST]", "[ERROR]", description, getNow(), ...params];
+            const log: Log = ["・[astra]", "(error)", description, getNow(), ...params];
             onLoggerInserting(log);
             return log;
           },
           response: (path: string, ...params: Array<unknown>): Log => {
-            const log: Log = ["[TEST]", "[RESPONSE]", path, getNow(), ...params];
+            const log: Log = ["・[astra]", "(response)", path, getNow(), ...params];
             onLoggerInserting(log);
             return log;
           },
