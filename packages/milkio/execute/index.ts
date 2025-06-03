@@ -63,6 +63,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
       let paramsRand = routeSchema.randomParams();
       if (paramsRand === undefined || paramsRand === null) paramsRand = {};
       params = mergeDeep(params, paramsRand);
+      options.createdLogger.debug("✨ the generated params:", JSON.stringify(params, null, 2));
     }
     if (!options.mixinContext?.http?.notFound && options.mixinContext?.http?.params?.string) options.mixinContext.http.params.parsed = params; // listen でパースしたパラメータを渡す
     const context = {
