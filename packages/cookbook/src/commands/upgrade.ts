@@ -3,12 +3,15 @@ import { join } from "node:path";
 import { cwd, exit } from "node:process";
 import { readFile, writeFile } from "node:fs/promises";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
+import gradient from "gradient-string";
 import { $ } from "bun";
 
 export default await defineCookbookCommand(async (utils) => {
   const params = utils.getParams();
   const cookbookToml = await utils.getCookbookToml();
   const packageJson = JSON.parse(await readFile(join(cwd(), "package.json"), "utf-8"));
+
+  const color = gradient(["cyan", "#2d9b87"]);
 
   let result = params.commands[0] || "";
   if (!result) {
@@ -106,6 +109,7 @@ export default await defineCookbookCommand(async (utils) => {
   }
 
   console.log("");
-  consola.box(`△ Milkio upgrade completed!\n△ Also remember to upgrade your cookbook by running:\n${cookbookToml.general.packageManager} create cookbook@${result}`);
-  console.log("");
+  consola.info(color("△ Milkio upgrade completed!"));
+  consola.info(color("△ Also remember to upgrade your cookbook by running:"));
+  consola.info(color(`     ${cookbookToml.general.packageManager} create cookbook@${result}`));
 });
