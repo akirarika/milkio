@@ -4,8 +4,7 @@
   "workspaces": [".commands", "projects/*", "packages/*"],
   "module": "index.ts",
   "scripts": {
-    "cookbook:dev": "bun run --inspect ./packages/cookbook/cookbook.ts dev",
-    "cookbook": "bun run ./packages/cookbook/cookbook.ts"
+    "co": "bun run ./packages/cookbook/cookbook.ts prepare && bun run ./packages/cookbook/cookbook.ts"
   },
   "trustedDependencies": [],
   "dependencies": {

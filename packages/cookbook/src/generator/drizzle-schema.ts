@@ -1,6 +1,6 @@
 import { Glob } from "bun";
 import { join } from "node:path";
-import { exists, mkdir, readFile, writeFile } from "node:fs/promises";
+import { exists, mkdir, writeFile } from "node:fs/promises";
 
 export async function drizzleSchema(paths: { cwd: string }) {
   if (!(await exists(join(paths.cwd, "drizzle.config.ts")))) return;
@@ -15,7 +15,7 @@ export async function drizzleSchema(paths: { cwd: string }) {
   for await (let path of tables) {
     path = path.replaceAll("\\", "/");
     const nameWithPath = path.slice(0, path.length - 9); // 9 === ".table.ts".length
-    typescriptImports += `\nexport * from "../${nameWithPath}.table";`;
+    typescriptImports += `\nexport * from "../${nameWithPath}.table.ts";`;
   }
   const typescript = `${typescriptImports}`;
 

@@ -3,9 +3,33 @@ start = "bun run dev"
 packageManager = "npm"
 cookbookPort = 8000
 
-[projects.__test__]
+
+[projects.test]
 port = 9000
-name = "Test"
+type = "milkio"
+runtime = "node"
+typiaMode = "generation"
+autoStart = true
+drizzle = [
+    { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
+    { mode = "production", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
+]
+
+
+[projects.test-bun]
+port = 9001
+type = "milkio"
+runtime = "bun"
+typiaMode = "generation"
+autoStart = true
+drizzle = [
+    { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
+    { mode = "production", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
+]
+
+
+[projects.test-deno]
+port = 9002
 type = "milkio"
 runtime = "deno"
 typiaMode = "generation"
@@ -14,4 +38,3 @@ drizzle = [
     { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
     { mode = "production", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
 ]
-watcher = ["echo hello world"]

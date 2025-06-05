@@ -104,7 +104,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
         }
     >,
   ) => Promise<
-    Generated["routeSchema"][Path]["types"]["🐣"] extends boolean
+    Generated["routeSchema"][Path]["types"]["🥛"] extends boolean
       ? // action
         [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, Generated["routeSchema"][Path]["types"]["result"], ExecuteResultsOption]
       : // stream

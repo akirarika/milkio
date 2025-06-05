@@ -1,5 +1,5 @@
 {
-  "name": "milkio-project",
+  "name": "test",
   "type": "module",
   "private": true,
   "module": "index.ts",

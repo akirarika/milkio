@@ -24,12 +24,13 @@
       },
     },
     ".commands": {
-      "name": ".commands",
+      "name": "commands",
       "dependencies": {
         "@milkio/cookbook-command": "^1.0.0-beta.8",
         "@octokit/core": "^6.1.2",
         "bun-plugin-dts": "^0.3.0",
         "consola": "^3.4.0",
+        "fs-extra": "^11.3.0",
         "openai": "^4.73.0",
       },
       "devDependencies": {
@@ -41,7 +42,7 @@
     },
     "packages/cookbook": {
       "name": "@milkio/cookbook",
-      "version": "1.0.0-beta.68",
+      "version": "1.0.0-beta.69",
       "bin": {
         "cookbook": "./cookbook.ts",
       },
@@ -80,7 +81,7 @@
     },
     "packages/cookbook-command": {
       "name": "@milkio/cookbook-command",
-      "version": "1.0.0-beta.68",
+      "version": "1.0.0-beta.69",
       "dependencies": {
         "consola": "^3.4.0",
         "openai": "^4.87.3",
@@ -88,7 +89,7 @@
     },
     "packages/create-cookbook": {
       "name": "create-cookbook",
-      "version": "1.0.0-beta.68",
+      "version": "1.0.0-beta.69",
       "bin": {
         "create-cookbook": "./index.mjs",
       },
@@ -101,7 +102,7 @@
     },
     "packages/milkio": {
       "name": "milkio",
-      "version": "1.0.0-beta.68",
+      "version": "1.0.0-beta.69",
       "dependencies": {
         "@poech/camel-hump-under": "^1.1.0",
         "@southern-aurora/tson": "*",
@@ -120,7 +121,7 @@
     },
     "packages/milkio-astra": {
       "name": "@milkio/astra",
-      "version": "1.0.0-beta.68",
+      "version": "1.0.0-beta.69",
       "dependencies": {
         "@southern-aurora/tson": "*",
         "date-fns": "^4.1.0",
@@ -129,7 +130,7 @@
     },
     "packages/milkio-redis": {
       "name": "@milkio/redis",
-      "version": "1.0.0-beta.68",
+      "version": "1.0.0-beta.69",
       "devDependencies": {
         "@southern-aurora/tson": "*",
         "redis": "^4.7.0",
@@ -137,18 +138,18 @@
     },
     "packages/milkio-stargate": {
       "name": "@milkio/stargate",
-      "version": "1.0.0-beta.68",
+      "version": "1.0.0-beta.69",
       "dependencies": {
         "@southern-aurora/tson": "^2.0.2",
       },
     },
     "packages/milkio-stargate-worker": {
       "name": "@milkio/stargate-worker",
-      "version": "1.0.0-beta.68",
+      "version": "1.0.0-beta.69",
     },
     "packages/vite-plugin-milkio": {
       "name": "@milkio/vite-plugin-milkio",
-      "version": "1.0.0-beta.68",
+      "version": "1.0.0-beta.69",
       "dependencies": {
         "@iarna/toml": "^2.2.5",
         "@mjackson/node-fetch-server": "0.6.1",
@@ -156,8 +157,44 @@
         "glob": "^11.0.1",
       },
     },
-    "projects/__test__": {
-      "name": "milkio-project",
+    "projects/test": {
+      "name": "test",
+      "dependencies": {
+        "@milkio/astra": "workspace:*",
+        "@milkio/stargate": "workspace:*",
+        "@mjackson/node-fetch-server": "^0.6.1",
+        "@ryoppippi/unplugin-typia": "^1.0.6",
+        "milkid": "2.0.7",
+        "milkio": "workspace:*",
+        "rolldown": "^1.0.0-beta.1",
+        "tsx": "^4.19.3",
+        "yaml": "^2.6.0",
+      },
+      "devDependencies": {
+        "vite": "^6.2.2",
+        "vite-plugin-node": "^4.0.0",
+      },
+    },
+    "projects/test-bun": {
+      "name": "test-bun",
+      "dependencies": {
+        "@milkio/astra": "workspace:*",
+        "@milkio/stargate": "workspace:*",
+        "@mjackson/node-fetch-server": "^0.6.1",
+        "@ryoppippi/unplugin-typia": "^1.0.6",
+        "milkid": "2.0.7",
+        "milkio": "workspace:*",
+        "rolldown": "^1.0.0-beta.1",
+        "tsx": "^4.19.3",
+        "yaml": "^2.6.0",
+      },
+      "devDependencies": {
+        "vite": "^6.2.2",
+        "vite-plugin-node": "^4.0.0",
+      },
+    },
+    "projects/test-deno": {
+      "name": "test-deno",
       "dependencies": {
         "@milkio/astra": "workspace:*",
         "@milkio/stargate": "workspace:*",
@@ -176,8 +213,6 @@
     },
   },
   "packages": {
-    ".commands": [".commands@workspace:.commands"],
-
     "@babel/runtime-corejs3": ["@babel/runtime-corejs3@7.27.4", "", { "dependencies": { "core-js-pure": "^3.30.2" } }, "sha512-H7QhL0ucCGOObsUETNbB2PuzF4gAvN8p32P6r91bX7M/hk4bx+3yz2hTwHL9d/Efzwu1upeb4/cd7oSxCzup3w=="],
 
     "@biomejs/biome": ["@biomejs/biome@1.9.4", "", { "optionalDependencies": { "@biomejs/cli-darwin-arm64": "1.9.4", "@biomejs/cli-darwin-x64": "1.9.4", "@biomejs/cli-linux-arm64": "1.9.4", "@biomejs/cli-linux-arm64-musl": "1.9.4", "@biomejs/cli-linux-x64": "1.9.4", "@biomejs/cli-linux-x64-musl": "1.9.4", "@biomejs/cli-win32-arm64": "1.9.4", "@biomejs/cli-win32-x64": "1.9.4" }, "bin": { "biome": "bin/biome" } }, "sha512-1rkd7G70+o9KkTn5KLmDYXihGoTaIGO9PIIN2ZB7UJxFrWw04CZHPYiMRjYsaDvVV7hP1dYNRLxSANLaBFGpog=="],
@@ -580,6 +615,8 @@
 
     "commander": ["commander@10.0.1", "", {}, "sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug=="],
 
+    "commands": ["commands@workspace:.commands"],
+
     "comment-json": ["comment-json@4.2.5", "", { "dependencies": { "array-timsort": "^1.0.3", "core-util-is": "^1.0.3", "esprima": "^4.0.1", "has-own-prop": "^2.0.0", "repeat-string": "^1.6.1" } }, "sha512-bKw/r35jR3HGt5PEPm1ljsQQGyCrR8sFGNiN5L+ykDHdpO8Smxkrkla9Yi6NkQyUrb8V54PGhfMs6NrIwtxtdw=="],
 
     "common-path-prefix": ["common-path-prefix@3.0.0", "", {}, "sha512-QE33hToZseCH3jS0qN96O/bSh3kaw/h+Tq7ngyY9eWDUnTlTNUyqfqvCXioLe5Na5jFsL78ra/wuBU4iuEgd4w=="],
@@ -794,8 +831,6 @@
 
     "milkio": ["milkio@workspace:packages/milkio"],
 
-    "milkio-project": ["milkio-project@workspace:projects/__test__"],
-
     "mime-db": ["mime-db@1.52.0", "", {}, "sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg=="],
 
     "mime-types": ["mime-types@2.1.35", "", { "dependencies": { "mime-db": "1.52.0" } }, "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw=="],
@@ -947,6 +982,12 @@
     "supports-color": ["supports-color@7.2.0", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw=="],
 
     "tar-stream": ["tar-stream@1.6.2", "", { "dependencies": { "bl": "^1.0.0", "buffer-alloc": "^1.2.0", "end-of-stream": "^1.0.0", "fs-constants": "^1.0.0", "readable-stream": "^2.3.0", "to-buffer": "^1.1.1", "xtend": "^4.0.0" } }, "sha512-rzS0heiNf8Xn7/mpdSVVSMAWAoy9bfb1WOTYC78Z0UQKeKa/CWS8FOq0lKGNa8DWKAn9gxjCvMLYc5PGXYlK2A=="],
+
+    "test": ["test@workspace:projects/test"],
+
+    "test-bun": ["test-bun@workspace:projects/test-bun"],
+
+    "test-deno": ["test-deno@workspace:projects/test-deno"],
 
     "through": ["through@2.3.8", "", {}, "sha512-w89qg7PI8wAdvX60bMDP+bFoD5Dvhm9oLheFp5O4a2QF0cSBGsBX4qZmadPMvVqlLJBBci+WqGGOAPvcDeNSVg=="],
 
