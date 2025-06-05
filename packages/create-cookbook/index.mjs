@@ -93,7 +93,7 @@ const color = gradient(["cyan", "#2d9b87"]);
     exit(1);
   }
 
-  consola.start(color("Extracting package"));
+  consola.start(color("Extracting package.."));
   try {
     await compressing.tgz.uncompress(join(tempspace, "package.tgz"), tempspace);
     consola.success(color("Package extracted"));
@@ -115,7 +115,7 @@ const color = gradient(["cyan", "#2d9b87"]);
     if (!existsSync(installPath)) mkdirSync(installPath, { recursive: true });
     await move(execPath, join(installPath, execName), { overwrite: true });
   } else {
-    consola.start(color("Finding suitable installation location"));
+    consola.start(color("Finding suitable installation location.."));
 
     let targetPath = "";
     if (process.platform === "win32") {
@@ -181,6 +181,6 @@ const color = gradient(["cyan", "#2d9b87"]);
 
   console.log(color("△ Try running: co --help"));
   if (process.platform === "win32") {
-    console.info(log("△ Note: You may need to restart your terminal for PATH changes to take effect"));
+    console.log(color("△ Note: You may need to restart your terminal for PATH changes to take effect"));
   }
 })();
