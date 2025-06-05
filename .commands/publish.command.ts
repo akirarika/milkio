@@ -184,8 +184,8 @@ export default await defineCookbookCommand(async (utils) => {
           consola.log(`正在打包 ${platform.platform} ${platform.arch} 的二进制文件..`);
           while (true) {
             try {
-              const command = `bun build ./packages/cookbook/cookbook.ts --outfile ./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/co --compile --minify --sourcemap=inline --env=COOKBOOK_* --target=${platform.target} --external vue --external react`;
-              execFileSync("powershell.exe", ["-Command", command], {
+              const buildCommand = `bun build ./packages/cookbook/cookbook.ts --outfile ./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}/co --compile --minify --sourcemap=inline --env=COOKBOOK_* --target=${platform.target} --external vue --external react`;
+              execFileSync("powershell.exe", ["-Command", buildCommand], {
                 stdio: "inherit",
                 env: { ...process.env, COOKBOOK_PRODUCTION: "true" },
               });
@@ -200,7 +200,11 @@ export default await defineCookbookCommand(async (utils) => {
                 }),
               );
 
-              execFileSync("powershell.exe", ["-Command", "npm publish --access public"], {
+              let command = "npm publish --access public";
+              if (newVersion.includes("-rc")) command += " --tag rc";
+              else if (newVersion.includes("-beta")) command += " --tag beta";
+              else if (newVersion.includes("-alpha")) command += " --tag alpha";
+              execFileSync("powershell.exe", ["-Command", command], {
                 stdio: "inherit",
                 cwd: `./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}`,
               });
@@ -240,7 +244,7 @@ export default await defineCookbookCommand(async (utils) => {
           });
           try {
             await $`bun ../../node_modules/typescript/bin/tsc index.ts --declaration --emitDeclarationOnly --outDir ./dist --module nodenext --moduleResolution nodenext --allowImportingTsExtensions`.cwd(join(cwd, "packages", childPackage)).quiet();
-          } catch (error) {}
+          } catch (error) { }
           await Bun.write(join(cwd, "packages", childPackage, "dist", "LICENSE"), await Bun.file(join(cwd, "LICENSE")).text());
           const packageJson = JSON.parse(await readFile(join(cwd, "packages", childPackage, "package.json"), "utf-8"));
           const dependencies: Record<string, any> = {};
