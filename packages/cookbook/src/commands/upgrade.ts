@@ -3,23 +3,77 @@ import { join } from "node:path";
 import { cwd, exit } from "node:process";
 import { readFile, writeFile } from "node:fs/promises";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
+import { $ } from "bun";
 
 export default await defineCookbookCommand(async (utils) => {
+  const params = utils.getParams();
+  const cookbookToml = await utils.getCookbookToml();
   const packageJson = JSON.parse(await readFile(join(cwd(), "package.json"), "utf-8"));
-  const lastMilkioVersion = packageJson?.dependencies?.milkio ?? packageJson?.peerDependencies?.milkio;
-  if (!lastMilkioVersion) {
-    consola.error("Milkio is not installed in this project.");
+
+  let result = params.commands[0] || "";
+  if (!result) {
+    result = await consola.prompt("Which version do you want to upgrade cookbook and milkio to?", {
+      type: "text",
+      placeholder: "latest",
+    });
+  }
+
+  if (typeof result === "symbol") {
+    consola.error("Cancelled.");
     exit(0);
   }
 
-  const result = await consola.prompt("Which version do you want to upgrade cookbook and milkio to?", {
-    type: "text",
-    placeholder: lastMilkioVersion,
-  });
-
-  if (typeof result !== "string" || !/^(\d+)\.(\d+)\.(\d+)((-rc|-beta|-alpha)\.(\d+))?$/.test(result)) {
+  if (typeof result === "string" && !/^(\d+)\.(\d+)\.(\d+)((-rc|-beta|-alpha)\.(\d+))?$/.test(result) && result !== "latest") {
     consola.error("The version number is not entered or the format is incorrect.");
     exit(0);
+  }
+
+  if (!result || result === "latest") {
+    const packageName = "milkio";
+    const MIRRORS = ["https://registry.npmjs.org/", "https://registry.npmmirror.com/", "https://mirrors.cloud.tencent.com/npm/", "https://cdn.jsdelivr.net/npm/"];
+
+    let packageInfo: any = null;
+
+    for (const mirror of MIRRORS) {
+      const packageUrl = `${mirror}${packageName}`;
+
+      try {
+        consola.start(`Checking package on mirror: ${mirror}`);
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+
+        const response = await fetch(packageUrl, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          consola.info(`Unavailable response from ${mirror}`);
+          continue;
+        }
+
+        const jsonData: any = await response.json();
+        if (jsonData.name !== packageName) {
+          consola.info(`Invalid package data from ${mirror}`);
+          continue;
+        }
+
+        packageInfo = { mirror, data: jsonData };
+        consola.success(`Package found on mirror: ${mirror}`);
+        break;
+      } catch (error) {
+        const errorType = error instanceof Error ? error.message : "Unknown error";
+        consola.info(`Mirror ${mirror} failed: ${errorType}`);
+      }
+    }
+
+    if (!packageInfo) {
+      consola.error(`All mirrors failed to provide valid data for package '${packageName}'`);
+      exit(0);
+    }
+
+    result = packageInfo.data["dist-tags"].latest;
   }
 
   if ("dependencies" in packageJson) {
@@ -42,8 +96,10 @@ export default await defineCookbookCommand(async (utils) => {
 
   await writeFile(join(cwd(), "package.json"), JSON.stringify(packageJson, null, 2));
 
+  await $`${{ raw: `${cookbookToml.general.packageManager} install` }}`;
+
   console.log("");
   console.log("△ Milkio upgrade!");
-  console.log("△ Run the installation command, such as: bun i");
+  console.warn(`△ Also remember to upgrade your cookbook by running: ${cookbookToml.general.packageManager} create cookbook@${result}`);
   console.log("");
 });

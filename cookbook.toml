@@ -1,6 +1,6 @@
 [general]
 start = "bun run dev"
-packageManager = "npm"
+packageManager = "bun"
 cookbookPort = 8000
 
 

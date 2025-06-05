@@ -1,7 +1,11 @@
 {
   "type": "module",
   "private": true,
-  "workspaces": [".commands", "projects/*", "packages/*"],
+  "workspaces": [
+    ".commands",
+    "projects/*",
+    "packages/*"
+  ],
   "module": "index.ts",
   "scripts": {
     "co": "bun run ./packages/cookbook/cookbook.ts prepare && bun run ./packages/cookbook/cookbook.ts"
@@ -11,7 +15,6 @@
     "@electric-sql/pglite": "^0.3.0",
     "@hattip/adapter-node": "^0.0.49",
     "@hono/node-server": "^1.13.8",
-    "@milkio/cookbook": "workspace:*",
     "@ryoppippi/unplugin-typia": "^1.0.6",
     "@types/fs-extra": "^11.0.4",
     "compressing": "^1.10.1",
