@@ -41,7 +41,7 @@ export default await defineCookbookCommand(async (utils) => {
         consola.start(`Checking package on mirror: ${mirror}`);
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
+        const timeout = setTimeout(() => controller.abort(), 5000);
 
         const response = await fetch(packageUrl, {
           signal: controller.signal,
@@ -96,10 +96,16 @@ export default await defineCookbookCommand(async (utils) => {
 
   await writeFile(join(cwd(), "package.json"), JSON.stringify(packageJson, null, 2));
 
-  await $`${{ raw: `${cookbookToml.general.packageManager} install` }}`;
+  const cmd = `${cookbookToml.general.packageManager} install`;
+  if (await consola.prompt(`Do you want to install dependencies now? (${cmd})`, { type: "confirm" })) {
+    try {
+      await $`${{ raw: cmd }}`;
+    } catch (error) {
+      consola.warn("Failed to install dependencies, please run it manually.");
+    }
+  }
 
   console.log("");
-  console.log("△ Milkio upgrade!");
-  console.warn(`△ Also remember to upgrade your cookbook by running: ${cookbookToml.general.packageManager} create cookbook@${result}`);
+  consola.box(`△ Milkio upgrade completed!\n△ Also remember to upgrade your cookbook by running:\n${cookbookToml.general.packageManager} create cookbook@${result}`);
   console.log("");
 });
