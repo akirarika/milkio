@@ -35,7 +35,7 @@ export async function handlerSchema(options: CookbookOptions, paths: { cwd: stri
 
     const nameWithPath = path.slice(0, path.length - 3); // 3 === ".ts".length
     const name = nameWithPath.replaceAll("/", "__").replaceAll("-", "_").replaceAll(".", "$");
-    typescriptImports += `\nimport ${name} from "../${nameWithPath}";`;
+    typescriptImports += `\nimport ${name} from "../${nameWithPath}.ts";`;
     typescriptExports += `\n    ${name}(world),`;
     ++len;
   }

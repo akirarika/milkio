@@ -1,6 +1,6 @@
 import { $, Glob } from "bun";
 import consola from "consola";
-import { join } from "node:path";
+import path, { join } from "node:path";
 import { exists, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { exit } from "node:process";
 import type { CookbookOptions } from "../utils/cookbook-dto-types";
@@ -10,6 +10,7 @@ import { getRate } from "../progress";
 import { unlinkIfTooLong } from "../utils/unlink-if-too-long";
 import { getRuntime } from "../utils/get-runtime";
 import { getTypiaPath } from "../utils/get-typia-path";
+import { generateRunTs } from "./run-ts";
 
 export async function routeSchema(options: CookbookOptions, paths: { cwd: string; milkio: string; generated: string }, project: CookbookOptions["projects"]["key"]) {
   if (!paths.milkio) return;
@@ -29,84 +30,7 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
   const files: Array<string> = [];
   let changeType: "file-change" | "file-create-or-delete" | null = null;
 
-  /**
-   * ------------------------------------------------------------------------------------------------
-   * @step generate node
-   * ------------------------------------------------------------------------------------------------
-   */
-  const nodeHandler = async () => {
-    if (!(await exists(join(paths.milkio, "run.ts")))) {
-      await writeFile(
-        join(paths.milkio, "run.ts"),
-        `#!/usr/bin/env node
-import * as http from "node:http";
-import { createRequestListener } from "@mjackson/node-fetch-server";
-import { create } from "../index.ts";
-import { env } from "node:process";
-
-async function bootstrap() {
-  const world = await create({
-    develop: env.MILKIO_DEVELOP === "ENABLE",
-    argv: process.argv,
-  });
-
-  function handler(request: Request) {
-    return world.listener.fetch({
-      request,
-      env,
-      envMode: env.MILKIO_DEVELOP === "ENABLE" ? "development" : "production",
-    });
-  }
-
-  const server = http.createServer(createRequestListener(handler));
-  server.listen(world.listener.port);
-}
-
-void bootstrap();`,
-      );
-    }
-  };
-
-  /**
-   * ------------------------------------------------------------------------------------------------
-   * @step generate bun
-   * ------------------------------------------------------------------------------------------------
-   */
-  const bunHandler = async () => {
-    if (!(await exists(join(paths.milkio, "run.ts")))) {
-      writeFile(
-        join(paths.milkio, "run.ts"),
-        `#!/usr/bin/env bun
-import { create } from "../index.ts";
-import { env } from "bun";
-
-async function bootstrap() {
-  const world = await create({
-    develop: env.MILKIO_DEVELOP === "ENABLE",
-    argv: process.argv,
-  });
-  Bun.serve({
-    port: world.listener.port,
-    async fetch(request) {
-      return world.listener.fetch({
-        request,
-        env,
-        envMode: env.MILKIO_DEVELOP === "ENABLE" ? "development" : "production",
-      });
-    },
-  });
-}
-
-void bootstrap();`,
-      );
-    }
-  };
-
-  if (project?.runtime === undefined || project?.runtime === "node") {
-    await nodeHandler();
-  } else if (project.runtime === "bun") {
-    await bunHandler();
-  }
+  await generateRunTs(project, paths);
 
   const tasks: Array<Promise<any>> = [];
 

@@ -1,6 +1,6 @@
 import { glob } from "glob";
 import { join } from "node:path";
-import { cwd, env } from "node:process";
+import { env } from "node:process";
 import type { MilkioAdapter, ViteInput, ViteOutput } from "./index.ts";
 import fs from "fs-extra";
 
@@ -60,7 +60,7 @@ export async function onRequest(context) {
   return await (await world).listener.fetch({
     request: context.request,
     env: context.env,
-    envMode: "${env.MILKIO_DEVELOP === "ENABLE" ? "development" : "production"}",
+    envMode: "${env.MODE ?? "development"}",
     routeSchema,
   });
 }`,

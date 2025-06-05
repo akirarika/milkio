@@ -48,7 +48,7 @@ export interface CookbookOptions {
       meta: Partial<{
         inspect: boolean;
       }>;
-      runtime?: "node" | "bun" | "edge-one";
+      runtime?: "node" | "deno" | "bun";
       adapter?: string;
       name?: string;
       lazyRoutes?: boolean;

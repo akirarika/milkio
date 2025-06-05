@@ -60,7 +60,7 @@ export function useVitePluginMilkio(options?: {
         if (project.runtime === "node") {
           format = options?.outputFormat ?? "cjs";
           mode = "chunk";
-        } else if (project.runtime === "bun") {
+        } else if (project.runtime === "deno" || project.runtime === "bun") {
           format = options?.outputFormat ?? "esm";
           mode = "chunk";
         } else throw new Error("runtime not supported");

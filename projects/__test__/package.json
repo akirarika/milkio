@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "prisma": "prisma",
     "drizzle": "drizzle-kit"
   },
   "trustedDependencies": [],
@@ -17,7 +16,6 @@
     "@ryoppippi/unplugin-typia": "^1.0.6",
     "milkid": "2.0.7",
     "milkio": "workspace:*",
-    "prisma": "^6.5.0",
     "rolldown": "^1.0.0-beta.1",
     "tsx": "^4.19.3",
     "yaml": "^2.6.0"

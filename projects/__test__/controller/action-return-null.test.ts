@@ -1,5 +1,5 @@
 import { it } from "vitest";
-import { astra } from "/test";
+import { astra } from "../test.ts";
 
 it.sequential("basic", async () => {
   const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);

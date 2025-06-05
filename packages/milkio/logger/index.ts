@@ -52,6 +52,7 @@ export function createLogger<MilkioRuntime extends MilkioRuntimeInit<MilkioRunti
     if (!inserting(log)) return log;
 
     logger._.logs.push([...log]);
+
     if (runtime.develop) {
       void sendCookbookEvent(runtime, {
         type: "milkio@logger",

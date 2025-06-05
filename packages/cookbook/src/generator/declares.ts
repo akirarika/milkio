@@ -2,14 +2,10 @@ import { Glob } from "bun";
 import { join } from "node:path";
 import type { CookbookOptions } from "../utils/cookbook-dto-types";
 
-export async function declares(
-  options: CookbookOptions,
-  paths: { cwd: string; milkio: string; generated: string },
-  project: CookbookOptions["projects"]["key"]
-) {
+export async function declares(options: CookbookOptions, paths: { cwd: string; milkio: string; generated: string }, project: CookbookOptions["projects"]["key"]) {
   let declaresImports = "// declares";
-  declaresImports += `\nimport { generated } from "./index";`;
-  declaresImports += `\nimport { configSchema } from "./config-schema";`;
+  declaresImports += `\nimport { generated } from "./index.ts";`;
+  declaresImports += `\nimport { configSchema } from "./config-schema.ts";`;
 
   let declaresFile = `declare module "milkio" {`;
   declaresFile += `\n  interface $types {`;
@@ -29,10 +25,7 @@ export async function declares(
   declaresFile += `\n  interface $meta`;
   let metaIndex = 0;
   for await (const path of metaDts) {
-    declaresImports += `\nimport type { _ as meta_${metaIndex} } from "../${path.replaceAll(
-      "\\",
-      "/"
-    )}";`;
+    declaresImports += `\nimport type { _ as meta_${metaIndex} } from "../${path.replaceAll("\\", "/")}";`;
     if (metaIndex > 0) declaresFile += `, `;
     else declaresFile += ` extends `;
     declaresFile += `meta_${metaIndex}`;
@@ -52,10 +45,7 @@ export async function declares(
   declaresFile += `\n  interface $context`;
   let contextIndex = 0;
   for await (const path of contextDts) {
-    declaresImports += `\nimport type { _ as context_${contextIndex} } from "../${path.replaceAll(
-      "\\",
-      "/"
-    )}";`;
+    declaresImports += `\nimport type { _ as context_${contextIndex} } from "../${path.replaceAll("\\", "/")}";`;
     if (contextIndex > 0) declaresFile += `, `;
     else declaresFile += ` extends `;
     declaresFile += `context_${contextIndex}`;
@@ -75,10 +65,7 @@ export async function declares(
   declaresFile += `\n  interface $events`;
   let eventIndex = 0;
   for await (const path of eventDts) {
-    declaresImports += `\nimport type { _ as event_${eventIndex} } from "../${path.replaceAll(
-      "\\",
-      "/"
-    )}";`;
+    declaresImports += `\nimport type { _ as event_${eventIndex} } from "../${path.replaceAll("\\", "/")}";`;
     if (eventIndex > 0) declaresFile += `, `;
     else declaresFile += ` extends `;
     declaresFile += `event_${eventIndex}`;
@@ -98,10 +85,7 @@ export async function declares(
   declaresFile += `\n  interface $rejectCode`;
   let codeIndex = 0;
   for await (const path of codeDts) {
-    declaresImports += `\nimport type { _ as code_${codeIndex} } from "../${path.replaceAll(
-      "\\",
-      "/"
-    )}";`;
+    declaresImports += `\nimport type { _ as code_${codeIndex} } from "../${path.replaceAll("\\", "/")}";`;
     if (codeIndex > 0) declaresFile += `, `;
     else declaresFile += ` extends `;
     declaresFile += `code_${codeIndex}`;
@@ -110,8 +94,5 @@ export async function declares(
   declaresFile += ` {}`;
 
   declaresFile += `\n}`;
-  await Bun.write(
-    join(paths.milkio, "declares.d.ts"),
-    `${declaresImports}\n\n${declaresFile}`
-  );
+  await Bun.write(join(paths.milkio, "declares.d.ts"), `${declaresImports}\n\n${declaresFile}`);
 }

@@ -31,7 +31,7 @@ export async function configSchema(options: CookbookOptions, paths: { cwd: strin
       .replaceAll(".config.ts", "")
       .split("/")
       .at(-1);
-    typescriptImports += `\nimport ${name} from "../${nameWithPath}.config";`;
+    typescriptImports += `\nimport ${name} from "../${nameWithPath}.config.ts";`;
     typescriptExports += `\n    // @ts-expect-error\n    ...(await ${name}(mode)),`;
   }
   for await (let path of modeFiles) {
@@ -45,7 +45,7 @@ export async function configSchema(options: CookbookOptions, paths: { cwd: strin
       .replaceAll(".config.ts", "")
       .split("/")
       .at(-1);
-    typescriptImports += `\nimport ${name} from "../${nameWithPath}.config";`;
+    typescriptImports += `\nimport ${name} from "../${nameWithPath}.config.ts";`;
     typescriptExports += `\n    // @ts-expect-error\n    ...(await ${name}(mode)),`;
   }
   typescriptExports += "\n  }\n}}";

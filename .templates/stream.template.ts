@@ -1,5 +1,5 @@
-import { createTemplate } from '@milkio/cookbook-template'
-import { join } from 'node:path'
+import { createTemplate } from "@milkio/cookbook-template";
+import { join } from "node:path";
 
 await createTemplate(async (tools) => {
   return {
@@ -21,15 +21,15 @@ export default stream({
     yield "world!";
   }
 });`.trim(),
-  }
-})
+  };
+});
 
 await createTemplate(async (tools) => {
   return {
     path: join(tools.directory(), `${tools.hyphen(tools.name())}.test.ts`),
     content: `
 import { expect, test } from "vitest";
-import { astra } from "/test";
+import { astra } from "../test.ts";
 
 test.sequential("basic", async () => {
   const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
@@ -44,5 +44,5 @@ test.sequential("basic", async () => {
   // Check if the return value is as expected
   // ...
 });`.trim(),
-  }
-})
+  };
+});
