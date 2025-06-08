@@ -6,7 +6,7 @@ import { cwd } from "node:process";
 import consola from "consola";
 import { execScript } from "../utils/exec-script";
 import fs from "fs-extra";
-import { getMode } from "../utils/get-mode";
+import { selectMode } from "../utils/select-mode";
 
 export default await defineCookbookCommand(async (utils) => {
   consola.start("Cookbook building..");
@@ -17,7 +17,7 @@ export default await defineCookbookCommand(async (utils) => {
     if (project.type === "milkio") await fs.remove(join(cwd(), "projects", ".milkio"));
   }
 
-  await generator.watcher(options, await getMode(options));
+  await generator.watcher(options, await selectMode(options));
 
   for (const key in options.projects) {
     const project = options.projects[key];

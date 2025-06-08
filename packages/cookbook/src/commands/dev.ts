@@ -7,7 +7,7 @@ import { initServer } from "../server";
 import { generator } from "../generator";
 import { progress } from "../progress";
 import { getCookbookToml } from "../utils/get-cookbook-toml";
-import { getMode } from "../utils/get-mode";
+import { selectMode } from "../utils/select-mode";
 import { eventManager } from "../event";
 
 export default await defineCookbookCommand(async (utils) => {
@@ -35,7 +35,7 @@ export default await defineCookbookCommand(async (utils) => {
     console.log("");
   };
 
-  void start(await getMode(options));
+  void start(await selectMode(options));
 
   const resolvers = Promise.withResolvers();
   await resolvers.promise; // let the never exit
