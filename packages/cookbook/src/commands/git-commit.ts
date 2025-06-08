@@ -193,9 +193,10 @@ export default await defineCookbookCommand(async (utils) => {
     if (!inputMessage || typeof inputMessage !== "string") exit(0);
   }
 
+  await $`${{ raw: `git commit -m '${inputMessage.replaceAll("'", '"')}'` }}`;
+
   while (true) {
     try {
-      await $`${{ raw: `git commit -m '${inputMessage.replaceAll("'", '"')}'` }}`;
       await $`git push -u origin ${branch}`;
 
       break;
