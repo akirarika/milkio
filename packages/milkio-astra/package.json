@@ -1,0 +1,12 @@
+{
+  "name": "@milkio/astra",
+  "type": "module",
+  "version": "1.0.0-beta.73",
+  "module": "index.ts",
+  "dependencies": {
+    "@southern-aurora/tson": "*",
+    "date-fns": "^4.1.0",
+    "js-toml": "^1.0.0"
+  },
+  "devDependencies": {}
+}

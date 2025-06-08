@@ -1,0 +1,54 @@
+import { cwd, exit } from "node:process";
+import { defineCookbookCommand } from "@milkio/cookbook-command";
+import { selectProject } from "../utils/select-project";
+import { join } from "node:path";
+import { exists, mkdir, readFile, writeFile } from "node:fs/promises";
+import { execScript } from "../utils/exec-script";
+import { select } from "../utils/select";
+import { env, Glob } from "bun";
+import { existsSync } from "fs-extra";
+import { drizzleSchema } from "../generator/drizzle-schema";
+
+export default await defineCookbookCommand(async (utils, projectUsed?: string, modeUsed?: string) => {
+  const cookbookToml = await utils.getCookbookToml();
+  const project = await selectProject(cookbookToml, {
+    filter: async (project) => {
+      return (await exists(join(cwd(), "projects", project.value, "drizzle"))) || (await exists(join(cwd(), "projects", project.value, "drizzle.config.ts")));
+    },
+    projectUsed,
+  });
+  if (!project) exit(0);
+  const packageJson = await readFile(join(cwd(), "projects", project.value, "package.json"), "utf-8");
+  const packageJsonParsed = JSON.parse(packageJson);
+  if (packageJsonParsed?.scripts?.drizzle === undefined || packageJsonParsed.scripts.drizzle === "") {
+    if (!packageJsonParsed) packageJsonParsed.scripts = {};
+    packageJsonParsed.scripts.drizzle = "drizzle-kit";
+    await writeFile(join(cwd(), "projects", project.value, "package.json"), JSON.stringify(packageJsonParsed, null, 2));
+  }
+  const mode = await select("Select the mode:", project.drizzle ?? [], "mode", modeUsed);
+  const command = `${cookbookToml.general.packageManager} run drizzle ${mode?.migrateMode === "push" ? "push" : "generate"}`;
+
+  await drizzleSchema({ cwd: project.path });
+
+  env.DATABASE_URL = mode.migrateDatabaseUrl;
+  process.env.DATABASE_URL = mode.migrateDatabaseUrl;
+
+  await execScript(command, {
+    cwd: project.path,
+    env: {
+      ...env,
+      DATABASE_URL: mode.migrateDatabaseUrl,
+    },
+  });
+
+  const journal = JSON.parse(await readFile(join(cwd(), "projects", project.value, "drizzle", "meta", "_journal.json"), "utf-8"));
+  for (const entry of journal.entries) {
+    entry.sql = await readFile(join(cwd(), "projects", project.value, "drizzle", `${entry.tag}.sql`), "utf-8");
+  }
+
+  await writeFile(join(cwd(), "projects", project.value, ".milkio", "drizzle-migrations.ts"), `export const drizzleMigrations = ${JSON.stringify(journal)}`);
+
+  if (existsSync(join(cwd(), "projects", project.value, "drizzle.migrate.ts"))) {
+    await import(join(cwd(), "projects", project.value, "drizzle.migrate.ts"));
+  }
+});
