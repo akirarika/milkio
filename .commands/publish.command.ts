@@ -231,6 +231,7 @@ export default await defineCookbookCommand(async (utils) => {
           const external: Array<string> = [];
           if (childPackage === "vite-plugin-milkio") external.push("vite-plugin-node");
           if (childPackage === "vite-plugin-milkio") external.push("@mjackson/node-fetch-server");
+          await Bun.write(join(cwd, "packages", childPackage, "__VERSION__.mjs"), `export const __VERSION__ = "${newVersion}";`);
 
           await Bun.build({
             entrypoints: [join(cwd, "packages", childPackage, "index.ts")],
@@ -244,7 +245,7 @@ export default await defineCookbookCommand(async (utils) => {
           });
           try {
             await $`bun ../../node_modules/typescript/bin/tsc index.ts --declaration --emitDeclarationOnly --outDir ./dist --module nodenext --moduleResolution nodenext --allowImportingTsExtensions`.cwd(join(cwd, "packages", childPackage)).quiet();
-          } catch (error) { }
+          } catch (error) {}
           await Bun.write(join(cwd, "packages", childPackage, "dist", "LICENSE"), await Bun.file(join(cwd, "LICENSE")).text());
           const packageJson = JSON.parse(await readFile(join(cwd, "packages", childPackage, "package.json"), "utf-8"));
           const dependencies: Record<string, any> = {};

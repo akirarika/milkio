@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { __VERSION__ } from "./__VERSION__.mjs";
 import os from "node:os";
 import { join } from "node:path";
 import { exit } from "node:process";
@@ -35,7 +36,7 @@ const color = gradient(["cyan", "#2d9b87"]);
   if (!existsSync(tempspace)) mkdirSync(tempspace);
 
   const packageName = `@milkio/cookbook-${process.platform}-${os.arch()}`;
-  let selectedVersion = version;
+  const selectedVersion = __VERSION__;
   let selectedMirror = "";
 
   consola.start(color("Finding the appropriate mirror.."));
@@ -61,7 +62,6 @@ const color = gradient(["cyan", "#2d9b87"]);
       const packageInfo = await response.json();
       if (!packageInfo || !packageInfo["dist-tags"] || !packageInfo["dist-tags"].latest) continue;
 
-      if (!version || version === "latest") selectedVersion = packageInfo["dist-tags"].latest;
       selectedMirror = mirror;
       consola.success(color(`Found version ${selectedVersion} at ${mirror}`));
       break;
