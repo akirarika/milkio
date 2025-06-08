@@ -472,5 +472,5 @@ export default await defineCookbookCommand(async (utils) => {
   console.log(`- npm: https://www.npmjs.com/package/${packageJson.name}/v/${newVersion}`);
   console.log(`- gitee: https://gitee.com/${publishJson.giteeOwner}/${publishJson.giteeRepo}/releases/tag/v${newVersion}`);
   console.log(`- github: https://github.com/${publishJson.githubOwner}/${publishJson.githubRepo}/releases/tag/v${newVersion}`);
-  console.log(`- 安装命令: bun i ${packageJson.name}@${newVersion}`);
+  console.log(`- 安装命令: bun create cookbook@${newVersion}`);
 });

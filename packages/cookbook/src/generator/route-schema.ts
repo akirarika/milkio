@@ -169,50 +169,48 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
    * @step generate route-schema.ts
    * ------------------------------------------------------------------------------------------------
    */
-  if (changeType) {
-    const routeSchemaPath = join(paths.cwd, ".milkio", "route-schema.ts");
+  const routeSchemaPath = join(paths.cwd, ".milkio", "route-schema.ts");
 
-    let routeSchemaFileImports = "// route-schema";
-    let routeSchemaFileExports = "export default {";
+  let routeSchemaFileImports = "// route-schema";
+  let routeSchemaFileExports = "export default {";
 
-    const routePaths: Array<string> = [];
-    for await (const file of files) {
-      let { importName, fileHash } = hashes.get(file) ?? {};
+  const routePaths: Array<string> = [];
+  for await (const file of files) {
+    let { importName, fileHash } = hashes.get(file) ?? {};
 
-      let routePath = file.slice(0, file.length - 10); // 10 === ".stream.ts".length && 10 === ".action.ts".length
-      if (routePath.endsWith("/index") || routePath === "index") routePath = routePath.slice(0, routePath.length - 5); // 5 === "index".length
-      if (routePath === "public" && routePath.length > 1) routePath = routePath.slice(0, routePath.length - 1);
-      if (routePaths.includes(routePath)) {
-        consola.error(`Invalid path: "${join(paths.cwd, "public", file)}". The most common reason for having paths duplicate is that you created a new "${file}" and have a "${file}/index.ts".\n`);
+    let routePath = file.slice(0, file.length - 10); // 10 === ".stream.ts".length && 10 === ".action.ts".length
+    if (routePath.endsWith("/index") || routePath === "index") routePath = routePath.slice(0, routePath.length - 5); // 5 === "index".length
+    if (routePath === "public" && routePath.length > 1) routePath = routePath.slice(0, routePath.length - 1);
+    if (routePaths.includes(routePath)) {
+      consola.error(`Invalid path: "${join(paths.cwd, "public", file)}". The most common reason for having paths duplicate is that you created a new "${file}" and have a "${file}/index.ts".\n`);
+      exit(1);
+    }
+    routePath = routePath.split(".")[0];
+    if (routePath.startsWith("controller/")) routePath = routePath.slice(11); // 11 === "controller/".length
+    if (routePath.startsWith("module/")) routePath = `_${routePath.slice(6)}`; // 6 === "module".length
+    if (routePath !== "/" && routePath.endsWith("/")) routePath = routePath.slice(0, routePath.length - 1);
+    routePaths.push(routePath);
+
+    if (!importName) {
+      importName = file
+        .slice(0, file.length - 10) // 10 === ".ts".length
+        .replaceAll("/", "__")
+        .replaceAll("-", "_");
+    }
+    if (!fileHash) {
+      try {
+        fileHash = (await readdir(join(paths.cwd, ".milkio", "raw", "routes", `${importName}`)))[0].slice(0, -3); // 3 === ".ts".length
+      } catch (error) {
+        consola.error(`Generation failed, cache file is incomplete, please manually delete your ${join(paths.cwd, ".milkio")} directory and try again.`);
         exit(1);
       }
-      routePath = routePath.split(".")[0];
-      if (routePath.startsWith("controller/")) routePath = routePath.slice(11); // 11 === "controller/".length
-      if (routePath.startsWith("module/")) routePath = `_${routePath.slice(6)}`; // 6 === "module".length
-      if (routePath !== "/" && routePath.endsWith("/")) routePath = routePath.slice(0, routePath.length - 1);
-      routePaths.push(routePath);
-
-      if (!importName) {
-        importName = file
-          .slice(0, file.length - 10) // 10 === ".ts".length
-          .replaceAll("/", "__")
-          .replaceAll("-", "_");
-      }
-      if (!fileHash) {
-        try {
-          fileHash = (await readdir(join(paths.cwd, ".milkio", "raw", "routes", `${importName}`)))[0].slice(0, -3); // 3 === ".ts".length
-        } catch (error) {
-          consola.error(`Generation failed, cache file is incomplete, please manually delete your ${join(paths.cwd, ".milkio")} directory and try again.`);
-          exit(1);
-        }
-      }
-
-      if (project?.typiaMode !== "bundler") routeSchemaFileImports += `\nimport ${importName} from "./generated/routes/${importName}/${fileHash}.ts";`;
-      else routeSchemaFileImports += `\nimport ${importName} from "./raw/routes/${importName}/${fileHash}.ts";`;
-      routeSchemaFileExports += `\n  "/${routePath}": ${importName},`;
     }
-    routeSchemaFileExports += "\n};";
 
-    await writeFile(routeSchemaPath, `${routeSchemaFileImports}\n\n${routeSchemaFileExports}`);
+    if (project?.typiaMode !== "bundler") routeSchemaFileImports += `\nimport ${importName} from "./generated/routes/${importName}/${fileHash}.ts";`;
+    else routeSchemaFileImports += `\nimport ${importName} from "./raw/routes/${importName}/${fileHash}.ts";`;
+    routeSchemaFileExports += `\n  "/${routePath}": ${importName},`;
   }
+  routeSchemaFileExports += "\n};";
+
+  await writeFile(routeSchemaPath, `${routeSchemaFileImports}\n\n${routeSchemaFileExports}`);
 }
