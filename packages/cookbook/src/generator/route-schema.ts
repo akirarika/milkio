@@ -1,7 +1,7 @@
 import { $, Glob } from "bun";
 import consola from "consola";
 import path, { join } from "node:path";
-import { exists, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { exists, mkdir, readdir, readFile, writeFile, rm } from "node:fs/promises";
 import { exit } from "node:process";
 import type { CookbookOptions } from "../utils/cookbook-dto-types";
 import { checkPath } from "./utils";
@@ -119,6 +119,50 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
     tasks.push(runner());
   }
   await Promise.all(tasks);
+
+  /**
+   * ------------------------------------------------------------------------------------------------
+   * @step clean raw routes
+   * ------------------------------------------------------------------------------------------------
+   */
+  const validImportNames = new Set<string>();
+  for (const item of hashes.values()) {
+    validImportNames.add(item.importName);
+  }
+
+  const cleanRawRoutes = async () => {
+    const rawRoutesPath = join(paths.cwd, ".milkio", "raw", "routes");
+    if (!(await exists(rawRoutesPath))) return;
+
+    const dirs = await readdir(rawRoutesPath, { withFileTypes: true });
+    const deleteTasks: Promise<void>[] = [];
+
+    for (const dir of dirs) {
+      if (dir.isDirectory() && !validImportNames.has(dir.name)) {
+        const dirPath = join(rawRoutesPath, dir.name);
+        deleteTasks.push(rm(dirPath, { recursive: true, force: true }));
+      }
+    }
+    await Promise.all(deleteTasks);
+  };
+
+  const cleanGeneratedRoutes = async () => {
+    const generatedRoutesPath = join(paths.cwd, ".milkio", "generated", "routes");
+    if (!(await exists(generatedRoutesPath))) return;
+
+    const dirs = await readdir(generatedRoutesPath, { withFileTypes: true });
+    const deleteTasks: Promise<void>[] = [];
+
+    for (const dir of dirs) {
+      if (dir.isDirectory() && !validImportNames.has(dir.name)) {
+        const dirPath = join(generatedRoutesPath, dir.name);
+        deleteTasks.push(rm(dirPath, { recursive: true, force: true }));
+      }
+    }
+    await Promise.all(deleteTasks);
+  };
+
+  await Promise.all([cleanRawRoutes(), cleanGeneratedRoutes()]);
 
   /**
    * ------------------------------------------------------------------------------------------------
