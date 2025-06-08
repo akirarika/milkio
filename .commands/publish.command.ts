@@ -220,6 +220,14 @@ export default await defineCookbookCommand(async (utils) => {
         consola.success("cookbook 二进制文件打包并发布成功");
       })();
 
+      for (const childPackage of [mainPackage, ...childPackages]) {
+        if (childPackage === "create-cookbook") {
+          await Bun.write(join(cwd, "packages", childPackage, "__VERSION__.mjs"), `export const __VERSION__ = "${newVersion}";`);
+        } else {
+          await Bun.write(join(cwd, "packages", childPackage, "__VERSION__.ts"), `export const __VERSION__ = "${newVersion}";`);
+        }
+      }
+
       // 将包发布到 npm
       for (const childPackage of [mainPackage, ...childPackages]) {
         if (childPackage !== "cookbook" && childPackage !== "cookbook-ui" && childPackage !== "create-cookbook") {
@@ -231,7 +239,6 @@ export default await defineCookbookCommand(async (utils) => {
           const external: Array<string> = [];
           if (childPackage === "vite-plugin-milkio") external.push("vite-plugin-node");
           if (childPackage === "vite-plugin-milkio") external.push("@mjackson/node-fetch-server");
-          await Bun.write(join(cwd, "packages", childPackage, "__VERSION__.mjs"), `export const __VERSION__ = "${newVersion}";`);
 
           await Bun.build({
             entrypoints: [join(cwd, "packages", childPackage, "index.ts")],
