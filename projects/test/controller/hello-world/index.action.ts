@@ -1,4 +1,4 @@
-import { action, reject, typeSafety } from "milkio";
+import { action, reject } from "milkio";
 
 export default action({
   meta: {},

@@ -1,6 +1,6 @@
 import { createStargate } from "@milkio/stargate";
 import { createAstra } from "@milkio/astra";
-import type { generated } from "./.milkio";
+import type { generated } from "./.milkio/index.ts";
 
 export const stargate = await createStargate<typeof generated>({
   baseUrl: "http://localhost:9000",
