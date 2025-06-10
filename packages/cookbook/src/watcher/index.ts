@@ -3,10 +3,10 @@ import { watch } from "node:fs";
 import { join } from "node:path";
 import { exists } from "node:fs/promises";
 import { emitter } from "../emitter/index.ts";
-import { exit, cwd } from "node:process";
+import { cwd } from "node:process";
 import { generator } from "../generator/index.ts";
 import type { CookbookOptions } from "../utils/cookbook-dto-types.ts";
-import { eventManager } from "../event/index.ts";
+import { useCookbookWorld } from "@milkio/cookbook-server";
 
 export async function initWatcher(options: CookbookOptions, mode: string) {
   let waiting: ReturnType<typeof Promise.withResolvers> = Promise.withResolvers();
@@ -62,7 +62,9 @@ export async function initWatcher(options: CookbookOptions, mode: string) {
     });
   }
 
-  eventManager.on("exit", () => {
+  const world = await useCookbookWorld();
+
+  world.on("cookbook:exit", () => {
     watcherForProjects.close();
     if (watcherForPackages) watcherForPackages.close();
   });

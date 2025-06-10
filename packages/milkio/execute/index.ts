@@ -15,15 +15,15 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
       headers: Record<string, string> | Headers;
       mixinContext: Record<any, any> | undefined;
     } & (
-        | {
+      | {
           params: Record<any, any>;
           paramsType: "raw";
         }
-        | {
+      | {
           params: string;
           paramsType: "string";
         }
-      ),
+    ),
   ): Promise<{ executeId: string; headers: Headers; params: Record<any, unknown>; results: Results<any>; context: $context; meta: Readonly<$meta>; type: "action" | "stream"; emptyResult: boolean; resultsTypeSafety: boolean; finales: Array<() => void | Promise<void>> }> => {
     const executeId: string = options.createdExecuteId;
     let headers: Headers;
@@ -83,7 +83,12 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
     const module = routeSchema.module;
     const meta = (module.default?.meta ? module.default?.meta : {}) as unknown as Readonly<$meta>;
 
-    if (meta.typeSafety === undefined || meta.typeSafety === true) {
+    if (context.http?.request?.method !== undefined) {
+      const allowMethods = meta?.methods ?? ["POST"];
+      if (!allowMethods.includes(context.http.request.method)) throw reject("METHOD_NOT_ALLOWED", undefined);
+    }
+
+    if (meta?.typeSafety === undefined || meta.typeSafety === true || (Array.isArray(meta.typeSafety) && meta.typeSafety.includes("params"))) {
       const validation = routeSchema.validateParams(params) as IValidation<any>;
       if (!validation.success) throw reject("PARAMS_TYPE_INCORRECT", { ...validation.errors[0], message: `The value '${validation.errors[0].path}' is '${validation.errors[0].value}', which does not meet '${validation.errors[0].expected}' requirements.` });
     }
@@ -92,22 +97,19 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
 
     results.value = await module.default.handler(context, params);
 
-    let resultsTypeSafety = false;
-    if (results?.value?.$milkioType === "type-safety") {
-      resultsTypeSafety = true;
-      const validation = routeSchema.validateResults(results.value.value) as IValidation<any>;
-      if (!validation.success) throw reject("RESULTS_TYPE_INCORRECT", { ...validation.errors[0], message: `The value '${validation.errors[0].path}' is '${validation.errors[0].value}', which does not meet '${validation.errors[0].expected}' requirements.` });
-      results.value = results.value.value;
-    }
-
     let emptyResult = false;
     if (results.value === undefined || results.value === null || results.value === "") {
       emptyResult = true;
       results.value = {};
-    } else if (Array.isArray(results.value)) {
-      throw reject("FAIL", "The return type of the handler must be an object, which is currently an array.");
-    } else if (typeof results.value !== "object") {
-      throw reject("FAIL", "The return type of the handler must be an object, which is currently a primitive type.");
+    } else if (Array.isArray(results.value) || typeof results.value !== "object") {
+      throw reject("FAIL", "The return type of the handler must be an 'object', which is currently an '${typeof typeof results.value}'.");
+    }
+
+    let resultsTypeSafety = false;
+    if (!emptyResult && module.$milkioType !== "stream" && (meta?.typeSafety === undefined || meta.typeSafety === true || (Array.isArray(meta.typeSafety) && meta.typeSafety.includes("results")))) {
+      resultsTypeSafety = true;
+      const validation = routeSchema.validateResults(results.value) as IValidation<any>;
+      if (!validation.success) throw reject("RESULTS_TYPE_INCORRECT", { ...validation.errors[0], message: `The value '${validation.errors[0].path}' is '${validation.errors[0].value}', which does not meet '${validation.errors[0].expected}' requirements.` });
     }
 
     await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context, results });

@@ -1,9 +1,9 @@
 import { expect, it } from "vitest";
-import { astra } from "../test.ts";
+import { astra } from "../../test.ts";
 
 it.sequential("basic", async () => {
   const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
-  const [error, results] = await world.execute("/call-private-function", {
+  const [error, results] = await world.execute("/action/call-private-function", {
     params: {
       a: "2",
       b: 2,
@@ -17,7 +17,7 @@ it.sequential("basic", async () => {
 
 it.sequential("reject", async () => {
   const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
-  const [error, results] = await world.execute("/call-private-function", {
+  const [error, results] = await world.execute("/action/call-private-function", {
     params: {
       a: "2",
       b: 2,

@@ -41,13 +41,14 @@
     },
     "packages/cookbook": {
       "name": "@milkio/cookbook",
-      "version": "1.0.0-beta.69",
+      "version": "1.0.0-beta.79",
       "bin": {
         "cookbook": "./cookbook.ts",
       },
       "dependencies": {
         "@inquirer/prompts": "^7.3.3",
         "@milkio/cookbook-command": "workspace:*",
+        "@milkio/cookbook-server": "workspace:*",
         "@poech/camel-hump-under": "^1.1.0",
         "@rollup/pluginutils": "^5.1.0",
         "@southern-aurora/tson": "*",
@@ -80,7 +81,7 @@
     },
     "packages/cookbook-command": {
       "name": "@milkio/cookbook-command",
-      "version": "1.0.0-beta.69",
+      "version": "1.0.0-beta.79",
       "dependencies": {
         "consola": "^3.4.0",
         "openai": "^4.87.3",
@@ -88,7 +89,7 @@
     },
     "packages/create-cookbook": {
       "name": "create-cookbook",
-      "version": "1.0.0-beta.69",
+      "version": "1.0.0-beta.79",
       "bin": {
         "create-cookbook": "./index.mjs",
       },
@@ -101,7 +102,7 @@
     },
     "packages/milkio": {
       "name": "milkio",
-      "version": "1.0.0-beta.69",
+      "version": "1.0.0-beta.79",
       "dependencies": {
         "@poech/camel-hump-under": "^1.1.0",
         "@southern-aurora/tson": "*",
@@ -120,7 +121,7 @@
     },
     "packages/milkio-astra": {
       "name": "@milkio/astra",
-      "version": "1.0.0-beta.69",
+      "version": "1.0.0-beta.79",
       "dependencies": {
         "@southern-aurora/tson": "*",
         "date-fns": "^4.1.0",
@@ -129,7 +130,7 @@
     },
     "packages/milkio-redis": {
       "name": "@milkio/redis",
-      "version": "1.0.0-beta.69",
+      "version": "1.0.0-beta.79",
       "devDependencies": {
         "@southern-aurora/tson": "*",
         "redis": "^4.7.0",
@@ -137,23 +138,41 @@
     },
     "packages/milkio-stargate": {
       "name": "@milkio/stargate",
-      "version": "1.0.0-beta.69",
+      "version": "1.0.0-beta.79",
       "dependencies": {
         "@southern-aurora/tson": "^2.0.2",
       },
     },
     "packages/milkio-stargate-worker": {
       "name": "@milkio/stargate-worker",
-      "version": "1.0.0-beta.69",
+      "version": "1.0.0-beta.79",
     },
     "packages/vite-plugin-milkio": {
       "name": "@milkio/vite-plugin-milkio",
-      "version": "1.0.0-beta.69",
+      "version": "1.0.0-beta.79",
       "dependencies": {
         "@iarna/toml": "^2.2.5",
         "@mjackson/node-fetch-server": "0.6.1",
         "fs-extra": "^11.3.0",
         "glob": "^11.0.1",
+      },
+    },
+    "projects/cookbook-server": {
+      "name": "@milkio/cookbook-server",
+      "dependencies": {
+        "@milkio/astra": "workspace:*",
+        "@milkio/stargate": "workspace:*",
+        "@mjackson/node-fetch-server": "^0.6.1",
+        "@ryoppippi/unplugin-typia": "^1.0.6",
+        "milkid": "2.0.7",
+        "milkio": "workspace:*",
+        "rolldown": "^1.0.0-beta.1",
+        "tsx": "^4.19.3",
+        "yaml": "^2.6.0",
+      },
+      "devDependencies": {
+        "vite": "^6.2.2",
+        "vite-plugin-node": "^4.0.0",
       },
     },
     "projects/test": {
@@ -361,6 +380,8 @@
     "@milkio/cookbook": ["@milkio/cookbook@workspace:packages/cookbook"],
 
     "@milkio/cookbook-command": ["@milkio/cookbook-command@workspace:packages/cookbook-command"],
+
+    "@milkio/cookbook-server": ["@milkio/cookbook-server@workspace:projects/cookbook-server"],
 
     "@milkio/redis": ["@milkio/redis@workspace:packages/milkio-redis"],
 

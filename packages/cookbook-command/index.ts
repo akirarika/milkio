@@ -81,6 +81,7 @@ export interface CookbookToml {
   >;
   general: {
     start: string;
+    modes: Array<string>;
     packageManager: string;
     cookbookPort: number;
   };

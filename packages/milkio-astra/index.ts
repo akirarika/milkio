@@ -224,13 +224,14 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
 
       const reject = (...params: Array<unknown>): Error => {
         const output: Array<any> = [
-          "[REJECT]",
+          "[astra]",
+          "(reject)",
           ...params.map((param) => {
+            if (typeof param !== "object") return param;
             try {
-              const result = TSON.stringify(param);
-              return result;
-            } catch (error) {
-              return error?.toString?.() ?? typeof error;
+              return `${TSON.stringify(param)}\n${param}`;
+            } catch (_) {
+              return param;
             }
           }),
         ];

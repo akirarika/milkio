@@ -1,9 +1,9 @@
 import { expect, test } from "vitest";
-import { astra } from "../test.ts";
+import { astra } from "../../test.ts";
 
 test.sequential("basic", async () => {
   const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
-  const [error, results] = await world.execute("/stream-hello-world", {
+  const [error, results] = await world.execute("/stream/stream-hello-world", {
     type: "stream",
     params: {
       a: "2",
@@ -25,7 +25,7 @@ test.sequential("basic", async () => {
 
 test.sequential("sleep", async () => {
   const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
-  const [error, results] = await world.execute("/stream-hello-world", {
+  const [error, results] = await world.execute("/stream/stream-hello-world", {
     type: "stream",
     params: {
       a: "2",
@@ -33,6 +33,7 @@ test.sequential("sleep", async () => {
       sleep: 100,
     },
   });
+  context.logger.info(error);
   if (error) throw reject("Milkio did not execute successfully", error);
 
   const values: Array<number> = [];

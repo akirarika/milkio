@@ -1,9 +1,7 @@
 import { action, reject, typeSafety } from "milkio";
 
 export default action({
-  meta: {
-    typeSafety: false,
-  },
+  meta: {},
   async handler(
     context,
     params: {
@@ -18,6 +16,6 @@ export default action({
     };
     if (params.throw) throw reject("FAIL", "Reject this request");
 
-    return typeSafety(results).type<{ count: number }>();
+    return results;
   },
 });

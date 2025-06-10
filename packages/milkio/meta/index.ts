@@ -3,7 +3,7 @@ export interface $meta {
    * type safety
    * @default ["params","results"]
    */
-  typeSafety?: boolean;
+  typeSafety?: boolean | Array<"params" | "results">;
   /**
    * methods
    * @default ["POST"]

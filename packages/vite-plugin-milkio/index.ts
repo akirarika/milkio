@@ -19,7 +19,6 @@ export function useVitePluginMilkio(options?: {
         const app = await server.ssrLoadModule("index.ts", { fixStacktrace: false });
         const milkio = await app.create({
           develop: env.COOKBOOK_DEVELOP === "ENABLE",
-          argv: process.argv,
         });
         try {
           return await createRequestListener(async (request: Request) => {

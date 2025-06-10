@@ -9,7 +9,7 @@ export default action({
     if (context.say() !== "hello world") throw reject("FAIL", "Context is not 'say'");
 
     return {
-      success: "fail",
+      success: "success",
     };
   },
 });

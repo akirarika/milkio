@@ -1,16 +1,16 @@
-import { it } from "vitest";
-import { astra } from "../test.ts";
+import { expect, it } from "vitest";
+import { astra } from "../../test.ts";
 
 it.sequential("basic", async () => {
   const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
-  const [error, results] = await world.execute("/action-return-null", {
+  const [error, results] = await world.execute("/action/action-return-null", {
     params: {
       //
     },
     generateParams: true,
   });
+  context.logger.info(error, results);
   if (error) throw reject("Milkio did not execute successfully", error);
 
-  // Check if the return value is as expected
-  // ...
+  expect(results).toEqual({});
 });

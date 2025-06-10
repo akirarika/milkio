@@ -5,6 +5,14 @@ modes = ["development", "test", "production"]
 cookbookPort = 8000
 
 
+[projects.cookbook-server]
+port = 8000
+type = "milkio"
+runtime = "bun"
+typiaMode = "generation"
+autoStart = false
+
+
 [projects.test]
 port = 9000
 type = "milkio"

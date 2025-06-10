@@ -1,21 +1,19 @@
 import os from "node:os";
 import { join } from "node:path";
 import { cwd, stdout } from "node:process";
-import { emitter } from "../emitter/index.ts";
 import type { CookbookOptions } from "../utils/cookbook-dto-types.ts";
 import { spawn, type ChildProcess } from "node:child_process";
 import { env } from "bun";
 import killPort from "kill-port";
 import { outputPrefix, setMaxNameLength } from "../utils/output-prefix.ts";
+import { useCookbookWorld } from "@milkio/cookbook-server";
 
 const platform = os.platform();
 let workerId = 1;
-let stdoutIndex = 0;
 export const workers = new Map<string, Worker>();
 export interface Worker {
   id: number;
   key: string;
-  stdout: Array<[number, number, "stdout" | "stderr", string]>;
   state: "running" | "stopped";
   connect: boolean;
   meta: CookbookOptions["projects"][keyof CookbookOptions["projects"]]["meta"];
@@ -25,8 +23,9 @@ export interface Worker {
     success: boolean;
     error?: string;
   }>;
-  __firstOutput: boolean;
 }
+
+const world = await useCookbookWorld();
 
 export async function initWorkers(options: CookbookOptions, mode: string) {
   for (const projectName in options.projects) {
@@ -60,29 +59,26 @@ export function createWorker(
 
   const handleExit = (code: number | null, signal: string) => {
     const message = `Process exited with:${code ?? null}`;
-    worker.stdout.push([stdoutIndex++, Date.now(), "stdout", message]);
     if (code !== 0 && options.stdout !== "ignore") {
       const message = `\n-- code: ${code ?? signal}\n`;
-      emitter.emit("data", { type: "workers@stdout", key, chunk: message });
+      world.emit("cookbook:worker:log", { key, chunk: message, type: "stderr" });
     }
 
-    emitter.emit("data", { type: "workers@state", key, state: "stopped", code });
+    world.emit("cookbook:worker:state", { key, state: "stopped", code });
     worker.state = "stopped";
   };
 
   const worker: Worker = {
     id: workerId++,
     key,
-    stdout: [],
     state: "stopped",
     connect: false,
     meta: {
       inspect: false,
     },
-    __firstOutput: true,
     kill: async () => {
       if (worker.state === "stopped") return;
-      emitter.emit("data", { type: "workers@state", key, state: "stopped", code: "kill" });
+      world.emit("cookbook:worker:state", { key, state: "stopped", code: null });
       if (!spawnProcess) return Promise.resolve();
       await Promise.all([
         new Promise((resolve) => {
@@ -109,8 +105,7 @@ export function createWorker(
         if (options.port) await killPort(options.port);
       } catch (error) {}
       const message = `\n--------------------------------\n# Start ${key}\n--------------------------------`;
-      emitter.emit("data", { type: "workers@stdout", key, chunk: message });
-      worker.stdout.push([stdoutIndex++, Date.now(), "stdout", message]);
+      world.emit("cookbook:worker:log", { key, chunk: message, type: "stdout" });
       try {
         const envMixed: Record<string, string> = { ...env, ...(options.env ?? {}), COOKBOOK_DEVELOP: "ENABLE" };
         if (worker.meta.inspect) envMixed.NODE_OPTIONS = "--inspect";
@@ -138,7 +133,7 @@ export function createWorker(
           })
           .on("exit", handleExit);
 
-        emitter.emit("data", { type: "workers@state", key, state: "running", code: "running" });
+        world.emit("cookbook:worker:state", { key, state: "running", code: null });
         worker.state = "running";
       } catch (err) {
         console.error("Spawn error:", err);
@@ -198,15 +193,11 @@ const handleMessage = (worker: Worker, key: string, chunk: ArrayBuffer, type: "s
   const strRaw = textDecoder.decode(chunk);
   // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
   const str = strRaw.replace(/\x1b\[\d*;?]*m/g, "");
-  worker.stdout.push([stdoutIndex++, Date.now(), "stdout", str]);
 
   const prefix = outputPrefix(key, worker.id);
   stdout.write(replaceNewlines(strRaw, prefix));
 
-  emitter.emit("data", { type: "workers@stdout", key, chunk: str });
-  if (worker.stdout.length >= 1024 * 64) {
-    worker.stdout.splice(0, Math.ceil(1024 * 64 * 0.2));
-  }
+  world.emit("cookbook:worker:log", { key, chunk: str, type });
 };
 
 function replaceNewlines(str: string, prefix: string): string {

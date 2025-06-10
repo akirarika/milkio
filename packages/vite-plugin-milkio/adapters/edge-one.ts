@@ -53,7 +53,6 @@ import routeSchema from "${backToRoot}${routePath.replaceAll("\\", "/")}";
 
 const world = create({
   develop: ${env.COOKBOOK_DEVELOP === "ENABLE" ? "true" : "false"},
-  argv: [],
 });
 
 export async function onRequest(context) {
