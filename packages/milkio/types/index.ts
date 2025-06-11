@@ -89,7 +89,7 @@ export type BreadBrowse<T, U extends Record<any, any> = {}> = Omit<
 
 export type BreadRead<T, U extends Record<any, any> = {}> = Omit<
   {
-    data: T | undefined;
+    data: T;
   },
   keyof U
 > &

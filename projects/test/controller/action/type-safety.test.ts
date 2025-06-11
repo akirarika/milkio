@@ -9,5 +9,7 @@ it.sequential("basic", async () => {
   if (error) throw reject("Milkio did not execute successfully", error);
 
   expect(results.username).toBe("administrator");
+  expect(typeof results.createdAt).toBe("object");
+  expect(results.createdAt instanceof Date).toBe(true);
   expect("password" in results).toBe(false);
 });

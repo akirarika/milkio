@@ -1,7 +1,7 @@
 [general]
 start = "bun run dev"
 packageManager = "bun"
-modes = ["development", "test", "production"]
+modes = ["test", "development", "production"]
 cookbookPort = 8000
 
 

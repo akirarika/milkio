@@ -14,7 +14,6 @@
     "@milkio/cookbook-command": "workspace:*",
     "@poech/camel-hump-under": "^1.1.0",
     "@rollup/pluginutils": "^5.1.0",
-    "@southern-aurora/tson": "*",
     "@types/bun": "latest",
     "@types/cli-progress": "^3.11.6",
     "@types/kill-port": "^2.0.3",

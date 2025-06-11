@@ -4,7 +4,6 @@
   "version": "1.0.0-beta.80",
   "module": "index.ts",
   "devDependencies": {
-    "@southern-aurora/tson": "*",
     "redis": "^4.7.0"
   }
 }

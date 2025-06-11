@@ -1,4 +1,3 @@
-import { TSON } from "@southern-aurora/tson";
 import type { MilkioResponseReject, Logger } from "../index.ts";
 
 export interface $rejectCode {
@@ -36,7 +35,7 @@ export function exceptionHandler(executeId: string, logger: Logger, error: Milki
   } else {
     try {
       const stack = error?.$milkioReject ? (error?.stack ?? "").split("\n").slice(2).join("\n") : (error?.stack ?? "");
-      logger.error(name, `\n${TSON.stringify(error?.data)}`, `\n${stack}\n`);
+      logger.error(name, `\n${JSON.stringify(error?.data)}`, `\n${stack}\n`);
     } catch (_) {
       logger.error(name, `\n${error?.toString()}`, `\n${error?.stack}\n`);
     }

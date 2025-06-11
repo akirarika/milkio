@@ -1,6 +1,5 @@
 export * from "./utils/part.ts";
 export * from "./type-safety/index.ts";
-export * from "@southern-aurora/tson";
 export * from "./types/index.ts";
 export * from "./config/index.ts";
 export * from "./execute/index.ts";

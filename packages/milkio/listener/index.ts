@@ -1,4 +1,3 @@
-import { TSON } from "@southern-aurora/tson";
 import { createLogger, exceptionHandler, reject } from "../index.ts";
 import type { Mixin, GeneratedInit, $types, ContextHttp, MilkioResponseReject, Results, MilkioResponseSuccess } from "../index.ts";
 import type { __initExecuter } from "../execute/index.ts";
@@ -134,7 +133,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
           } else if (executed.resultsTypeSafety) {
             response.body = `{"data":${routeSchema.resultsToJSON(executed.results.value)},"executeId":"${executeId}","success":true}`;
           } else {
-            response.body = `{"data":${TSON.stringify(executed.results.value)},"executeId":"${executeId}","success":true}`;
+            response.body = `{"data":${JSON.stringify(executed.results.value)},"executeId":"${executeId}","success":true}`;
           }
         }
 
@@ -206,7 +205,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 controller.write(`data:@${JSON.stringify({ success: true, data: undefined, executeId } satisfies MilkioResponseSuccess<any>)}\n\n`);
                 for await (const value of executed.results.value) {
                   if (!options.request.signal.aborted) {
-                    const result: string = JSON.stringify([null, TSON.encode(value)]);
+                    const result: string = JSON.stringify([null, value]);
                     controller.write(`data:${result}\n\n`);
                   } else {
                     executed.results.value.return(undefined);
@@ -218,7 +217,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 const exception = exceptionHandler(executeId, logger, error);
                 const result: any = {};
                 result[exception.code] = exception.reject;
-                controller.write(`data:${JSON.stringify([TSON.encode(result), null])}\n\n`);
+                controller.write(`data:${JSON.stringify([result, null])}\n\n`);
               }
               await new Promise((resolve) => setTimeout(resolve, 0));
               await handleClose();
@@ -240,7 +239,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 controller.enqueue(`data:@${JSON.stringify({ success: true, data: undefined, executeId } satisfies MilkioResponseSuccess<any>)}\n\n`);
                 for await (const value of executed.results.value) {
                   if (!options.request.signal.aborted) {
-                    const result: string = JSON.stringify([null, TSON.encode(value)]);
+                    const result: string = JSON.stringify([null, value]);
                     controller.enqueue(`data:${result}\n\n`);
                   } else {
                     executed.results.value.return(undefined);
@@ -252,7 +251,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 const exception = exceptionHandler(executeId, logger, error);
                 const result: any = {};
                 result[exception.code] = exception.reject;
-                controller.enqueue(`data:${JSON.stringify([TSON.encode(result), null])}\n\n`);
+                controller.enqueue(`data:${JSON.stringify([result, null])}\n\n`);
               }
               await handleClose();
               await new Promise((resolve) => setTimeout(resolve, 0));
@@ -277,7 +276,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
       const results: Results<MilkioResponseReject> = {
         value: exceptionHandler(executeId, logger, error),
       };
-      if (results.value !== undefined) response.body = TSON.stringify(results.value);
+      if (results.value !== undefined) response.body = JSON.stringify(results.value);
 
       runtime.runtime.request.delete(executeId);
       return new Response(response.body, response);
@@ -404,7 +403,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
           const exception = exceptionHandler(options.executeId, logger, error);
           const result: any = {};
           result[exception.code] = exception.reject;
-          port.postMessage({ success: false, data: [TSON.encode(result), null], executeId: options.executeId, done: true });
+          port.postMessage({ success: false, data: [result, null], executeId: options.executeId, done: true });
         }
         await handleClose("stream");
       }

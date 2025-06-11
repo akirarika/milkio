@@ -4,7 +4,6 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { cwd } from "node:process";
 import { load } from "js-toml";
-import { TSON } from "@southern-aurora/tson";
 import { format } from "date-fns";
 import type { CookbookOptions } from "./utils/cookbook-dto-types.ts";
 
@@ -173,7 +172,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
         const response = await this.options.stargate.execute(path, options);
 
         await new Promise((resolve) => setTimeout(resolve, 40));
-        context.logger.response(path as string, `\n・> (error) - ${TSON.stringify(response[0])}`, `\n・> (response) - ${typeof response[1]?.next === "function" ? "AsyncGenerator" : TSON.stringify(response[1])}`);
+        context.logger.response(path as string, `\n・> (error) - ${JSON.stringify(response[0])}`, `\n・> (response) - ${typeof response[1]?.next === "function" ? "AsyncGenerator" : JSON.stringify(response[1])}`);
 
         return response;
       };
@@ -229,7 +228,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
           ...params.map((param) => {
             if (typeof param !== "object") return param;
             try {
-              return `${TSON.stringify(param)}\n${param}`;
+              return `${JSON.stringify(param)}\n${param}`;
             } catch (_) {
               return param;
             }

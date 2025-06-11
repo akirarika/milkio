@@ -70,7 +70,6 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
 
         let routeFileImports = "// route-schema";
         routeFileImports += `\nimport typia, { type IValidation } from "typia";`;
-        routeFileImports += `\nimport { TSON, type TSONEncode } from "@southern-aurora/tson";`;
         let routeFileExports = "export default { ";
         routeFileExports += `type: "${type}", `;
         routeFileExports += "types: undefined as any as { ";
@@ -89,7 +88,7 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
         routeFileExports += `validateParams: (params: any): IValidation<Parameters<typeof ${importName}["handler"]>[1]> => typia.misc.validatePrune<Parameters<typeof ${importName}["handler"]>[1]>(params) as any, `;
         routeFileExports += `randomParams: (): IValidation<Parameters<typeof ${importName}["handler"]>[1]> => typia.random<Parameters<typeof ${importName}["handler"]>[1]>() as any, `;
         routeFileExports += `validateResults: (results: any): IValidation<Awaited<ReturnType<typeof ${importName}["handler"]>>> => typia.misc.validatePrune<Awaited<ReturnType<typeof ${importName}["handler"]>>>(results) as any, `;
-        routeFileExports += `resultsToJSON: (results: any): Awaited<ReturnType<typeof ${importName}["handler"]>> => typia.json.stringify<TSONEncode<Awaited<ReturnType<typeof ${importName}["handler"]>>>>(TSON.encode(results)) as any, `;
+        routeFileExports += `resultsToJSON: (results: any): Awaited<ReturnType<typeof ${importName}["handler"]>> => typia.json.stringify<Awaited<ReturnType<typeof ${importName}["handler"]>>>(results) as any, `;
         routeFileExports += "};";
 
         const oldFiles = await readdir(routeSchemaFolderPath);

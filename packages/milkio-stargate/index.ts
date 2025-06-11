@@ -1,5 +1,3 @@
-import { TSON } from "@southern-aurora/tson";
-
 export type MilkioStargateOptions = {
   baseUrl: string | (() => string) | (() => Promise<string>);
   timeout?: number;
@@ -151,7 +149,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
         try {
           await eventManager.emit("milkio:executeBefore", { path: path as string, options: options as any });
 
-          const body = TSON.stringify(options.params) ?? "";
+          const body = JSON.stringify(options.params) ?? "";
           await eventManager.emit("milkio:fetchBefore", { path: path as string, options: options as any, body });
 
           // biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
@@ -169,7 +167,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
               reject(error);
             }
           });
-          result = { value: TSON.parse(response) };
+          result = { value: reviveJSONParse(JSON.parse(response)) };
         } catch (error: any) {
           if (error?.[0]?.REQUEST_TIMEOUT) {
             await eventManager.emit("milkio:executeError", { handleError, path: path as string, options: options as any, error });
@@ -214,7 +212,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
         const onmessage = (event: EventSourceMessage) => {
           if (event.data.startsWith("@")) {
             try {
-              streamResult = TSON.parse(event.data.slice(1));
+              streamResult = reviveJSONParse(JSON.parse(event.data.slice(1)));
               streamResultFetched.resolve(undefined);
               clearTimeout(timer);
             } catch (error) {
@@ -226,10 +224,10 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
             if (stacks.has(index)) {
               const stack = stacks.get(index);
               stack!.done = true;
-              stack!.resolve({ done: false, value: TSON.parse(event.data) });
+              stack!.resolve({ done: false, value: reviveJSONParse(JSON.parse(event.data)) });
             } else {
               const stack = withResolvers<IteratorResult<any>>();
-              stack.resolve({ done: false, value: TSON.parse(event.data) });
+              stack.resolve({ done: false, value: reviveJSONParse(JSON.parse(event.data)) });
               stacks.set(index, { ...stack, done: false });
             }
           }
@@ -245,7 +243,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
           try {
             await eventManager.emit("milkio:executeBefore", { path: path as string, options: options as any });
 
-            const body = TSON.stringify(options!.params) ?? "";
+            const body = JSON.stringify(options!.params) ?? "";
             await eventManager.emit("milkio:fetchBefore", { path: path as string, options: options as any, body });
 
             const response = await $fetch(url, {
@@ -338,7 +336,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
         };
         const params = {};
 
-        const body = TSON.stringify(params) ?? "";
+        const body = JSON.stringify(params) ?? "";
         const stacks: Map<
           number,
           {
@@ -355,10 +353,10 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
           const index = ++stacksIndex;
           if (stacks.has(index)) {
             const stack = stacks.get(index);
-            stack!.resolve({ done: false, value: TSON.parse(event.data) });
+            stack!.resolve({ done: false, value: reviveJSONParse(JSON.parse(event.data)) });
           } else {
             const stack = withResolvers<IteratorResult<any>>();
-            stack.resolve({ done: false, value: TSON.parse(event.data) });
+            stack.resolve({ done: false, value: reviveJSONParse(JSON.parse(event.data)) });
             stacks.set(index, { ...stack, done: false });
           }
         };
@@ -463,6 +461,29 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
   };
 
   return stargate;
+}
+
+function reviveJSONParse<T>(json: T): T {
+  const isoDatePattern = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)(Z|[+-]\d{2}:?\d{2})?$/;
+
+  if (json instanceof Date) return json;
+  if (Array.isArray(json)) {
+    return json.map((item) => reviveJSONParse(item)) as any;
+  }
+  if (typeof json === "object" && json !== null) {
+    return Object.entries(json).reduce((acc, [key, value]) => {
+      acc[key as keyof T] = reviveJSONParse(value);
+      return acc;
+    }, {} as T);
+  }
+  if (typeof json === "string") {
+    const match = json.match(isoDatePattern);
+    if (match) {
+      const normalizedDateString = match[2] ? `${match[1]}${match[2].replace(":", "")}` : `${match[1]}Z`;
+      return new Date(normalizedDateString) as any;
+    }
+  }
+  return json;
 }
 
 export interface ExecuteStreamOptions {

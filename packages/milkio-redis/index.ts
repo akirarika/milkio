@@ -1,5 +1,4 @@
 import type { RedisClientOptions } from "redis";
-import { TSON } from "@southern-aurora/tson";
 
 export async function createRedis<Options extends RedisClientOptions>(options: Options) {
   const NodeRedis = await import("redis");
@@ -9,19 +8,19 @@ export async function createRedis<Options extends RedisClientOptions>(options: O
     raw: redis,
     useCache: <T>(key: string, defaultValue: T | undefined = undefined) => ({
       set: async (value: T, expireMs: number): Promise<T> => {
-        await redis.PSETEX(key, expireMs, TSON.stringify(value));
+        await redis.PSETEX(key, expireMs, JSON.stringify(value));
         return value;
       },
       get: async (): Promise<undefined | T> => {
         const result = await redis.GET(key);
         if (result === null) return defaultValue;
-        return TSON.parse(result);
+        return reviveJSONParse(JSON.parse(result));
       },
       pull: async () => {
         const resultRaw = await redis.MULTI().GET(key).DEL(key).EXEC();
         const result = resultRaw[0];
         if (result === null) return defaultValue;
-        return TSON.parse(result as string);
+        return reviveJSONParse(JSON.parse(result as string));
       },
       has: async (): Promise<boolean> => {
         const result = await redis.GET(key);
@@ -53,14 +52,14 @@ export async function createRedis<Options extends RedisClientOptions>(options: O
     useResultCache: async <Handler extends () => unknown | Promise<unknown>>(key: string, expireMs: number, handler: Handler, options?: { realExpireMs?: number; lockInterval?: number }): Promise<Awaited<ReturnType<Handler>>> => {
       const resultRaw = await redis.get(key);
       if (resultRaw) {
-        const result: { T: number; R: any } = TSON.parse(resultRaw);
+        const result: { T: number; R: any } = reviveJSONParse(JSON.parse(resultRaw));
         if (result.T > new Date().getTime()) return result.R;
         const lock = await redis.GET(`${key}:lock`);
         if (lock === "1") return result.R;
         await redis.PSETEX(`${key}:lock`, options?.lockInterval ?? 6000, "1");
       }
       const result = { R: (await handler()) as Awaited<ReturnType<Handler>>, T: new Date().getTime() + expireMs };
-      await redis.PSETEX(key, expireMs + (options?.realExpireMs ?? expireMs + Math.floor(expireMs * Math.random())) + (options?.lockInterval ?? 6000), TSON.stringify(result));
+      await redis.PSETEX(key, expireMs + (options?.realExpireMs ?? expireMs + Math.floor(expireMs * Math.random())) + (options?.lockInterval ?? 6000), JSON.stringify(result));
 
       return result.R;
     },
@@ -104,6 +103,29 @@ export async function createRedis<Options extends RedisClientOptions>(options: O
   };
 
   return milkioRedis;
+}
+
+function reviveJSONParse<T>(json: T): T {
+  const isoDatePattern = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)(Z|[+-]\d{2}:?\d{2})?$/;
+
+  if (json instanceof Date) return json;
+  if (Array.isArray(json)) {
+    return json.map((item) => reviveJSONParse(item)) as any;
+  }
+  if (typeof json === "object" && json !== null) {
+    return Object.entries(json).reduce((acc, [key, value]) => {
+      acc[key as keyof T] = reviveJSONParse(value);
+      return acc;
+    }, {} as T);
+  }
+  if (typeof json === "string") {
+    const match = json.match(isoDatePattern);
+    if (match) {
+      const normalizedDateString = match[2] ? `${match[1]}${match[2].replace(":", "")}` : `${match[1]}Z`;
+      return new Date(normalizedDateString) as any;
+    }
+  }
+  return json;
 }
 
 export type Redis = Awaited<ReturnType<typeof createRedis>>;

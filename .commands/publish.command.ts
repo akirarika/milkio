@@ -256,7 +256,6 @@ export default await defineCookbookCommand(async (utils) => {
           await Bun.write(join(cwd, "packages", childPackage, "dist", "LICENSE"), await Bun.file(join(cwd, "LICENSE")).text());
           const packageJson = JSON.parse(await readFile(join(cwd, "packages", childPackage, "package.json"), "utf-8"));
           const dependencies: Record<string, any> = {};
-          if (childPackage === "milkio") dependencies["@southern-aurora/tson"] = "*";
           if (childPackage === "vite-plugin-milkio") dependencies["vite-plugin-node"] = packageJson.dependencies["vite-plugin-node"];
           if (childPackage === "vite-plugin-milkio") dependencies["@mjackson/node-fetch-server"] = packageJson.dependencies["@mjackson/node-fetch-server"];
 
