@@ -1,7 +1,7 @@
 {
   "name": "@milkio/redis",
   "type": "module",
-  "version": "1.0.0-beta.80",
+  "version": "1.0.0-beta.81",
   "module": "index.ts",
   "devDependencies": {
     "redis": "^4.7.0"
