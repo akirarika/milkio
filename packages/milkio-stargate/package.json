@@ -1,7 +1,7 @@
 {
   "name": "@milkio/stargate",
   "type": "module",
-  "version": "1.0.0-beta.81",
+  "version": "1.0.0-beta.82",
   "module": "index.ts",
   "dependencies": {},
   "devDependencies": {}
