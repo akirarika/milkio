@@ -1,12 +1,12 @@
 import type { RedisClientOptions } from "redis";
 
 export type MilkioRedisCacheOptions<T> = {
-  defaultValue: T | undefined;
+  defaultValue?: T | undefined;
   expireMs: number;
 };
 
 export type MilkioRedisFetchOptions<T> = {
-  defaultValue: T | undefined;
+  defaultValue?: T | undefined;
   expireMs: number;
   realExpireMs?: number;
   lockInterval?: number;
@@ -46,7 +46,7 @@ export async function createRedis<Options extends RedisClientOptions>(options: O
       },
     }),
 
-    useFetch: <T>(key: string, options: MilkioRedisFetchOptions<T>) => {
+    useFetch: <Options extends MilkioRedisFetchOptions<any>>(key: string, options: Options) => {
       if (typeof options.expireMs !== "number" || options.expireMs <= 0) {
         throw new Error("expireMs must be a positive number");
       }
@@ -86,14 +86,14 @@ export async function createRedis<Options extends RedisClientOptions>(options: O
         del: async () => {
           await redis.DEL(key);
         },
-        fetch: async (): Promise<T | undefined> => {
+        fetch: async (): Promise<Awaited<ReturnType<Options["fetch"]>> | undefined> => {
           const lockInterval = options.lockInterval ?? 8192;
           const realExpireMs = options.realExpireMs ?? Math.floor(options.expireMs * (Math.random() + 0.5)) + 8192;
 
           const notFoundExpireMs = options.notFoundExpireMs ?? Math.min(options.expireMs, 16384);
 
           const resultRaw = await redis.GET(key);
-          const result = resultRaw ? (reviveJSONParse(JSON.parse(resultRaw)) as { T: number; R: T }) : undefined;
+          const result = resultRaw ? (reviveJSONParse(JSON.parse(resultRaw)) as { T: number; R: Awaited<ReturnType<Options["fetch"]>> }) : undefined;
 
           const now = Date.now();
           if (result && result.T > now) {
@@ -102,7 +102,7 @@ export async function createRedis<Options extends RedisClientOptions>(options: O
 
           const refreshLockKey = `${key}:refresh-lock`;
           if (await redis.EXISTS(refreshLockKey)) {
-            return result ? result.R : options.defaultValue;
+            return result ? result.R : options?.defaultValue;
           }
 
           const lockKey = `${key}:lock`;
@@ -112,13 +112,13 @@ export async function createRedis<Options extends RedisClientOptions>(options: O
           if (!gotLock) return result ? result.R : options.defaultValue;
 
           const recheckRaw = await redis.GET(key);
-          const recheck = recheckRaw ? (reviveJSONParse(JSON.parse(recheckRaw)) as { T: number; R: T }) : undefined;
+          const recheck = recheckRaw ? (reviveJSONParse(JSON.parse(recheckRaw)) as { T: number; R: Awaited<ReturnType<Options["fetch"]>> }) : undefined;
 
           if (recheck && recheck.T > now) {
             return recheck.R;
           }
 
-          let data: Awaited<T> | undefined;
+          let data: Awaited<ReturnType<Options["fetch"]>> | undefined;
           try {
             data = await options.fetch();
           } catch (error) {
@@ -152,7 +152,7 @@ export async function createRedis<Options extends RedisClientOptions>(options: O
           });
 
           const now = Date.now();
-          let data: Awaited<T> | undefined;
+          let data: Awaited<ReturnType<Options["fetch"]>> | undefined;
           try {
             data = await options.fetch();
           } catch (error) {
