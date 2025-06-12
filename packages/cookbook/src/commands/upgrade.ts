@@ -111,5 +111,5 @@ export default await defineCookbookCommand(async (utils) => {
   console.log("");
   consola.info(color("△ Milkio upgrade completed!"));
   consola.info(color("△ Also remember to upgrade your cookbook by running:"));
-  consola.info(color(`     ${cookbookToml.general.packageManager} create cookbook --version=${result}`));
+  consola.info(color(`     ${cookbookToml.general.packageManager} create cookbook@${result}`));
 });

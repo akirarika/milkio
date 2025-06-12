@@ -65,7 +65,7 @@ export interface CookbookOptions {
       drizzle?: Array<{
         mode: string;
         migrateDatabaseUrl: string;
-        migrateMode: "migrate" | "push";
+        migrateMode: "generate" | "push" | "any";
         schemaDir?: string;
       }>;
     }

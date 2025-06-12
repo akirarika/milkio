@@ -186,7 +186,7 @@ const color = gradient(["cyan", "#2d9b87"]);
   console.log("");
   consola.success(color("Cookbook installed successfully!"))
 
-  console.log(color("△ Try running: co --help"));
+  console.log(color("△ Try running: co --version"));
   if (process.platform === "win32") {
     console.log(color("△ Note: You may need to restart your terminal for PATH changes to take effect"));
   }

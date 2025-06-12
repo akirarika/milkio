@@ -8,8 +8,10 @@ import { select } from "../utils/select";
 import { env } from "bun";
 import { existsSync } from "fs-extra";
 import { drizzleSchema } from "../generator/drizzle-schema";
+import consola from "consola";
 
 export default await defineCookbookCommand(async (utils, projectUsed?: string, modeUsed?: string) => {
+  const params = utils.getParams();
   const cookbookToml = await utils.getCookbookToml();
   const project = await selectProject(cookbookToml, {
     filter: async (project) => {
@@ -25,8 +27,39 @@ export default await defineCookbookCommand(async (utils, projectUsed?: string, m
     packageJsonParsed.scripts.drizzle = "drizzle-kit";
     await writeFile(join(cwd(), "projects", project.value, "package.json"), JSON.stringify(packageJsonParsed, null, 2));
   }
+  if (!params.commands.at(0)) {
+    const command = `${cookbookToml.general.packageManager} run drizzle`;
+    await execScript(command, {
+      cwd: project.path,
+      env: {
+        ...env,
+      },
+    });
+    exit(0);
+  }
+
+  if (!project.drizzle || project.drizzle.length === 0) {
+    consola.error("Drizzle configuration not found, please add a mode in your cookbook.toml.");
+    exit(1);
+  }
+
   const mode = await select("Select the mode:", project.drizzle ?? [], "mode", modeUsed);
-  const command = `${cookbookToml.general.packageManager} run drizzle ${mode?.migrateMode === "push" ? "push" : "generate"}`;
+  if (!mode?.migrateMode) {
+    consola.error("Drizzle configuration not found, please add a 'migrateMode = \"generate\"' in your cookbook.toml.");
+    exit(1);
+  }
+
+  if (mode.migrateMode === "push" && (params.commands.at(0) === "generate" || params.commands.at(0) === "migrate")) {
+    consola.error("The mode is configured with 'migrateMode = \"push\"', but you are trying to execute the generate or migrate command. To avoid accidental command execution, this command has been stopped.");
+    exit(1);
+  }
+
+  if (mode.migrateMode === "generate" && (params.commands.at(0) === "push" || params.commands.at(0) === "pull")) {
+    consola.error("The mode is configured with 'migrateMode = \"generate\"', but you are trying to execute the push or pull command. To avoid accidental command execution, this command has been stopped.");
+    exit(1);
+  }
+
+  const command = `${cookbookToml.general.packageManager} run drizzle ${params.commands.join(" ")}`;
 
   await drizzleSchema({ cwd: project.path });
 
@@ -41,14 +74,23 @@ export default await defineCookbookCommand(async (utils, projectUsed?: string, m
     },
   });
 
-  const journal = JSON.parse(await readFile(join(cwd(), "projects", project.value, "drizzle", "meta", "_journal.json"), "utf-8"));
-  for (const entry of journal.entries) {
-    entry.sql = await readFile(join(cwd(), "projects", project.value, "drizzle", `${entry.tag}.sql`), "utf-8");
-  }
+  if (params.commands.at(0) === "generate") {
+    const journal = JSON.parse(await readFile(join(cwd(), "projects", project.value, "drizzle", "meta", "_journal.json"), "utf-8"));
+    for (const entry of journal.entries) {
+      entry.sql = await readFile(join(cwd(), "projects", project.value, "drizzle", `${entry.tag}.sql`), "utf-8");
+    }
 
-  await writeFile(join(cwd(), "projects", project.value, ".milkio", "drizzle-migrations.ts"), `export const drizzleMigrations = ${JSON.stringify(journal)}`);
+    await writeFile(join(cwd(), "projects", project.value, ".milkio", "drizzle-migrations.ts"), `export const drizzleMigrations = ${JSON.stringify(journal)}`);
 
-  if (existsSync(join(cwd(), "projects", project.value, "drizzle.migrate.ts"))) {
-    await import(join(cwd(), "projects", project.value, "drizzle.migrate.ts"));
+    consola.success("Drizzle migration successfully generated.");
+    if (existsSync(join(cwd(), "projects", project.value, "drizzle.migrate.ts"))) {
+      utils.inputBoolean({
+        env: "QUIET_MIGRATE",
+        message: "Do you want to automatically execute your `drizzle.migrate.ts`?",
+      });
+      await import(join(cwd(), "projects", project.value, "drizzle.migrate.ts"));
+    } else {
+      consola.info("If you want to automatically execute the `migrate` command after `generate`, you can try creating a `drizzle.migrate.ts` file, which will be automatically executed by the cookbook.");
+    }
   }
 });
