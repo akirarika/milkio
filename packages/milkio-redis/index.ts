@@ -86,7 +86,7 @@ export async function createRedis<Options extends RedisClientOptions>(options: O
         del: async () => {
           await redis.DEL(key);
         },
-        fetch: async (): Promise<Awaited<ReturnType<Options["fetch"]>> | undefined> => {
+        fetch: async (): Promise<Awaited<ReturnType<Options["fetch"]>>> => {
           const lockInterval = options.lockInterval ?? 8192;
           const realExpireMs = options.realExpireMs ?? Math.floor(options.expireMs * (Math.random() + 0.5)) + 8192;
 
@@ -118,7 +118,7 @@ export async function createRedis<Options extends RedisClientOptions>(options: O
             return recheck.R;
           }
 
-          let data: Awaited<ReturnType<Options["fetch"]>> | undefined;
+          let data: Awaited<ReturnType<Options["fetch"]>>;
           try {
             data = await options.fetch();
           } catch (error) {
