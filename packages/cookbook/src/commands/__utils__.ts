@@ -93,14 +93,19 @@ export async function createCommandUtils(params: Params, options: { path?: strin
   // AI capability check
   let cookbookToml: Awaited<ReturnType<typeof getCookbookToml>>;
 
-  const checkAIAvailability = async () => {
+  const useAIConfig = async () => {
     cookbookToml ||= await getCookbookToml();
-    const { aiModel, aiBaseUrl, aiApiKey } = cookbookToml?.config || {};
+    const { aiModel, aiBaseUrl, aiApiKey, aiModelDeepResearch } = cookbookToml?.config || {};
 
     if (aiModel && aiBaseUrl && aiApiKey) {
-      return { aiModel, aiBaseUrl, aiApiKey };
+      return {
+        aiBaseUrl,
+        aiApiKey,
+        aiModel,
+        aiModelDeepResearch: aiModelDeepResearch ?? aiModel,
+      };
     }
-    return false;
+    return undefined;
   };
 
   // Project selector
@@ -117,12 +122,6 @@ export async function createCommandUtils(params: Params, options: { path?: strin
       cookbookToml.config = {};
     }
     return cookbookToml;
-  };
-
-  // Command execution proxies
-  const runGitCommitCommand = async () => {
-    const module = await import("../commands/git-commit");
-    return module.default({ ...utils } as any);
   };
 
   const runDrizzleCommand = async (project?: string, mode?: string) => {
@@ -145,6 +144,10 @@ export async function createCommandUtils(params: Params, options: { path?: strin
     } catch {
       return false;
     }
+  };
+
+  const gotoCommand = async (command: Promise<{ default: (...args: any[]) => any }>) => {
+    await (await command).default(utils);
   };
 
   // Combined utilities
@@ -176,7 +179,7 @@ export async function createCommandUtils(params: Params, options: { path?: strin
     closeProgress: endProgress,
 
     // Capability checks
-    canUseAI: checkAIAvailability,
+    useAIConfig: useAIConfig,
     fetchEventSource,
 
     // Project operations
@@ -184,7 +187,7 @@ export async function createCommandUtils(params: Params, options: { path?: strin
     getCookbookToml: loadCookbookConfig,
 
     // Command execution
-    gotoGitCommitCommand: runGitCommitCommand,
+    gotoCommand,
     gotoDrizzleCommand: runDrizzleCommand,
 
     // String transformations

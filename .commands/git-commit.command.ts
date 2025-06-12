@@ -1,5 +1,5 @@
 import { defineCookbookCommand } from "@milkio/cookbook-command";
-import { gitUserCheck } from "../utils/git-user-check.ts";
+import { gitUserCheck } from "./utils/git-user-check.ts";
 import { $ } from "bun";
 import { exit } from "node:process";
 import consola from "consola";
@@ -29,7 +29,7 @@ export default await defineCookbookCommand(async (utils) => {
     exit(0);
   }
 
-  const ai = await utils.canUseAI();
+  const ai = await utils.useAIConfig();
 
   let messagePrefix = "";
   let message = "";

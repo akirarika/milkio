@@ -4,14 +4,6 @@ export const __router__ = [
     script: () => import("./dev.ts"),
   },
   {
-    commands: ["git:commit", "gc"],
-    script: () => import("./git-commit.ts"),
-  },
-  {
-    commands: ["git:pull", "gp"],
-    script: () => import("./git-pull.ts"),
-  },
-  {
     commands: ["drizzle"],
     script: () => import("./drizzle.ts"),
   },

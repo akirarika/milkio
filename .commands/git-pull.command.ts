@@ -1,5 +1,5 @@
 import { defineCookbookCommand } from "@milkio/cookbook-command";
-import { gitUserCheck } from "../utils/git-user-check";
+import { gitUserCheck } from "./utils/git-user-check.ts";
 import { $ } from "bun";
 import consola from "consola";
 

@@ -26,12 +26,13 @@ export type CookbookCommandHandler = (utils: {
   };
   inputBoolean: (options: { env: string; message: string; placeholder?: string }) => Promise<boolean>;
   inputString: (options: { env: string; message: string; placeholder?: string }) => Promise<string>;
-  canUseAI: () => Promise<
-    | false
+  useAIConfig: () => Promise<
+    | undefined
     | {
         aiBaseUrl: string;
         aiApiKey: string;
         aiModel: string;
+        aiModelDeepResearch: string;
       }
   >;
   fetchEventSource: (
@@ -50,7 +51,7 @@ export type CookbookCommandHandler = (utils: {
     filter?: (project: CookbookToml["projects"][0] & { value: string }) => boolean | Promise<boolean>;
   }) => Promise<CookbookToml["projects"][0] & { value: any; path: string }>;
   getCookbookToml: () => Promise<CookbookToml>;
-  gotoGitCommitCommand: () => Promise<void>;
+  gotoCommand: (command: Promise<{ default: (...args: any[]) => any }>) => Promise<void>;
   gotoDrizzleCommand: (project?: string, mode?: string) => Promise<void>;
   toCamelCase: (str: string) => string;
   toPascalCase: (str: string) => string;
