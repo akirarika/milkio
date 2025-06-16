@@ -81,6 +81,7 @@ async function initializeProject(mode: string, root: string, validDirs: string[]
   for (let i = 0; i < imports.length; i++) extensionChangeFiles.push([]);
 
   for await (const filePathRaw of filesAsyncGenerator) {
+    if (filePathRaw.endsWith(".test.ts") || filePathRaw.endsWith(".spec.ts")) return;
     const filePath = filePathRaw.replaceAll("\\", "/");
     const fileName = filePath.split("/").pop()!;
     if (fileName.startsWith(".")) return;
@@ -167,12 +168,11 @@ function setupWatcher(mode: string, root: string, validDirs: string[], options: 
     const inValidDir = validDirs.some((dir) => filePath.startsWith(`${dir}/`));
     if (!inValidDir) return;
     if (!filePath.endsWith(".ts")) return;
+    if (filePath.endsWith(".test.ts") || filePath.endsWith(".spec.ts")) return;
 
     const fileName = filePath.split("/").pop()!;
     if (fileName.startsWith(".")) return;
     if (fileName.startsWith("_")) return;
-
-    console.log("文件被修改", fileName);
 
     if (debounceTimer) clearTimeout(debounceTimer);
 
