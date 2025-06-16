@@ -38,8 +38,7 @@
     "typia": "*",
     "ulidx": "^2.4.1",
     "unplugin": "^1.12.2",
-    "vitest": "^3.0.5",
-    "xxh3-ts": "^1.0.6"
+    "vitest": "^3.0.5"
   },
   "devDependencies": {}
 }

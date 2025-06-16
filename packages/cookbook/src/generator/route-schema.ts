@@ -108,7 +108,7 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
          * @step scan files & generate routes: Typia
          * ------------------------------------------------------------------------------------------------
          */
-        if (project?.typiaMode !== "bundler") {
+        if (project?.typiaMode === "generation") {
           await $`${await getRuntime()} ${await getTypiaPath()} generate --input ${routeSchemaFolderPath} --output ${routeGeneratedSchemaFolderPath} --project ${join(paths.cwd, "tsconfig.json")}`.cwd(join(paths.cwd)).quiet();
         }
 
@@ -205,11 +205,11 @@ export async function routeSchema(options: CookbookOptions, paths: { cwd: string
       }
     }
 
-    if (project?.typiaMode !== "bundler") routeSchemaFileImports += `\nimport ${importName} from "./generated/routes/${importName}/${fileHash}.ts";`;
+    if (project?.typiaMode === "generation") routeSchemaFileImports += `\nimport ${importName} from "./generated/routes/${importName}/${fileHash}.ts";`;
     else routeSchemaFileImports += `\nimport ${importName} from "./raw/routes/${importName}/${fileHash}.ts";`;
     routeSchemaFileExports += `\n  "/${routePath}": ${importName},`;
   }
   routeSchemaFileExports += "\n};";
 
-  await writeFile(routeSchemaPath, `${routeSchemaFileImports}\n\n${routeSchemaFileExports}`);
+  await writeFile(routeSchemaPath, `${routeSchemaFileImports}\n\n${routeSchemaFileExports}\n`);
 }

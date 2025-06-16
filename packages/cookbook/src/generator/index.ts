@@ -20,7 +20,7 @@ export const generator = {
     let tasks: Array<Promise<void>> = [];
     for (const projectName in options.projects) {
       const project = options.projects[projectName];
-      if (project.type !== "milkio") return;
+      if (project.type !== "milkio") continue;
       if (firstGenerate) {
         if (!(await checkPort(project.port))) {
           try {

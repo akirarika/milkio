@@ -1,7 +1,6 @@
 import chalk from "chalk";
 import * as process from "node:process";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
-import { generator } from "../generator";
 import { progress } from "../progress";
 import { getCookbookToml } from "../utils/get-cookbook-toml";
 import { selectMode } from "../utils/select-mode";
@@ -14,14 +13,12 @@ export default await defineCookbookCommand(async (utils) => {
     const startTime = new Date();
     (globalThis as any).__COOKBOOK_OPTIONS__ = options;
 
-    await generator.watcher(options, mode);
+    const { initWatcher } = await import("../watcher");
+    await initWatcher(options, mode);
+    const { initWorkers } = await import("../workers");
+    await initWorkers(options, mode);
 
     const { startCookbookServer, useCookbookWorld } = await import("@milkio/cookbook-server");
-    const { initWorkers } = await import("../workers");
-    const { initWatcher } = await import("../watcher");
-    await initWorkers(options, mode);
-    await Promise.all([initWatcher(options, mode)]);
-
     const world = await useCookbookWorld();
     process.on("SIGINT", async () => {
       await world.emit("cookbook:exit", undefined);

@@ -1,0 +1,28 @@
+import { join } from "node:path";
+
+export async function bunHandler(milkioDirPath: string) {
+  await Bun.write(
+    join(milkioDirPath, "run.ts"),
+    `#!/usr/bin/env bun
+import { create } from "../index.ts";
+import { env } from "bun";
+
+async function bootstrap() {
+  const world = await create({
+    develop: env.COOKBOOK_DEVELOP === "ENABLE",
+  });
+  Bun.serve({
+    port: world.listener.port,
+    async fetch(request) {
+      return world.listener.fetch({
+        request,
+        env,
+        envMode: env.MODE ?? "development",
+      });
+    },
+  });
+}
+
+void bootstrap();`,
+  );
+}

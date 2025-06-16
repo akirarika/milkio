@@ -9,5 +9,7 @@
     "fs-extra": "^11.3.0",
     "glob": "^11.0.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@ryoppippi/unplugin-typia": "^2.6.5"
+  }
 }

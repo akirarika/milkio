@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import UnpluginTypia from "@ryoppippi/unplugin-typia/vite";
 import { useVitePluginMilkio } from "@milkio/vite-plugin-milkio";
 
 export default defineConfig(async ({ command }) => {
@@ -6,13 +7,7 @@ export default defineConfig(async ({ command }) => {
     server: {
       port: 9000,
     },
-    build: {
-      manifest: true,
-      sourcemap: true,
-    },
-    resolve: {
-      // alias: { "/": join(cwd()) },
-    },
-    plugins: [useVitePluginMilkio()],
+    resolve: {},
+    plugins: [UnpluginTypia({ tsconfig: "./tsconfig.json" }), useVitePluginMilkio()],
   };
 });

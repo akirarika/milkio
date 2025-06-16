@@ -9,7 +9,6 @@ cookbookPort = 8000
 port = 8000
 type = "milkio"
 runtime = "bun"
-typiaMode = "generation"
 autoStart = false
 
 
@@ -17,7 +16,6 @@ autoStart = false
 port = 9000
 type = "milkio"
 runtime = "node"
-typiaMode = "generation"
 autoStart = true
 drizzle = [
     { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
@@ -29,7 +27,6 @@ drizzle = [
 port = 9001
 type = "milkio"
 runtime = "bun"
-typiaMode = "generation"
 autoStart = true
 drizzle = [
     { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
@@ -41,7 +38,6 @@ drizzle = [
 port = 9002
 type = "milkio"
 runtime = "deno"
-typiaMode = "generation"
 autoStart = true
 drizzle = [
     { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },

@@ -1,5 +1,6 @@
 import { action, reject } from "milkio";
 import { env } from "node:process";
+import { userTable } from "./database/user.table.ts";
 
 export default action({
   async handler(

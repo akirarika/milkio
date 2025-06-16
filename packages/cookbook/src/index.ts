@@ -244,7 +244,7 @@ export async function run(params: Params, options: { path?: string; script?: () 
   }
 
   try {
-    if (!(await exists(options.path))) {
+    if (!(await exists(options.path ?? ""))) {
       consola.error(`Command not found: ${options.path}`);
       exit(1);
     }

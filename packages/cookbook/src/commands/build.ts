@@ -15,6 +15,7 @@ export default await defineCookbookCommand(async (utils) => {
   for (const key in options.projects) {
     const project = options.projects[key];
     if (project.type === "milkio") await fs.remove(join(cwd(), "projects", ".milkio"));
+    project.typiaMode = "generation";
   }
 
   await generator.watcher(options, await selectMode(options));

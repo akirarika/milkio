@@ -27,7 +27,6 @@ export type ExecuteId = string | "global";
 // the real generated type is defined by the framework user through declare module
 export interface GeneratedInit {
   routeSchema: any;
-  commandSchema: any;
   handlerSchema: any;
 }
 
