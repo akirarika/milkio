@@ -11,6 +11,7 @@ import { getRuntime } from "../../utils/get-runtime";
 import { getTypiaPath } from "../../utils/get-typia-path";
 import { getLatestFile } from "../../utils/get-latest-file";
 import { exit } from "node:process";
+import chalk from "chalk";
 
 export const routeWatcherExtension = defineWatcherExtension({
   async: false,
@@ -97,7 +98,7 @@ export const routeWatcherExtension = defineWatcherExtension({
           await Promise.all(deleteTasks);
 
           await $`${await getRuntime()} ${await getTypiaPath()} generate --input ${generatedDirPath} --output ${transpiledDirPath} --project ${join(root, "tsconfig.json")}`.cwd(root).quiet();
-          consola.info(`[${getRate()}] route schema generated: ${file.path}`);
+          consola.info(chalk.gray(`[${getRate()}] ✨ type-safety now: ${file.path}`));
         })(),
       );
     }
