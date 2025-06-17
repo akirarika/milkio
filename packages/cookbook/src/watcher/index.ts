@@ -81,11 +81,11 @@ async function initializeProject(mode: string, root: string, validDirs: string[]
   for (let i = 0; i < imports.length; i++) extensionChangeFiles.push([]);
 
   for await (const filePathRaw of filesAsyncGenerator) {
-    if (filePathRaw.endsWith(".test.ts") || filePathRaw.endsWith(".spec.ts")) return;
+    if (filePathRaw.endsWith(".test.ts") || filePathRaw.endsWith(".spec.ts")) continue;
     const filePath = filePathRaw.replaceAll("\\", "/");
     const fileName = filePath.split("/").pop()!;
-    if (fileName.startsWith(".")) return;
-    if (fileName.startsWith("_")) return;
+    if (fileName.startsWith(".")) continue;
+    if (fileName.startsWith("_")) continue;
     const fileData = processFile(filePath, root, fileName);
     fileData.dependencyChanged = false;
     if (!projectFiles.has(filePath)) projectFiles.set(filePath, fileData);
