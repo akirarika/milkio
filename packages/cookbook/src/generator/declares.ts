@@ -4,8 +4,8 @@ import type { CookbookOptions } from "../utils/cookbook-dto-types";
 
 export async function declares(options: CookbookOptions, paths: { cwd: string; milkio: string; generated: string }, project: CookbookOptions["projects"]["key"]) {
   let declaresImports = "// declares";
-  declaresImports += `\nimport { generated } from "./index.ts";`;
-  declaresImports += `\nimport { configSchema } from "./config-schema.ts";`;
+  declaresImports += `\nimport type { generated } from "./index.ts";`;
+  declaresImports += `\nimport type { configSchema } from "./config-schema.ts";`;
 
   let declaresFile = `declare module "milkio" {`;
   declaresFile += "\n  interface $types {";

@@ -7,6 +7,7 @@ import { drizzleWatcherExtension } from "./drizzle";
 import { eventWatcherExtension } from "./event";
 import type { defineWatcherExtension } from "../extensions";
 import { typiaWatcherExtension } from "./typia";
+import { codeWatcherExtension } from "./code";
 
 export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
   // extensions
@@ -16,6 +17,7 @@ export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
   drizzleWatcherExtension,
   metaWatcherExtension,
   contextWatcherExtension,
+  codeWatcherExtension,
   eventWatcherExtension,
   typiaWatcherExtension,
 ];

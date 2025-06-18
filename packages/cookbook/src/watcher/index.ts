@@ -122,7 +122,7 @@ async function initializeProject(mode: string, root: string, validDirs: string[]
 
 async function generateDeclares(root: string, mode: string, options: CookbookOptions, project: CookbookWatcherExtensionProject, extensionChangeFiles: Array<Array<CookbookWatcherFile>>) {
   let header = "// declares";
-  header += `\nimport { generated } from "./index.ts";`;
+  header += `\nimport type { generated } from "./index.ts";`;
 
   let content = `\ndeclare module "milkio" {`;
   let types = "";
