@@ -1,24 +1,19 @@
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import { getCookbookToml } from "../utils/get-cookbook-toml";
-import { generator } from "../generator";
 import { join } from "node:path";
 import { cwd } from "node:process";
 import consola from "consola";
 import { execScript } from "../utils/exec-script";
-import fs from "fs-extra";
 import { selectMode } from "../utils/select-mode";
 
 export default await defineCookbookCommand(async (utils) => {
-  consola.start("Cookbook building..");
   const options = await getCookbookToml();
 
-  for (const key in options.projects) {
-    const project = options.projects[key];
-    if (project.type === "milkio") await fs.remove(join(cwd(), "projects", ".milkio"));
-    project.typiaMode = "generation";
-  }
+  const mode = await selectMode(options);
 
-  await generator.watcher(options, await selectMode(options));
+  consola.start("cookbook building..");
+  const { initWatcher } = await import("../watcher");
+  await initWatcher(options, mode, false);
 
   for (const key in options.projects) {
     const project = options.projects[key];

@@ -15,7 +15,7 @@ import { __VERSION__ } from "../../__VERSION__.ts";
 const allFiles: Map<string, Map<string, CookbookWatcherFile>> = new Map();
 const dependencyCache = new Map<string, Set<string>>();
 const reverseDependencyGraph = new Map<string, Set<string>>();
-export async function initWatcher(options: CookbookOptions, mode: string) {
+export async function initWatcher(options: CookbookOptions, mode: string, watch: boolean) {
   const watchers: FSWatcher[] = [];
   const dispose = () => {
     for (const watcher of watchers) watcher.close();
@@ -40,8 +40,10 @@ export async function initWatcher(options: CookbookOptions, mode: string) {
 
           await initializeProject(mode, root, validDirs, options, project);
 
-          const watcher = setupWatcher(mode, root, validDirs, options, project);
-          watchers.push(watcher);
+          if (watch) {
+            const watcher = setupWatcher(mode, root, validDirs, options, project);
+            watchers.push(watcher);
+          }
         })(),
       );
     }

@@ -21,12 +21,12 @@ export default await defineCookbookCommand(async (utils) => {
   options.hash = cookbookTomlHash;
 
   const start = async (mode: string) => {
-    progress.open(chalk.gray("cookbook is starting.."));
     const startTime = new Date();
     (globalThis as any).__COOKBOOK_OPTIONS__ = options;
 
+    progress.open(chalk.gray("cookbook is starting.."));
     const { initWatcher } = await import("../watcher");
-    await initWatcher(options, mode);
+    await initWatcher(options, mode, true);
     const { initWorkers } = await import("../workers");
     await initWorkers(options, mode);
 

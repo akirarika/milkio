@@ -14,7 +14,7 @@ export const configWatcherExtension = defineWatcherExtension({
     typescriptExports += "\n\nexport const configSchema = { get: async () => {\n  return { mode,";
 
     for await (const file of allFiles) {
-      typescriptImports += `\nimport type ${file.importName} from "../${file.path}";`;
+      typescriptImports += `\nimport ${file.importName} from "../${file.path}";`;
       typescriptExports += `\n    // @ts-ignore\n    ...(await ${file.importName}(mode)),`;
     }
     typescriptExports += "\n  }\n}}";
@@ -27,7 +27,7 @@ export const configWatcherExtension = defineWatcherExtension({
     let types = "";
     const content = "";
 
-    header += `\nimport { configSchema } from "./config-schema.ts";`;
+    header += `\nimport type { configSchema } from "./config-schema.ts";`;
     types += "\n    configSchema: typeof configSchema,";
 
     return [header, types, content];
