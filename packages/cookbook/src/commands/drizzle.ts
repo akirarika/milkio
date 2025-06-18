@@ -2,12 +2,11 @@ import { cwd, exit } from "node:process";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import { selectProject } from "../utils/select-project";
 import { join } from "node:path";
-import { exists, readFile, writeFile } from "node:fs/promises";
+import { exists, mkdir, readFile, writeFile } from "node:fs/promises";
 import { execScript } from "../utils/exec-script";
 import { select } from "../utils/select";
-import { env } from "bun";
+import { env, Glob } from "bun";
 import { existsSync } from "fs-extra";
-import { drizzleSchema } from "../generator/drizzle-schema";
 import consola from "consola";
 
 export default await defineCookbookCommand(async (utils, projectUsed?: string, modeUsed?: string) => {
@@ -61,7 +60,23 @@ export default await defineCookbookCommand(async (utils, projectUsed?: string, m
 
   const command = `${cookbookToml.general.packageManager} run drizzle ${params.commands.join(" ")}`;
 
-  await drizzleSchema({ cwd: project.path });
+  if (!(await exists(join(project.path, "drizzle.config.ts")))) return;
+  if (!(await exists(join(project.path, ".milkio")))) await mkdir(join(project.path, ".milkio"));
+
+  const tables = new Glob("{database,module}/**/*.table.ts").scan({
+    cwd: join(project.path),
+    onlyFiles: true,
+  });
+
+  let typescriptImports = "// drizzle-schema";
+  for await (let path of tables) {
+    path = path.replaceAll("\\", "/");
+    const nameWithPath = path.slice(0, path.length - 9); // 9 === ".table.ts".length
+    typescriptImports += `\nexport * from "../${nameWithPath}.table.ts";`;
+  }
+  const typescript = `${typescriptImports}`;
+
+  await writeFile(join(project.path, ".milkio", "drizzle-schema.ts"), typescript);
 
   env.DATABASE_URL = mode.migrateDatabaseUrl;
   process.env.DATABASE_URL = mode.migrateDatabaseUrl;

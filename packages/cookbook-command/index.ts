@@ -89,4 +89,5 @@ export interface CookbookToml {
   config: {
     [key: string]: string | number | boolean;
   };
+  hash: string;
 }
