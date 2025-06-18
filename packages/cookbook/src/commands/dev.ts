@@ -9,7 +9,7 @@ export default await defineCookbookCommand(async (utils) => {
   const options = await getCookbookToml(progress);
 
   const start = async (mode: string) => {
-    progress.open("cookbook is generating..");
+    progress.open(chalk.gray("cookbook is starting.."));
     const startTime = new Date();
     (globalThis as any).__COOKBOOK_OPTIONS__ = options;
 
@@ -26,7 +26,7 @@ export default await defineCookbookCommand(async (utils) => {
     });
 
     const endTime = new Date();
-    await progress.close("Cookbook is ready.");
+    await progress.close(chalk.gray("cookbook is ready."));
     console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Time taken: ") + chalk.hex("#24B56A")(`${endTime.getTime() - startTime.getTime()}ms`));
     console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Operating mode: ") + chalk.hex("#24B56A")(mode));
     console.log("");

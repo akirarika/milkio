@@ -67,7 +67,6 @@ async function initializeProject(mode: string, root: string, validDirs: string[]
     await Bun.write(join(root, ".milkio", ".version"), __VERSION__);
   }
 
-  // 初始化项目的文件Map
   if (!allFiles.has(root)) {
     allFiles.set(root, new Map());
   }
@@ -101,10 +100,10 @@ async function initializeProject(mode: string, root: string, validDirs: string[]
   const asyncTasks = [];
   for (let i = 0; i < imports.length; i++) {
     if (imports[i].async) {
-      asyncTasks.push(imports[i]?.setup?.(root, mode, options, project, extensionChangeFiles[i], filterAllFiles(root, imports[i])));
+      asyncTasks.push(imports[i]?.setup?.(root, mode, options, project, filterChangeFiles(extensionChangeFiles[i]), filterAllFiles(root, imports[i])));
     } else {
       try {
-        await imports[i]?.setup?.(root, mode, options, project, extensionChangeFiles[i], filterAllFiles(root, imports[i]));
+        await imports[i]?.setup?.(root, mode, options, project, filterChangeFiles(extensionChangeFiles[i]), filterAllFiles(root, imports[i]));
       } catch (error) {
         consola.error(error);
       }
@@ -151,14 +150,75 @@ async function generateDeclares(root: string, mode: string, options: CookbookOpt
 function setupWatcher(mode: string, root: string, validDirs: string[], options: CookbookOptions, project: CookbookWatcherExtensionProject) {
   const extensionChangeFiles: Array<CookbookWatcherFile[]> = Array.from({ length: imports.length }, () => []);
 
+  let isProcessing = false;
   let debounceTimer: any = null;
   const currentBatchChanges = new Map<string, boolean>();
 
-  // 确保项目文件Map存在
   if (!allFiles.has(root)) {
     allFiles.set(root, new Map());
   }
   const projectFiles = allFiles.get(root)!;
+
+  const processBatch = async () => {
+    isProcessing = true;
+    try {
+      const batch = new Map(currentBatchChanges);
+      currentBatchChanges.clear();
+
+      for (const [filePath, isDependency] of batch) {
+        const fileName = filePath.split("/").pop()!;
+        const fileData = processFile(filePath, root, fileName);
+        fileData.dependencyChanged = isDependency;
+        if (!projectFiles.has(filePath)) projectFiles.set(filePath, fileData);
+        for (let i = 0; i < imports.length; i++) {
+          if (imports[i].filter(fileData)) {
+            extensionChangeFiles[i].push(fileData);
+          }
+        }
+      }
+
+      const asyncTasks = [];
+      for (let i = 0; i < imports.length; i++) {
+        if (extensionChangeFiles[i].length > 0) {
+          if (imports[i].async) {
+            asyncTasks.push(
+              (async () => {
+                try {
+                  await imports[i]?.setup?.(root, mode, options, project, filterChangeFiles(extensionChangeFiles[i]), filterAllFiles(root, imports[i]));
+                } catch (error) {
+                  // biome-ignore lint/complexity/noUselessCatch: <explanation>
+                  throw error;
+                } finally {
+                  extensionChangeFiles[i] = [];
+                }
+              })(),
+            );
+          } else {
+            try {
+              await imports[i]?.setup?.(root, mode, options, project, filterChangeFiles(extensionChangeFiles[i]), filterAllFiles(root, imports[i]));
+            } catch (error) {
+              consola.error(error);
+            }
+            extensionChangeFiles[i] = [];
+          }
+        }
+      }
+      if (asyncTasks.length > 0) {
+        try {
+          await Promise.all(asyncTasks);
+        } catch (error) {
+          consola.error(error);
+        }
+      }
+
+      await generateDeclares(root, mode, options, project, extensionChangeFiles);
+    } finally {
+      isProcessing = false;
+      if (currentBatchChanges.size > 0) {
+        setTimeout(processBatch, 0);
+      }
+    }
+  };
 
   const watcher = watch(root, { persistent: true, recursive: true }, async (event, filename) => {
     if (!filename) return;
@@ -173,8 +233,6 @@ function setupWatcher(mode: string, root: string, validDirs: string[], options: 
     const fileName = filePath.split("/").pop()!;
     if (fileName.startsWith(".")) return;
     if (fileName.startsWith("_")) return;
-
-    if (debounceTimer) clearTimeout(debounceTimer);
 
     const absolutePath = resolve(root, filePath);
 
@@ -194,57 +252,13 @@ function setupWatcher(mode: string, root: string, validDirs: string[], options: 
       consola.error(`Failed to process file: ${filePath}`);
     }
 
-    debounceTimer = setTimeout(async () => {
-      for (const [filePath, isDependency] of currentBatchChanges) {
-        const fileName = filePath.split("/").pop()!;
-        const fileData = processFile(filePath, root, fileName);
-        fileData.dependencyChanged = isDependency;
-        if (!projectFiles.has(filePath)) projectFiles.set(filePath, fileData);
-        for (let i = 0; i < imports.length; i++) {
-          if (imports[i].filter(fileData)) {
-            extensionChangeFiles[i].push(fileData);
-          }
-        }
-      }
+    if (isProcessing) {
+      return;
+    }
 
-      currentBatchChanges.clear();
+    if (debounceTimer) clearTimeout(debounceTimer);
 
-      const asyncTasks = [];
-      for (let i = 0; i < imports.length; i++) {
-        if (extensionChangeFiles[i].length > 0) {
-          if (imports[i].async) {
-            asyncTasks.push(
-              (async () => {
-                try {
-                  await imports[i]?.setup?.(root, mode, options, project, extensionChangeFiles[i], filterAllFiles(root, imports[i]));
-                } catch (error) {
-                  // biome-ignore lint/complexity/noUselessCatch: <explanation>
-                  throw error;
-                } finally {
-                  extensionChangeFiles[i] = [];
-                }
-              })(),
-            );
-          } else {
-            try {
-              await imports[i]?.setup?.(root, mode, options, project, extensionChangeFiles[i], filterAllFiles(root, imports[i]));
-            } catch (error) {
-              consola.error(error);
-            }
-            extensionChangeFiles[i] = [];
-          }
-        }
-      }
-      if (asyncTasks.length > 0) {
-        try {
-          await Promise.all(asyncTasks);
-        } catch (error) {
-          consola.error(error);
-        }
-      }
-
-      await generateDeclares(root, mode, options, project, extensionChangeFiles);
-    }, 768);
+    debounceTimer = setTimeout(processBatch, 768);
   });
 
   return watcher;
@@ -425,6 +439,16 @@ function getFileType(path: string): string | null {
   }
 
   return path.slice(dot2 + 1, dot1);
+}
+
+function filterChangeFiles(changeFiles: Array<CookbookWatcherFile>): Array<CookbookWatcherFile> {
+  const map = new Map<string, CookbookWatcherFile>();
+  for (const item of changeFiles) {
+    if (!map.has(item.path)) {
+      map.set(item.path, item);
+    }
+  }
+  return Array.from(map.values());
 }
 
 function filterAllFiles(root: string, extension: ReturnType<typeof defineWatcherExtension>) {
