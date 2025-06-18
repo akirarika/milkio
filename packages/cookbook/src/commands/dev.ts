@@ -4,9 +4,21 @@ import { defineCookbookCommand } from "@milkio/cookbook-command";
 import { progress } from "../progress";
 import { getCookbookToml } from "../utils/get-cookbook-toml";
 import { selectMode } from "../utils/select-mode";
+import { join } from "node:path";
+import consola from "consola";
+import { cwd, exit } from "node:process";
+import { calcHash } from "../utils/calc-hash";
 
 export default await defineCookbookCommand(async (utils) => {
-  const options = await getCookbookToml(progress);
+  const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
+  if (!(await cookbookToml.exists())) {
+    consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`);
+    exit(0);
+  }
+  const cookbookTomlText = await cookbookToml.text();
+  const cookbookTomlHash = calcHash(cookbookTomlText);
+  const options = await getCookbookToml(cookbookTomlText, progress);
+  options.hash = cookbookTomlHash;
 
   const start = async (mode: string) => {
     progress.open(chalk.gray("cookbook is starting.."));

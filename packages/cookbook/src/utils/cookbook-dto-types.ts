@@ -49,19 +49,12 @@ export interface CookbookOptions {
         inspect: boolean;
       }>;
       runtime?: "node" | "deno" | "bun";
-      adapter?: string;
       name?: string;
       lazyRoutes?: boolean;
-      typiaMode?: "generation" | "bundler";
       watcher?: Array<string>;
       autoStart?: boolean;
       autoStartDelay?: number;
       connectTestUrl?: string;
-      prisma?: Array<{
-        mode: string;
-        migrateDatabaseUrl: string;
-        migrateMode: "migrate" | "push";
-      }>;
       drizzle?: Array<{
         mode: string;
         migrateDatabaseUrl: string;
@@ -79,6 +72,7 @@ export interface CookbookOptions {
   config: {
     [key: string]: string | number | boolean;
   };
+  hash: string;
 }
 
 export type CookbookSubscribeEmits =

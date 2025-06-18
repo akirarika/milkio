@@ -6,6 +6,7 @@ import { contextWatcherExtension } from "./context";
 import { drizzleWatcherExtension } from "./drizzle";
 import { eventWatcherExtension } from "./event";
 import type { defineWatcherExtension } from "../extensions";
+import { typiaWatcherExtension } from "./typia";
 
 export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
   // extensions
@@ -16,16 +17,19 @@ export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
   metaWatcherExtension,
   contextWatcherExtension,
   eventWatcherExtension,
+  typiaWatcherExtension,
 ];
 
 export const indexTs = `// index
 import "./declares.d.ts";
+import typiaSchema from "./typia-schema.ts";
 import routeSchema from "./route-schema.ts";
 import handlerSchema from "./handler-schema.ts";
 import type { $rejectCode } from "milkio";
 
 export const generated = {
   rejectCode: undefined as unknown as $rejectCode,
+  typiaSchema,
   routeSchema,
   handlerSchema,
 };

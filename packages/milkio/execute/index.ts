@@ -73,6 +73,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
       emit: runtime.emit,
       executeId: options.createdExecuteId,
       config: runtime.runtime.config,
+      typia: generated.typiaSchema,
       call: (module: any, options: any) => __call(context, module, options),
       onFinally: onFinally,
       _: runtime,

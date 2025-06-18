@@ -101,6 +101,14 @@ export default await defineCookbookCommand(async (utils) => {
         await writeFile(join(cwd, "packages", childPackage, "package.json"), JSON.stringify(childPackageJson, null, 2));
       }
 
+      for (const childPackage of [mainPackage, ...childPackages]) {
+        if (childPackage === "create-cookbook") {
+          await Bun.write(join(cwd, "packages", childPackage, "__VERSION__.mjs"), `export const __VERSION__ = "${newVersion}";`);
+        } else {
+          await Bun.write(join(cwd, "packages", childPackage, "__VERSION__.ts"), `export const __VERSION__ = "${newVersion}";`);
+        }
+      }
+
       const checkGitStatus = await $`git status --porcelain`.text();
       if (checkGitStatus.trim() !== "") {
         await $`git add --all`;
@@ -218,14 +226,6 @@ export default await defineCookbookCommand(async (utils) => {
         }
         consola.success("cookbook 二进制文件打包并发布成功");
       })();
-
-      for (const childPackage of [mainPackage, ...childPackages]) {
-        if (childPackage === "create-cookbook") {
-          await Bun.write(join(cwd, "packages", childPackage, "__VERSION__.mjs"), `export const __VERSION__ = "${newVersion}";`);
-        } else {
-          await Bun.write(join(cwd, "packages", childPackage, "__VERSION__.ts"), `export const __VERSION__ = "${newVersion}";`);
-        }
-      }
 
       // 将包发布到 npm
       for (const childPackage of [mainPackage, ...childPackages]) {

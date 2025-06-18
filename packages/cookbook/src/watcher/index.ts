@@ -59,12 +59,12 @@ export async function initWatcher(options: CookbookOptions, mode: string) {
 }
 
 async function initializeProject(mode: string, root: string, validDirs: string[], options: CookbookOptions, project: CookbookWatcherExtensionProject) {
-  if (!(await exists(join(root, ".milkio", ".version"))) || (await readFile(join(root, ".milkio", ".version"), "utf-8")) !== __VERSION__) {
+  if (!(await exists(join(root, ".milkio", ".version"))) || (await readFile(join(root, ".milkio", ".version"), "utf-8")) !== `v${__VERSION__}.${options.hash}`) {
     await rm(join(root, ".milkio"), { recursive: true, force: true });
     try {
       await mkdir(join(root, ".milkio"));
     } catch (error) {}
-    await Bun.write(join(root, ".milkio", ".version"), __VERSION__);
+    await Bun.write(join(root, ".milkio", ".version"), `v${__VERSION__}.${options.hash}`);
   }
 
   if (!allFiles.has(root)) {

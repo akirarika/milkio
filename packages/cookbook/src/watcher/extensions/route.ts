@@ -4,12 +4,12 @@ import { join } from "node:path";
 import { getRate } from "../../progress";
 import { defineWatcherExtension } from "../extensions";
 import { exists, mkdir, readdir, readFile, rm } from "node:fs/promises";
-import { generateRunTs } from "./run-ts/__IMPORTS__";
+import { generateRunTs } from "../generate-run-ts/__IMPORTS__";
 import { calcHash } from "../../utils/calc-hash";
 import { unlinkIfTooLong } from "../../utils/unlink-if-too-long";
 import { getRuntime } from "../../utils/get-runtime";
 import { getTypiaPath } from "../../utils/get-typia-path";
-import { getLatestFile } from "../../utils/get-latest-file";
+import { getLatestSchemaFolder } from "../../utils/get-latest-schema-folder";
 import { exit } from "node:process";
 import chalk from "chalk";
 
@@ -24,10 +24,10 @@ export const routeWatcherExtension = defineWatcherExtension({
     const milkioTranspiledDirPath = join(milkioDirPath, "transpiled");
     const milkioGeneratedRouteDirPath = join(milkioDirPath, "generated", "routes");
     const milkioTranspiledRouteDirPath = join(milkioDirPath, "transpiled", "routes");
-    if (!(await exists(milkioGeneratedDirPath))) await mkdir(milkioGeneratedDirPath);
-    if (!(await exists(milkioTranspiledDirPath))) await mkdir(milkioTranspiledDirPath);
-    if (!(await exists(milkioGeneratedRouteDirPath))) await mkdir(milkioGeneratedRouteDirPath);
-    if (!(await exists(milkioTranspiledRouteDirPath))) await mkdir(milkioTranspiledRouteDirPath);
+    if (!(await exists(milkioGeneratedDirPath))) await mkdir(milkioGeneratedDirPath, { recursive: true });
+    if (!(await exists(milkioTranspiledDirPath))) await mkdir(milkioTranspiledDirPath, { recursive: true });
+    if (!(await exists(milkioGeneratedRouteDirPath))) await mkdir(milkioGeneratedRouteDirPath, { recursive: true });
+    if (!(await exists(milkioTranspiledRouteDirPath))) await mkdir(milkioTranspiledRouteDirPath, { recursive: true });
 
     await generateRunTs(project, milkioDirPath);
 
@@ -38,7 +38,7 @@ export const routeWatcherExtension = defineWatcherExtension({
         (async () => {
           let isGenerate = false;
           const hashFile = calcHash(await readFile(join(file.projectFsPath, file.path)));
-          const hashFileName = `${hashFile}.ts`;
+          const hashFileName = `${hashFile}/schema.ts`;
           const generatedDirPath = join(milkioGeneratedRouteDirPath, file.importName);
           const transpiledDirPath = join(milkioTranspiledRouteDirPath, file.importName);
           const generatedHashFilePath = join(generatedDirPath, hashFileName);
@@ -47,11 +47,11 @@ export const routeWatcherExtension = defineWatcherExtension({
 
           if (!(await exists(generatedDirPath))) {
             isGenerate = true;
-            await mkdir(generatedDirPath);
+            await mkdir(generatedDirPath, { recursive: true });
           }
           if (!(await exists(transpiledDirPath))) {
             isGenerate = true;
-            await mkdir(transpiledDirPath);
+            await mkdir(transpiledDirPath, { recursive: true });
           }
 
           if (!isGenerate && file.dependencyChanged) isGenerate = true;
@@ -71,16 +71,19 @@ export const routeWatcherExtension = defineWatcherExtension({
           routeFileExports += `result: Awaited<ReturnType<typeof ${file.importName}["handler"]>> `;
           routeFileExports += "},";
           if (project?.lazyRoutes === undefined || project?.lazyRoutes === true) {
-            routeFileImports += `\nimport type ${file.importName} from "../../../../${file.path}";`;
-            routeFileExports += `module: () => import("../../../../${file.path}"), `;
+            routeFileImports += `\nimport type ${file.importName} from "../../../../../${file.path}";`;
+            routeFileExports += `module: () => import("../../../../../${file.path}"), `;
           } else {
-            routeFileImports += `\nimport ${file.importName} from "../../../../${file.path}";`;
+            routeFileImports += `\nimport ${file.importName} from "../../../../../${file.path}";`;
             routeFileExports += `module: () => ${file.importName}, `;
           }
           routeFileExports += `validateParams: (params: any): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.misc.validatePrune<Parameters<typeof ${file.importName}["handler"]>[1]>(params) as any, `;
           routeFileExports += `randomParams: (): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.random<Parameters<typeof ${file.importName}["handler"]>[1]>() as any, `;
           routeFileExports += `validateResults: (results: any): IValidation<Awaited<ReturnType<typeof ${file.importName}["handler"]>>> => typia.misc.validatePrune<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any, `;
-          routeFileExports += `resultsToJSON: (results: any): Awaited<ReturnType<typeof ${file.importName}["handler"]>> => typia.json.stringify<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any, `;
+          routeFileExports += `resultsToJSON: (results: any): Awaited<ReturnType<typeof ${file.importName}["handler"]>> => {
+  // @ts-ignore
+  return typia.json.stringify<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any          
+}, `;
           routeFileExports += "};";
 
           const oldFiles = await readdir(generatedDirPath);
@@ -97,7 +100,7 @@ export const routeWatcherExtension = defineWatcherExtension({
 
           await Promise.all(deleteTasks);
 
-          await $`${await getRuntime()} ${await getTypiaPath()} generate --input ${generatedDirPath} --output ${transpiledDirPath} --project ${join(root, "tsconfig.json")}`.cwd(root).quiet();
+          await $`${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`.cwd(root).quiet();
           consola.info(chalk.gray(`[${getRate()}] ✨ type-safety now: ${file.path}`));
         })(),
       );
@@ -143,7 +146,7 @@ export const routeWatcherExtension = defineWatcherExtension({
     for (const file of allFiles) {
       let hashFileName = hashes.get(file.importName);
 
-      if (!hashFileName) hashFileName = await getLatestFile(join(milkioGeneratedRouteDirPath, file.importName), ".ts");
+      if (!hashFileName) hashFileName = await getLatestSchemaFolder(join(milkioGeneratedRouteDirPath, file.importName));
 
       let routePath = file.path.slice(0, file.path.length - 10); // 10 === ".stream.ts".length && 10 === ".action.ts".length
       if (routePath.endsWith("/index") || routePath === "index") routePath = routePath.slice(0, routePath.length - 5); // 5 === "index".length

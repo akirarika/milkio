@@ -7,13 +7,18 @@ import { checkPort } from "../utils/check-port";
 import { killPort } from "../utils/kill-port";
 import type { CookbookOptions } from "./cookbook-dto-types";
 
-export async function getCookbookToml(p?: typeof progress): Promise<CookbookOptions> {
-  const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
-  if (!(await cookbookToml.exists())) {
-    consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`);
-    exit(0);
+export async function getCookbookToml(cookbookToml?: string, p?: typeof progress): Promise<CookbookOptions> {
+  let options: any;
+  if (cookbookToml) {
+    options = Bun.TOML.parse(cookbookToml);
+  } else {
+    const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
+    if (!(await cookbookToml.exists())) {
+      consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`);
+      exit(0);
+    }
+    options = Bun.TOML.parse(await cookbookToml.text());
   }
-  const options: any = Bun.TOML.parse(await cookbookToml.text());
   if (Object.keys(options.projects).length === 0) {
     consola.error(`For at least one project, check your "cookbook.toml".`);
     exit(0);
@@ -24,7 +29,7 @@ export async function getCookbookToml(p?: typeof progress): Promise<CookbookOpti
       consola.error(`This project "${projectName}" does not exist (directory does not exist or there is no package.json), if the project has been deleted, please edit your "cookbook.toml" and delete [projects.${projectName}].`);
       exit(0);
     }
-    if (project.prisma) {
+    if (project.drizzle) {
       for (const key in project.prisma) {
         const prisma = project.prisma[key];
         if (!prisma.mode) {

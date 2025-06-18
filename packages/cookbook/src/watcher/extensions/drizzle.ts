@@ -14,7 +14,7 @@ export const drizzleWatcherExtension = defineWatcherExtension({
     for await (const file of allFiles) {
       typescriptImports += `\nexport * from "../${file.path}";`;
     }
-    const typescript = `${typescriptImports}`;
+    const typescript = `${typescriptImports}\n`;
 
     await Bun.write(writePath, typescript);
   },

@@ -28,6 +28,7 @@ export type ExecuteId = string | "global";
 export interface GeneratedInit {
   routeSchema: any;
   handlerSchema: any;
+  typiaSchema: any;
 }
 
 export interface Results<T> {

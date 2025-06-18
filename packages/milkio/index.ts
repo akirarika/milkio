@@ -10,6 +10,7 @@ export * from "./handler/index.ts";
 export * from "./world/index.ts";
 export * from "./action/index.ts";
 export * from "./stream/index.ts";
+export * from "./typia/index.ts";
 export * from "./logger/index.ts";
 export * from "./context/index.ts";
 export * from "./meta/index.ts";
