@@ -5,6 +5,7 @@ import { cwd } from "node:process";
 import consola from "consola";
 import { execScript } from "../utils/exec-script";
 import { selectMode } from "../utils/select-mode";
+import { progress } from "../progress";
 
 export default await defineCookbookCommand(async (utils) => {
   const options = await getCookbookToml();
@@ -12,9 +13,10 @@ export default await defineCookbookCommand(async (utils) => {
 
   const mode = await selectMode(options);
 
-  consola.start("cookbook building..");
+  progress.open("cookbook building..");
   const { initWatcher } = await import("../watcher");
   await initWatcher(options, mode, false);
+  progress.close("");
 
   for (const key in options.projects) {
     const project = options.projects[key];

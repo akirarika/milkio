@@ -33,10 +33,11 @@ export default await defineCookbookCommand(async (utils) => {
     const cookbookServerAccessKey = `c${await calcHash(crypto.randomUUID())}`;
     const cookbookServerBaseUrl = `http://localhost:${cookbookServerPort}/${cookbookServerAccessKey}`;
 
+    const { startCookbookServer } = await import("@milkio/cookbook-server");
+    const server = await startCookbookServer({ port: cookbookServerPort, accessKey: cookbookServerAccessKey });
+
     const { initWorkers } = await import("../workers");
     await initWorkers(options, mode, cookbookServerBaseUrl);
-
-    const { startCookbookServer } = await import("@milkio/cookbook-server");
 
     const endTime = new Date();
     const time = Math.max(endTime.getTime() - startTime.getTime(), 0);
@@ -48,8 +49,6 @@ export default await defineCookbookCommand(async (utils) => {
     console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Base URL: ") + chalk.hex("#24B56A")(cookbookServerBaseUrl));
 
     console.log("");
-
-    const server = await startCookbookServer({ port: cookbookServerPort, accessKey: cookbookServerAccessKey });
   };
 
   const params = utils.getParams();

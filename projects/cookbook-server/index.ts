@@ -16,7 +16,7 @@ export async function startCookbookServer(options: { port: number; accessKey: st
 
   worldPromise.resolve(world);
 
-  Bun.serve({
+  const serve = Bun.serve({
     port: options.port,
     async fetch(request) {
       return world.listener.fetch({
@@ -27,10 +27,10 @@ export async function startCookbookServer(options: { port: number; accessKey: st
     },
   });
 
-  return world;
+  return { world, serve };
 }
 
-export type World = Awaited<ReturnType<typeof startCookbookServer>>;
+export type World = Awaited<ReturnType<typeof startCookbookServer>>["world"];
 
 export const create = (..._: Array<any>): any => {
   throw new Error("Not implemented");
