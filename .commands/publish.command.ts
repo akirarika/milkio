@@ -175,12 +175,12 @@ export default await defineCookbookCommand(async (utils) => {
           {
             platform: "linux",
             arch: "x64",
-            target: "bun-linux-x64-baseline",
+            target: "bun-linux-x64",
           },
           {
             platform: "win32",
             arch: "x64",
-            target: "bun-windows-x64-baseline",
+            target: "bun-windows-x64",
           },
         ];
 
