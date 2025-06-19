@@ -11,6 +11,8 @@ import { createInterface } from "node:readline";
 import { Readable } from "node:stream";
 import { imports, indexTs } from "./extensions/__IMPORTS__.ts";
 import { __VERSION__ } from "../../__VERSION__.ts";
+import chalk from "chalk";
+import { getRate } from "../progress/index.ts";
 
 const allFiles: Map<string, Map<string, CookbookWatcherFile>> = new Map();
 const dependencyCache = new Map<string, Set<string>>();
@@ -163,6 +165,7 @@ function setupWatcher(mode: string, root: string, validDirs: string[], options: 
 
   const processBatch = async () => {
     isProcessing = true;
+    consola.info(chalk.gray(`[${getRate()}] ✨ type-safety applying..`));
     try {
       const batch = new Map(currentBatchChanges);
       currentBatchChanges.clear();
