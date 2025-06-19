@@ -1,6 +1,7 @@
 import { join } from "node:path";
+import type { CookbookOptions } from "../../utils/cookbook-dto-types";
 
-export async function nodeHandler(milkioDirPath: string) {
+export async function nodeHandler(project: CookbookOptions["projects"]["key"], milkioDirPath: string) {
   await Bun.write(
     join(milkioDirPath, "run.ts"),
     `#!/usr/bin/env node
@@ -11,7 +12,9 @@ import { env } from "node:process";
 
 async function bootstrap() {
   const world = await create({
-    develop: env.COOKBOOK_DEVELOP === "ENABLE",
+    port: ${project.port},
+    develop: Boolean(env.COOKBOOK_BASE_URL),
+    fetchEnv: (key: string) => env[key] ?? undefined,
   });
 
   function handler(request: Request) {

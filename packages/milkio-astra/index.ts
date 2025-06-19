@@ -56,6 +56,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
       for (const projectName in cookbookOptions.projects) {
         const project = cookbookOptions.projects[projectName];
         if (project.type !== "milkio") continue;
+        if (projectName === "cookbook-server" && project.port === 52593) continue; // the cookbook-server is not a milkio project
         projectStatus.set(projectName, withResolvers());
         let error: any;
         let counter = 16;

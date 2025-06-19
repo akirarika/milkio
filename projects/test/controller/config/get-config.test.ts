@@ -9,6 +9,6 @@ it.sequential("basic", async () => {
   if (error) throw reject("Milkio did not execute successfully", error);
 
   // Check if the return value is as expected
-  expect(results.foo).toBe("development");
+  expect(results.foo).toBe("test");
   expect(results.baz).toBe("baz");
 });

@@ -6,7 +6,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { env } from "bun";
 import killPort from "kill-port";
 import { outputPrefix, setMaxNameLength } from "../utils/output-prefix.ts";
-import { useCookbookWorld } from "@milkio/cookbook-server";
+// import { useCookbookWorld } from "@milkio/cookbook-server";
 
 const platform = os.platform();
 let workerId = 1;
@@ -25,12 +25,12 @@ export interface Worker {
   }>;
 }
 
-const world = await useCookbookWorld();
+// const world = await useCookbookWorld();
 
-export async function initWorkers(options: CookbookOptions, mode: string) {
+export async function initWorkers(options: CookbookOptions, mode: string, baseUrl: string) {
   for (const projectName in options.projects) {
     const project = options.projects[projectName];
-    const env: Record<string, string | undefined> = { MODE: mode };
+    const env: Record<string, string | undefined> = { MODE: mode, COOKBOOK_BASE_URL: baseUrl, MILKIO_PORT: `${project.port}` };
     const worker = createWorker(projectName, {
       env,
       command: project.start ?? `${options.general.packageManager} run dev`,
@@ -61,10 +61,10 @@ export function createWorker(
     const message = `Process exited with:${code ?? null}`;
     if (code !== 0 && options.stdout !== "ignore") {
       const message = `\n-- code: ${code ?? signal}\n`;
-      world.emit("cookbook:worker:log", { key, chunk: message, type: "stderr" });
+      // world.emit("cookbook:worker:log", { key, chunk: message, type: "stderr" });
     }
 
-    world.emit("cookbook:worker:state", { key, state: "stopped", code });
+    // world.emit("cookbook:worker:state", { key, state: "stopped", code });
     worker.state = "stopped";
   };
 
@@ -78,7 +78,7 @@ export function createWorker(
     },
     kill: async () => {
       if (worker.state === "stopped") return;
-      world.emit("cookbook:worker:state", { key, state: "stopped", code: null });
+      // world.emit("cookbook:worker:state", { key, state: "stopped", code: null });
       if (!spawnProcess) return Promise.resolve();
       await Promise.all([
         new Promise((resolve) => {
@@ -105,9 +105,9 @@ export function createWorker(
         if (options.port) await killPort(options.port);
       } catch (error) {}
       const message = `\n--------------------------------\n# Start ${key}\n--------------------------------`;
-      world.emit("cookbook:worker:log", { key, chunk: message, type: "stdout" });
+      // world.emit("cookbook:worker:log", { key, chunk: message, type: "stdout" });
       try {
-        const envMixed: Record<string, string> = { ...env, ...(options.env ?? {}), COOKBOOK_DEVELOP: "ENABLE" };
+        const envMixed: Record<string, string> = { ...env, ...(options.env ?? {}), IS_COOKBOOK: "1" };
         if (worker.meta.inspect) envMixed.NODE_OPTIONS = "--inspect";
         spawnProcess = spawn(platform === "win32" ? "powershell.exe" : "bash", ["-c", options.command], {
           cwd: options.cwd,
@@ -133,7 +133,7 @@ export function createWorker(
           })
           .on("exit", handleExit);
 
-        world.emit("cookbook:worker:state", { key, state: "running", code: null });
+        // world.emit("cookbook:worker:state", { key, state: "running", code: null });
         worker.state = "running";
       } catch (err) {
         console.error("Spawn error:", err);
@@ -197,7 +197,7 @@ const handleMessage = (worker: Worker, key: string, chunk: ArrayBuffer, type: "s
   const prefix = outputPrefix(key, worker.id);
   stdout.write(replaceNewlines(strRaw, prefix));
 
-  world.emit("cookbook:worker:log", { key, chunk: str, type });
+  // world.emit("cookbook:worker:log", { key, chunk: str, type });
 };
 
 function replaceNewlines(str: string, prefix: string): string {

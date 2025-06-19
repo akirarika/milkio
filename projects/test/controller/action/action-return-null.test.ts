@@ -9,7 +9,6 @@ it.sequential("basic", async () => {
     },
     generateParams: true,
   });
-  context.logger.info(error, results);
   if (error) throw reject("Milkio did not execute successfully", error);
 
   expect(results).toEqual({});

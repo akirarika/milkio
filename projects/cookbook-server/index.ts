@@ -3,29 +3,21 @@ import { createWorld } from "milkio";
 import { generated } from "./.milkio/index.ts";
 import { configSchema } from "./.milkio/config-schema.ts";
 
-export async function create(options: { develop: boolean }) {
+const worldPromise = Promise.withResolvers();
+
+export const useCookbookWorld = () => worldPromise.promise;
+
+export async function startCookbookServer(options: { port: number; accessKey: string }) {
   const world = await createWorld(generated, configSchema, {
-    ...options,
-    port: 8000,
-    cookbook: { cookbookPort: 8000 },
-    develop: options.develop,
-  });
-
-  return world;
-}
-
-const world = create({
-  develop: false,
-});
-
-export const useCookbookWorld = () => world;
-
-export async function startCookbookServer() {
-  const world = await create({
+    port: options.port,
+    accessKey: options.accessKey,
     develop: false,
   });
-  return Bun.serve({
-    port: world.listener.port,
+
+  worldPromise.resolve(world);
+
+  Bun.serve({
+    port: options.port,
     async fetch(request) {
       return world.listener.fetch({
         request,
@@ -34,6 +26,12 @@ export async function startCookbookServer() {
       });
     },
   });
+
+  return world;
 }
 
-export type World = Awaited<ReturnType<typeof create>>;
+export type World = Awaited<ReturnType<typeof startCookbookServer>>;
+
+export const create = (..._: Array<any>): any => {
+  throw new Error("Not implemented");
+};

@@ -6,7 +6,7 @@ cookbookPort = 8000
 
 
 [projects.cookbook-server]
-port = 8000
+port = 52593
 type = "milkio"
 runtime = "bun"
 autoStart = false

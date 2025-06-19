@@ -4,9 +4,8 @@ import { defineDefaultExecuteIdGenerator } from "../execute/execute-id-generator
 export interface MilkioInit {
   port: number;
   develop: boolean;
-  cookbook: {
-    cookbookPort: number;
-  };
+  fetchEnv?: (key: string) => string | undefined;
+  accessKey?: string;
   cors?: {
     corsAllowMethods?: string;
     corsAllowHeaders?: string;
@@ -45,6 +44,8 @@ export async function createWorld<MilkioOptions extends MilkioInit>(generated: G
   } as MilkioRuntimeInit<MilkioOptions>["runtime"];
 
   const eventManager = __initEventManager();
+
+  if (options.accessKey) options.ignorePathLevel = options.ignorePathLevel ? options.ignorePathLevel + 1 : 1;
 
   const _: MilkioRuntimeInit<MilkioOptions> = {
     ...options,

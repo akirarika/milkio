@@ -51,6 +51,16 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
     const url = new URL(options.request.url);
     let pathArray = url.pathname.substring(1).split("/");
+    if (runtime.accessKey && pathArray.at(0) !== runtime.accessKey) {
+      return new Response(undefined, {
+        status: 403,
+        headers: {
+          "Access-Control-Allow-Methods": runtime.cors?.corsAllowMethods ?? "*",
+          "Access-Control-Allow-Origin": runtime.cors?.corsAllowOrigin ?? "*",
+          "Access-Control-Allow-Headers": runtime.cors?.corsAllowHeaders ?? "*",
+        },
+      });
+    }
     if (runtime.ignorePathLevel !== undefined && runtime.ignorePathLevel !== 0) pathArray = pathArray.slice(runtime.ignorePathLevel);
     const pathString = `/${pathArray.join("/")}`;
 

@@ -3,9 +3,6 @@ import { useVitePluginMilkio } from "@milkio/vite-plugin-milkio";
 
 export default defineConfig(async ({ command }) => {
   return {
-    server: {
-      port: 8000,
-    },
     build: {
       manifest: true,
       sourcemap: true,

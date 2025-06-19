@@ -8,6 +8,7 @@ import { join } from "node:path";
 import consola from "consola";
 import { cwd, exit } from "node:process";
 import { calcHash } from "../utils/calc-hash";
+import { getRandomPort } from "../utils/get-random-port";
 
 export default await defineCookbookCommand(async (utils) => {
   const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
@@ -27,25 +28,28 @@ export default await defineCookbookCommand(async (utils) => {
     const startTime = new Date();
     const { initWatcher } = await import("../watcher");
     await initWatcher(options, mode, true);
-    const { initWorkers } = await import("../workers");
-    await initWorkers(options, mode);
 
-    const { startCookbookServer, useCookbookWorld } = await import("@milkio/cookbook-server");
-    const world = await useCookbookWorld();
-    process.on("SIGINT", async () => {
-      await world.emit("cookbook:exit", undefined);
-      process.exit(0);
-    });
+    const cookbookServerPort = await getRandomPort();
+    const cookbookServerAccessKey = `c${await calcHash(crypto.randomUUID())}`;
+    const cookbookServerBaseUrl = `http://localhost:${cookbookServerPort}/${cookbookServerAccessKey}`;
+
+    const { initWorkers } = await import("../workers");
+    await initWorkers(options, mode, cookbookServerBaseUrl);
+
+    const { startCookbookServer } = await import("@milkio/cookbook-server");
 
     const endTime = new Date();
     const time = Math.max(endTime.getTime() - startTime.getTime(), 0);
     await progress.close(chalk.gray("cookbook is ready."));
     console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Time taken: ") + chalk.hex("#24B56A")(`${time}ms`) + (time > 8192 ? chalk.gray(" (✨ cached! next start faster)") : ""));
     console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Current mode: ") + chalk.hex("#24B56A")(mode));
+    console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Current mode: ") + chalk.hex("#24B56A")(mode));
+
+    console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Base URL: ") + chalk.hex("#24B56A")(cookbookServerBaseUrl));
+
     console.log("");
 
-    const server = await startCookbookServer();
-    world.on("cookbook:exit", async () => await server.stop(true));
+    const server = await startCookbookServer({ port: cookbookServerPort, accessKey: cookbookServerAccessKey });
   };
 
   const params = utils.getParams();

@@ -1,6 +1,6 @@
 import TOML from "@iarna/toml";
 import { join } from "node:path";
-import { cwd, env } from "node:process";
+import { cwd, env, exit } from "node:process";
 import { existsSync, readdirSync } from "node:fs";
 import { createRequestListener } from "@mjackson/node-fetch-server";
 import type { PluginOption } from "vite";
@@ -18,7 +18,9 @@ export function useVitePluginMilkio(options?: {
       server.middlewares.use(async (req, res, next) => {
         const app = await server.ssrLoadModule("index.ts", { fixStacktrace: false });
         const milkio = await app.create({
-          develop: env.COOKBOOK_DEVELOP === "ENABLE",
+          port: Number(env.MILKIO_PORT),
+          develop: Boolean(env.COOKBOOK_BASE_URL),
+          fetchEnv: (key: string) => env[key] ?? undefined,
         });
         try {
           return await createRequestListener(async (request: Request) => {
