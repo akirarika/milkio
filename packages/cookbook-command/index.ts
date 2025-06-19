@@ -23,6 +23,7 @@ export type CookbookCommandHandler = (utils: {
     commands: Array<string>;
     options: Record<string, string | true>;
     raw: Array<string>;
+    subCommand?: string;
   };
   inputBoolean: (options: { env: string; message: string; placeholder?: string }) => Promise<boolean>;
   inputString: (options: { env: string; message: string; placeholder?: string }) => Promise<string>;

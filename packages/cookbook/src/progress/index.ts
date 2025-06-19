@@ -30,7 +30,7 @@ export const progress = {
       progress.rate = Math.floor(progress.current * 1000);
     }, intervalFrequency);
     progress.textIntervalId = setInterval(() => {
-      if (progress.rate < 1000) consola.start(`${chalk.gray(`[${getRate()}] `)}${message}`);
+      if (progress.rate < 1000) consola.start(chalk.gray(`${`[${getRate()}] `}${message}`));
     }, 334);
   },
   async close(message: string) {
@@ -43,7 +43,7 @@ export const progress = {
     }
     progress.rate = 1000;
 
-    consola.success(`[100.0%] ${message}`);
+    consola.success(chalk.gray(`[100.0%] ${message}`));
   },
 };
 

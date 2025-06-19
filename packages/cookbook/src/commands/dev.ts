@@ -24,7 +24,7 @@ export default await defineCookbookCommand(async (utils) => {
     const startTime = new Date();
     (globalThis as any).__COOKBOOK_OPTIONS__ = options;
 
-    progress.open(chalk.gray("cookbook is starting.."));
+    progress.open("cookbook is starting..");
     const { initWatcher } = await import("../watcher");
     await initWatcher(options, mode, true);
     const { initWorkers } = await import("../workers");
@@ -47,7 +47,11 @@ export default await defineCookbookCommand(async (utils) => {
     world.on("cookbook:exit", async () => await server.stop(true));
   };
 
-  void start(await selectMode(options));
+  let mode: string;
+  const params = utils.getParams();
+  if (params.subCommand) mode = params.subCommand;
+  else mode = await selectMode(options);
+  void start(mode);
 
   const resolvers = Promise.withResolvers();
   await resolvers.promise; // let the never exit

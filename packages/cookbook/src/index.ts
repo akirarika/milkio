@@ -16,6 +16,7 @@ export type Params = {
   commands: Array<string>;
   options: Record<string, string | true>;
   raw: Array<string>;
+  subCommand?: string; // 新增子命令字段
 };
 
 export async function cookbook() {
@@ -44,6 +45,14 @@ export async function cookbook() {
   }
   if (argv.length === 2) params.command = "index";
   if (argv.length !== 2) params.command = `${argv[2] ?? "index"}`;
+
+  // 处理冒号分隔的子命令
+  if (params.command.includes(":")) {
+    const parts = params.command.split(":");
+    params.command = parts[0];
+    params.subCommand = parts.slice(1).join(":");
+  }
+
   if (params.command.startsWith("--")) params.command = params.command.slice(2);
   if (params.command.startsWith("-") && params.command !== "-") params.command = params.command.slice(1);
 

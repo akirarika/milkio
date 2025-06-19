@@ -6,6 +6,7 @@ import { asciis } from "./asciis";
 import { uniqWith } from "lodash-es";
 import { exit } from "node:process";
 import { search } from "@inquirer/prompts";
+import type { Params } from "..";
 
 export async function selectMode(options: CookbookOptions) {
   if (!options?.general?.modes || options.general.modes.length === 0 || options.general.modes.includes("development") === false) {
