@@ -8,6 +8,7 @@ import { selectMode } from "../utils/select-mode";
 
 export default await defineCookbookCommand(async (utils) => {
   const options = await getCookbookToml();
+  const params = utils.getParams();
 
   const mode = await selectMode(options);
 
@@ -17,6 +18,8 @@ export default await defineCookbookCommand(async (utils) => {
 
   for (const key in options.projects) {
     const project = options.projects[key];
+    if (params.commands.length > 0 && !params.commands.includes(key)) continue;
+
     await execScript(`${project.build ?? `${options.general.packageManager} run build`}`, {
       cwd: join(cwd(), "projects", key),
     });
