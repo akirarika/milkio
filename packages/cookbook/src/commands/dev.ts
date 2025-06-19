@@ -21,10 +21,10 @@ export default await defineCookbookCommand(async (utils) => {
   options.hash = cookbookTomlHash;
 
   const start = async (mode: string) => {
-    const startTime = new Date();
     (globalThis as any).__COOKBOOK_OPTIONS__ = options;
 
     progress.open("cookbook is starting..");
+    const startTime = new Date();
     const { initWatcher } = await import("../watcher");
     await initWatcher(options, mode, true);
     const { initWorkers } = await import("../workers");
@@ -38,20 +38,18 @@ export default await defineCookbookCommand(async (utils) => {
     });
 
     const endTime = new Date();
+    const time = Math.max(endTime.getTime() - startTime.getTime(), 0);
     await progress.close(chalk.gray("cookbook is ready."));
-    console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Time taken: ") + chalk.hex("#24B56A")(`${endTime.getTime() - startTime.getTime()}ms`));
-    console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Operating mode: ") + chalk.hex("#24B56A")(mode));
+    console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Time taken: ") + chalk.hex("#24B56A")(`${time}ms`) + (time > 8192 ? chalk.gray(" (✨ cached! next start faster)") : ""));
+    console.log(chalk.hex("#24B56A")("△ ") + chalk.hex("#E6E7E9")("Current mode: ") + chalk.hex("#24B56A")(mode));
     console.log("");
 
     const server = await startCookbookServer();
     world.on("cookbook:exit", async () => await server.stop(true));
   };
 
-  let mode: string;
   const params = utils.getParams();
-  if (params.subCommand) mode = params.subCommand;
-  else mode = await selectMode(options);
-  void start(mode);
+  void start(await selectMode(options, params));
 
   const resolvers = Promise.withResolvers();
   await resolvers.promise; // let the never exit

@@ -8,10 +8,26 @@ import { exit } from "node:process";
 import { search } from "@inquirer/prompts";
 import type { Params } from "..";
 
-export async function selectMode(options: CookbookOptions) {
+export async function selectMode(options: CookbookOptions, params?: Params) {
   if (!options?.general?.modes || options.general.modes.length === 0 || options.general.modes.includes("development") === false) {
     consola.warn("The 'general->modes' is not configured. Edit your cookbook.toml file and add at least one mode, with 'development' being mandatory.");
     process.exit(1);
+  }
+
+  if (params?.subCommand) {
+    let mode: string | undefined = undefined;
+    if (options.general.modes.includes(params.subCommand)) mode = params.subCommand;
+    for (const currMode of options.general.modes) {
+      if (currMode.startsWith(params.subCommand)) {
+        mode = currMode;
+        break;
+      }
+    }
+    if (!mode) {
+      consola.error(`The mode '${params.subCommand}' is not configured. Edit your cookbook.toml file and add it to the 'general->modes' array.`);
+      process.exit(1);
+    }
+    return mode;
   }
 
   if (env?.MODE) {

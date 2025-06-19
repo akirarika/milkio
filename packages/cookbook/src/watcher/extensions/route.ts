@@ -43,7 +43,7 @@ export const routeWatcherExtension = defineWatcherExtension({
           const transpiledDirPath = join(milkioTranspiledRouteDirPath, file.importName);
           const generatedHashFilePath = join(generatedDirPath, hashFileName);
           const transpiledHashFilePath = join(transpiledDirPath, hashFileName);
-          hashes.set(file.importName, hashFileName);
+          hashes.set(file.importName, hashFile);
 
           if (!(await exists(generatedDirPath))) {
             isGenerate = true;
@@ -144,9 +144,9 @@ export const routeWatcherExtension = defineWatcherExtension({
 
     const routePaths: Set<string> = new Set();
     for (const file of allFiles) {
-      let hashFileName = hashes.get(file.importName);
-
-      if (!hashFileName) hashFileName = await getLatestSchemaFolder(join(milkioGeneratedRouteDirPath, file.importName));
+      let hashFile = hashes.get(file.importName);
+      if (!hashFile) hashFile = await getLatestSchemaFolder(join(milkioGeneratedRouteDirPath, file.importName));
+      const hashFileName = `${hashFile}/schema.ts`;
 
       let routePath = file.path.slice(0, file.path.length - 10); // 10 === ".stream.ts".length && 10 === ".action.ts".length
       if (routePath.endsWith("/index") || routePath === "index") routePath = routePath.slice(0, routePath.length - 5); // 5 === "index".length
