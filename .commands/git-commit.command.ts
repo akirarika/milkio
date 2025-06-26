@@ -77,7 +77,7 @@ Output only the final result without extraneous text. Your result will be direct
 Note: the first word should be lowercase unless it is a proper noun or abbreviation all words should be lowercase and do not add any punctuation like periods question marks or exclamation points at the end.
 `;
 
-    const response = await utils.fetchEventSource(`${ai.aiBaseUrl}chat/completions`, {
+    const response = await utils.fetchEventSource(`${ai.aiBaseUrl}/chat/completions`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${ai.aiApiKey}`,
@@ -94,6 +94,8 @@ Note: the first word should be lowercase unless it is a proper noun or abbreviat
     });
 
     for await (const chunk of response) {
+      console.log("111", chunk);
+
       const content = chunk.data?.choices?.at(0)?.delta?.content ?? "";
       commitMessage += content;
     }

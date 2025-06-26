@@ -413,7 +413,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         await handleClose("stream");
       }
     } catch (error) {
-      throw exceptionHandler(options.executeId, logger, error);
+      const result = exceptionHandler(options.executeId, logger, error);
+      port.postMessage({ success: false, data: [result, null], executeId: options.executeId, done: true });
     }
   };
 
