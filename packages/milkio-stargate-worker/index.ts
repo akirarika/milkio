@@ -90,7 +90,8 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
               if (event.data.done) {
                 stargateOptions.port.removeEventListener("message", handler);
                 executeIds.delete(executeId);
-                flow.return(undefined, true);
+                if (event.data.success) flow.return(undefined, true);
+                else flow.throw(event.data.data?.at(0), true);
               } else if (!event.data.success) {
                 stargateOptions.port.removeEventListener("message", handler);
                 executeIds.delete(executeId);
