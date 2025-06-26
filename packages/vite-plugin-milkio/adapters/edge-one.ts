@@ -16,20 +16,20 @@ export function edgeOneAdapter(): MilkioAdapter {
        * ------------------------------------------------------------------------------------------------
        */
       const input: ViteInput = {};
-      const results = await glob("controller/**/*.{action,stream}.ts");
+      const results = await glob("module/**/*.{action,stream}.ts");
       const tasks: Array<Promise<void>> = [];
-      for (const controllerPath of results) {
+      for (const modulePath of results) {
         tasks.push(
           (async () => {
-            const pathSplit = controllerPath
+            const pathSplit = modulePath
               .replaceAll("\\", "/")
-              .slice(0, controllerPath.length - 10) // 10 === ".action.ts".length or ".stream.ts".length
+              .slice(0, modulePath.length - 10) // 10 === ".action.ts".length or ".stream.ts".length
               .split("/")
               .slice(1);
             const level = pathSplit.length;
             const path = pathSplit.join("/");
             const backToRoot = "../".repeat(level + 1);
-            const routesFolder = `.milkio/generated/routes/controller__${path.replaceAll("/", "__").replaceAll("-", "_")}`;
+            const routesFolder = `.milkio/generated/routes/module__${path.replaceAll("/", "__").replaceAll("-", "_")}`;
 
             // Traverse the routes generated in the directory and select the latest piece of data
             const routesFolderFiles = await fs.readdir(routesFolder);

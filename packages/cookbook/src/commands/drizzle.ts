@@ -99,14 +99,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
 
     consola.success("Drizzle migration successfully generated.");
     if (existsSync(join(cwd(), "projects", project.value, "drizzle.migrate.ts"))) {
-      if (
-        (await utils.inputBoolean({
-          env: "QUIET_MIGRATE",
-          message: "Do you want to automatically execute your `drizzle.migrate.ts`?",
-        })) === true
-      ) {
-        await import(join(cwd(), "projects", project.value, "drizzle.migrate.ts"));
-      }
+      await import(join(cwd(), "projects", project.value, "drizzle.migrate.ts"));
     } else {
       consola.info("If you want to automatically execute the `migrate` command after `generate`, you can try creating a `drizzle.migrate.ts` file, which will be automatically executed by the cookbook.");
     }

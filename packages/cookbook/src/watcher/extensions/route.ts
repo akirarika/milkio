@@ -16,7 +16,7 @@ import chalk from "chalk";
 export const routeWatcherExtension = defineWatcherExtension({
   async: false,
   filter: (file) => {
-    return (file.path.startsWith("controller/") || file.path.startsWith("module/")) && (file.type === "action" || file.type === "stream");
+    return file.path.startsWith("module/") && (file.type === "action" || file.type === "stream");
   },
   setup: async (root, mode, options, project, changeFiles, allFiles) => {
     const milkioDirPath = join(root, ".milkio");
@@ -151,8 +151,7 @@ export const routeWatcherExtension = defineWatcherExtension({
       let routePath = file.path.slice(0, file.path.length - 10); // 10 === ".stream.ts".length && 10 === ".action.ts".length
       if (routePath.endsWith("/index") || routePath === "index") routePath = routePath.slice(0, routePath.length - 5); // 5 === "index".length
       if (routePath === "public" && routePath.length > 1) routePath = routePath.slice(0, routePath.length - 1);
-      if (routePath.startsWith("controller/")) routePath = routePath.slice(11); // 11 === "controller/".length
-      if (routePath.startsWith("module/")) routePath = `_${routePath.slice(6)}`; // 6 === "module".length
+      if (routePath.startsWith("module/")) routePath = `${routePath.slice(7)}`; // 7 === "module/".length
       if (routePath !== "/" && routePath.endsWith("/")) routePath = routePath.slice(0, routePath.length - 1);
       if (routePaths.has(routePath)) {
         consola.error(`Invalid path: "${file.path}". The most common reason for having paths duplicate is that you created a new "${file}" and have a "${file}/index.ts".\n`);

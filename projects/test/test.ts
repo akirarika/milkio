@@ -9,8 +9,6 @@ export const stargate = await createStargate<typeof generated>({
 export const astra = await createAstra({
   stargate,
   bootstrap: async () => {
-    return {
-      world: "world",
-    };
+    return {};
   },
 });

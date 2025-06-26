@@ -102,11 +102,6 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
       await runtime.emit("milkio:httpRequest", { executeId, logger, path: http.path.string as string, http });
 
-      if (!runtime.develop && (http.path.string as string).startsWith("/_/")) {
-        await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http });
-        throw reject("NOT_FOUND", { path: http.path.string as string });
-      }
-
       if (!options.request.headers.get("Accept")?.startsWith("text/event-stream")) {
         // action
         let routeSchema = options.routeSchema;
@@ -340,7 +335,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
       {
         get: (target, property) => {
           if (property === "notFound") return true;
-          throw reject("UNACCEPTABLE", { expected: "context.http", message: "This request was invoked through the execute method. Since no actual request was generated, the HTTP methods under the context cannot be accessed." });
+          return undefined;
         },
         set: () => {
           throw reject("UNACCEPTABLE", { expected: "context.http", message: "This request was invoked through the execute method. Since no actual request was generated, the HTTP methods under the context cannot be accessed." });

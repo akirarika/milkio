@@ -84,7 +84,7 @@ async function initializeProject(mode: string, root: string, validDirs: string[]
   for (let i = 0; i < imports.length; i++) extensionChangeFiles.push([]);
 
   for await (const filePathRaw of filesAsyncGenerator) {
-    if (filePathRaw.endsWith(".test.ts") || filePathRaw.endsWith(".spec.ts")) continue;
+    if (filePathRaw.endsWith(".test.ts") || filePathRaw.endsWith(".spec.ts") || filePathRaw.includes(" copy")) continue;
     const filePath = filePathRaw.replaceAll("\\", "/");
     const fileName = filePath.split("/").pop()!;
     if (fileName.startsWith(".")) continue;
