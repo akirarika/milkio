@@ -94,8 +94,6 @@ Note: the first word should be lowercase unless it is a proper noun or abbreviat
     });
 
     for await (const chunk of response) {
-      console.log("111", chunk);
-
       const content = chunk.data?.choices?.at(0)?.delta?.content ?? "";
       commitMessage += content;
     }
