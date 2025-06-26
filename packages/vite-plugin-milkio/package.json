@@ -1,0 +1,15 @@
+{
+  "name": "@milkio/vite-plugin-milkio",
+  "type": "module",
+  "version": "1.0.0-beta.104",
+  "module": "index.ts",
+  "dependencies": {
+    "@iarna/toml": "^2.2.5",
+    "@mjackson/node-fetch-server": "0.6.1",
+    "fs-extra": "^11.3.0",
+    "glob": "^11.0.1"
+  },
+  "devDependencies": {
+    "@ryoppippi/unplugin-typia": "^2.6.5"
+  }
+}

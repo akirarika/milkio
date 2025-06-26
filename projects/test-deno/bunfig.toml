@@ -1,0 +1,7 @@
+# preload = ["./.milkio/bun-preload.ts"]
+
+[test]
+# preload = ["./.milkio/bun-preload.ts"]
+
+[install]
+registry = "https://registry.npmjs.org/"

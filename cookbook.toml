@@ -1,0 +1,45 @@
+[general]
+start = "bun run dev"
+packageManager = "bun"
+modes = ["test", "development", "production"]
+cookbookPort = 8000
+
+
+[projects.cookbook-server]
+port = 52593
+type = "milkio"
+runtime = "bun"
+autoStart = false
+
+
+[projects.test]
+port = 9000
+type = "milkio"
+runtime = "node"
+autoStart = true
+drizzle = [
+    { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
+    { mode = "production", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
+]
+
+
+[projects.test-bun]
+port = 9001
+type = "milkio"
+runtime = "bun"
+autoStart = true
+drizzle = [
+    { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
+    { mode = "production", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
+]
+
+
+[projects.test-deno]
+port = 9002
+type = "milkio"
+runtime = "deno"
+autoStart = true
+drizzle = [
+    { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
+    { mode = "production", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
+]

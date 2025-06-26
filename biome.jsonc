@@ -1,0 +1,45 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "formatter": {
+    "indentStyle": "space",
+    "lineWidth": 320
+  },
+  "linter": {
+    "ignore": ["node_modules", ".milkio", "dist", "asciis.ts"],
+    "rules": {
+      "performance": {
+        "noDelete": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "off"
+      },
+      "correctness": {
+        "useYield": "off"
+      },
+      "style": {
+        "noParameterAssign": "off",
+        "noUselessElse": "off",
+        "noNonNullAssertion": "off",
+        "noNamespace": "error"
+      },
+      "nursery": {
+        "noEnum": "error"
+      },
+      "complexity": {
+        "noBannedTypes": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "include": ["projects/**/*.action.ts", "projects/**/*.stream.ts"],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "useExplicitType": "error"
+          }
+        }
+      }
+    }
+  ]
+}

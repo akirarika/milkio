@@ -1,0 +1,27 @@
+{
+  "name": "@milkio/cookbook-server",
+  "type": "module",
+  "private": true,
+  "module": "index.ts",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "echo 'skip build cookbook-server'",
+    "drizzle": "drizzle-kit"
+  },
+  "trustedDependencies": [],
+  "dependencies": {
+    "@milkio/astra": "workspace:*",
+    "@milkio/stargate": "workspace:*",
+    "@mjackson/node-fetch-server": "^0.6.1",
+    "@ryoppippi/unplugin-typia": "^1.0.6",
+    "milkid": "2.0.7",
+    "milkio": "workspace:*",
+    "rolldown": "^1.0.0-beta.1",
+    "tsx": "^4.19.3",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "vite": "^6.2.2",
+    "vite-plugin-node": "^4.0.0"
+  }
+}

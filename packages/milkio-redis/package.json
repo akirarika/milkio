@@ -1,0 +1,9 @@
+{
+  "name": "@milkio/redis",
+  "type": "module",
+  "version": "1.0.0-beta.104",
+  "module": "index.ts",
+  "peerDependencies": {
+    "redis": ">=4.7.0"
+  }
+}

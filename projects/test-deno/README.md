@@ -1,0 +1,1 @@
+Most of the files in this directory are copied from the test project. These directories should appear gray in your VS Code and will not be synced to Git. They are solely for testing code compatibility across different runtimes.
