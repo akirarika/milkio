@@ -408,13 +408,13 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
           const exception = exceptionHandler(options.executeId, logger, error);
           const result: any = {};
           result[exception.code] = exception.reject;
-          port.postMessage({ success: false, data: [result, null], executeId: options.executeId, done: true });
+          port.postMessage({ success: false, data: [result, null], error: result, executeId: options.executeId, done: true });
         }
         await handleClose("stream");
       }
     } catch (error) {
       const result = exceptionHandler(options.executeId, logger, error);
-      port.postMessage({ success: false, data: [result, null], executeId: options.executeId, done: true });
+      port.postMessage({ success: false, data: undefined, error: result, executeId: options.executeId, done: true });
     }
   };
 
