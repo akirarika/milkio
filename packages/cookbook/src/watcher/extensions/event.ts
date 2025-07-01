@@ -13,7 +13,7 @@ export const eventWatcherExtension = defineWatcherExtension({
     content += "\n  interface $events";
     let eventIndex = 0;
     for await (const file of allFiles) {
-      header += `\nimport type { _ as event_${eventIndex} } from "../${file.path}";`;
+      header += `\nimport type { _ as event_${eventIndex} } from "../app/${file.path}";`;
       if (eventIndex > 0) content += ", ";
       else content += " extends ";
       content += `event_${eventIndex}`;

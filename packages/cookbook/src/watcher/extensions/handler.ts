@@ -14,7 +14,7 @@ export const handlerWatcherExtension = defineWatcherExtension({
     typescriptExports += "\n  loadHandlers:(world: any) => ([";
 
     for await (const file of allFiles) {
-      typescriptImports += `\nimport ${file.importName} from "../${file.path}";`;
+      typescriptImports += `\nimport ${file.importName} from "../app/${file.path}";`;
       typescriptExports += `\n    ${file.importName}(world),`;
     }
     typescriptExports += "\n  ]),";

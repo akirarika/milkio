@@ -13,7 +13,7 @@ export const metaWatcherExtension = defineWatcherExtension({
     content += "\n  interface $meta";
     let metaIndex = 0;
     for await (const file of allFiles) {
-      header += `\nimport type { _ as meta_${metaIndex} } from "../${file.path}";`;
+      header += `\nimport type { _ as meta_${metaIndex} } from "../app/${file.path}";`;
       if (metaIndex > 0) content += ", ";
       else content += " extends ";
       content += `meta_${metaIndex}`;

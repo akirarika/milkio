@@ -71,10 +71,10 @@ export const routeWatcherExtension = defineWatcherExtension({
           routeFileExports += `result: Awaited<ReturnType<typeof ${file.importName}["handler"]>> `;
           routeFileExports += "},";
           if (project?.lazyRoutes === undefined || project?.lazyRoutes === true) {
-            routeFileImports += `\nimport type ${file.importName} from "../../../../../${file.path}";`;
-            routeFileExports += `module: () => import("../../../../../${file.path}"), `;
+            routeFileImports += `\nimport type ${file.importName} from "../../../../../app/${file.path}";`;
+            routeFileExports += `module: () => import("../../../../../app/${file.path}"), `;
           } else {
-            routeFileImports += `\nimport ${file.importName} from "../../../../../${file.path}";`;
+            routeFileImports += `\nimport ${file.importName} from "../../../../../app/${file.path}";`;
             routeFileExports += `module: () => ${file.importName}, `;
           }
           routeFileExports += `validateParams: (params: any): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.misc.validatePrune<Parameters<typeof ${file.importName}["handler"]>[1]>(params) as any, `;

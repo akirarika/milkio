@@ -12,7 +12,7 @@ export const drizzleWatcherExtension = defineWatcherExtension({
     let typescriptImports = "// drizzle-schema";
 
     for await (const file of allFiles) {
-      typescriptImports += `\nexport * from "../${file.path}";`;
+      typescriptImports += `\nexport * from "../app/${file.path}";`;
     }
     const typescript = `${typescriptImports}\n`;
 

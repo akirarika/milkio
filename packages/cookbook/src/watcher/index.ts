@@ -34,16 +34,19 @@ export async function initWatcher(options: CookbookOptions, mode: string, watch:
           if (!(await exists(root))) return;
           if (!(await exists(join(root, ".milkio")))) await mkdir(join(root, ".milkio"));
 
-          const entries = await readdir(root, { withFileTypes: true });
+          const appRoot = join(root, "app");
+          if (!(await exists(appRoot))) return;
+
+          const entries = await readdir(appRoot, { withFileTypes: true });
           const validDirs = entries
             .filter((dirent) => dirent.isDirectory())
             .map((dirent) => dirent.name)
             .filter((name) => !name.startsWith(".") && name !== "node_modules");
 
-          await initializeProject(mode, root, validDirs, options, project);
+          await initializeProject(mode, root, appRoot, validDirs, options, project);
 
           if (watch) {
-            const watcher = setupWatcher(mode, root, validDirs, options, project);
+            const watcher = setupWatcher(mode, root, appRoot, validDirs, options, project);
             watchers.push(watcher);
           }
         })(),
@@ -62,7 +65,7 @@ export async function initWatcher(options: CookbookOptions, mode: string, watch:
   return dispose;
 }
 
-async function initializeProject(mode: string, root: string, validDirs: string[], options: CookbookOptions, project: CookbookWatcherExtensionProject) {
+async function initializeProject(mode: string, root: string, appRoot: string, validDirs: string[], options: CookbookOptions, project: CookbookWatcherExtensionProject) {
   if (!(await exists(join(root, ".milkio", ".version"))) || (await readFile(join(root, ".milkio", ".version"), "utf-8")) !== `v${__VERSION__}.${options.hash}`) {
     await rm(join(root, ".milkio"), { recursive: true, force: true });
     try {
@@ -78,7 +81,7 @@ async function initializeProject(mode: string, root: string, validDirs: string[]
 
   const globPattern = `{${validDirs.join(",")}}/**/*.ts`;
   const glob = new Glob(globPattern);
-  const filesAsyncGenerator = glob.scan({ cwd: root, onlyFiles: true });
+  const filesAsyncGenerator = glob.scan({ cwd: appRoot, onlyFiles: true });
 
   const extensionChangeFiles: Array<Array<CookbookWatcherFile>> = [];
   for (let i = 0; i < imports.length; i++) extensionChangeFiles.push([]);
@@ -89,7 +92,7 @@ async function initializeProject(mode: string, root: string, validDirs: string[]
     const fileName = filePath.split("/").pop()!;
     if (fileName.startsWith(".")) continue;
     if (fileName.startsWith("_")) continue;
-    const fileData = processFile(filePath, root, fileName);
+    const fileData = processFile(filePath, appRoot, fileName);
     fileData.dependencyChanged = false;
     if (!projectFiles.has(filePath)) projectFiles.set(filePath, fileData);
     for (let i = 0; i < imports.length; i++) {
@@ -98,7 +101,7 @@ async function initializeProject(mode: string, root: string, validDirs: string[]
       }
     }
 
-    await parseAndCacheDependencies(resolve(root, filePath), root);
+    await parseAndCacheDependencies(resolve(appRoot, filePath), appRoot);
   }
 
   const asyncTasks = [];
@@ -151,7 +154,7 @@ async function generateDeclares(root: string, mode: string, options: CookbookOpt
   await Bun.write(join(root, ".milkio", "declares.d.ts"), `${header}\n${content}\n}`);
 }
 
-function setupWatcher(mode: string, root: string, validDirs: string[], options: CookbookOptions, project: CookbookWatcherExtensionProject) {
+function setupWatcher(mode: string, root: string, appRoot: string, validDirs: string[], options: CookbookOptions, project: CookbookWatcherExtensionProject) {
   const extensionChangeFiles: Array<CookbookWatcherFile[]> = Array.from({ length: imports.length }, () => []);
 
   let isProcessing = false;
@@ -172,7 +175,7 @@ function setupWatcher(mode: string, root: string, validDirs: string[], options: 
 
       for (const [filePath, isDependency] of batch) {
         const fileName = filePath.split("/").pop()!;
-        const fileData = processFile(filePath, root, fileName);
+        const fileData = processFile(filePath, appRoot, fileName);
         fileData.dependencyChanged = isDependency;
         if (!projectFiles.has(filePath)) projectFiles.set(filePath, fileData);
         for (let i = 0; i < imports.length; i++) {
@@ -225,7 +228,7 @@ function setupWatcher(mode: string, root: string, validDirs: string[], options: 
     }
   };
 
-  const watcher = watch(root, { persistent: true, recursive: true }, async (event, filename) => {
+  const watcher = watch(appRoot, { persistent: true, recursive: true }, async (event, filename) => {
     if (!filename) return;
 
     const filePath = filename.replaceAll("\\", "/");
@@ -239,16 +242,16 @@ function setupWatcher(mode: string, root: string, validDirs: string[], options: 
     if (fileName.startsWith(".")) return;
     if (fileName.startsWith("_")) return;
 
-    const absolutePath = resolve(root, filePath);
+    const absolutePath = resolve(appRoot, filePath);
 
     currentBatchChanges.set(filePath, false);
 
     try {
-      await parseAndCacheDependencies(absolutePath, root);
+      await parseAndCacheDependencies(absolutePath, appRoot);
 
       const affectedFiles = findAffectedFiles(absolutePath);
       for (const affectedFile of affectedFiles) {
-        const relativePath = relative(root, affectedFile).replaceAll("\\", "/");
+        const relativePath = relative(appRoot, affectedFile).replaceAll("\\", "/");
         if (!currentBatchChanges.has(relativePath)) {
           currentBatchChanges.set(relativePath, true);
         }
@@ -269,7 +272,7 @@ function setupWatcher(mode: string, root: string, validDirs: string[], options: 
   return watcher;
 }
 
-function processFile(filePath: string, root: string, fileName: string): CookbookWatcherFile {
+function processFile(filePath: string, appRoot: string, fileName: string): CookbookWatcherFile {
   const importName = generateImportName(filePath);
   const type = getFileType(filePath);
 
@@ -279,13 +282,13 @@ function processFile(filePath: string, root: string, fileName: string): Cookbook
     const isFileSegment = i === parts.length - 1;
 
     if (!segment) {
-      consola.error(`Invalid path: '${segment}' (${join(root, filePath)}). Path segments cannot be empty.`);
+      consola.error(`Invalid path: '${segment}' (${join(appRoot, filePath)}). Path segments cannot be empty.`);
       exit(1);
     }
 
     if (!isFileSegment) {
       if (!/^[a-z0-9-]+$/.test(segment)) {
-        consola.error(`Invalid folder: '${segment}' (${join(root, filePath)}). Only lowercase letters, digits, and hyphens are allowed.`);
+        consola.error(`Invalid folder: '${segment}' (${join(appRoot, filePath)}). Only lowercase letters, digits, and hyphens are allowed.`);
         exit(1);
       }
     } else {
@@ -293,12 +296,12 @@ function processFile(filePath: string, root: string, fileName: string): Cookbook
 
       const dotCount = segment.split(".").length - 1;
       if (dotCount < 1 || dotCount > 2) {
-        consola.error(`Invalid file: '${segment}' (${join(root, filePath)}). Must contain 1-2 dots (including extension).`);
+        consola.error(`Invalid file: '${segment}' (${join(appRoot, filePath)}). Must contain 1-2 dots (including extension).`);
         exit(1);
       }
 
       if (!/^[a-z0-9-\.]+$/.test(mainPart)) {
-        consola.error(`Invalid file: '${segment}' (${join(root, filePath)}). Only lowercase letters, digits, hyphens and dots are allowed.`);
+        consola.error(`Invalid file: '${segment}' (${join(appRoot, filePath)}). Only lowercase letters, digits, hyphens and dots are allowed.`);
         exit(1);
       }
     }
@@ -306,7 +309,7 @@ function processFile(filePath: string, root: string, fileName: string): Cookbook
 
   return {
     parts,
-    projectFsPath: root,
+    projectFsPath: appRoot,
     path: filePath,
     fileName,
     importName,
@@ -315,9 +318,9 @@ function processFile(filePath: string, root: string, fileName: string): Cookbook
   };
 }
 
-async function parseAndCacheDependencies(filePath: string, root: string): Promise<void> {
+async function parseAndCacheDependencies(filePath: string, appRoot: string): Promise<void> {
   const oldDependencies = dependencyCache.get(filePath) || new Set<string>();
-  const newDependencies = await extractImports(filePath, root);
+  const newDependencies = await extractImports(filePath, appRoot);
 
   dependencyCache.set(filePath, newDependencies);
 
@@ -339,7 +342,7 @@ async function parseAndCacheDependencies(filePath: string, root: string): Promis
   }
 }
 
-async function extractImports(filePath: string, root: string): Promise<Set<string>> {
+async function extractImports(filePath: string, appRoot: string): Promise<Set<string>> {
   const imports = new Set<string>();
 
   try {
@@ -358,7 +361,7 @@ async function extractImports(filePath: string, root: string): Promise<Set<strin
       const match = line.match(/from\s+["']([^"']+)["']/);
       if (match) {
         const importPath = match[1];
-        const resolved = resolveImportPath(importPath, filePath, root);
+        const resolved = resolveImportPath(importPath, filePath, appRoot);
         if (resolved) {
           imports.add(resolved);
         }
@@ -371,21 +374,21 @@ async function extractImports(filePath: string, root: string): Promise<Set<strin
   return imports;
 }
 
-function resolveImportPath(importPath: string, importerPath: string, root: string): string | null {
+function resolveImportPath(importPath: string, importerPath: string, appRoot: string): string | null {
   if (importPath.startsWith(".") || importPath.startsWith("/") || importPath.startsWith("~/") || importPath.startsWith("@/")) {
     let resolved: string;
     if (importPath.startsWith(".")) {
       resolved = resolve(dirname(importerPath), importPath);
     } else {
       const normalized = importPath.replace(/^(~|@)\//, "/");
-      resolved = resolve(root, normalized.slice(1));
+      resolved = resolve(appRoot, "../", normalized.slice(1));
     }
 
     if (!resolved.endsWith(".ts")) {
       resolved += ".ts";
     }
 
-    if (!resolved.includes("node_modules") && !resolved.includes("/.") && resolved.startsWith(root)) {
+    if (!resolved.includes("node_modules") && !resolved.includes("/.") && resolved.startsWith(dirname(appRoot))) {
       return resolved;
     }
   }

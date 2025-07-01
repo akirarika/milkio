@@ -36,7 +36,7 @@ async function processFileImports(filePath: string, projectFsPath: string, root:
         const absoluteImportPath = join(fileDir, importPath).replace(/\\/g, "/");
         const projectImportPath = absoluteImportPath.replace(normalizedRoot, "/");
 
-        const newLine = line.replace(importPath, `../../../../..${projectImportPath.startsWith("//") ? projectImportPath.slice(1) : projectImportPath}`);
+        const newLine = line.replace(importPath, `../../../../../app${projectImportPath.startsWith("//") ? projectImportPath.slice(1) : projectImportPath}`);
         result += `${newLine}\n`;
       } else {
         result += `${line}\n`;

@@ -13,7 +13,7 @@ export const contextWatcherExtension = defineWatcherExtension({
     content += "\n  interface $context";
     let contextIndex = 0;
     for await (const file of allFiles) {
-      header += `\nimport type { _ as context_${contextIndex} } from "../${file.path}";`;
+      header += `\nimport type { _ as context_${contextIndex} } from "../app/${file.path}";`;
       if (contextIndex > 0) content += ", ";
       else content += " extends ";
       content += `context_${contextIndex}`;

@@ -13,7 +13,7 @@ export default await defineCookbookCommand(async (utils) => {
   const PROJECT_BASE = "./projects";
   const SOURCE_PROJECT = "test";
   const TARGET_PROJECTS = ["test-bun", "test-deno"];
-  const DIRS_TO_COPY = ["code", "config", "context", "drizzle", "event", "handler", "module"];
+  const DIRS_TO_COPY = ["app"];
 
   const COPY_OPTIONS: CopyOptions = {
     overwrite: true,

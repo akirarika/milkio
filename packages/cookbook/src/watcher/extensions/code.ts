@@ -13,7 +13,7 @@ export const codeWatcherExtension = defineWatcherExtension({
     content += "\n  interface $rejectCode";
     let codeIndex = 0;
     for await (const file of allFiles) {
-      header += `\nimport type { _ as code_${codeIndex} } from "../${file.path}";`;
+      header += `\nimport type { _ as code_${codeIndex} } from "../app/${file.path}";`;
       if (codeIndex > 0) content += ", ";
       else content += " extends ";
       content += `code_${codeIndex}`;
