@@ -82,6 +82,9 @@ export async function createWorld<MilkioOptions extends MilkioInit>(generated: G
 
   await Promise.all(generated.handlerSchema.loadHandlers(world));
 
+  console.log(`△ Routes:\n    ${Object.keys(generated.routeSchema as Record<string, any>).join("\n    ")}`);
+  console.log(`△ Server: http://localhost:${options.port}`);
+
   return world as MilkioWorld<MilkioOptions>;
 }
 
