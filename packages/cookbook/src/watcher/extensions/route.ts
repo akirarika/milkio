@@ -19,6 +19,8 @@ export const routeWatcherExtension = defineWatcherExtension({
     return file.path.startsWith("module/") && (file.type === "action" || file.type === "stream");
   },
   setup: async (root, mode, options, project, changeFiles, allFiles) => {
+    console.log("changeFiles, allFiles", changeFiles, allFiles);
+
     const milkioDirPath = join(root, ".milkio");
     const milkioGeneratedDirPath = join(milkioDirPath, "generated");
     const milkioTranspiledDirPath = join(milkioDirPath, "transpiled");
