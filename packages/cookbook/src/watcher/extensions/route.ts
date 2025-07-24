@@ -19,8 +19,6 @@ export const routeWatcherExtension = defineWatcherExtension({
     return file.path.startsWith("module/") && (file.type === "action" || file.type === "stream");
   },
   setup: async (root, mode, options, project, changeFiles, allFiles) => {
-    console.log("changeFiles, allFiles", changeFiles, allFiles);
-
     const milkioDirPath = join(root, ".milkio");
     const milkioGeneratedDirPath = join(milkioDirPath, "generated");
     const milkioTranspiledDirPath = join(milkioDirPath, "transpiled");
@@ -84,7 +82,7 @@ export const routeWatcherExtension = defineWatcherExtension({
           routeFileExports += `validateResults: (results: any): IValidation<Awaited<ReturnType<typeof ${file.importName}["handler"]>>> => typia.misc.validatePrune<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any, `;
           routeFileExports += `resultsToJSON: (results: any): Awaited<ReturnType<typeof ${file.importName}["handler"]>> => {
   // @ts-ignore
-  return typia.json.stringify<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any          
+  return typia.json.stringify<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any
 }, `;
           routeFileExports += "};";
 

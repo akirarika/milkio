@@ -1,0 +1,97 @@
+{
+  "entry": "./foo.js",
+  "bundlerOutDir": "./dist",
+  "packageJson": {
+    "version": "1.0.0",
+    "author": "my",
+    "name": "my-electron-project",
+    "description": "This is My Electron Project, a simple application built with Electron.",
+    "scripts": {
+      "start": "electron .",
+      "build:mac": "electron-builder --mac",
+      "build:win": "electron-builder --win",
+      "build:linux": "electron-builder --linux"
+    },
+    "build": {
+      "appId": "com.example.electron",
+      "copyright": "Your Copyright",
+      "artifactName": "setup_${version}_${arch}.${ext}",
+      "directories": {
+        "output": "release"
+      },
+      "files": [
+        "dist"
+      ],
+      "win": {
+        "target": [
+          {
+            "target": "nsis",
+            "arch": [
+              "x64"
+            ]
+          }
+        ],
+        "icon": "icon.ico"
+      },
+      "nsis": {
+        "oneClick": false,
+        "perMachine": false,
+        "allowToChangeInstallationDirectory": true,
+        "deleteAppDataOnUninstall": false,
+        "createDesktopShortcut": "always",
+        "createStartMenuShortcut": true
+      },
+      "mac": {
+        "target": [
+          {
+            "target": "dmg",
+            "arch": [
+              "arm64"
+            ]
+          },
+          {
+            "target": "zip",
+            "arch": [
+              "arm64"
+            ]
+          }
+        ],
+        "icon": "public/icon.png",
+        "identity": "Your Identity",
+        "gatekeeperAssess": false,
+        "hardenedRuntime": false,
+        "entitlements": null,
+        "entitlementsInherit": null,
+        "type": "development",
+        "strictVerify": false,
+        "sign": null,
+        "forceCodeSigning": false
+      },
+      "dmg": {
+        "sign": false,
+        "contents": [
+          {
+            "x": 140,
+            "y": 150,
+            "type": "file"
+          },
+          {
+            "x": 400,
+            "y": 150,
+            "type": "link",
+            "path": "/Applications"
+          }
+        ]
+      },
+      "linux": {
+        "target": "AppImage",
+        "icon": "icon.png"
+      }
+    },
+    "dependencies": {},
+    "devDependencies": {
+      "electron": "37.2.3",
+      "electron-builder": "26.0.12"
+    }
+  }
+}

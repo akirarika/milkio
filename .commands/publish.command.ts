@@ -12,7 +12,7 @@ import { execFileSync } from "node:child_process";
 import { rmSync } from "fs-extra";
 
 const mainPackage = "milkio";
-const childPackages = ["cookbook", "create-cookbook", "cookbook-command", "milkio-astra", "milkio-redis", "milkio-stargate", "milkio-stargate-worker", "vite-plugin-milkio"];
+const childPackages = ["cookbook", "create-cookbook", "milkio-electron", "cookbook-command", "milkio-astra", "milkio-redis", "milkio-stargate", "milkio-stargate-worker", "vite-plugin-milkio"];
 
 export default await defineCookbookCommand(async (utils) => {
   console.log("");
@@ -102,7 +102,7 @@ export default await defineCookbookCommand(async (utils) => {
       }
 
       for (const childPackage of [mainPackage, ...childPackages]) {
-        if (childPackage === "create-cookbook") {
+        if (childPackage === "create-cookbook" || childPackage === "milkio-electron") {
           await Bun.write(join(cwd, "packages", childPackage, "__VERSION__.mjs"), `export const __VERSION__ = "${newVersion}";`);
         } else {
           await Bun.write(join(cwd, "packages", childPackage, "__VERSION__.ts"), `export const __VERSION__ = "${newVersion}";`);
@@ -229,7 +229,7 @@ export default await defineCookbookCommand(async (utils) => {
 
       // 将包发布到 npm
       for (const childPackage of [mainPackage, ...childPackages]) {
-        if (childPackage !== "cookbook" && childPackage !== "cookbook-ui" && childPackage !== "create-cookbook") {
+        if (childPackage !== "cookbook" && childPackage !== "cookbook-ui" && childPackage !== "create-cookbook" && childPackage !== "milkio-electron") {
           consola.log(`正在打包 ${childPackage} 到 dist..`);
           rmSync(join(cwd, "packages", childPackage, "dist"), {
             recursive: true,
