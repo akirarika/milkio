@@ -16,14 +16,11 @@ let mostRecentDir = null;
 let oldDirs = [];
 let currentDirCleanupNeeded = false;
 
-// 错误处理函数
 async function handleError(error) {
   console.error('❌ Process failed:', error.message);
 
   try {
-    // 需要清理当前目录时才执行
     if (currentDirCleanupNeeded) {
-      // 尝试将package-lock.json内容写入旧版本
       if (mostRecentDir && targetDir) {
         const packageLockPath = path.join(targetDir, 'package-lock.json');
         if (fs.existsSync(packageLockPath)) {
@@ -38,7 +35,6 @@ async function handleError(error) {
         }
       }
 
-      // 删除当前出错的目录
       try {
         if (fs.existsSync(targetDir)) {
           fse.removeSync(targetDir);
@@ -53,7 +49,6 @@ async function handleError(error) {
   }
 }
 
-// ========== 检查electron依赖 ==========
 await (async () => {
   try {
     const pkgPath = path.join(cwd, 'package.json');
@@ -81,7 +76,6 @@ await (async () => {
   }
 })();
 
-// ========== 创建基础目录 ==========
 let baseDir;
 await (async () => {
   try {
@@ -93,7 +87,6 @@ await (async () => {
   }
 })();
 
-// ========== 生成目录哈希值 ==========
 let hash;
 await (async () => {
   try {
@@ -106,7 +99,6 @@ await (async () => {
   }
 })();
 
-// ========== 创建哈希目录 ==========
 const hashDir = path.join(baseDir, hash);
 targetDir = path.join(hashDir, startTime.toString());
 await (async () => {
@@ -117,9 +109,8 @@ await (async () => {
   }
 })();
 
-// ========== 复制文件到目标目录 ==========
 await (async () => {
-  currentDirCleanupNeeded = true; // 标记为需要清理
+  currentDirCleanupNeeded = true;
   try {
     const projectConfigDir = path.join(cwd, '.milkio-electron');
     fse.ensureDirSync(projectConfigDir);
@@ -228,12 +219,10 @@ await (async () => {
       }, null, 2));
       console.log('📝 Created project-level config file');
 
-      // 创建 .github/workflows 目录
       const projectWorkflowsDir = path.join(projectConfigDir, '.github', 'workflows');
       fse.ensureDirSync(projectWorkflowsDir);
       const projectBuildYmlPath = path.join(projectWorkflowsDir, 'build.yml');
 
-      // 创建 build.yml
       const buildYmlContent = `
 name: Build/release Electron app
 
@@ -300,7 +289,6 @@ jobs:
 
       exit(0);
     } else {
-      // 复制除config.json外的所有项目配置
       const items = fs.readdirSync(projectConfigDir);
       for (const item of items) {
         if (item === 'config.json') continue;
@@ -322,23 +310,18 @@ jobs:
   }
 })();
 
-// ========== 检查并创建必要文件 ==========
 const publisherConfigJson = JSON.parse(fs.readFileSync(path.join(cwd, '.milkio-electron', 'config.json'), 'utf8'));
-// 确保dist目录存在
 const distTarget = path.join(targetDir, 'dist');
 fse.ensureDirSync(distTarget);
-// 复制构建输出的dist文件到targetDir/dist
 fse.copySync(path.join(cwd, publisherConfigJson.bundlerOutDir ?? "dist"), distTarget);
 console.log(`📂 Copied dist files to: ${distTarget}`);
 
 await (async () => {
   try {
-    // 检查禁止文件是否存在
     const packageJsonPath = path.join(targetDir, 'package.json');
     const erunPath = path.join(distTarget, '__ERUN__.mjs');
     const gitignorePath = path.join(targetDir, '.gitignore');
 
-    // 确保目标目录的.github/workflows已经存在（如果已复制）
     baseDir = path.join(targetDir, '.github', 'workflows');
     fse.ensureDirSync(baseDir);
 
@@ -352,7 +335,6 @@ await (async () => {
     };
     fs.writeFileSync(packageJsonPath, JSON.stringify(deepmerge(publisherConfigJson.packageJson || {}, packageJsonContent)), 'utf8');
 
-    // 创建 __ERUN__.mjs 在dist目录下
     const erunContent = `
 import electron from 'electron';
 globalThis.electron = electron;
@@ -360,7 +342,6 @@ await import('${publisherConfigJson.entry}');
 `.trim();
     fs.writeFileSync(erunPath, erunContent, 'utf8');
 
-    // 创建 .gitignore
     if (!fs.existsSync(gitignorePath)) {
       fs.writeFileSync(gitignorePath, 'node_modules\nout\ndist\n');
     }
@@ -371,7 +352,6 @@ await import('${publisherConfigJson.entry}');
   }
 })();
 
-// ========== 查找历史版本 ==========
 await (async () => {
   try {
     oldDirs = fs.readdirSync(hashDir)
@@ -382,7 +362,6 @@ await (async () => {
       });
 
     if (oldDirs.length >= 1) {
-      // 找到最近的历史目录
       const sortedDirs = oldDirs
         .map(dir => ({ path: dir, time: parseInt(path.basename(dir)) }))
         .sort((a, b) => b.time - a.time);
@@ -390,7 +369,6 @@ await (async () => {
       if (sortedDirs.length > 0) {
         mostRecentDir = sortedDirs[0].path;
 
-        // 移动 node_modules 和 package-lock.json
         ['node_modules', 'package-lock.json'].forEach(item => {
           const source = path.join(mostRecentDir, item);
           const dest = path.join(targetDir, item);
@@ -411,7 +389,6 @@ await (async () => {
   }
 })();
 
-// ========== 运行 npm install ==========
 await (async () => {
   try {
     console.log('⏳ Running npm install...');
@@ -421,10 +398,12 @@ await (async () => {
     await handleError(new Error(`npm install failed: ${error.message}`));
   }
 
+  const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+  console.log(`✨ All tasks completed in ${totalTime} seconds`);
+
   execFileSync('npm', ['run', ...argv.slice(2)], { cwd: targetDir, stdio: 'inherit' });
 })();
 
-// ========== 清理旧版本 ==========
 await (async () => {
   if (oldDirs.length > 0) {
     try {
@@ -442,9 +421,4 @@ await (async () => {
   }
 })();
 
-// ========== 最终清理标记 ==========
 currentDirCleanupNeeded = false;
-
-// ========== 输出总耗时 ==========
-const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
-console.log(`✨ All tasks completed in ${totalTime} seconds`);
