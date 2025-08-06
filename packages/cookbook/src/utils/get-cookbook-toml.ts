@@ -6,18 +6,24 @@ import type { progress } from "../progress";
 import { checkPort } from "../utils/check-port";
 import { killPort } from "../utils/kill-port";
 import type { CookbookOptions } from "./cookbook-dto-types";
+import { calcHash } from "./calc-hash";
 
 export async function getCookbookToml(cookbookToml?: string, p?: typeof progress): Promise<CookbookOptions> {
   let options: any;
   if (cookbookToml) {
+    const cookbookTomlHash = calcHash(cookbookToml);
     options = Bun.TOML.parse(cookbookToml);
+    options.hash = cookbookTomlHash;
   } else {
     const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
     if (!(await cookbookToml.exists())) {
       consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`);
       exit(0);
     }
-    options = Bun.TOML.parse(await cookbookToml.text());
+    const cookbookTomlText = await cookbookToml.text();
+    const cookbookTomlHash = calcHash(cookbookTomlText);
+    options = Bun.TOML.parse(cookbookTomlText);
+    options.hash = cookbookTomlHash;
   }
   if (Object.keys(options.projects).length === 0) {
     consola.error(`For at least one project, check your "cookbook.toml".`);

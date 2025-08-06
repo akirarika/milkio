@@ -8,6 +8,7 @@ import { select } from "../utils/select";
 import { env, Glob } from "bun";
 import { existsSync } from "fs-extra";
 import consola from "consola";
+import { progress } from "../progress";
 
 export default await defineCookbookCommand(async (utils, userCommand?: string, projectUsed?: string, modeUsed?: string) => {
   const params = utils.getParams();
@@ -63,20 +64,10 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
   if (!(await exists(join(project.path, "drizzle.config.ts")))) return;
   if (!(await exists(join(project.path, ".milkio")))) await mkdir(join(project.path, ".milkio"));
 
-  const tables = new Glob("{database,module}/**/*.table.ts").scan({
-    cwd: join(project.path),
-    onlyFiles: true,
-  });
-
-  let typescriptImports = "// drizzle-schema";
-  for await (let path of tables) {
-    path = path.replaceAll("\\", "/");
-    const nameWithPath = path.slice(0, path.length - 9); // 9 === ".table.ts".length
-    typescriptImports += `\nexport * from "../${nameWithPath}.table.ts";`;
-  }
-  const typescript = `${typescriptImports}`;
-
-  await writeFile(join(project.path, ".milkio", "drizzle-schema.ts"), typescript);
+  progress.open("cookbook building..");
+  const { initWatcher } = await import("../watcher");
+  await initWatcher(cookbookToml, mode.mode, false);
+  progress.close("");
 
   env.DATABASE_URL = mode.migrateDatabaseUrl;
   process.env.DATABASE_URL = mode.migrateDatabaseUrl;
