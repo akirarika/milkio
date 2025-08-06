@@ -16,7 +16,7 @@ export function edgeOneAdapter(): MilkioAdapter {
        * ------------------------------------------------------------------------------------------------
        */
       const input: ViteInput = {};
-      const results = await glob("module/**/*.{action,stream}.ts");
+      const results = await glob("modules/**/*.{action,stream}.ts");
       const tasks: Array<Promise<void>> = [];
       for (const modulePath of results) {
         tasks.push(
