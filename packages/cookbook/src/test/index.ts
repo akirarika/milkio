@@ -13,6 +13,4 @@ export async function testRunner(key: string) {
     consola.error(`The test does not exist: ${key}`);
     exit(1);
   }
-
-  const test = tests[key];
 }

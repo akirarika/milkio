@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { exists, mkdir, readFile, writeFile } from "node:fs/promises";
 import { execScript } from "../utils/exec-script";
 import { select } from "../utils/select";
-import { env, Glob } from "bun";
+import { env } from "bun";
 import { existsSync } from "fs-extra";
 import consola from "consola";
 import { progress } from "../progress";

@@ -1,5 +1,4 @@
 import chalk from "chalk";
-import * as process from "node:process";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import { progress } from "../progress";
 import { getCookbookToml } from "../utils/get-cookbook-toml";
@@ -34,7 +33,7 @@ export default await defineCookbookCommand(async (utils) => {
     const cookbookServerBaseUrl = `http://localhost:${cookbookServerPort}/${cookbookServerAccessKey}`;
 
     const { startCookbookServer } = await import("@milkio/cookbook-server");
-    const server = await startCookbookServer({ port: cookbookServerPort, accessKey: cookbookServerAccessKey });
+    const _server = await startCookbookServer({ port: cookbookServerPort, accessKey: cookbookServerAccessKey });
 
     const { initWorkers } = await import("../workers");
     await initWorkers(options, mode, cookbookServerBaseUrl);

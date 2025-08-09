@@ -1,0 +1,48 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "rules": {
+        "no-empty-file": "off",
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": [
+            "error",
+            {
+                "args": "none",
+                "vars": "all",
+                "varsIgnorePattern": "^_",
+                "argsIgnorePattern": "^_",
+                "caughtErrors": "none"
+            }
+        ],
+        "typescript/no-explicit-any": "off",
+        "eslint/require-yield": "off",
+        "typescript/prefer-function-type": "off",
+        "eslint/no-else-return": "off",
+        "typescript/no-non-null-assertion": "off",
+        "typescript/no-namespace": "error",
+        "typescript/ban-types": "off",
+        "typescript/no-const-enum": "error"
+    },
+    "ignorePatterns": [
+        "projects/*/.milkio"
+    ],
+    "overrides": [
+        {
+            "files": [
+                "projects/**/*.test.ts"
+            ],
+            "rules": {
+                "no-unused-vars": "off"
+            }
+        },
+        {
+            "files": [
+                "projects/**/*.action.ts",
+                "projects/**/*.stream.ts"
+            ],
+            "rules": {
+                "typescript/explicit-function-return-type": "error",
+                "typescript/explicit-module-boundary-types": "error"
+            }
+        }
+    ]
+}

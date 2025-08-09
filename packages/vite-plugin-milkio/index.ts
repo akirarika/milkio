@@ -1,6 +1,6 @@
 import TOML from "@iarna/toml";
 import { join } from "node:path";
-import { cwd, env, exit } from "node:process";
+import { cwd, env } from "node:process";
 import { existsSync, readdirSync } from "node:fs";
 import { createRequestListener } from "@mjackson/node-fetch-server";
 import type { PluginOption } from "vite";
@@ -57,6 +57,7 @@ export function useVitePluginMilkio(options?: {
 
       if (!project.adapter) {
         let format: "esm" | "cjs" = "esm";
+        // oxlint-disable-next-line no-unused-vars
         let mode: "chunk" | "bundle" = "bundle";
         if (project.runtime === "node") {
           format = options?.outputFormat ?? "cjs";
@@ -106,7 +107,7 @@ export function useVitePluginMilkio(options?: {
       if (!config.resolve) config.resolve = {};
       // config.resolve.alias
       config.resolve.alias = {
-        ...(config.resolve.alias ?? {}),
+        ...config.resolve.alias,
       };
 
       // config.ssr

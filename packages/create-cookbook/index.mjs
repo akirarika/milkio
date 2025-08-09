@@ -17,6 +17,7 @@ const color = gradient(["cyan", "#2d9b87"]);
 
 (async () => {
   const args = process.argv.slice(2);
+  // oxlint-disable-next-line no-unused-vars
   let version = "latest";
   let installPath = undefined;
   for (const arg of args) {

@@ -19,21 +19,21 @@ export type ExecuteResultsOption = { executeId: string };
 
 export type Ping =
   | [
-      {
-        connect: false;
-        delay: number;
-        error: any;
-      },
-      null,
-    ]
+    {
+      connect: false;
+      delay: number;
+      error: any;
+    },
+    null,
+  ]
   | [
-      null,
-      {
-        connect: true;
-        delay: number;
-        serverTimestamp: number;
-      },
-    ];
+    null,
+    {
+      connect: true;
+      delay: number;
+      serverTimestamp: number;
+    },
+  ];
 export async function createStargate<Generated extends { routeSchema: any; rejectCode: any }>(stargateOptions: MilkioStargateOptions) {
   const $fetch = stargateOptions.fetch ?? fetch;
   const $abort = stargateOptions.abort ?? AbortController;
@@ -122,10 +122,10 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
       >,
     ): Promise<
       Generated["routeSchema"][Path]["types"]["🥛"] extends boolean
-        ? // action
-          [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, Generated["routeSchema"][Path]["types"]["result"], ExecuteResultsOption]
-        : // stream
-          [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], undefined>, ExecuteResultsOption]
+      ? // action
+      [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, Generated["routeSchema"][Path]["types"]["result"], ExecuteResultsOption]
+      : // stream
+      [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], undefined>, ExecuteResultsOption]
     > {
       if (!options) options = {};
       if (options.headers === undefined) options.headers = {};
@@ -152,7 +152,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
           const body = JSON.stringify(options.params) ?? "";
           await eventManager.emit("milkio:fetchBefore", { path: path as string, options: options as any, body });
 
-          // biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
+          // oxlint-disable-next-line no-async-promise-executor
           const response = await new Promise<string>(async (resolve, reject) => {
             const timeout = options?.timeout ?? options?.timeout ?? 6000;
             const timer = setTimeout(() => {
@@ -433,7 +433,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
       },
     },
     async ping(options?: { timeout?: number }): Promise<Ping> {
-      // biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
+      // oxlint-disable-next-line no-async-promise-executor
       return await new Promise<Ping>(async (resolve) => {
         const url = `${await baseUrl}/generate_204`;
         const timeout = stargateOptions?.timeout ?? options?.timeout ?? 6000;
@@ -444,7 +444,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
         }, timeout);
 
         try {
-          const response = await await $fetch(url, { method: "HEAD" });
+          const response = await $fetch(url, { method: "HEAD" });
           const endsTime = Date.now();
           clearTimeout(timer);
           if (response.status !== 204) {

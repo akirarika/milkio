@@ -64,8 +64,8 @@ await (async () => {
     }
 
     const allDependencies = {
-      ...(pkg.dependencies || {}),
-      ...(pkg.devDependencies || {})
+      ...pkg.dependencies,
+      ...pkg.devDependencies
     };
 
     if (!Object.keys(allDependencies).includes('electron')) {

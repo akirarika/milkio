@@ -58,9 +58,9 @@ export function createWorker(
   setMaxNameLength(key);
 
   const handleExit = (code: number | null, signal: string) => {
-    const message = `Process exited with:${code ?? null}`;
+    // const message = `Process exited with:${code ?? null}`;
     if (code !== 0 && options.stdout !== "ignore") {
-      const message = `\n-- code: ${code ?? signal}\n`;
+      // const message = `\n-- code: ${code ?? signal}\n`;
       // world.emit("cookbook:worker:log", { key, chunk: message, type: "stderr" });
     }
 
@@ -104,10 +104,10 @@ export function createWorker(
       try {
         if (options.port) await killPort(options.port);
       } catch (error) { }
-      const message = `\n--------------------------------\n# Start ${key}\n--------------------------------`;
+      // const message = `\n--------------------------------\n# Start ${key}\n--------------------------------`;
       // world.emit("cookbook:worker:log", { key, chunk: message, type: "stdout" });
       try {
-        const envMixed: Record<string, string> = { ...env, ...(options.env ?? {}), IS_COOKBOOK: "1" };
+        const envMixed: Record<string, string> = { ...env, ...options.env, IS_COOKBOOK: "1" };
         if (worker.meta.inspect) envMixed.NODE_OPTIONS = "--inspect";
         spawnProcess = spawn(platform === "win32" ? "powershell.exe" : "bash", ["-c", options.command], {
           cwd: options.cwd,
@@ -191,7 +191,7 @@ export function createWorker(
 const textDecoder = new TextDecoder();
 const handleMessage = (worker: Worker, key: string, chunk: ArrayBuffer, type: "stdout" | "stderr") => {
   const strRaw = textDecoder.decode(chunk);
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
+  // oxlint-disable-next-line no-unused-vars, no-control-regex
   const str = strRaw.replace(/\x1b\[\d*;?]*m/g, "");
 
   const prefix = outputPrefix(key, worker.id);

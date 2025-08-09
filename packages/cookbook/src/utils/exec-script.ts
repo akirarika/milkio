@@ -33,7 +33,7 @@ export async function execScript(script: string, options: SpawnOptionsWithoutStd
           COLORTERM: process.env.COLORTERM || "1",
         }
         : {}),
-      ...(options.env || {}),
+      ...options.env,
     },
   });
 

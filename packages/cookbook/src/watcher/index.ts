@@ -70,7 +70,7 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
     await rm(join(root, ".milkio"), { recursive: true, force: true });
     try {
       await mkdir(join(root, ".milkio"));
-    } catch (error) {}
+    } catch (error) { }
     await Bun.write(join(root, ".milkio", ".version"), `v${__VERSION__}.${mode}.${options.hash}`);
   }
 
@@ -193,8 +193,8 @@ function setupWatcher(mode: string, root: string, appRoot: string, validDirs: st
               (async () => {
                 try {
                   await imports[i]?.setup?.(root, mode, options, project, filterChangeFiles(extensionChangeFiles[i]), filterAllFiles(root, imports[i]));
+                  // oxlint-disable-next-line no-useless-catch
                 } catch (error) {
-                  // biome-ignore lint/complexity/noUselessCatch: <explanation>
                   throw error;
                 } finally {
                   extensionChangeFiles[i] = [];
@@ -300,7 +300,7 @@ function processFile(filePath: string, appRoot: string, fileName: string): Cookb
         exit(1);
       }
 
-      if (!/^[a-z0-9-\.]+$/.test(mainPart)) {
+      if (!/^[a-z0-9-.]+$/.test(mainPart)) {
         consola.error(`Invalid file: '${segment}' (${join(appRoot, filePath)}). Only lowercase letters, digits, hyphens and dots are allowed.`);
         exit(1);
       }

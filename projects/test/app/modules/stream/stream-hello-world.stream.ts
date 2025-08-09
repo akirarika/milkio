@@ -1,4 +1,4 @@
-import { reject, stream } from "milkio";
+import { stream } from "milkio";
 
 export default stream({
   async *handler(context, params: { a: string; b: number; sleep: number }): AsyncGenerator<number> {

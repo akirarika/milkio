@@ -50,12 +50,12 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
       >,
     ): Promise<
       Generated["routeSchema"][Path]["types"]["🥛"] extends boolean
-        ? // action
-          [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, Generated["routeSchema"][Path]["types"]["result"], ExecuteResultsOption]
-        : // stream
-          [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], undefined>, ExecuteResultsOption]
+      ? // action
+      [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, Generated["routeSchema"][Path]["types"]["result"], ExecuteResultsOption]
+      : // stream
+      [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], undefined>, ExecuteResultsOption]
     > {
-      // biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
+      // oxlint-disable-next-line no-async-promise-executor
       return new Promise(async (resolve) => {
         await connect;
         const executeId = __createId();

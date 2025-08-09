@@ -8,6 +8,7 @@
   ],
   "module": "index.ts",
   "scripts": {
+    "lint": "oxlint --fix",
     "co": "bun run ./packages/cookbook/cookbook.ts prepare && bun run ./packages/cookbook/cookbook.ts"
   },
   "trustedDependencies": [],
@@ -28,7 +29,7 @@
     "vitest": "3.0.5"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "oxlint": "^1.11.1",
     "typescript": "^5.8.2"
   }
 }

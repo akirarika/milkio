@@ -1,4 +1,4 @@
-import { createFlow, reject, stream } from "milkio";
+import { createFlow, stream } from "milkio";
 
 export default stream({
   async *handler(context, params: {}): AsyncGenerator<{ counter: number }> {
