@@ -2,9 +2,9 @@ import { join } from "node:path";
 import type { CookbookOptions } from "../../utils/cookbook-dto-types";
 
 export async function denoHandler(project: CookbookOptions["projects"]["key"], milkioDirPath: string) {
-  await Bun.write(
-    join(milkioDirPath, "run.ts"),
-    `#!/usr/bin/env deno
+    await Bun.write(
+        join(milkioDirPath, "run.ts"),
+        `#!/usr/bin/env deno
 import { create } from "../index.ts";
 
 async function bootstrap() {
@@ -17,11 +17,11 @@ async function bootstrap() {
     return world.listener.fetch({
       request,
       env: Deno.env.toObject(),
-      envMode: Deno.env.get("MODE") ?? "development",
+      envMode: Deno.env.get("COOKBOOK_MODE") ?? "development",
     });
   });
 }
 
 void bootstrap();`,
-  );
+    );
 }

@@ -1,4 +1,16 @@
 {
+  "prettier.enable": false,
   "editor.formatOnSave": true,
-  "cSpell.words": ["milkid", "mjackson", "rolldown"]
+  "cSpell.words": [
+    "kecream",
+    "pglite",
+    "qrcode",
+    "tencentcloud"
+  ],
+  "editor.insertSpaces": true,
+  "editor.tabSize": 4,
+  "editor.detectIndentation": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.oxc": "explicit",
+  }
 }

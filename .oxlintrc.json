@@ -1,6 +1,21 @@
 {
     "$schema": "./node_modules/oxlint/configuration_schema.json",
     "rules": {
+        "indent": [
+            "error",
+            4,
+            {
+                "SwitchCase": 1
+            }
+        ],
+        "quotes": [
+            "error",
+            "single"
+        ],
+        "semi": [
+            "error",
+            "always"
+        ],
         "no-empty-file": "off",
         "no-unused-vars": "off",
         "@typescript-eslint/no-unused-vars": [
@@ -23,7 +38,8 @@
         "typescript/no-const-enum": "error"
     },
     "ignorePatterns": [
-        "projects/*/.milkio"
+        "projects/*/.milkio",
+        "projects/*/public"
     ],
     "overrides": [
         {

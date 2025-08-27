@@ -2,9 +2,9 @@ import { join } from "node:path";
 import type { CookbookOptions } from "../../utils/cookbook-dto-types";
 
 export async function nodeHandler(project: CookbookOptions["projects"]["key"], milkioDirPath: string) {
-  await Bun.write(
-    join(milkioDirPath, "run.ts"),
-    `#!/usr/bin/env node
+    await Bun.write(
+        join(milkioDirPath, "run.ts"),
+        `#!/usr/bin/env node
 import * as http from "node:http";
 import { createRequestListener } from "@mjackson/node-fetch-server";
 import { create } from "../index.ts";
@@ -21,7 +21,7 @@ async function bootstrap() {
     return world.listener.fetch({
       request,
       env,
-      envMode: env.MODE ?? "development",
+      envMode: env.COOKBOOK_MODE ?? "development",
     });
   }
 
@@ -30,5 +30,5 @@ async function bootstrap() {
 }
 
 void bootstrap();`,
-  );
+    );
 }
