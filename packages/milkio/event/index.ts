@@ -1,7 +1,7 @@
 import type { $context, ContextHttp, Results, Logger, $meta } from "../index.ts";
 
 export interface $events {
-    "*": any;
+    "*": { key: keyof $events, value: any };
     "milkio:httpRequest": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>> };
     "milkio:httpResponse": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>>; context: $context };
     "milkio:httpNotFound": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>> };
@@ -62,7 +62,7 @@ export function __initEventManager() {
             const wildcardHandlers = indexed.get('*');
             if (wildcardHandlers) {
                 for (const handler of wildcardHandlers) {
-                    await handler(value);
+                    await handler({ key, value });
                 }
             }
 
