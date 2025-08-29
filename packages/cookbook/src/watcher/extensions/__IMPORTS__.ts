@@ -10,16 +10,16 @@ import { typiaWatcherExtension } from "./typia";
 import { codeWatcherExtension } from "./code";
 
 export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
-  // extensions
-  routeWatcherExtension,
-  handlerWatcherExtension,
-  configWatcherExtension,
-  drizzleWatcherExtension,
-  metaWatcherExtension,
-  contextWatcherExtension,
-  codeWatcherExtension,
-  eventWatcherExtension,
-  typiaWatcherExtension,
+    // extensions
+    routeWatcherExtension,
+    handlerWatcherExtension,
+    configWatcherExtension,
+    drizzleWatcherExtension,
+    metaWatcherExtension,
+    contextWatcherExtension,
+    codeWatcherExtension,
+    eventWatcherExtension,
+    typiaWatcherExtension,
 ];
 
 export const indexTs = `// index
@@ -27,10 +27,11 @@ import "./declares.d.ts";
 import typiaSchema from "./typia-schema.ts";
 import routeSchema from "./route-schema.ts";
 import handlerSchema from "./handler-schema.ts";
-import type { $rejectCode } from "milkio";
+import type { $rejectCode, $events } from "milkio";
 
 export const generated = {
   rejectCode: undefined as unknown as $rejectCode,
+  events: undefined as unknown as $events,
   typiaSchema,
   routeSchema,
   handlerSchema,
