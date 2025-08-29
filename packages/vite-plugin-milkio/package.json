@@ -1,7 +1,7 @@
 {
   "name": "@milkio/vite-plugin-milkio",
   "type": "module",
-  "version": "1.0.0-beta.122",
+  "version": "1.0.0-beta.123",
   "module": "index.ts",
   "dependencies": {
     "@iarna/toml": "^2.2.5",
