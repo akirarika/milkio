@@ -39,7 +39,7 @@ export async function initWorkers(options: CookbookOptions, mode: string, baseUr
             connectTestUrl: project?.connectTestUrl ?? (project.type !== "milkio" ? `http://localhost:${project.port}/` : `http://localhost:${project.port}/generate_204`),
         });
         workers.set(projectName, worker);
-        if (project.autoStart) setTimeout(() => worker.run(), (project.autoStartDelay ?? 0) * 1000);
+        if (project.autoStart || project.autoStart === undefined) setTimeout(() => worker.run(), (project.autoStartDelay ?? 0) * 1000);
     }
 }
 
