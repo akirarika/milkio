@@ -7,6 +7,22 @@ import { load } from "js-toml";
 import { format } from "date-fns";
 import type { CookbookOptions } from "./utils/cookbook-dto-types.ts";
 
+async function findCookbookBaseUrl(): Promise<string> {
+    const currentDir = dirname(fileURLToPath(import.meta.url));
+    let searchDir = currentDir;
+
+    while (searchDir !== dirname(searchDir)) {
+        const cookbookPath = join(searchDir, ".cookbook");
+        if (existsSync(cookbookPath)) {
+            const content = await readFile(cookbookPath, "utf-8");
+            return content.trim();
+        }
+        searchDir = dirname(searchDir);
+    }
+
+    throw new Error("[cookbook] Could not find \".cookbook\" file in any parent directory");
+}
+
 export type AstraOptionsInit = {
     stargate: { $types: any; execute: any; ping: any; __cookbook: any };
     bootstrap: () => Promise<Record<string, any>>;
@@ -61,7 +77,8 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
             let counter = 16;
             const handler = async () => {
                 try {
-                    const response = await fetchWithTimeout(`${process.env.COOKBOOK_BASE_URL}/mode/read`, { method: "HEAD", timeout: 1024 });
+                    const cookbookBaseUrl = await findCookbookBaseUrl();
+                    const response = await fetchWithTimeout(`${cookbookBaseUrl}/mode/read`, { method: "HEAD", timeout: 1024 });
                     const data = JSON.parse(await response.text());
                     if (data?.data?.mode !== "test") {
                         const message = `[cookbook] The cookbook must run in test mode (mode === "test") to execute tests. This restriction is in place to prevent accidental operations. Please restart the cookbook and select the test mode.`;
