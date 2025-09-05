@@ -8,7 +8,7 @@ import consola from "consola";
 import { cwd, exit } from "node:process";
 import { calcHash } from "../utils/calc-hash";
 import { getRandomPort } from "../utils/get-random-port";
-import { exists, readFile, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 
 export default await defineCookbookCommand(async (utils) => {
     const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
