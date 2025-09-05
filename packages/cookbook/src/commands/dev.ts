@@ -31,16 +31,9 @@ export default await defineCookbookCommand(async (utils) => {
 
         const cookbookServerAccessKey = `c${await calcHash(crypto.randomUUID())}`;
 
-        let cookbookServerPort;
-        let cookbookServerBaseUrl;
-        if (await exists(join(cwd(), ".cookbook"))) {
-            cookbookServerBaseUrl = (await readFile(join(cwd(), ".cookbook"))).toString().trim();
-            cookbookServerPort = Number(new URL(cookbookServerBaseUrl).port);
-        } else {
-            cookbookServerPort = await getRandomPort();
-            cookbookServerBaseUrl = `http://localhost:${cookbookServerPort}/${cookbookServerAccessKey}`;
-            await writeFile(join(cwd(), ".cookbook"), cookbookServerBaseUrl);
-        }
+        const cookbookServerPort = await getRandomPort();
+        const cookbookServerBaseUrl = `http://localhost:${cookbookServerPort}/${cookbookServerAccessKey}`;
+        await writeFile(join(cwd(), "node_modules", ".cookbook"), cookbookServerBaseUrl);
 
         const { startCookbookServer } = await import("@milkio/cookbook-server");
         const _server = await startCookbookServer({ port: cookbookServerPort, accessKey: cookbookServerAccessKey });

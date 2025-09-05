@@ -12,7 +12,7 @@ async function findCookbookBaseUrl(): Promise<string> {
     let searchDir = currentDir;
 
     while (searchDir !== dirname(searchDir)) {
-        const cookbookPath = join(searchDir, ".cookbook");
+        const cookbookPath = join(searchDir, "node_modules", ".cookbook");
         if (existsSync(cookbookPath)) {
             const content = await readFile(cookbookPath, "utf-8");
             return content.trim();
@@ -20,7 +20,7 @@ async function findCookbookBaseUrl(): Promise<string> {
         searchDir = dirname(searchDir);
     }
 
-    throw new Error("[cookbook] Could not find \".cookbook\" file in any parent directory");
+    throw new Error("・[astra] Could not find \".cookbook\" file in any parent directory");
 }
 
 export type AstraOptionsInit = {
@@ -76,25 +76,11 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
             let error: any;
             let counter = 16;
             const handler = async () => {
-                try {
-                    const cookbookBaseUrl = await findCookbookBaseUrl();
-                    const response = await fetchWithTimeout(`${cookbookBaseUrl}/mode/read`, { method: "HEAD", timeout: 1024 });
-                    const data = JSON.parse(await response.text());
-                    if (data?.data?.mode !== "test") {
-                        const message = `[cookbook] The cookbook must run in test mode (mode === "test") to execute tests. This restriction is in place to prevent accidental operations. Please restart the cookbook and select the test mode.`;
-                        console.error(message);
-                        throw new Error(message);
-                    }
-                } catch (error) {
-                    const message = `[cookbook] It seems that Cookbook has not started, and Astra cannot communicate with Cookbook successfully. Please try to start/restart Cookbook.`
-                    console.error(message);
-                    throw new Error(message);
-                }
                 if (--counter <= 0) {
                     clearInterval(timer!);
                     timer = null;
                     console.error(error);
-                    console.warn(`[cookbook] Your project ${projectName} (http://localhost:${project.port}/) HTTP server hasn't started for too long.`);
+                    console.warn(`・[astra] Your project ${projectName} (http://localhost:${project.port}/) HTTP server hasn't started for too long.`);
                     projectStatus.get(projectName)!.resolve(undefined);
                     return;
                 }
@@ -106,7 +92,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
                         timer = null;
                         return projectStatus.get(projectName)!.resolve(undefined);
                     }
-                    const message = `[cookbook] Your project ${projectName} (http://localhost:${project.port}/) doesn't seem to be a Milkio project, because it didn't respond to milkio-astra correctly. It returned the status code ${status} instead of 204. However, this project has specified type = "milkio" for it in cookbook.toml. If this is incorrect, please fix it and replace it with type = "custom".`;
+                    const message = `・[astra] ERROR: Your project ${projectName} (http://localhost:${project.port}/) doesn't seem to be a Milkio project, because it didn't respond to milkio-astra correctly. It returned the status code ${status} instead of 204. However, this project has specified type = "milkio" for it in cookbook.toml. If this is incorrect, please fix it and replace it with type = "custom".`;
                     console.error(message);
                     throw new Error(message);
                 } catch (e) {
@@ -116,7 +102,25 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
             let timer: Timer | null = setInterval(handler, 1024);
             handler();
         }
-        return Array.from(projectStatus.values()).map((v) => v.promise);
+        return [
+            (async () => {
+                try {
+                    const cookbookBaseUrl = await findCookbookBaseUrl();
+                    console.log("・[astra]", `connecting to cookbook server.. (${cookbookBaseUrl})`);
+                    const response = await fetchWithTimeout(`${cookbookBaseUrl}/mode/read`, { method: "POST", timeout: 1024 });
+                    const data = JSON.parse(await response.text());
+                    if (data?.data?.mode !== "test") {
+                        const message = `・[astra] ERROR: The cookbook must run in test mode (mode === "test") to execute tests. This restriction is in place to prevent accidental operations. Please restart the cookbook and select the test mode.`;
+                        console.error(message);
+                        throw new Error(message);
+                    }
+                } catch (error) {
+                    const message = `・[astra] ERROR: It seems that Cookbook has not started, and Astra cannot communicate with Cookbook successfully. Please try to start/restart Cookbook.`
+                    console.error(message);
+                    throw new Error(message);
+                }
+            })(),
+            Array.from(projectStatus.values()).map((v) => v.promise)];
     })());
 
     type Execute = <Path extends keyof Generated["routeSchema"]>(
