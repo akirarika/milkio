@@ -29,13 +29,15 @@ export default await defineCookbookCommand(async (utils) => {
         const { initWatcher } = await import("../watcher");
         await initWatcher(options, mode, true);
 
-        const cookbookServerPort = await getRandomPort();
         const cookbookServerAccessKey = `c${await calcHash(crypto.randomUUID())}`;
 
+        let cookbookServerPort;
         let cookbookServerBaseUrl;
         if (await exists(join(cwd(), ".cookbook"))) {
             cookbookServerBaseUrl = (await readFile(join(cwd(), ".cookbook"))).toString().trim();
+            cookbookServerPort = Number(new URL(cookbookServerBaseUrl).port);
         } else {
+            cookbookServerPort = await getRandomPort();
             cookbookServerBaseUrl = `http://localhost:${cookbookServerPort}/${cookbookServerAccessKey}`;
             await writeFile(join(cwd(), ".cookbook"), cookbookServerBaseUrl);
         }
