@@ -11,7 +11,6 @@ export type ExecuteOptions = {
     params?: Record<any, any>;
     headers?: Record<string, string>;
     timeout?: number;
-    type: "action" | "stream";
     baseUrl?: string | (() => string) | (() => Promise<string>);
 };
 
@@ -139,7 +138,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                 url = (await baseUrl) + (path as string);
             }
 
-            if (options.type !== "stream") {
+            if (!(path as string).endsWith("~")) {
                 // action
                 if (options.headers.Accept === undefined) options.headers.Accept = "application/json";
                 if (options.headers["Content-Type"] === undefined) options.headers["Content-Type"] = "application/json";

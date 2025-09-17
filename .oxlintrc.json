@@ -35,7 +35,11 @@
         "typescript/no-non-null-assertion": "off",
         "typescript/no-namespace": "error",
         "typescript/ban-types": "off",
-        "typescript/no-const-enum": "error"
+        "typescript/no-const-enum": "error",
+        "unicorn/prefer-set-has": "error",
+        "unicorn/prefer-array-flat-map": "error",
+        "import/no-named-as-default-member": "error",
+        "unicorn/prefer-array-find": "error"
     },
     "ignorePatterns": [
         "projects/*/.milkio",
@@ -56,6 +60,7 @@
                 "projects/**/*.stream.ts"
             ],
             "rules": {
+                "no-console": "error",
                 "typescript/explicit-function-return-type": "error",
                 "typescript/explicit-module-boundary-types": "error"
             }

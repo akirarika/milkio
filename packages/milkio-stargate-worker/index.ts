@@ -11,7 +11,6 @@ export type MilkioStargateOptions = {
 export type Mixin<T, U> = U & Omit<T, keyof U>;
 
 export type ExecuteOptions = {
-    type: "action" | "stream";
     params?: Record<any, any>;
     headers?: Record<string, string>;
 };
@@ -60,7 +59,7 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
                 await connect;
                 const executeId = __createId();
                 executeIds.add(executeId);
-                if (options?.type === "action" || !options?.type) {
+                if (!(path as string).endsWith("~")) {
                     const handler = (event: { data: any }) => {
                         if (typeof event.data !== "object") return;
                         if (event.data.executeId !== executeId) return;
@@ -76,8 +75,7 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
                         params: options?.params,
                         headers: options?.headers,
                     });
-                }
-                if (options?.type === "stream") {
+                } else {
                     let flow: ReturnType<typeof createFlow> | undefined;
                     const handler = (event: { data: any }) => {
                         if (typeof event.data !== "object") return;
