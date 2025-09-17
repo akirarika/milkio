@@ -30,13 +30,16 @@ export async function selectMode(options: CookbookOptions, params?: Params) {
         return mode;
     }
 
-    if (env?.COOKBOOK_MODE) {
-        if (options.general.modes.includes(env.COOKBOOK_MODE) === false) {
-            consola.warn(`The mode '${env.COOKBOOK_MODE}' is not configured. Edit your cookbook.toml file and add it to the 'general->modes' array.`);
-            process.exit(1);
+    if (env?.COOKBOOK_MODE || env?.MODE) {
+        const mode = `${env?.COOKBOOK_MODE || env?.MODE}`;
+        if (mode) {
+            if (options.general.modes.includes(mode) === false) {
+                consola.warn(`The mode '${mode}' is not configured. Edit your cookbook.toml file and add it to the 'general->modes' array.`);
+                process.exit(1);
+            }
+            consola.info(`Mode: ${mode}`);
+            return mode;
         }
-        consola.info(`Mode: ${env.COOKBOOK_MODE}`);
-        return env.COOKBOOK_MODE;
     }
 
     console.log(asciis().join("\n"));
