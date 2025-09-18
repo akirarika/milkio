@@ -1,3 +1,3 @@
 export interface _ {
-  say(): string;
+    say(): string;
 }

@@ -8,6 +8,7 @@
     ],
     "module": "index.ts",
     "scripts": {
+        "test": "vitest",
         "lint": "oxlint --fix",
         "co": "bun run ./packages/cookbook/cookbook.ts prepare && bun run ./packages/cookbook/cookbook.ts"
     },
@@ -26,7 +27,7 @@
         "milkid": "^3.0.0",
         "typia": "^7.6.4",
         "vite-node": "^3.0.8",
-        "vitest": "3.0.5"
+        "vitest": "^3.2.4"
     },
     "devDependencies": {
         "oxlint": "^1.13.0",
