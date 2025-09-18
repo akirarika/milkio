@@ -53,7 +53,7 @@ export type CookbookCommandHandler = (utils: {
     }) => Promise<CookbookToml["projects"][0] & { value: any; path: string }>;
     getCookbookToml: () => Promise<CookbookToml>;
     gotoCommand: (command: Promise<{ default: (...args: any[]) => any }>) => Promise<void>;
-    gotoTestCommand: (mode?: string) => Promise<void>;
+    gotoTestCommand: () => Promise<void>;
     gotoDrizzleCommand: (command?: string, project?: string, mode?: string) => Promise<void>;
     toCamelCase: (str: string) => string;
     toPascalCase: (str: string) => string;

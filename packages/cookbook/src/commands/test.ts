@@ -10,7 +10,7 @@ import { getRandomPort } from "../utils/get-random-port";
 import { exists, readFile, writeFile } from "node:fs/promises";
 import { execScript } from "../utils/exec-script";
 
-export default await defineCookbookCommand(async (utils, mode?: string) => {
+export default await defineCookbookCommand(async (utils) => {
     const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
     if (!(await cookbookToml.exists())) {
         consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`);
@@ -64,7 +64,7 @@ export default await defineCookbookCommand(async (utils, mode?: string) => {
         console.log("");
     };
 
-    await start(mode ?? "test");
+    await start("test");
 
     const exitcode = await execScript(`${options.general.packageManager} run test`, { cwd: cwd() });
 

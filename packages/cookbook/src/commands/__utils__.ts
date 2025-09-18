@@ -124,9 +124,9 @@ export async function createCommandUtils(params: Params, options: { path?: strin
         return cookbookToml;
     };
 
-    const runTestCommand = async (mode?: string) => {
+    const runTestCommand = async () => {
         const module = await import("../commands/test");
-        return module.default({ ...utils } as any, mode);
+        return module.default({ ...utils } as any);
     };
 
     const runDrizzleCommand = async (command?: string, project?: string, mode?: string) => {
