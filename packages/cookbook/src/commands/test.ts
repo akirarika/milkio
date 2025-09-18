@@ -2,7 +2,6 @@ import chalk from "chalk";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import { progress } from "../progress";
 import { getCookbookToml } from "../utils/get-cookbook-toml";
-import { selectMode } from "../utils/select-mode";
 import { join } from "node:path";
 import consola from "consola";
 import { cwd, exit } from "node:process";
@@ -65,8 +64,7 @@ export default await defineCookbookCommand(async (utils, mode?: string) => {
         console.log("");
     };
 
-    const params = utils.getParams();
-    await start(mode ?? await selectMode(options, params));
+    await start(mode ?? "test");
 
     const exitcode = await execScript(`${options.general.packageManager} run test`, { cwd: cwd() });
 
