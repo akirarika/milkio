@@ -73,5 +73,9 @@ export default await defineCookbookCommand(async (utils) => {
         exit(exitcode);
     }
 
-    consola.success("Test command completed.");
+    await writeFile(join(cwd(), "node_modules", ".cookbook__success-time-of-test-run"), `${Date.now()}`);
+
+    consola.info("The timestamp of the completed test run has been written to \"/node_modules/.cookbook__success-time-of-test-run\". If you need to avoid re-running the tests in the CI step, you can refer to the time in this file.\n");
+
+    consola.success("Test command completed!");
 });
