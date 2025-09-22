@@ -74,7 +74,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         options.context.executeId = options.createdExecuteId;
         options.context.config = runtime.runtime.config;
         options.context.typia = generated.typiaSchema;
-        options.context.call = (module: any, options: any) => __call(options.context, module, options);
+        options.context.call = (module: any, o: any) => __call(options.context, module, onFinally);
         options.context.onFinally = onFinally;
         options.context._ = runtime;
 
@@ -120,6 +120,8 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         }
 
         await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results });
+
+        console.log('QWQQQQQ---call 的时候，context 为什么是 undefined？？？222', options);
 
         return { executeId, headers, params, results, context: options.context, meta, type: module.$milkioType, emptyResult, resultsTypeSafety, finales };
     };
