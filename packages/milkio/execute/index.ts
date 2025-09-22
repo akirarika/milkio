@@ -74,7 +74,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         options.context.executeId = options.createdExecuteId;
         options.context.config = runtime.runtime.config;
         options.context.typia = generated.typiaSchema;
-        options.context.call = (module: any, o: any) => __call(options.context, module, onFinally);
+        options.context.call = (module: any, params: any) => __call(options.context, module, params);
         options.context.onFinally = onFinally;
         options.context._ = runtime;
 
