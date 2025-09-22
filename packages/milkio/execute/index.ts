@@ -12,7 +12,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             createdLogger: Logger;
             path: string;
             headers: Record<string, string> | Headers;
-            mixinContext: Record<any, any> | undefined;
+            context: any | undefined;
         } & (
                 | {
                     params: Record<any, any>;
@@ -64,28 +64,28 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             params = mergeDeep(params, paramsRand);
             options.createdLogger.debug("✨ the generated params:", JSON.stringify(params));
         }
-        if (!options.mixinContext?.http?.notFound && options.mixinContext?.http?.params?.string) options.mixinContext.http.params.parsed = params;
-        const context = {
-            ...(options.mixinContext ? options.mixinContext : {}),
-            develop: runtime.develop,
-            path: options.path,
-            logger: options.createdLogger,
-            emit: runtime.emit,
-            executeId: options.createdExecuteId,
-            config: runtime.runtime.config,
-            typia: generated.typiaSchema,
-            call: (module: any, options: any) => __call(context, module, options),
-            onFinally: onFinally,
-            _: runtime,
-        } as unknown as $context;
+        if (!options.context?.http?.notFound && options.context?.http?.params?.string) options.context.http.params.parsed = params;
+
+        if (!options.context) options.context = {};
+        options.context.develop = runtime.develop;
+        options.context.path = options.path;
+        options.context.logger = options.createdLogger;
+        options.context.emit = runtime.emit;
+        options.context.executeId = options.createdExecuteId;
+        options.context.config = runtime.runtime.config;
+        options.context.typia = generated.typiaSchema;
+        options.context.call = (module: any, options: any) => __call(options.context, module, options);
+        options.context.onFinally = onFinally;
+        options.context._ = runtime;
+
         const results: Results<any> = { value: undefined };
 
         const module = routeSchema.module;
         const meta = (module.default?.meta ? module.default?.meta : {}) as unknown as Readonly<$meta>;
 
-        if (context.http?.request?.method !== undefined) {
+        if (options.context.http?.request?.method !== undefined) {
             const allowMethods = meta?.methods ?? ["POST"];
-            if (!allowMethods.includes(context.http.request.method)) throw reject("METHOD_NOT_ALLOWED", undefined);
+            if (!allowMethods.includes(options.context.http.request.method)) throw reject("METHOD_NOT_ALLOWED", undefined);
         }
 
         if (meta?.typeSafety === undefined || meta.typeSafety === true || (Array.isArray(meta.typeSafety) && meta.typeSafety.includes("params"))) {
@@ -93,9 +93,9 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             if (!validation.success) throw reject("PARAMS_TYPE_INCORRECT", { ...validation.errors[0], message: `The value '${validation.errors[0].path}' is '${validation.errors[0].value}', which does not meet '${validation.errors[0].expected}' requirements.` });
         }
 
-        await runtime.emit("milkio:executeBefore", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context });
+        await runtime.emit("milkio:executeBefore", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context });
 
-        results.value = await module.default.handler(context, params);
+        results.value = await module.default.handler(options.context, params);
 
         let emptyResult = false;
         if (results.value === undefined || results.value === null || results.value === "") {
@@ -119,9 +119,9 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             if (!validation.success) throw reject("RESULTS_TYPE_INCORRECT", { ...validation.errors[0], message: `The value '${validation.errors[0].path}' is '${validation.errors[0].value}', which does not meet '${validation.errors[0].expected}' requirements.` });
         }
 
-        await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context, results });
+        await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results });
 
-        return { executeId, headers, params, results, context, meta, type: module.$milkioType, emptyResult, resultsTypeSafety, finales };
+        return { executeId, headers, params, results, context: options.context, meta, type: module.$milkioType, emptyResult, resultsTypeSafety, finales };
     };
 
     const __call = async (context: $context, module: { default: any }, params?: any): Promise<any> => {

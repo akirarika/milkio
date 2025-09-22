@@ -100,8 +100,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             } as ContextHttp;
         })())!;
 
+        const context: any = {};
         try {
-
             await runtime.emit("milkio:httpRequest", { executeId, logger, path: http.path.string as string, http });
 
             if (!options.request.headers.get("Accept")?.startsWith("text/event-stream")) {
@@ -123,12 +123,15 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     if (routeSchema.type !== "action") throw reject("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "text/event-stream". If you are using the "@milkio/stargate" package, please add \`type: "stream"\` to the execute options.` });
                 }
 
+                context.http = http;
+                context.headers = http.request.headers;
+
                 const executed = await executer.__execute(routeSchema, {
                     createdExecuteId: executeId,
                     createdLogger: logger,
                     path: http.path.string as string,
                     headers: options.request.headers as Headers,
-                    mixinContext: { http, headers: http.request.headers },
+                    context,
                     params: http.params.string,
                     paramsType: "string",
                 });
@@ -185,12 +188,15 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     }
                 };
 
+                context.http = http;
+                context.headers = http.request.headers;
+
                 const executed = await executer.__execute(routeSchema, {
                     createdExecuteId: executeId,
                     createdLogger: logger,
                     path: http.path.string as string,
                     headers: options.request.headers as Headers,
-                    mixinContext: { http, headers: http.request.headers },
+                    context,
                     params: http.params.string,
                     paramsType: "string",
                 });
@@ -284,7 +290,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 value: exceptionHandler(executeId, logger, error),
             };
             if (results.value !== undefined) response.body = JSON.stringify(results.value);
-            await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: response.body, success: false });
+            await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context, success: false });
             runtime.runtime.request.delete(executeId);
             return new Response(response.body, response);
         }
@@ -357,6 +363,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             }
         };
 
+        const context = { http: http, headers };
+
         try {
             if (routeSchema.type === "action") {
                 const executed = await executer.__execute(routeSchema, {
@@ -364,7 +372,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     createdLogger: logger,
                     path: options.path,
                     headers,
-                    mixinContext: { http: http, headers },
+                    context,
                     params,
                     paramsType: "raw",
                 });
@@ -392,7 +400,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     createdLogger: logger,
                     path: options.path,
                     headers,
-                    mixinContext: { http: http, headers },
+                    context,
                     params,
                     paramsType: "raw",
                 });
