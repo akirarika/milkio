@@ -12,13 +12,15 @@ export const seedWatcherExtension = defineWatcherExtension({
         let typescriptImports = "// seed";
         let typescriptExports = `export const executeSeed = async (params: Record<any, any>): Promise<void> => {`;
         typescriptExports += `\n  const mixParams: any = { ...params, mode: "${mode}" };`;
+        typescriptExports += `\n  const tasks: Array<Promise<any>> = [];`;
 
         let index = 0;
         for await (const file of allFiles) {
             typescriptImports += `\nimport * as seed\$${index} from "../app/${file.path}";`;
-            typescriptExports += `\n  if ("onSeed" in seed\$${index} && typeof seed\$${index}["onSeed"] === "function") await seed\$${index}.onSeed(mixParams);`;
+            typescriptExports += `\n  if ("onSeed" in seed\$${index} && typeof seed\$${index}["onSeed"] === "function") tasks.push(seed\$${index}.onSeed(mixParams));`;
             ++index;
         }
+        typescriptExports += `\n  await Promise.all(tasks);`;
         typescriptExports += `\n};`;
         const typescript = `${typescriptImports}\n\n${typescriptExports}\n`;
 

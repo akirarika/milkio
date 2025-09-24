@@ -121,8 +121,6 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
 
         await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results });
 
-        console.log('QWQQQQQ---call 的时候，context 为什么是 undefined？？？222', options);
-
         return { executeId, headers, params, results, context: options.context, meta, type: module.$milkioType, emptyResult, resultsTypeSafety, finales };
     };
 
