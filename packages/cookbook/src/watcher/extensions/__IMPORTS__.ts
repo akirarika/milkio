@@ -8,6 +8,7 @@ import { eventWatcherExtension } from "./event";
 import type { defineWatcherExtension } from "../extensions";
 import { typiaWatcherExtension } from "./typia";
 import { codeWatcherExtension } from "./code";
+import { seedWatcherExtension } from "./seed";
 
 export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
     // extensions
@@ -20,6 +21,7 @@ export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
     codeWatcherExtension,
     eventWatcherExtension,
     typiaWatcherExtension,
+    seedWatcherExtension,
 ];
 
 export const indexTs = `// index
