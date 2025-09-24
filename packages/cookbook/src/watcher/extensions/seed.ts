@@ -10,7 +10,7 @@ export const seedWatcherExtension = defineWatcherExtension({
         const writePath = join(root, ".milkio", "seed.ts");
 
         let typescriptImports = "// seed";
-        let typescriptExports = `export const seed = async (params: Record<any, any>): Promise<void> => {`;
+        let typescriptExports = `export const executeSeed = async (params: Record<any, any>): Promise<void> => {`;
         typescriptExports += `\n  const mixParams = { ...params, mode: "${mode}" };`;
 
         let index = 0;
@@ -20,7 +20,7 @@ export const seedWatcherExtension = defineWatcherExtension({
             ++index;
         }
         typescriptExports += `\n};`;
-        const typescript = `${typescriptImports}\n${typescriptExports}\n`;
+        const typescript = `${typescriptImports}\n\n${typescriptExports}\n`;
 
         await Bun.write(writePath, typescript);
     },
