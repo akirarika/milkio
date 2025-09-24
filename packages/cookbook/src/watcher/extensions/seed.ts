@@ -11,7 +11,7 @@ export const seedWatcherExtension = defineWatcherExtension({
 
         let typescriptImports = "// seed";
         let typescriptExports = `export const executeSeed = async (params: Record<any, any>): Promise<void> => {`;
-        typescriptExports += `\n  const mixParams = { ...params, mode: "${mode}" };`;
+        typescriptExports += `\n  const mixParams: any = { ...params, mode: "${mode}" };`;
 
         let index = 0;
         for await (const file of allFiles) {
@@ -25,3 +25,4 @@ export const seedWatcherExtension = defineWatcherExtension({
         await Bun.write(writePath, typescript);
     },
 });
+
