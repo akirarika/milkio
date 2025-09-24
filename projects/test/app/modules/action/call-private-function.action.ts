@@ -1,9 +1,13 @@
-import { action } from "milkio";
+import { action, type $context, type $meta } from "milkio";
 
-export default action({
-    async handler(context, params: { username?: string; password?: string }): Promise<{ username: string; baz: string; createdAt: Date }> {
-        const result = await context.call(import("./type-safety.action.ts"), { ...params });
+const meta: $meta = {
+    methods: ["POST"],
+}
 
-        return result;
-    },
-});
+async function handler(context: $context, params: { username?: string; password?: string }): Promise<{ username: string; baz: string; createdAt: Date }> {
+    const result = await context.call(import("./type-safety.action.ts"), { ...params });
+
+    return result;
+}
+
+export default action({ meta, handler });

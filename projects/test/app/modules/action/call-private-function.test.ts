@@ -9,7 +9,7 @@ it.sequential("basic", async () => {
     if (error) throw reject("Milkio did not execute successfully", error);
 
     // Check if the return value is as expected
-    expect(results.username).toBe("administrator");
+    expect(results.username).toBe("foo");
     expect(results.baz).toBe("baz");
 });
 

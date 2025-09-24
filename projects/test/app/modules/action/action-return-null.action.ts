@@ -1,8 +1,8 @@
-import { action } from "milkio";
+import { action, type $context } from "milkio";
 
 /**
  * action-return-null
  */
-export default action({
-    async handler(context, params: {}): Promise<void> { },
-});
+async function handler(context: $context, params: {}): Promise<void> { }
+
+export default action({ handler });
