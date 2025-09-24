@@ -1,4 +1,4 @@
-export interface $meta {
+export interface MilkioMeta {
     /**
      * type safety
      * @default ["params"]

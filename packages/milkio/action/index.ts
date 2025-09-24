@@ -1,4 +1,4 @@
-import type { $context } from "../index.ts";
+import type { MilkioContext } from "../index.ts";
 
 export function action<ActionInitT extends ActionInit>(init: ActionInitT): Action<ActionInitT> {
     const action = init as unknown as Action<ActionInitT>;
@@ -9,7 +9,7 @@ export function action<ActionInitT extends ActionInit>(init: ActionInitT): Actio
 
 export type ActionInit = {
     meta?: Record<any, any>;
-    handler: (context: $context, params: any) => Promise<unknown>;
+    handler: (context: MilkioContext, params: any) => Promise<unknown>;
 };
 
 export type Action<ActionInitT extends ActionInit> = {

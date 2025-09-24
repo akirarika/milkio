@@ -1,12 +1,12 @@
-import type { $context, ContextHttp, Results, Logger, $meta } from "../index.ts";
+import type { MilkioContext, ContextHttp, Results, Logger, MilkioMeta } from "../index.ts";
 
 export interface $events {
     "*": { key: keyof $events, value: any };
     "milkio:httpRequest": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>> };
-    "milkio:httpResponse": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>>; context: $context; success: boolean };
+    "milkio:httpResponse": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>>; context: MilkioContext; success: boolean };
     "milkio:httpNotFound": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>> };
-    "milkio:executeBefore": { executeId: string; path: string; logger: Logger; meta: $meta; context: $context };
-    "milkio:executeAfter": { executeId: string; path: string; logger: Logger; meta: $meta; context: $context; results: Results<any> };
+    "milkio:executeBefore": { executeId: string; path: string; logger: Logger; meta: MilkioMeta; context: MilkioContext };
+    "milkio:executeAfter": { executeId: string; path: string; logger: Logger; meta: MilkioMeta; context: MilkioContext; results: Results<any> };
 }
 
 export function __initEventManager() {

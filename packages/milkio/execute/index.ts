@@ -1,6 +1,6 @@
 import type { IValidation } from "typia";
 import { reject } from "../index.ts";
-import type { $context, $meta, Logger, Results, GeneratedInit } from "../index.ts";
+import type { MilkioContext, MilkioMeta, Logger, Results, GeneratedInit } from "../index.ts";
 import { headersToJSON } from "../utils/headers-to-json.ts";
 import { mergeDeep } from "../utils/merge-deep.ts";
 
@@ -23,7 +23,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
                     paramsType: "string";
                 }
             ),
-    ): Promise<{ executeId: string; headers: Headers; params: Record<any, unknown>; results: Results<any>; context: $context; meta: Readonly<$meta>; type: "action" | "stream"; emptyResult: boolean; resultsTypeSafety: boolean; finales: Array<() => void | Promise<void>> }> => {
+    ): Promise<{ executeId: string; headers: Headers; params: Record<any, unknown>; results: Results<any>; context: MilkioContext; meta: Readonly<MilkioMeta>; type: "action" | "stream"; emptyResult: boolean; resultsTypeSafety: boolean; finales: Array<() => void | Promise<void>> }> => {
         const executeId: string = options.createdExecuteId;
         let headers: Headers;
         if (!(options.headers instanceof Headers)) {
@@ -81,7 +81,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         const results: Results<any> = { value: undefined };
 
         const module = routeSchema.module;
-        const meta = (module.default?.meta ? module.default?.meta : {}) as unknown as Readonly<$meta>;
+        const meta = (module.default?.meta ? module.default?.meta : {}) as unknown as Readonly<MilkioMeta>;
 
         if (options.context.http?.request?.method !== undefined) {
             const allowMethods = meta?.methods ?? ["POST"];
@@ -124,7 +124,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         return { executeId, headers, params, results, context: options.context, meta, type: module.$milkioType, emptyResult, resultsTypeSafety, finales };
     };
 
-    const __call = async (context: $context, module: { default: any }, params?: any): Promise<any> => {
+    const __call = async (context: MilkioContext, module: { default: any }, params?: any): Promise<any> => {
         const moduleAwaited = await module;
         return await moduleAwaited.default.handler(context, params);
     };
