@@ -11,7 +11,7 @@ export interface MilkioContext {
     headers: Headers;
     config: Readonly<Awaited<ReturnType<$types["configSchema"]["get"]>>>;
     typia: Readonly<$types["generated"]["typiaSchema"]>;
-    call: <Module extends Promise<{ default: Action<any> }>>(module: Module, params: Parameters<Awaited<Module>["default"]["handler"]>[1]) => Promise<ReturnType<Awaited<Module>["default"]["handler"]>>;
+    call: <Module extends Promise<Action<any>>>(module: Module, params: Parameters<Awaited<Module>["handler"]>[1]) => Promise<ReturnType<Awaited<Module>["handler"]>>;
     onFinally: (handler: () => void | Promise<void>) => void;
 }
 

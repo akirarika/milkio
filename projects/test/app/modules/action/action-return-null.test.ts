@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
 import { astra } from "../../../test.ts";
+// import { generated } from "../../../.milkio/index.ts";
 
 it.sequential("basic", async () => {
     const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
@@ -13,3 +14,5 @@ it.sequential("basic", async () => {
 
     expect(results).toEqual({});
 });
+
+// const foo : (typeof generated)["routeSchema"]["/action/action-return-null"]["module"] = undefined as any;

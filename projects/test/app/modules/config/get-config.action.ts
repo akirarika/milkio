@@ -1,13 +1,7 @@
-import { action } from "milkio";
+import { type MilkioContext } from "milkio";
 
-/**
- * config
- */
-export default action({
-    async handler(context, params: {}): Promise<typeof context.config> {
-        context.logger.info("hello world", context.config);
-        return {
-            ...context.config,
-        };
-    },
-});
+export async function handler(context: MilkioContext, params: {}): Promise<typeof context.config> {
+    return {
+        ...context.config,
+    };
+}

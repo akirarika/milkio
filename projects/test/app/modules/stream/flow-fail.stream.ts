@@ -1,22 +1,23 @@
-import { createFlow, reject, stream } from "milkio";
+import { createFlow, reject, type MilkioContext, type MilkioMeta } from "milkio";
 
-export default stream({
-    async *handler(context, params: {}): AsyncGenerator<{ counter: number }> {
-        const flow = createFlow<{ counter: number }>();
 
-        setTimeout(() => {
-            flow.emit({ counter: 500 });
-        }, 500);
-        setTimeout(() => {
-            flow.emit({ counter: 1000 });
-        }, 1000);
-        setTimeout(() => {
-            flow.emit({ counter: 1500 });
-        }, 1500);
-        setTimeout(() => {
-            flow.throw(reject("FAIL", "FAIL"));
-        }, 2000);
+export const meta: MilkioMeta = {};
 
-        for await (const chunk of flow) yield chunk;
-    },
-});
+export async function* handler(context: MilkioContext, params: {}): AsyncGenerator<{ counter: number; }, any, any> {
+    const flow = createFlow<{ counter: number }>();
+
+    setTimeout(() => {
+        flow.emit({ counter: 500 });
+    }, 500);
+    setTimeout(() => {
+        flow.emit({ counter: 1000 });
+    }, 1000);
+    setTimeout(() => {
+        flow.emit({ counter: 1500 });
+    }, 1500);
+    setTimeout(() => {
+        flow.throw(reject("FAIL", "FAIL"));
+    }, 2000);
+
+    for await (const chunk of flow) yield chunk;
+}

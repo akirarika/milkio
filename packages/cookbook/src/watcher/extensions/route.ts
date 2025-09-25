@@ -71,7 +71,7 @@ export const routeWatcherExtension = defineWatcherExtension({
                     routeFileExports += `result: Awaited<ReturnType<typeof ${file.importName}["handler"]>> `;
                     routeFileExports += "},";
                     if (project?.lazyRoutes === undefined || project?.lazyRoutes === true) {
-                        routeFileImports += `\nimport type ${file.importName} from "../../../../../app/${file.path}";`;
+                        routeFileImports += `\nimport type * as ${file.importName} from "../../../../../app/${file.path}";`;
                         routeFileExports += `module: () => import("../../../../../app/${file.path}"), `;
                     } else {
                         routeFileImports += `\nimport ${file.importName} from "../../../../../app/${file.path}";`;

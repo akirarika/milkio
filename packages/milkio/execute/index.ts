@@ -24,6 +24,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
                 }
             ),
     ): Promise<{ executeId: string; headers: Headers; params: Record<any, unknown>; results: Results<any>; context: MilkioContext; meta: Readonly<MilkioMeta>; type: "action" | "stream"; emptyResult: boolean; resultsTypeSafety: boolean; finales: Array<() => void | Promise<void>> }> => {
+        const type = options.path.endsWith("~") ? "stream" : "action";
         const executeId: string = options.createdExecuteId;
         let headers: Headers;
         if (!(options.headers instanceof Headers)) {
@@ -81,7 +82,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         const results: Results<any> = { value: undefined };
 
         const module = routeSchema.module;
-        const meta = (module.default?.meta ? module.default?.meta : {}) as unknown as Readonly<MilkioMeta>;
+        const meta = (module?.meta ? module?.meta : {}) as unknown as Readonly<MilkioMeta>;
 
         if (options.context.http?.request?.method !== undefined) {
             const allowMethods = meta?.methods ?? ["POST"];
@@ -95,7 +96,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
 
         await runtime.emit("milkio:executeBefore", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context });
 
-        results.value = await module.default.handler(options.context, params);
+        results.value = await module.handler(options.context, params);
 
         let emptyResult = false;
         if (results.value === undefined || results.value === null || results.value === "") {
@@ -106,7 +107,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         }
 
         let resultsTypeSafety = false;
-        if (!emptyResult && module.$milkioType !== "stream" && (
+        if (!emptyResult && type === "action" && (
             // Temporary: type-safe default is false and this setting should not be exposed to users
             // Due to current issues with typia, type safety cannot be achieved at the moment
             // Therefore, the next line of code is currently commented out
@@ -121,12 +122,12 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
 
         await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results });
 
-        return { executeId, headers, params, results, context: options.context, meta, type: module.$milkioType, emptyResult, resultsTypeSafety, finales };
+        return { executeId, headers, params, results, context: options.context, meta, type, emptyResult, resultsTypeSafety, finales };
     };
 
-    const __call = async (context: MilkioContext, module: { default: any }, params?: any): Promise<any> => {
+    const __call = async (context: MilkioContext, module: { meta: any, handler: any }, params?: any): Promise<any> => {
         const moduleAwaited = await module;
-        return await moduleAwaited.default.handler(context, params);
+        return await moduleAwaited.handler(context, params);
     };
 
     return {
