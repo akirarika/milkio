@@ -287,8 +287,8 @@ function processFile(filePath: string, appRoot: string, fileName: string): Cookb
         }
 
         if (!isFileSegment) {
-            if (!/^#?[a-z0-9-]+$/.test(segment)) {
-                consola.error(`Invalid folder: '${segment}' (${join(appRoot, filePath)}). Allow starting with #, followed by lowercase letters, digits, and hyphens. Files/directories starting with # will not be exposed as routes.`);
+            if (!/^\$?[a-z0-9-]+$/.test(segment)) {
+                consola.error(`Invalid folder: '${segment}' (${join(appRoot, filePath)}). Allow starting with $, followed by lowercase letters, digits, and hyphens. Files/directories starting with $ will not be exposed as routes.`);
                 exit(1);
             }
         } else {
@@ -422,7 +422,6 @@ function findAffectedFiles(changedFile: string): Set<string> {
 function generateImportName(filePath: string): string {
     return filePath
         .slice(0, filePath.length - 3)
-        .replaceAll("#", "__")
         .replaceAll("/", "$")
         .replaceAll("-", "_")
         .replaceAll(".", "T");

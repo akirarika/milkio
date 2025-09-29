@@ -34,7 +34,7 @@ export const routeWatcherExtension = defineWatcherExtension({
         let tasks: Array<Promise<void>> = [];
         const hashes: Map<string, string> = new Map();
         for (const file of changeFiles) {
-            if (file.importName.includes("#")) continue;
+            if (file.importName.includes("$")) continue;
             tasks.push(
                 (async () => {
                     let isGenerate = false;
@@ -110,7 +110,7 @@ export const routeWatcherExtension = defineWatcherExtension({
         await Promise.all(tasks);
         tasks = [];
 
-        const validImportNames = new Set(allFiles.map((file) => file.importName).filter((importName) => !importName.includes("#")));
+        const validImportNames = new Set(allFiles.map((file) => file.importName).filter((importName) => !importName.includes("$")));
 
         tasks.push(
             (async () => {
