@@ -101,7 +101,11 @@ export const routeWatcherExtension = defineWatcherExtension({
 
                     await Promise.all(deleteTasks);
 
-                    await $`${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`.cwd(root).quiet();
+                    try {
+                        await $`${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`.cwd(root).quiet();
+                    } catch (error) {
+                        consola.warn(`[${getRate()}] ⚠️ type-safety fail, skip: ${file.path}\n${error}`);
+                    }
                     consola.info(chalk.gray(`[${getRate()}] ✨ type-safety now: ${file.path}`));
                 })(),
             );
@@ -110,7 +114,7 @@ export const routeWatcherExtension = defineWatcherExtension({
         await Promise.all(tasks);
         tasks = [];
 
-        const validImportNames = new Set(allFiles.filter((file) => !file.path.includes("$")).map((file) => file.importName));
+        const validImportNames = new Set(allFiles.map((file) => file.importName));
 
         tasks.push(
             (async () => {
@@ -145,6 +149,7 @@ export const routeWatcherExtension = defineWatcherExtension({
 
         const routePaths: Set<string> = new Set();
         for (const file of allFiles) {
+            if (file.path.includes("$")) continue;
             let hashFile = hashes.get(file.importName);
             if (!hashFile) hashFile = await getLatestSchemaFolder(join(milkioGeneratedRouteDirPath, file.importName));
             const hashFileName = `${hashFile}/schema.ts`;
