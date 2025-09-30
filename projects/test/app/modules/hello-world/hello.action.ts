@@ -1,7 +1,7 @@
-import { reject, type MilkioMeta, type MilkioContext } from "milkio";
+import { reject } from "milkio";
+import type { MilkioContext, MilkioMeta } from "../../../.milkio/declares.ts";
 
 export const meta: MilkioMeta = {}
-
 
 export async function handler(context: MilkioContext, params: {
     a: string;
@@ -12,6 +12,6 @@ export async function handler(context: MilkioContext, params: {
         count: 2 + params.b,
         say: "hello world",
     };
-    if (params.throw) throw reject("FAIL", "Reject this request");
+    if (params.throw) throw reject("REQUEST_FAIL", "Reject this request");
     return results;
 }

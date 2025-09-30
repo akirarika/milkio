@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import type { MilkioContext, MilkioInit, MilkioRuntimeInit } from "../index.ts";
+import type { $context, MilkioInit, MilkioRuntimeInit } from "../index.ts";
 import { sendCookbookEvent } from "../utils/send-cookbook-event.ts";
 
 export type Log = ["(debug)" | "(info)" | "(warn)" | "(error)" | "(request)" | "(response)", string /* executeId */, string, string, string, ...Array<unknown>];
@@ -8,7 +8,7 @@ export interface Logger {
     _: {
         logs: Array<Log>;
         tags: Map<string, unknown>;
-        submit: (context: MilkioContext) => Promise<void> | void;
+        submit: (context: $context) => Promise<void> | void;
     };
     setTag: (key: string, value: unknown) => void;
     setLog: (...log: Log) => void;
@@ -22,7 +22,7 @@ export interface Logger {
 
 export type LoggerInsertingHandler = (log: Log) => boolean;
 
-export type LoggerSubmittingHandler = (context: MilkioContext, logs: Array<Log>, tags: Map<string, unknown>) => Promise<void> | void;
+export type LoggerSubmittingHandler = (context: $context, logs: Array<Log>, tags: Map<string, unknown>) => Promise<void> | void;
 
 export function createLogger<MilkioRuntime extends MilkioRuntimeInit<MilkioRuntimeInit<MilkioInit>> = MilkioRuntimeInit<MilkioInit>>(runtime: MilkioRuntime, path: string, executeId: string): Logger {
     const logger = {} as Logger;
@@ -30,7 +30,7 @@ export function createLogger<MilkioRuntime extends MilkioRuntimeInit<MilkioRunti
     logger._ = {
         logs: [],
         tags: new Map(),
-        submit: (context: MilkioContext) => {
+        submit: (context: $context) => {
             if (!runtime.onLoggerSubmitting) return;
             return runtime.onLoggerSubmitting(context, logger._.logs, logger._.tags);
         },

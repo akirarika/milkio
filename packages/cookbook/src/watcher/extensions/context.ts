@@ -10,12 +10,11 @@ export const contextWatcherExtension = defineWatcherExtension({
         const types = "";
         let content = "";
 
-        content += "\n  interface MilkioContext";
+        content += "\nexport interface MilkioContext extends $context";
         let contextIndex = 0;
         for await (const file of allFiles) {
             header += `\nimport type { _ as context_${contextIndex} } from "../app/${file.path}";`;
-            if (contextIndex > 0) content += ", ";
-            else content += " extends ";
+            content += ", ";
             content += `context_${contextIndex}`;
             ++contextIndex;
         }

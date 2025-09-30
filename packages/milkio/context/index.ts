@@ -1,6 +1,6 @@
 import type { MilkioHttpRequest, MilkioHttpResponse, $types, Logger, Action, MilkioRuntimeInit, MilkioInit } from "../index.ts";
 
-export interface MilkioContext {
+export interface $context {
     _: MilkioRuntimeInit<MilkioInit>;
     develop: boolean;
     executeId: string;
@@ -27,4 +27,4 @@ export interface ContextHttp<ParamsParsed = any> {
     response: MilkioHttpResponse;
 }
 
-export type ContextCreatedHandler = (context: MilkioContext) => Promise<void> | void;
+export type ContextCreatedHandler = (context: $context) => Promise<void> | void;

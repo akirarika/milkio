@@ -1,7 +1,5 @@
-import { createFlow, reject, type MilkioContext, type MilkioMeta } from "milkio";
-
-
-export const meta: MilkioMeta = {};
+import { createFlow, reject } from "milkio";
+import type { MilkioContext } from "../../../.milkio/declares.ts";
 
 export async function* handler(context: MilkioContext, params: {}): AsyncGenerator<{ counter: number; }, any, any> {
     const flow = createFlow<{ counter: number }>();
@@ -16,7 +14,7 @@ export async function* handler(context: MilkioContext, params: {}): AsyncGenerat
         flow.emit({ counter: 1500 });
     }, 1500);
     setTimeout(() => {
-        flow.throw(reject("FAIL", "FAIL"));
+        flow.throw(reject("REQUEST_FAIL", "FAIL"));
     }, 2000);
 
     for await (const chunk of flow) yield chunk;

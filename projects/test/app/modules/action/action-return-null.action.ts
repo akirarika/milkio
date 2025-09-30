@@ -1,4 +1,4 @@
-import { type MilkioContext } from "milkio";
+import type { MilkioContext } from "../../../.milkio/declares.ts";
 
 /**
  * action-return-null

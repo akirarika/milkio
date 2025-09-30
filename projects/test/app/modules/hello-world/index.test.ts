@@ -25,8 +25,8 @@ it.sequential("reject", async () => {
         },
     });
     if (!error) throw reject("Milkio execution was successful, but expectations should have failed", results);
-    if (!error.FAIL) throw reject("Type is not 'FAIL'");
+    if (!error.REQUEST_FAIL) throw reject("Type is not 'FAIL'");
 
     // Check if the return value is as expected
-    expect(error.FAIL).toBe("Reject this request");
+    expect(error.REQUEST_FAIL).toBe("Reject this request");
 });

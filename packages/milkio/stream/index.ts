@@ -1,11 +1,11 @@
-import type { MilkioContext, MilkioMeta } from "../index.ts";
+import type { $context, $meta } from "../index.ts";
 
 export type StreamInit = {
-    meta?: MilkioMeta;
-    handler: (context: MilkioContext, params: any) => AsyncGenerator<unknown>;
+    meta?: $meta;
+    handler: (context: $context, params: any) => AsyncGenerator<unknown>;
 };
 
 export type Stream<StreamInitT extends StreamInit> = {
-    meta?: MilkioMeta;
+    meta?: $meta;
     handler: StreamInitT["handler"];
 };

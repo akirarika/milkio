@@ -1,6 +1,6 @@
 import type { IValidation } from "typia";
 import { reject } from "../index.ts";
-import type { MilkioContext, MilkioMeta, Logger, Results, GeneratedInit } from "../index.ts";
+import type { $context, $meta, Logger, Results, GeneratedInit } from "../index.ts";
 import { headersToJSON } from "../utils/headers-to-json.ts";
 import { mergeDeep } from "../utils/merge-deep.ts";
 
@@ -23,7 +23,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
                     paramsType: "string";
                 }
             ),
-    ): Promise<{ executeId: string; headers: Headers; params: Record<any, unknown>; results: Results<any>; context: MilkioContext; meta: Readonly<MilkioMeta>; type: "action" | "stream"; emptyResult: boolean; resultsTypeSafety: boolean; finales: Array<() => void | Promise<void>> }> => {
+    ): Promise<{ executeId: string; headers: Headers; params: Record<any, unknown>; results: Results<any>; context: $context; meta: Readonly<$meta>; type: "action" | "stream"; emptyResult: boolean; resultsTypeSafety: boolean; finales: Array<() => void | Promise<void>> }> => {
         const type = options.path.endsWith("~") ? "stream" : "action";
         const executeId: string = options.createdExecuteId;
         let headers: Headers;
@@ -82,7 +82,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         const results: Results<any> = { value: undefined };
 
         const module = routeSchema.module;
-        const meta = (module?.meta ? module?.meta : {}) as unknown as Readonly<MilkioMeta>;
+        const meta = (module?.meta ? module?.meta : {}) as unknown as Readonly<$meta>;
 
         if (options.context.http?.request?.method !== undefined) {
             const allowMethods = meta?.methods ?? ["POST"];
@@ -103,7 +103,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             emptyResult = true;
             results.value = {};
         } else if (Array.isArray(results.value) || typeof results.value !== "object") {
-            throw reject("FAIL", "The return type of the handler must be an 'object', which is currently an '${typeof typeof results.value}'.");
+            throw reject("REQUEST_FAIL", "The return type of the handler must be an 'object', which is currently an '${typeof typeof results.value}'.");
         }
 
         let resultsTypeSafety = false;
@@ -125,7 +125,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         return { executeId, headers, params, results, context: options.context, meta, type, emptyResult, resultsTypeSafety, finales };
     };
 
-    const __call = async (context: MilkioContext, module: { meta: any, handler: any }, params?: any): Promise<any> => {
+    const __call = async (context: $context, module: { meta: any, handler: any }, params?: any): Promise<any> => {
         const moduleAwaited = await module;
         return await moduleAwaited.handler(context, params);
     };

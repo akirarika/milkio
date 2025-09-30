@@ -129,9 +129,10 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
 
 async function generateDeclares(root: string, mode: string, options: CookbookOptions, project: CookbookWatcherExtensionProject, extensionChangeFiles: Array<Array<CookbookWatcherFile>>) {
     let header = "// declares";
+    header += `\nimport type { $context, $meta, $rejectCode } from "milkio";`;
     header += `\nimport type { generated } from "./index.ts";`;
 
-    let content = `\ndeclare module "milkio" {`;
+    let content = `\n`;
     let types = "";
 
     for (let i = 0; i < imports.length; i++) {
@@ -146,12 +147,12 @@ async function generateDeclares(root: string, mode: string, options: CookbookOpt
         content += rtnContent;
     }
 
-    content += "\n  interface $types {";
+    content += "\nexport interface MilkioTypes {";
     content += "\n    generated: typeof generated";
     content += types;
-    content += "\n  }";
+    content += "\n};";
 
-    await Bun.write(join(root, ".milkio", "declares.d.ts"), `${header}\n${content}\n}`);
+    await Bun.write(join(root, ".milkio", "declares.ts"), `${header}\n${content}\n`);
 }
 
 function setupWatcher(mode: string, root: string, appRoot: string, validDirs: string[], options: CookbookOptions, project: CookbookWatcherExtensionProject) {

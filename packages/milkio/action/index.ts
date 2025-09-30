@@ -1,12 +1,12 @@
-import { MilkioMeta } from "../meta/index.ts";
-import { MilkioContext } from "../context/index.ts";
+import { $meta } from "../meta/index.ts";
+import { $context } from "../context/index.ts";
 
 export type ActionInit = {
     meta?: Record<any, any>;
-    handler: (context: MilkioContext, params: any) => Promise<unknown>;
+    handler: (context: $context, params: any) => Promise<unknown>;
 };
 
 export type Action<ActionInitT extends ActionInit> = {
-    meta?: MilkioMeta;
+    meta?: $meta;
     handler: ActionInitT["handler"];
 };

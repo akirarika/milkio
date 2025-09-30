@@ -1,4 +1,4 @@
-import { type MilkioContext, type MilkioMeta } from "milkio";
+import type { MilkioContext, MilkioMeta } from "../../../.milkio/declares.ts";
 
 export const meta: MilkioMeta = {};
 

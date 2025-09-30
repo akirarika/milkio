@@ -8,12 +8,12 @@ test.sequential("basic", async () => {
     });
     if (error) throw reject("Milkio did not execute successfully", error);
 
-    const values: Array<{ counter: number } | { FAIL?: string }> = [];
+    const values: Array<{ counter: number } | { REQUEST_FAIL?: string }> = [];
     for await (const [error, result] of results) {
         if (error) values.push(error);
         else values.push(result);
     }
 
     // Check if the return value is as expected
-    expect(values).toEqual([{ counter: 500 }, { counter: 1000 }, { counter: 1500 }, { FAIL: "FAIL" }]);
+    expect(values).toEqual([{ counter: 500 }, { counter: 1000 }, { counter: 1500 }, { REQUEST_FAIL: "FAIL" }]);
 });
