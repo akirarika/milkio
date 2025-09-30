@@ -129,7 +129,7 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
 
 async function generateDeclares(root: string, mode: string, options: CookbookOptions, project: CookbookWatcherExtensionProject, extensionChangeFiles: Array<Array<CookbookWatcherFile>>) {
     let header = "// declares";
-    header += `\nimport type { $context, $meta, $rejectCode } from "milkio";`;
+    header += `\nimport type { $context, $meta, $rejectCode, $events, Logger, Results, ContextHttp, MilkioRuntimeInit, MilkioInit, Action } from "milkio";`;
     header += `\nimport type { generated } from "./index.ts";`;
 
     let content = `\n`;

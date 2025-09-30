@@ -10,12 +10,19 @@ export const eventWatcherExtension = defineWatcherExtension({
         const types = "";
         let content = "";
 
-        content += "\nexport interface MilkioEvents";
+        content += `\ntype $eventsMixin = {
+    "*": { key: keyof $events, value: any };
+    "milkio:httpRequest": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>> };
+    "milkio:httpResponse": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>>; context: MilkioContext; success: boolean };
+    "milkio:httpNotFound": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>> };
+    "milkio:executeBefore": { executeId: string; path: string; logger: Logger; meta: $meta; context: MilkioContext };
+    "milkio:executeAfter": { executeId: string; path: string; logger: Logger; meta: $meta; context: MilkioContext; results: Results<any> };
+}`;
+        content += "\nexport interface MilkioEvents extends $eventsMixin";
         let eventIndex = 0;
         for await (const file of allFiles) {
             header += `\nimport type { _ as event_${eventIndex} } from "../app/${file.path}";`;
-            if (eventIndex > 0) content += ", ";
-            else content += " extends ";
+            content += ", ";
             content += `event_${eventIndex}`;
             ++eventIndex;
         }

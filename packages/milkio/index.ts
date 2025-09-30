@@ -6,7 +6,6 @@ export * from "./execute/index.ts";
 export * from "./bootstrap/index.ts";
 export * from "./event/index.ts";
 export * from "./flow/index.ts";
-export * from "./handler/index.ts";
 export * from "./world/index.ts";
 export * from "./action/index.ts";
 export * from "./stream/index.ts";

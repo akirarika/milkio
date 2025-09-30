@@ -17,5 +17,7 @@ export async function* handler(context: MilkioContext, params: {}): AsyncGenerat
         flow.throw(reject("REQUEST_FAIL", "FAIL"));
     }, 2000);
 
+    context.emit("say", () => "123");
+
     for await (const chunk of flow) yield chunk;
 }
