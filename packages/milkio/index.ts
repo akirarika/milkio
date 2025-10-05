@@ -3,7 +3,6 @@ export * from "./type-safety/index.ts";
 export * from "./types/index.ts";
 export * from "./config/index.ts";
 export * from "./execute/index.ts";
-export * from "./bootstrap/index.ts";
 export * from "./event/index.ts";
 export * from "./flow/index.ts";
 export * from "./world/index.ts";
