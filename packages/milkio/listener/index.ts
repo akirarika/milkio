@@ -102,7 +102,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
         const context: any = { reject };
         try {
-            await runtime.emit("milkio:httpRequest", { executeId, logger, path: http.path.string as string, http });
+            await runtime.emit("milkio:httpRequest", { executeId, logger, path: http.path.string as string, http, reject });
 
             if (!options.request.headers.get("Accept")?.startsWith("text/event-stream")) {
                 // action
@@ -112,7 +112,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     if (routeSchema === null) {
                         routeSchema = generated.routeSchema?.[http.path.string];
                         if (routeSchema === undefined) {
-                            await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http });
+                            await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject });
                             throw reject("NOT_FOUND", { path: http.path.string as string });
                         }
                         if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
@@ -147,7 +147,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     }
                 }
 
-                await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: executed.context, success: true });
+                await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: executed.context, success: true, reject });
 
                 for (const handler of finales) {
                     try {
@@ -167,7 +167,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     if (routeSchema === null) {
                         routeSchema = generated.routeSchema?.[http.path.string];
                         if (routeSchema === undefined) {
-                            await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http });
+                            await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject });
                             throw reject("NOT_FOUND", { path: http.path.string as string });
                         }
                         if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
@@ -281,7 +281,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 response.headers["Content-Type"] = "text/event-stream";
                 response.headers["Cache-Control"] = "no-cache";
 
-                await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: executed.context, success: true });
+                await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: executed.context, success: true, reject });
 
                 return new Response(response.body, response);
             }
@@ -290,7 +290,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 value: exceptionHandler(executeId, logger, error),
             };
             if (results.value !== undefined) response.body = JSON.stringify(results.value);
-            await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context, success: false });
+            await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context, success: false, reject });
             runtime.runtime.request.delete(executeId);
             return new Response(response.body, response);
         }

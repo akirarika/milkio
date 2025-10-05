@@ -94,7 +94,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             if (!validation.success) throw reject("PARAMS_TYPE_INCORRECT", { ...validation.errors[0], message: `The value '${validation.errors[0].path}' is '${validation.errors[0].value}', which does not meet '${validation.errors[0].expected}' requirements.` });
         }
 
-        await runtime.emit("milkio:executeBefore", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context });
+        await runtime.emit("milkio:executeBefore", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, reject });
 
         results.value = await module.handler(options.context, params);
 
@@ -120,7 +120,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             if (!validation.success) throw reject("RESULTS_TYPE_INCORRECT", { ...validation.errors[0], message: `The value '${validation.errors[0].path}' is '${validation.errors[0].value}', which does not meet '${validation.errors[0].expected}' requirements.` });
         }
 
-        await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results });
+        await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results, reject });
 
         return { executeId, headers, params, results, context: options.context, meta, type, emptyResult, resultsTypeSafety, finales };
     };
