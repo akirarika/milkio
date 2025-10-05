@@ -23,7 +23,9 @@ export const contextWatcherExtension = defineWatcherExtension({
     call: <Module extends Promise<Action<any>>>(module: Module, params: Parameters<Awaited<Module>["handler"]>[1]) => Promise<ReturnType<Awaited<Module>["handler"]>>;
     onFinally: (handler: () => void | Promise<void>) => void;
     emit: <Key extends keyof MilkioEvents, Value extends MilkioEvents[Key]>(key: Key, value: Value) => Promise<void>
-}`;
+    reject: <Code extends keyof MilkioRejectCode, RejectData extends MilkioRejectCode[Code]>(code: Code, data: RejectData) => MilkioRejectError<Code, RejectData>;
+};
+`;
         content += "\nexport interface MilkioContext extends $contextMixin";
         let contextIndex = 0;
         for await (const file of allFiles) {

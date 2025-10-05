@@ -10,7 +10,9 @@ export const codeWatcherExtension = defineWatcherExtension({
         const types = "";
         let content = "";
 
-        content += "\nexport interface MilkioRejectCode extends $rejectCode";
+        content += `\n
+export type MilkioRejectError<Code extends keyof MilkioRejectCode = keyof MilkioRejectCode, RejectData extends MilkioRejectCode[Code] = MilkioRejectCode[Code]> = { code: Code; data: RejectData; stack: string; $milkioReject: true };
+export interface MilkioRejectCode extends $rejectCode`;
         let codeIndex = 0;
         for await (const file of allFiles) {
             header += `\nimport type { _ as code_${codeIndex} } from "../app/${file.path}";`;

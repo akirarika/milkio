@@ -1,4 +1,5 @@
-import { reject } from "milkio";
+// oxlint-disable-next-line no-unused-vars
+
 import type { MilkioContext } from "../../../.milkio/declares.ts";
 
 export async function handler(context: MilkioContext, params: {
@@ -9,7 +10,7 @@ export async function handler(context: MilkioContext, params: {
     const results = {
         count: 2 + params.b,
     };
-    if (params.throw) throw reject("REQUEST_FAIL", "Reject this request");
+    if (params.throw) throw context.reject("REQUEST_FAIL", "Reject this request");
 
     return results;
 }

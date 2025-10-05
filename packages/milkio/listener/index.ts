@@ -100,7 +100,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             } as ContextHttp;
         })())!;
 
-        const context: any = {};
+        const context: any = { reject };
         try {
             await runtime.emit("milkio:httpRequest", { executeId, logger, path: http.path.string as string, http });
 
@@ -363,7 +363,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             }
         };
 
-        const context = { http: http, headers };
+        const context = { http: http, headers, reject };
 
         try {
             if (routeSchema.type === "action") {
