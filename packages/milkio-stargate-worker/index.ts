@@ -65,7 +65,11 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
                         if (event.data.executeId !== executeId) return;
                         executeIds.delete(executeId);
                         stargateOptions.port.removeEventListener("message", handler);
-                        if (!event.data.success) resolve([event.data.error, null, { executeId }]);
+                        if (!event.data.success) {
+                            const error: any = {};
+                            error[event.data.error.code] = event.data.error.reject;
+                            resolve([error, null, { executeId }]);
+                        }
                         if (event.data.success) resolve([null, event.data.data, { executeId }] as any);
                     };
                     stargateOptions.port.addEventListener("message", handler);
@@ -82,7 +86,11 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
                         if (event.data.executeId !== executeId) return;
                         if (!flow) {
                             flow = createFlow(stargateOptions, executeId);
-                            if (!event.data.success) resolve([event.data.error, null, { executeId }]);
+                            if (!event.data.success) {
+                                const error: any = {};
+                                error[event.data.error.code] = event.data.error.reject;
+                                resolve([error, null, { executeId }]);
+                            }
                             if (event.data.success) resolve([null, flow, { executeId }] as any);
                         } else {
                             if (event.data.done) {
