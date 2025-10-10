@@ -3,6 +3,7 @@ import { reject } from "../index.ts";
 import type { $context, $meta, Logger, Results, GeneratedInit } from "../index.ts";
 import { headersToJSON } from "../utils/headers-to-json.ts";
 import { mergeDeep } from "../utils/merge-deep.ts";
+import { reviveJSONParse } from "../utils/revive-json-parse.ts";
 
 export function __initExecuter(generated: GeneratedInit, runtime: any) {
     const __execute = async (
@@ -49,7 +50,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
                 params = {};
             } else {
                 try {
-                    params = JSON.parse(options.params);
+                    params = reviveJSONParse(JSON.parse(options.params));
                 } catch (error) {
                     throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
                 }
