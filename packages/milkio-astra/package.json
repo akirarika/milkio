@@ -1,11 +1,11 @@
 {
-    "name": "@milkio/astra",
-    "type": "module",
-    "version": "1.0.0-beta.162",
-    "exports": "./index.ts",
-    "dependencies": {
-        "date-fns": "^4.1.0",
-        "js-toml": "^1.0.0"
-    },
-    "devDependencies": {}
+  "name": "@milkio/astra",
+  "type": "module",
+  "version": "1.0.0-beta.163",
+  "exports": "./index.ts",
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "js-toml": "^1.0.0"
+  },
+  "devDependencies": {}
 }
