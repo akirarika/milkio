@@ -266,7 +266,7 @@ export default await defineCookbookCommand(async (utils) => {
                             name: packageJson.name,
                             version: packageJson.version,
                             type: "module",
-                            module: "./index.js",
+                            exports: "./index.js",
                             types: "./index.d.ts",
                             dependencies,
                         }),
