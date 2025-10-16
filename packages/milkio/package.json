@@ -1,7 +1,7 @@
 {
   "name": "milkio",
   "type": "module",
-  "version": "1.0.0-beta.163",
+  "version": "1.0.0-beta.164",
   "exports": "./index.ts",
   "scripts": {},
   "peerDependencies": {
