@@ -1,9 +1,9 @@
 {
-  "name": "@milkio/redis",
-  "type": "module",
-  "version": "1.0.0-beta.162",
-  "module": "index.ts",
-  "peerDependencies": {
-    "redis": ">=4.7.0"
-  }
+    "name": "@milkio/redis",
+    "type": "module",
+    "version": "1.0.0-beta.162",
+    "exports": "./index.ts",
+    "peerDependencies": {
+        "redis": ">=4.7.0"
+    }
 }

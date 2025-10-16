@@ -205,7 +205,7 @@ export default await defineCookbookCommand(async (utils) => {
                                     name: `@milkio/cookbook-${platform.platform}-${platform.arch}`,
                                     type: "module",
                                     version: packageJson.version,
-                                    module: "./index.js",
+                                    exports: "./index.js",
                                 }),
                             );
 
