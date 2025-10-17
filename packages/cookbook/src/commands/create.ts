@@ -228,9 +228,9 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
             consola.success("Updated astra.ts with new port");
         }
 
-        consola.start("Updating cookbook.toml...");
+        consola.start("Updating cookbook.toml..");
         const cookbookTomlPath = join(cwd(), "cookbook.toml");
-        if (await exists(cookbookTomlPath)) {
+        if (!cookbookToml.projects[projectName] && await exists(cookbookTomlPath)) {
             let cookbookContent = await readFile(cookbookTomlPath, 'utf8');
 
             const projectConfig = `\n\n[projects.${projectName}]\nport = ${newPort}\ntype = "milkio"\nruntime = "node"\nautoStart = true`;

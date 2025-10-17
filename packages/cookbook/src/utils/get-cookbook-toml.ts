@@ -25,10 +25,6 @@ export async function getCookbookToml(cookbookToml?: string, p?: typeof progress
         options = Bun.TOML.parse(cookbookTomlText);
         options.hash = cookbookTomlHash;
     }
-    if (Object.keys(options.projects ?? []).length === 0) {
-        consola.error(`For at least one project, check your "cookbook.toml".`);
-        exit(0);
-    }
     for (const projectName in options.projects) {
         const project = options.projects[projectName];
         if (!existsSync(join(cwd(), "projects", projectName, "package.json"))) {
