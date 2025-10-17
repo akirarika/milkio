@@ -72,12 +72,6 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
             if (currentWriteDir === undefined) currentWriteDir = tempDir;
             consola.info(`Initializing cookbook in ${currentWriteDir}`);
             if (!await exists(currentWriteDir)) mkdirSync(currentWriteDir);
-        } else {
-            for (const fileName of (await readdir(currentWriteDir))) {
-                if (fileName === '.git') continue;
-                consola.error(`The current directory doesn't seem to be empty. You need to run this command in an empty directory.`);
-                exit(1);
-            }
         }
 
         consola.start("Finding the appropriate mirror..");
