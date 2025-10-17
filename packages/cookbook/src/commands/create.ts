@@ -22,7 +22,7 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
     const cookbookToml = await utils.getCookbookToml();
     const packageManager = cookbookToml.general.packageManager;
 
-    if (!["milkio"].includes(packageName)) {
+    if (!["@milkio/template-milkio"].includes(packageName)) {
         if (packageManager === "deno") await execScript(`deno init --npm ${packageName}`, { cwd: join(cwd(), "projects") });
         else await execScript(`${packageManager} create ${packageName}`, { cwd: join(cwd(), "projects") });
     } else {

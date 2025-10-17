@@ -153,5 +153,5 @@ export default await defineCookbookCommand(async (utils) => {
 
     consola.success("✨ Initialized successfully! Now, let's create your first Milkio project.");
     console.log("");
-    await (await (import("./create.ts"))).default(utils, "milkio");
+    await (await (import("./create.ts"))).default(utils, "@milkio/template-milkio");
 });
