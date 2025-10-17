@@ -257,7 +257,7 @@ export default await defineCookbookCommand(async (utils) => {
 
             // 将包发布到 npm
             for (const childPackage of [mainPackage, ...childPackages]) {
-                if (childPackage !== "cookbook" && childPackage !== "cookbook-ui" && childPackage !== "create-cookbook" && childPackage !== "milkio-electron") {
+                if (!childPackage.startsWith("template-") && childPackage !== "cookbook" && childPackage !== "cookbook-ui" && childPackage !== "create-cookbook" && childPackage !== "milkio-electron") {
                     consola.log(`正在打包 ${childPackage} 到 dist..`);
                     rmSync(join(cwd, "packages", childPackage, "dist"), {
                         recursive: true,
