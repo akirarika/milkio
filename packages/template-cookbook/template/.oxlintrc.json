@@ -1,0 +1,67 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "rules": {
+        "indent": [
+            "error",
+            4,
+            {
+                "SwitchCase": 1
+            }
+        ],
+        "quotes": [
+            "error",
+            "single"
+        ],
+        "semi": [
+            "error",
+            "always"
+        ],
+        "no-empty-file": "off",
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": [
+            "error",
+            {
+                "args": "none",
+                "vars": "all",
+                "varsIgnorePattern": "^_",
+                "argsIgnorePattern": "^_",
+                "caughtErrors": "none"
+            }
+        ],
+        "typescript/no-explicit-any": "off",
+        "eslint/require-yield": "off",
+        "typescript/prefer-function-type": "off",
+        "eslint/no-else-return": "off",
+        "typescript/no-non-null-assertion": "off",
+        "typescript/no-namespace": "error",
+        "typescript/ban-types": "off",
+        "typescript/no-const-enum": "error",
+        "unicorn/prefer-set-has": "error",
+        "unicorn/prefer-array-flat-map": "error",
+        "import/no-named-as-default-member": "error",
+        "unicorn/prefer-array-find": "error"
+    },
+    "ignorePatterns": [
+        "projects/*/.milkio",
+        "projects/*/public"
+    ],
+    "overrides": [
+        {
+            "files": [
+                "projects/**/*.test.ts"
+            ],
+            "rules": {
+                "no-unused-vars": "off"
+            }
+        },
+        {
+            "files": [
+                "projects/**/*.action.ts",
+                "projects/**/*.stream.ts"
+            ],
+            "rules": {
+                "no-console": "error"
+            }
+        }
+    ]
+}

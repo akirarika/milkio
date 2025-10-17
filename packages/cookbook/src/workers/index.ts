@@ -28,7 +28,7 @@ export interface Worker {
 // const world = await useCookbookWorld();
 
 export async function initWorkers(options: CookbookOptions, mode: string, baseUrl: string) {
-    for (const projectName in options.projects) {
+    for (const projectName in options.projects ?? []) {
         const project = options.projects[projectName];
         const env: Record<string, string | undefined> = { MODE: mode, VITE_MODE: mode, COOKBOOK_MODE: mode, COOKBOOK_BASE_URL: baseUrl, MILKIO_PORT: `${project.port}` };
         const worker = createWorker(projectName, {

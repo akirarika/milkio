@@ -68,7 +68,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
     console.log("・[astra]", "connecting..");
     await Promise.all((() => {
         const projectStatus = new Map<string, { promise: Promise<undefined>; resolve: (value?: undefined | PromiseLike<undefined>) => void; reject: (reason?: any) => void }>();
-        for (const projectName in cookbookOptions.projects) {
+        for (const projectName in cookbookOptions.projects ?? []) {
             const project = cookbookOptions.projects[projectName];
             if (project.type !== "milkio") continue;
             if (projectName === "cookbook-server" && project.port === 52593) continue; // the cookbook-server is not a milkio project

@@ -25,7 +25,7 @@ export async function initWatcher(options: CookbookOptions, mode: string, watch:
 
     try {
         const tasks: Array<Promise<void>> = [];
-        for (const projectName in options.projects) {
+        for (const projectName in options.projects ?? []) {
             tasks.push(
                 (async () => {
                     const project = options.projects[projectName];

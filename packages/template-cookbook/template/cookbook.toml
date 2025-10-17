@@ -1,0 +1,4 @@
+[general]
+cookbookPort = 8000
+packageManager = "bun"
+modes = ["test", "development", "production"]

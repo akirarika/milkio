@@ -12,7 +12,17 @@ import { execFileSync } from "node:child_process";
 import { rmSync } from "fs-extra";
 
 const mainPackage = "milkio";
-const childPackages = ["cookbook", "create-cookbook", "milkio-electron", "cookbook-command", "milkio-astra", "milkio-redis", "milkio-stargate", "milkio-stargate-worker", "vite-plugin-milkio"];
+const childPackages = [
+    // 这些包将会被发布，不在列表中的包不会被发布
+    "cookbook",
+    "create-cookbook",
+    "milkio-electron",
+    "cookbook-command",
+    "milkio-astra", "milkio-redis",
+    "milkio-stargate",
+    "milkio-stargate-worker",
+    "vite-plugin-milkio"
+];
 
 export default await defineCookbookCommand(async (utils) => {
     console.log("");
@@ -86,6 +96,9 @@ export default await defineCookbookCommand(async (utils) => {
     }
     console.clear();
 
+    // 记录已成功发布的包
+    const publishedPackages: Array<{ name: string; version: string }> = [];
+
     try {
         console.log(`检查 npm 版本是否存在.. npm view ${packageJson.name}@${newVersion} --json`);
         await $`npm view ${packageJson.name}@${newVersion} --json`.quiet();
@@ -99,6 +112,35 @@ export default await defineCookbookCommand(async (utils) => {
                 const childPackageJson = JSON.parse(await readFile(join(cwd, "packages", childPackage, "package.json"), "utf-8"));
                 childPackageJson.version = newVersion;
                 await writeFile(join(cwd, "packages", childPackage, "package.json"), JSON.stringify(childPackageJson, null, 2));
+                if (await exists(join(cwd, "packages", childPackage, "template", "package.json"))) {
+                    const templatePackageJson = JSON.parse(await readFile(join(cwd, "packages", childPackage, "template", "package.json"), "utf-8"));
+
+                    if (templatePackageJson.peerDependencies) {
+                        for (const dep in templatePackageJson.peerDependencies) {
+                            if (dep.startsWith("@milkio/") || dep === "milkio") {
+                                templatePackageJson.peerDependencies[dep] = newVersion;
+                            }
+                        }
+                    }
+
+                    if (templatePackageJson.dependencies) {
+                        for (const dep in templatePackageJson.dependencies) {
+                            if (dep.startsWith("@milkio/") || dep === "milkio") {
+                                templatePackageJson.dependencies[dep] = newVersion;
+                            }
+                        }
+                    }
+
+                    if (templatePackageJson.devDependencies) {
+                        for (const dep in templatePackageJson.devDependencies) {
+                            if (dep.startsWith("@milkio/") || dep === "milkio") {
+                                templatePackageJson.devDependencies[dep] = newVersion;
+                            }
+                        }
+                    }
+
+                    await writeFile(join(cwd, "packages", childPackage, "template", "package.json"), JSON.stringify(templatePackageJson, null, 2));
+                }
             }
 
             for (const childPackage of [mainPackage, ...childPackages]) {
@@ -117,43 +159,6 @@ export default await defineCookbookCommand(async (utils) => {
                 await $`${{ raw: `git commit -m "🎈 publish: v${newVersion}"` }}`;
                 await $`git push -u origin ${(await $`git symbolic-ref --short HEAD`).text().trim()}`;
             }
-
-            // 将 cookbook-ui 的静态资源打包并发布
-            // consola.log("正在打包 cookbook-ui 的静态资源..");
-            // if (
-            //   !(await existsSync(
-            //     join(cwd, "../kecream-projects/projects/cookbook-ui/package.json")
-            //   ))
-            // )
-            //   throw new Error("未找到 cookbook-ui 项目");
-            // execFileSync("npm", ["run", "generate"], {
-            //   stdio: "inherit",
-            //   shell: true,
-            //   cwd: join(cwd, "../kecream-projects/projects/cookbook-ui"),
-            // });
-            // await new Promise((resolve) => setTimeout(resolve, 1000));
-            // await writeFile(
-            //   "../kecream-projects/projects/cookbook-ui/.output/public/__cookbook_ui__.js",
-            //   `console.log("This package is used to distribute cookbook-ui binaries. You can run it directly.");`
-            // );
-            // await writeFile(
-            //   "../kecream-projects/projects/cookbook-ui/.output/public/package.json",
-            //   JSON.stringify({
-            //     name: "@milkio/cookbook-ui",
-            //     type: "module",
-            //     version: packageJson.version,
-            //     module: "./__cookbook_ui__.js",
-            //   })
-            // );
-            // execFileSync(
-            //   "powershell.exe",
-            //   ["-Command", "npm publish --access public"],
-            //   {
-            //     stdio: "inherit",
-            //     cwd: "../kecream-projects/projects/cookbook-ui/.output/public",
-            //   }
-            // );
-            // consola.success("cookbook-ui 静态资源打包并发布成功");
 
             // 打包 cookbook 的二进制文件并发布
             await (async () => {
@@ -217,10 +222,28 @@ export default await defineCookbookCommand(async (utils) => {
                                 stdio: "inherit",
                                 cwd: `./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}`,
                             });
+
+                            // 记录成功发布的包
+                            publishedPackages.push({
+                                name: `@milkio/cookbook-${platform.platform}-${platform.arch}`,
+                                version: newVersion
+                            });
                             break;
                         } catch (error) {
                             consola.error(error);
                             if ((await cli.select("\n发布失败，可能是网络异常，是否重试？", ["是", "否"])) !== "是") {
+                                // 撤回已发布的包
+                                consola.error("开始撤回已发布的包...");
+                                for (const pkg of publishedPackages) {
+                                    try {
+                                        consola.log(`正在撤回 ${pkg.name}@${pkg.version}...`);
+                                        await $`npm unpublish ${pkg.name}@${pkg.version} --force`;
+                                        consola.success(`已成功撤回 ${pkg.name}@${pkg.version}`);
+                                    } catch (error) {
+                                        consola.error(`撤回 ${pkg.name}@${pkg.version} 失败:`, error);
+                                    }
+                                }
+                                consola.error("已撤回所有已发布的包。");
                                 process.exit(1);
                             }
                         }
@@ -281,6 +304,12 @@ export default await defineCookbookCommand(async (utils) => {
                             else if (newVersion.includes("-alpha")) command += " --tag alpha";
                             await $`${{ raw: command }}`.cwd(join(cwd, "packages", childPackage, "dist"));
                             await Bun.sleep(1000);
+
+                            // 记录成功发布的包
+                            publishedPackages.push({
+                                name: packageJson.name,
+                                version: newVersion
+                            });
                             break;
                         } catch (error: any) {
                             console.log(error);
@@ -288,6 +317,58 @@ export default await defineCookbookCommand(async (utils) => {
                             if ((await cli.select(`\n${childPackage} 发布失败，可能是网络异常，是否重试？`, ["是", "否"])) === "是") {
                                 console.log("好的，即将重试..");
                             } else {
+                                // 撤回已发布的包
+                                consola.error("开始撤回已发布的包...");
+                                for (const pkg of publishedPackages) {
+                                    try {
+                                        consola.log(`正在撤回 ${pkg.name}@${pkg.version}...`);
+                                        await $`npm unpublish ${pkg.name}@${pkg.version} --force`;
+                                        consola.success(`已成功撤回 ${pkg.name}@${pkg.version}`);
+                                    } catch (error) {
+                                        consola.error(`撤回 ${pkg.name}@${pkg.version} 失败:`, error);
+                                    }
+                                }
+                                consola.error("已撤回所有已发布的包。");
+                                console.log("已退出发布");
+                                process.exit(0);
+                            }
+                        }
+                    }
+                } else if (childPackage.startsWith("template-")) {
+                    consola.log(`正在发布模板 ${childPackage} 到 npm..`);
+                    while (true) {
+                        try {
+                            let command = "npm publish --access public";
+                            if (newVersion.includes("-rc")) command += " --tag rc";
+                            else if (newVersion.includes("-beta")) command += " --tag beta";
+                            else if (newVersion.includes("-alpha")) command += " --tag alpha";
+                            await $`${{ raw: command }}`.cwd(join(cwd, "packages", childPackage));
+                            await Bun.sleep(1000);
+
+                            // 记录成功发布的包
+                            publishedPackages.push({
+                                name: packageJson.name,
+                                version: newVersion
+                            });
+                            break;
+                        } catch (error: any) {
+                            console.log(error);
+                            console.log(error?.message ?? "");
+                            if ((await cli.select(`\n${childPackage} 发布失败，可能是网络异常，是否重试？`, ["是", "否"])) === "是") {
+                                console.log("好的，即将重试..");
+                            } else {
+                                // 撤回已发布的包
+                                consola.error("开始撤回已发布的包...");
+                                for (const pkg of publishedPackages) {
+                                    try {
+                                        consola.log(`正在撤回 ${pkg.name}@${pkg.version}...`);
+                                        await $`npm unpublish ${pkg.name}@${pkg.version} --force`;
+                                        consola.success(`已成功撤回 ${pkg.name}@${pkg.version}`);
+                                    } catch (error) {
+                                        consola.error(`撤回 ${pkg.name}@${pkg.version} 失败:`, error);
+                                    }
+                                }
+                                consola.error("已撤回所有已发布的包。");
                                 console.log("已退出发布");
                                 process.exit(0);
                             }
@@ -304,6 +385,12 @@ export default await defineCookbookCommand(async (utils) => {
                             else if (newVersion.includes("-alpha")) command += " --tag alpha";
                             await $`${{ raw: command }}`.cwd(join(cwd, "packages", childPackage));
                             await Bun.sleep(1000);
+
+                            // 记录成功发布的包
+                            publishedPackages.push({
+                                name: packageJson.name,
+                                version: newVersion
+                            });
                             break;
                         } catch (error: any) {
                             console.log(error);
@@ -311,6 +398,18 @@ export default await defineCookbookCommand(async (utils) => {
                             if ((await cli.select(`\n${childPackage} 发布失败，可能是网络异常，是否重试？`, ["是", "否"])) === "是") {
                                 console.log("好的，即将重试..");
                             } else {
+                                // 撤回已发布的包
+                                consola.error("开始撤回已发布的包...");
+                                for (const pkg of publishedPackages) {
+                                    try {
+                                        consola.log(`正在撤回 ${pkg.name}@${pkg.version}...`);
+                                        await $`npm unpublish ${pkg.name}@${pkg.version} --force`;
+                                        consola.success(`已成功撤回 ${pkg.name}@${pkg.version}`);
+                                    } catch (error) {
+                                        consola.error(`撤回 ${pkg.name}@${pkg.version} 失败:`, error);
+                                    }
+                                }
+                                consola.error("已撤回所有已发布的包。");
                                 console.log("已退出发布");
                                 process.exit(0);
                             }
@@ -373,21 +472,21 @@ export default await defineCookbookCommand(async (utils) => {
         });
         const translateToEnglish = async (message: string) => {
             const prompts = `
-      ##背景
-      你是一个好用的翻译助手。请将内容翻译成英文。我发给你所有的话都是需要翻译的内容，你只需要回答翻译结果。翻译结果请符合英文的语言习惯。
-      下面是一份词汇对照表，当涉及到相关词汇时请使用对应的翻译。
-      
-      ##专业词汇
-      遇到下方专业词汇时，请将其翻译成对应的单词。
-      固执己见=opinionated
-      渐进式=progressive
-      环境变量=environment
-      
-      ##注意事项
-      1. 确保专业术语的准确使用。
-      2. 对敏感词汇体现必要的敏感性。
-      3. 严格保持文章的原 Markdown 格式。
-      4. 严格保持回复的内容仅包含润色后的文章本身，不包含任何多余的话，也不需要请求用户提出反馈。
+                ##背景
+                你是一个好用的翻译助手。请将内容翻译成英文。我发给你所有的话都是需要翻译的内容，你只需要回答翻译结果。翻译结果请符合英文的语言习惯。
+                下面是一份词汇对照表，当涉及到相关词汇时请使用对应的翻译。
+                
+                ##专业词汇
+                遇到下方专业词汇时，请将其翻译成对应的单词。
+                固执己见=opinionated
+                渐进式=progressive
+                环境变量=environment
+                
+                ##注意事项
+                1. 确保专业术语的准确使用。
+                2. 对敏感词汇体现必要的敏感性。
+                3. 严格保持文章的原 Markdown 格式。
+                4. 严格保持回复的内容仅包含润色后的文章本身，不包含任何多余的话，也不需要请求用户提出反馈。
       `;
             const chatCompletion = await openai.chat.completions.create({
                 model: "abab6.5s-chat",

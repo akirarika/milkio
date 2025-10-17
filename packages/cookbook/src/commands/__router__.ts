@@ -13,6 +13,10 @@ export const __router__ = [
         script: () => import("./drizzle.ts"),
     },
     {
+        commands: ["create"],
+        script: () => import("./create.ts"),
+    },
+    {
         hidden: true,
         commands: ["init"],
         script: () => import("./init.ts"),

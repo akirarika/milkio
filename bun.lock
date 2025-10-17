@@ -42,7 +42,7 @@
     },
     "packages/cookbook": {
       "name": "@milkio/cookbook",
-      "version": "1.0.0-beta.163",
+      "version": "1.0.0-beta.165",
       "bin": {
         "cookbook": "./cookbook.ts",
       },
@@ -59,6 +59,7 @@
         "@vitest/ui": "^2.0.5",
         "chalk": "^5.3.0",
         "cli-progress": "^3.12.0",
+        "compressing": "^2.0.0",
         "consola": "^3.4.2",
         "find-cache-dir": "^5.0.0",
         "gradient-string": "^3.0.0",
@@ -82,7 +83,7 @@
     },
     "packages/cookbook-command": {
       "name": "@milkio/cookbook-command",
-      "version": "1.0.0-beta.163",
+      "version": "1.0.0-beta.165",
       "dependencies": {
         "consola": "^3.4.0",
         "openai": "^4.87.3",
@@ -90,7 +91,7 @@
     },
     "packages/create-cookbook": {
       "name": "create-cookbook",
-      "version": "1.0.0-beta.163",
+      "version": "1.0.0-beta.165",
       "bin": {
         "create-cookbook": "./index.mjs",
       },
@@ -103,7 +104,7 @@
     },
     "packages/milkio": {
       "name": "milkio",
-      "version": "1.0.0-beta.163",
+      "version": "1.0.0-beta.165",
       "dependencies": {
         "@poech/camel-hump-under": "^1.1.0",
         "chalk": "^5.3.0",
@@ -121,7 +122,7 @@
     },
     "packages/milkio-astra": {
       "name": "@milkio/astra",
-      "version": "1.0.0-beta.163",
+      "version": "1.0.0-beta.165",
       "dependencies": {
         "date-fns": "^4.1.0",
         "js-toml": "^1.0.0",
@@ -129,7 +130,7 @@
     },
     "packages/milkio-electron": {
       "name": "milkio-electron",
-      "version": "1.0.0-beta.163",
+      "version": "1.0.0-beta.165",
       "bin": {
         "milkio-electron": "index.mjs",
       },
@@ -143,22 +144,26 @@
     },
     "packages/milkio-redis": {
       "name": "@milkio/redis",
-      "version": "1.0.0-beta.163",
+      "version": "1.0.0-beta.165",
       "peerDependencies": {
         "redis": ">=4.7.0",
       },
     },
     "packages/milkio-stargate": {
       "name": "@milkio/stargate",
-      "version": "1.0.0-beta.163",
+      "version": "1.0.0-beta.165",
     },
     "packages/milkio-stargate-worker": {
       "name": "@milkio/stargate-worker",
-      "version": "1.0.0-beta.163",
+      "version": "1.0.0-beta.165",
+    },
+    "packages/template-cookbook": {
+      "name": "@milkio/template-cookbook",
+      "version": "1.0.0-beta.165",
     },
     "packages/vite-plugin-milkio": {
       "name": "@milkio/vite-plugin-milkio",
-      "version": "1.0.0-beta.163",
+      "version": "1.0.0-beta.165",
       "dependencies": {
         "@iarna/toml": "^2.2.5",
         "@mjackson/node-fetch-server": "0.6.1",
@@ -389,6 +394,8 @@
     "@milkio/stargate": ["@milkio/stargate@workspace:packages/milkio-stargate"],
 
     "@milkio/stargate-worker": ["@milkio/stargate-worker@workspace:packages/milkio-stargate-worker"],
+
+    "@milkio/template-cookbook": ["@milkio/template-cookbook@workspace:packages/template-cookbook"],
 
     "@milkio/vite-plugin-milkio": ["@milkio/vite-plugin-milkio@workspace:packages/vite-plugin-milkio"],
 
@@ -1269,6 +1276,8 @@
     "@isaacs/cliui/strip-ansi": ["strip-ansi@7.1.0", "", { "dependencies": { "ansi-regex": "^6.0.1" } }, "sha512-iq6eVVI64nQQTRYq2KtEg2d2uU7LElhTJwsH4YzIHZshxlgZms/wIc4VoDQTlG/IvVIrBKG06CrZnp0qv7hkcQ=="],
 
     "@isaacs/cliui/wrap-ansi": ["wrap-ansi@8.1.0", "", { "dependencies": { "ansi-styles": "^6.1.0", "string-width": "^5.0.1", "strip-ansi": "^7.0.1" } }, "sha512-si7QWI6zUMq56bESFvagtmzMdGOtoxfR+Sez11Mobfc7tm+VkUckk9bW2UeffTGVUbOksxmSw0AA2gs8g71NCQ=="],
+
+    "@milkio/cookbook/compressing": ["compressing@2.0.0", "", { "dependencies": { "@eggjs/yauzl": "^2.11.0", "flushwritable": "^1.0.0", "get-ready": "^1.0.0", "iconv-lite": "^0.5.0", "streamifier": "^0.1.1", "tar-stream": "^1.5.2", "yazl": "^2.4.2" } }, "sha512-hRG5wpuy/lkO/oO8AEhSmLw2FVJOs2DnFPtmm0XUVWoDP6k3HAw5RVgyzbbATl0ytjJDCY03DvRiyjHkSHc1Dg=="],
 
     "@milkio/cookbook-server/@ryoppippi/unplugin-typia": ["@ryoppippi/unplugin-typia@1.2.0", "", { "dependencies": { "@rollup/pluginutils": "^5.1.3", "consola": "^3.2.3", "defu": "^6.1.4", "diff-match-patch": "^1.0.5", "find-cache-dir": "^5.0.0", "magic-string": "^0.30.14", "pathe": "^1.1.2", "pkg-types": "^1.2.1", "type-fest": "^4.30.0", "typescript": "~5.6.3", "typia": "^7.6.0", "unplugin": "^1.16.0", "vite": "^6.0.2" } }, "sha512-TlrqL2WQie2HvSqJpmKPXrFsNPbMwU5Jw2Asx+E3E3Fuyya5mN1lqaeILwSZLmkCOMTQLazIrTWNOGs0V6XL6A=="],
 
