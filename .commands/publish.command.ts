@@ -18,10 +18,13 @@ const childPackages = [
     "create-cookbook",
     "milkio-electron",
     "cookbook-command",
-    "milkio-astra", "milkio-redis",
+    "milkio-astra",
+    "milkio-redis",
     "milkio-stargate",
     "milkio-stargate-worker",
-    "vite-plugin-milkio"
+    "vite-plugin-milkio",
+    "template-milkio",
+    "template-cookbook"
 ];
 
 export default await defineCookbookCommand(async (utils) => {
