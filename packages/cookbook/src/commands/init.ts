@@ -42,8 +42,8 @@ export default await defineCookbookCommand(async (utils) => {
 
     const packageManagers = [
         { label: "<cancel>", value: "<cancel>" },
-        { label: "npm", value: "npm" },
-        { label: "bun", value: "bun" },
+        { label: "npm (🌳 recommend)", value: "npm" },
+        { label: "bun (🌳 recommend)", value: "bun" },
         { label: "deno (🚨 experimental)", value: "deno" },
         { label: "yarn (🚨 experimental)", value: "yarn" },
         { label: "pnpm (🚨 experimental)", value: "pnpm" },
@@ -61,8 +61,19 @@ export default await defineCookbookCommand(async (utils) => {
         const experimentalManagers = ["deno", "yarn", "pnpm", "cnpm"];
         if (experimentalManagers.includes(selectedPackageManager)) {
             consola.warn(`⚠️  You've selected an experimental package manager: ${selectedPackageManager}`);
-            consola.info("Experimental package managers may have compatibility issues with monorepo designs and other advanced features.");
-            consola.info("We strongly recommend using npm or bun for the best experience.");
+            console.log("> Experimental package managers may have compatibility     ");
+            console.log("> issues with monorepo designs and other advanced features.");
+            console.log(">                                                          ");
+            console.log("> This is because the cookbook has not yet been made       ");
+            console.log("> compatible with their monorepo syntax.                   ");
+            console.log(">                                                          ");
+            console.log("> We strongly recommend using npm or bun to avoid          ");
+            console.log("> frustrating errors.                                      ");
+            console.log(">                                                          ");
+            console.log("> When community volunteer contributions make this         ");
+            console.log("> package manager run smoothly without frustrating errors, ");
+            console.log("> we will remove this warning and look forward to          ");
+            console.log("> supporting it.                                           ");
             const confirm = await consola.prompt(`🚨 Are you sure you want to continue with ${selectedPackageManager}?`, {
                 type: "confirm",
                 initial: false
