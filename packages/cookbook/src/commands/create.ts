@@ -190,10 +190,9 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
             exit(1);
         }
 
-        consola.start("Generating port number...");
         let maxPort = 8999;
 
-        if (cookbookToml.projects) {
+        if (cookbookToml.projects && typeof cookbookToml.projects === 'object' && Object.keys(cookbookToml.projects).length > 0) {
             for (const [_projectNameKey, projectConfig] of Object.entries(cookbookToml.projects)) {
                 if (projectConfig.port && projectConfig.port > maxPort) {
                     maxPort = projectConfig.port;
@@ -204,25 +203,20 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
         const newPort = maxPort + 1;
         consola.success(`Generated port number: ${newPort}`);
 
-        consola.start("Updating vite.config.ts...");
         const viteConfigPath = join(currentWriteDir, "vite.config.ts");
         if (await exists(viteConfigPath)) {
             let viteConfigContent = await readFile(viteConfigPath, 'utf8');
             viteConfigContent = viteConfigContent.replace(/port: 9000,/g, `port: ${newPort},`);
             await writeFile(viteConfigPath, viteConfigContent, 'utf8');
-            consola.success("Updated vite.config.ts with new port");
         }
 
-        consola.start("Updating astra.ts...");
         const astraPath = join(currentWriteDir, "app", "utils", "astra.ts");
         if (await exists(astraPath)) {
             let astraContent = await readFile(astraPath, 'utf8');
             astraContent = astraContent.replace(/baseUrl: "http:\/\/localhost:9000",/g, `baseUrl: "http://localhost:${newPort}",`);
             await writeFile(astraPath, astraContent, 'utf8');
-            consola.success("Updated astra.ts with new port");
         }
 
-        consola.start("Updating cookbook.toml..");
         const cookbookTomlPath = join(cwd(), "cookbook.toml");
         if (!cookbookToml.projects[projectName] && await exists(cookbookTomlPath)) {
             let cookbookContent = await readFile(cookbookTomlPath, 'utf8');
