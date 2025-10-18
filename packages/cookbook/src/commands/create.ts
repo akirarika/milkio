@@ -248,7 +248,7 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
             `  Try running ${chalk.magenta("co create nuxt")} to create a ${chalk.green("Vue (nuxt)")} project!\n\n` +
             `${chalk.yellow.bold("🚀 Get Started:")}\n` +
             `  Run ${chalk.magenta("co dev")} to start your project!\n\n` +
-            `${chalk.gray("Happy coding! 🌟")}\n`
+            `${chalk.gray("Happy coding UwU! 🌟")}\n`
         );
     }
 });
