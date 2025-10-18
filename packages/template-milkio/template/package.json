@@ -1,16 +1,14 @@
 {
-  "name": "REPLACE-YOUR-REPOSITORY-NAME",
-  "exports": "./index.ts",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "dev": "vite dev",
-    "build": "vite build"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  }
+    "name": "REPLACE-YOUR-REPOSITORY-NAME",
+    "exports": "./index.ts",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "dev": "vite dev",
+        "build": "vite build"
+    },
+    "devDependencies": {},
+    "peerDependencies": {
+        "typescript": "^5.9.3"
+    }
 }

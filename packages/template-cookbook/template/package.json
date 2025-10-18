@@ -1,27 +1,27 @@
 {
-  "name": "@milkio/cookbook",
-  "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "workspaces": [
-    "projects/*",
-    "packages/*",
-    ".commands"
-  ],
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@milkio/astra": "1.0.0-beta.172",
-    "@milkio/cookbook-command": "1.0.0-beta.172",
-    "@milkio/redis": "1.0.0-beta.172",
-    "@milkio/stargate": "1.0.0-beta.172",
-    "@milkio/stargate-worker": "1.0.0-beta.172",
-    "@milkio/vite-plugin-milkio": "1.0.0-beta.172",
-    "milkio": "1.0.0-beta.172",
-    "typia": "^9.7.2",
-    "vite": "^7.1.10",
-    "vitest": "^3.2.4"
-  }
+    "name": "@milkio/cookbook",
+    "private": true,
+    "workspaces": [
+        "projects/*",
+        "packages/*",
+        ".commands"
+    ],
+    "peerDependencies": {
+        "typescript": "^5.9.3"
+    },
+    "dependencies": {
+        "@milkio/astra": "1.0.0-beta.172",
+        "@milkio/cookbook-command": "1.0.0-beta.172",
+        "@milkio/redis": "1.0.0-beta.172",
+        "@milkio/stargate": "1.0.0-beta.172",
+        "@milkio/stargate-worker": "1.0.0-beta.172",
+        "@milkio/vite-plugin-milkio": "1.0.0-beta.172",
+        "milkio": "1.0.0-beta.172",
+        "typia": "^9.7.2",
+        "vite": "^7.1.10",
+        "vitest": "^3.2.4"
+    },
+    "devDependencies": {
+        "@types/bun": "latest"
+    }
 }

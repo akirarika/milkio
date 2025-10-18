@@ -1,5 +1,6 @@
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import consola from "consola";
+import chalk from "chalk";
 import { finished } from "node:stream/promises";
 import { copySync, createWriteStream, existsSync, mkdirSync, readdir, remove, renameSync } from "fs-extra";
 import { join, basename, dirname } from "node:path";
@@ -22,7 +23,7 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
     const cookbookToml = await utils.getCookbookToml();
     const packageManager = cookbookToml.general.packageManager;
 
-    if (!["@milkio/template-milkio"].includes(packageName)) {
+    if (!packageName.startsWith("@milkio/template-")) {
         if (packageManager === "deno") await execScript(`deno init --npm ${packageName}`, { cwd: join(cwd(), "projects") });
         else await execScript(`${packageManager} create ${packageName}`, { cwd: join(cwd(), "projects") });
     } else {
@@ -141,10 +142,19 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
                 consola.error("Template directory not found in package");
                 exit(1);
             }
-            copySync(templateDir, currentWriteDir);
+
+            const projectsDir = join(currentWriteDir, "projects");
+            if (!existsSync(projectsDir)) mkdirSync(projectsDir);
+
+            const projectDir = join(projectsDir, projectName);
+            if (!existsSync(projectDir)) mkdirSync(projectDir);
+
+            copySync(templateDir, projectDir);
             await remove(tempExtractDir);
             await remove(join(tempspace, "package.tgz"));
             consola.success("Package extracted and temporary.");
+
+            currentWriteDir = projectDir;
         } catch (error: any) {
             consola.error(`Extraction failed: ${error?.message ?? error}`);
             exit(1);
@@ -175,7 +185,6 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
                 if (content.includes('REPLACE-YOUR-REPOSITORY-NAME')) {
                     const newContent = content.replace(/REPLACE-YOUR-REPOSITORY-NAME/g, projectName);
                     await writeFile(filePath, newContent, 'utf8');
-                    consola.info(`Updated repository name in ${basename(filePath)}`);
                 }
             } catch (error: any) {
                 consola.warn(`Failed to process file ${filePath}: ${error?.message ?? error}`);
@@ -201,8 +210,6 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
         }
 
         const newPort = maxPort + 1;
-        consola.success(`Generated port number: ${newPort}`);
-
         const viteConfigPath = join(currentWriteDir, "vite.config.ts");
         if (await exists(viteConfigPath)) {
             let viteConfigContent = await readFile(viteConfigPath, 'utf8');
@@ -217,18 +224,31 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
             await writeFile(astraPath, astraContent, 'utf8');
         }
 
-        const cookbookTomlPath = join(cwd(), "cookbook.toml");
-        if (!cookbookToml.projects[projectName] && await exists(cookbookTomlPath)) {
+        const cookbookTomlPath = join(currentWriteDir, "cookbook.toml");
+        if (!cookbookToml?.projects?.[projectName] && await exists(cookbookTomlPath)) {
             let cookbookContent = await readFile(cookbookTomlPath, 'utf8');
-
             const projectConfig = `\n\n[projects.${projectName}]\nport = ${newPort}\ntype = "milkio"\nruntime = "node"\nautoStart = true`;
             cookbookContent += projectConfig;
-
             await writeFile(cookbookTomlPath, cookbookContent, 'utf8');
-            consola.success("Updated cookbook.toml with new project configuration");
         }
 
-        await execScript(`${packageManager} i`, { cwd: cwd() });
-        consola.success(`Project ${projectName} created successfully!`);
+        await execScript(`${packageManager} i`, { cwd: currentWriteDir });
+
+        console.log(
+            `\n\n${chalk.green.bold("🎉 Project Created Successfully!")}\n` +
+            `${chalk.gray("-".repeat(16))}\n` +
+            `${chalk.cyan("Name:")}       ${chalk.bold(projectName)}\n` +
+            `${chalk.cyan("Location:")}   ${chalk.bold(join(currentWriteDir, "projects", projectName))}\n` +
+            `${chalk.cyan("Template:")}   ${chalk.bold(packageName)}\n` +
+            `${chalk.gray("-".repeat(16))}\n\n` +
+            `${chalk.blue.bold("💡 Tips:")}\n` +
+            `  This is a monorepo project. You can place your frontend and backend code\n` +
+            `  in the project directory, then edit ${chalk.yellow("cookbook.toml")} to have them start together.\n\n` +
+            `${chalk.green.bold("✨ Example:")}\n` +
+            `  Try running ${chalk.magenta("co create nuxt")} to create a ${chalk.green("Vue (nuxt)")} project!\n\n` +
+            `${chalk.yellow.bold("🚀 Get Started:")}\n` +
+            `  Run ${chalk.magenta("co dev")} to start your project!\n\n` +
+            `${chalk.gray("Happy coding! 🌟")}\n`
+        );
     }
 });

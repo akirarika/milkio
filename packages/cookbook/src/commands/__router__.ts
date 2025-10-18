@@ -4,17 +4,23 @@ export const __router__ = [
         script: () => import("./dev.ts"),
     },
     {
+        commands: ["drizzle"],
+        script: () => import("./drizzle.ts"),
+    },
+    {
         hidden: true,
         commands: ["test"],
         script: () => import("./test.ts"),
     },
     {
-        commands: ["drizzle"],
-        script: () => import("./drizzle.ts"),
-    },
-    {
+        hidden: true,
         commands: ["create"],
         script: () => import("./create.ts"),
+    },
+    {
+        hidden: true,
+        commands: ["x", "dlx"],
+        script: () => import("./download-and-execute.ts"),
     },
     {
         hidden: true,

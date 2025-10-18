@@ -36,6 +36,52 @@ export default await defineCookbookCommand(async (utils) => {
         }
     }
 
+    // Package manager selection
+    consola.info("📦 Package Manager Selection");
+    consola.info("To ensure the best development experience, we recommend using npm or bun.");
+
+    const packageManagers = [
+        { label: "<cancel>", value: "<cancel>" },
+        { label: "npm", value: "npm" },
+        { label: "bun", value: "bun" },
+        { label: "deno (🚨 experimental)", value: "deno" },
+        { label: "yarn (🚨 experimental)", value: "yarn" },
+        { label: "pnpm (🚨 experimental)", value: "pnpm" },
+        { label: "cnpm (🚨 experimental)", value: "cnpm" }
+    ];
+
+    let selectedPackageManager: string | undefined;
+
+    while (!selectedPackageManager || !packageManagers.find((item) => item.value === selectedPackageManager)) {
+        selectedPackageManager = await consola.prompt("Please select a package manager:", {
+            type: "select",
+            options: packageManagers
+        });
+
+        const experimentalManagers = ["deno", "yarn", "pnpm", "cnpm"];
+        if (experimentalManagers.includes(selectedPackageManager)) {
+            consola.warn(`⚠️  You've selected an experimental package manager: ${selectedPackageManager}`);
+            consola.info("Experimental package managers may have compatibility issues with monorepo designs and other advanced features.");
+            consola.info("We strongly recommend using npm or bun for the best experience.");
+            const confirm = await consola.prompt(`🚨 Are you sure you want to continue with ${selectedPackageManager}?`, {
+                type: "confirm",
+                initial: false
+            });
+            if (!confirm) {
+                selectedPackageManager = undefined;
+                consola.info("Please select a different package manager.");
+                continue;
+            }
+        }
+    }
+
+    if (selectedPackageManager === "<cancel>") {
+        consola.info("Operation cancelled.");
+        exit(0);
+    }
+
+    consola.success(`Package manager selected: ${selectedPackageManager}`);
+
     consola.start("Finding the appropriate mirror..");
     let selectedVersion = "";
     let selectedMirror = "";
@@ -149,6 +195,20 @@ export default await defineCookbookCommand(async (utils) => {
     } catch (error: any) {
         consola.error(`Template processing failed: ${error?.message ?? error}`);
         exit(1);
+    }
+
+    try {
+        const cookbookTomlPath = join(currentWriteDir, "cookbook.toml");
+        if (await exists(cookbookTomlPath)) {
+            const cookbookTomlContent = await readFile(cookbookTomlPath, 'utf8');
+            const updatedContent = cookbookTomlContent.replace(
+                /packageManager = "bun"/g,
+                `packageManager = "${selectedPackageManager}"`
+            );
+            await writeFile(cookbookTomlPath, updatedContent, 'utf8');
+        }
+    } catch (error: any) {
+        consola.warn(`Failed to update package manager in cookbook.toml: ${error?.message ?? error}`);
     }
 
     consola.success("✨ Initialized successfully! Now, let's create your first Milkio project.");
