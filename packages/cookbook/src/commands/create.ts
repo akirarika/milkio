@@ -10,6 +10,7 @@ import { Readable } from "node:stream";
 import compressing from "compressing";
 import { exists, readdir as readdirAsync, stat as statAsync, readFile, writeFile } from "node:fs/promises";
 import { execScript } from "../utils/exec-script";
+import { progress } from "../progress";
 
 export default await defineCookbookCommand(async (utils, inputPackageName?: string) => {
     const params = utils.getParams();
@@ -232,7 +233,15 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
             await writeFile(cookbookTomlPath, cookbookContent, 'utf8');
         }
 
-        await execScript(`${packageManager} i`, { cwd: currentWriteDir });
+        progress.open("Installing dependencies..");
+        try {
+            await execScript(`${packageManager} i`, { cwd: currentWriteDir });
+        } catch (error: any) {
+            progress.close("Failed to install dependencies.");
+            consola.error(`Installation failed: ${error?.message ?? error}`);
+            exit(1);
+        }
+        progress.close("Dependencies installed.");
 
         console.log(
             `\n\n${chalk.green.bold("🎉 Project Created Successfully!")}\n` +

@@ -42,12 +42,12 @@ export default await defineCookbookCommand(async (utils) => {
 
     const packageManagers = [
         { label: "<cancel>", value: "<cancel>" },
-        { label: "npm (🌳 recommend)", value: "npm" },
-        { label: "bun (🌳 recommend)", value: "bun" },
-        { label: "deno (🚨 experimental)", value: "deno" },
-        { label: "yarn (🚨 experimental)", value: "yarn" },
-        { label: "pnpm (🚨 experimental)", value: "pnpm" },
-        { label: "cnpm (🚨 experimental)", value: "cnpm" }
+        { label: "npm  (💗 recommend)", value: "npm" },
+        { label: "bun  (💗 recommend)", value: "bun" },
+        { label: "deno (🩶 experimental)", value: "deno" },
+        { label: "yarn (🩶 experimental)", value: "yarn" },
+        { label: "pnpm (🩶 experimental)", value: "pnpm" },
+        { label: "cnpm (🩶 experimental)", value: "cnpm" }
     ];
 
     let selectedPackageManager: string | undefined;
@@ -220,6 +220,16 @@ export default await defineCookbookCommand(async (utils) => {
         }
     } catch (error: any) {
         consola.warn(`Failed to update package manager in cookbook.toml: ${error?.message ?? error}`);
+    }
+
+    if (selectedMirror !== "https://registry.npmjs.org/" && selectedPackageManager) {
+        if (selectedPackageManager === "npm") {
+            const npmrcContent = `registry=${selectedMirror}\n`;
+            await writeFile(join(currentWriteDir, ".npmrc"), npmrcContent, 'utf8');
+        } else if (selectedPackageManager === "bun") {
+            const bunfigContent = `[install]\nregistry = "${selectedMirror}"\n`;
+            await writeFile(join(currentWriteDir, "bunfig.toml"), bunfigContent, 'utf8');
+        }
     }
 
     consola.success("✨ Initialized successfully! Now, let's create your first Milkio project.");
