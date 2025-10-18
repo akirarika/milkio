@@ -226,11 +226,14 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
         }
 
         const cookbookTomlPath = join(currentWriteDir, "cookbook.toml");
-        if (!cookbookToml?.projects?.[projectName] && await exists(cookbookTomlPath)) {
+        if (await exists(cookbookTomlPath)) {
             let cookbookContent = await readFile(cookbookTomlPath, 'utf8');
-            const projectConfig = `\n\n[projects.${projectName}]\nport = ${newPort}\ntype = "milkio"\nruntime = "node"\nautoStart = true`;
-            cookbookContent += projectConfig;
-            await writeFile(cookbookTomlPath, cookbookContent, 'utf8');
+            const currentCookbookToml: any = Bun.TOML.parse(cookbookContent);
+            if (!currentCookbookToml?.projects?.[projectName]) {
+                const projectConfig = `\n\n[projects.${projectName}]\nport = ${newPort}\ntype = "milkio"\nruntime = "node"\nautoStart = true`;
+                cookbookContent += projectConfig;
+                await writeFile(cookbookTomlPath, cookbookContent, 'utf8');
+            }
         }
 
         progress.open("Installing dependencies..");
