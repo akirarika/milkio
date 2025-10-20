@@ -1,20 +1,20 @@
 {
-  "name": "commands",
-  "type": "module",
-  "private": true,
-  "module": "index.ts",
-  "peerDependencies": {
-    "typescript": "^5.8.2"
-  },
-  "dependencies": {
-    "@milkio/cookbook-command": "^1.0.0-beta.8",
-    "@octokit/core": "^6.1.2",
-    "bun-plugin-dts": "^0.3.0",
-    "consola": "^3.4.0",
-    "fs-extra": "^11.3.0",
-    "openai": "^4.73.0"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  }
+    "name": "commands",
+    "type": "module",
+    "private": true,
+    "module": "index.ts",
+    "peerDependencies": {
+        "typescript": "^5.9.3"
+    },
+    "dependencies": {
+        "@milkio/cookbook-command": "^1.0.0-beta.8",
+        "@octokit/core": "^6.1.2",
+        "bun-plugin-dts": "^0.3.0",
+        "consola": "^3.4.0",
+        "fs-extra": "^11.3.0",
+        "openai": "^4.73.0"
+    },
+    "devDependencies": {
+        "@types/bun": "latest"
+    }
 }
