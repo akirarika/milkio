@@ -217,6 +217,11 @@ export default await defineCookbookCommand(async (utils) => {
                                 }),
                             );
 
+                            // 记录成功发布的包
+                            publishedPackages.push({
+                                name: `@milkio/cookbook-${platform.platform}-${platform.arch}`,
+                                version: newVersion
+                            });
                             let command = "npm publish --access public";
                             if (newVersion.includes("-rc")) command += " --tag rc";
                             else if (newVersion.includes("-beta")) command += " --tag beta";
@@ -224,12 +229,6 @@ export default await defineCookbookCommand(async (utils) => {
                             execFileSync("powershell.exe", ["-Command", command], {
                                 stdio: "inherit",
                                 cwd: `./packages/cookbook/dist/cookbook-${platform.platform}-${platform.arch}`,
-                            });
-
-                            // 记录成功发布的包
-                            publishedPackages.push({
-                                name: `@milkio/cookbook-${platform.platform}-${platform.arch}`,
-                                version: newVersion
                             });
                             break;
                         } catch (error) {
@@ -243,7 +242,7 @@ export default await defineCookbookCommand(async (utils) => {
                                         await $`npm unpublish ${pkg.name}@${pkg.version} --force`;
                                         consola.success(`已成功撤回 ${pkg.name}@${pkg.version}`);
                                     } catch (error) {
-                                        consola.error(`撤回 ${pkg.name}@${pkg.version} 失败:`, error);
+                                        consola.warn(`撤回 ${pkg.name}@${pkg.version} 失败:`, error);
                                     }
                                 }
                                 consola.error("已撤回所有已发布的包。");
@@ -301,18 +300,17 @@ export default await defineCookbookCommand(async (utils) => {
                     consola.log(`正在发布 ${childPackage} 的 dist到 npm..`);
                     while (true) {
                         try {
+                            // 记录成功发布的包
+                            publishedPackages.push({
+                                name: packageJson.name,
+                                version: newVersion
+                            });
                             let command = "npm publish --access public";
                             if (newVersion.includes("-rc")) command += " --tag rc";
                             else if (newVersion.includes("-beta")) command += " --tag beta";
                             else if (newVersion.includes("-alpha")) command += " --tag alpha";
                             await $`${{ raw: command }}`.cwd(join(cwd, "packages", childPackage, "dist"));
                             await Bun.sleep(1000);
-
-                            // 记录成功发布的包
-                            publishedPackages.push({
-                                name: packageJson.name,
-                                version: newVersion
-                            });
                             break;
                         } catch (error: any) {
                             console.log(error);
@@ -328,7 +326,7 @@ export default await defineCookbookCommand(async (utils) => {
                                         await $`npm unpublish ${pkg.name}@${pkg.version} --force`;
                                         consola.success(`已成功撤回 ${pkg.name}@${pkg.version}`);
                                     } catch (error) {
-                                        consola.error(`撤回 ${pkg.name}@${pkg.version} 失败:`, error);
+                                        consola.warn(`撤回 ${pkg.name}@${pkg.version} 失败:`, error);
                                     }
                                 }
                                 consola.error("已撤回所有已发布的包。");
@@ -341,18 +339,17 @@ export default await defineCookbookCommand(async (utils) => {
                     consola.log(`正在发布模板 ${childPackage} 到 npm..`);
                     while (true) {
                         try {
+                            // 记录成功发布的包
+                            publishedPackages.push({
+                                name: packageJson.name,
+                                version: newVersion
+                            });
                             let command = "npm publish --access public";
                             if (newVersion.includes("-rc")) command += " --tag rc";
                             else if (newVersion.includes("-beta")) command += " --tag beta";
                             else if (newVersion.includes("-alpha")) command += " --tag alpha";
                             await $`${{ raw: command }}`.cwd(join(cwd, "packages", childPackage));
                             await Bun.sleep(1000);
-
-                            // 记录成功发布的包
-                            publishedPackages.push({
-                                name: packageJson.name,
-                                version: newVersion
-                            });
                             break;
                         } catch (error: any) {
                             console.log(error);
@@ -368,7 +365,7 @@ export default await defineCookbookCommand(async (utils) => {
                                         await $`npm unpublish ${pkg.name}@${pkg.version} --force`;
                                         consola.success(`已成功撤回 ${pkg.name}@${pkg.version}`);
                                     } catch (error) {
-                                        consola.error(`撤回 ${pkg.name}@${pkg.version} 失败:`, error);
+                                        consola.warn(`撤回 ${pkg.name}@${pkg.version} 失败:`, error);
                                     }
                                 }
                                 consola.error("已撤回所有已发布的包。");
@@ -382,18 +379,17 @@ export default await defineCookbookCommand(async (utils) => {
                     await Bun.write(join(cwd, "packages", childPackage, "dist", "LICENSE"), await Bun.file(join(cwd, "LICENSE")).text());
                     while (true) {
                         try {
+                            // 记录成功发布的包
+                            publishedPackages.push({
+                                name: packageJson.name,
+                                version: newVersion
+                            });
                             let command = "npm publish --access public";
                             if (newVersion.includes("-rc")) command += " --tag rc";
                             else if (newVersion.includes("-beta")) command += " --tag beta";
                             else if (newVersion.includes("-alpha")) command += " --tag alpha";
                             await $`${{ raw: command }}`.cwd(join(cwd, "packages", childPackage));
                             await Bun.sleep(1000);
-
-                            // 记录成功发布的包
-                            publishedPackages.push({
-                                name: packageJson.name,
-                                version: newVersion
-                            });
                             break;
                         } catch (error: any) {
                             console.log(error);
@@ -409,7 +405,7 @@ export default await defineCookbookCommand(async (utils) => {
                                         await $`npm unpublish ${pkg.name}@${pkg.version} --force`;
                                         consola.success(`已成功撤回 ${pkg.name}@${pkg.version}`);
                                     } catch (error) {
-                                        consola.error(`撤回 ${pkg.name}@${pkg.version} 失败:`, error);
+                                        consola.warn(`撤回 ${pkg.name}@${pkg.version} 失败:`, error);
                                     }
                                 }
                                 consola.error("已撤回所有已发布的包。");
