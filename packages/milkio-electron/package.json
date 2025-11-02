@@ -1,6 +1,6 @@
 {
   "name": "milkio-electron",
-  "version": "1.0.0-beta.179",
+  "version": "1.0.0-beta.180",
   "type": "module",
   "description": "Automated Electron project publisher",
   "main": "index.mjs",
