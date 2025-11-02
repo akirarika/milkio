@@ -423,7 +423,8 @@ function findAffectedFiles(changedFile: string): Set<string> {
 function generateImportName(filePath: string): string {
     return filePath
         .slice(0, filePath.length - 3)
-        .replaceAll("/", "$")
+        .replaceAll("/", "__")
+        .replaceAll("$", "_")
         .replaceAll("-", "_")
         .replaceAll(".", "T");
 }
