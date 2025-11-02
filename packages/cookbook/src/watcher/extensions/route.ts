@@ -62,29 +62,30 @@ export const routeWatcherExtension = defineWatcherExtension({
 
                     let routeFileImports = "// route-schema";
                     routeFileImports += `\nimport typia, { type IValidation } from "typia";`;
-                    let routeFileExports = "export default { ";
-                    routeFileExports += `type: "${file.type}", `;
-                    routeFileExports += "types: undefined as any as { ";
-                    routeFileExports += `"🥛": ${file.type === "action" ? "boolean" : "number"}, `;
-                    routeFileExports += `meta: typeof ${file.importName}["meta"], `;
-                    routeFileExports += `params: Parameters<typeof ${file.importName}["handler"]>[1], `;
-                    routeFileExports += `result: Awaited<ReturnType<typeof ${file.importName}["handler"]>> `;
+                    let routeFileExports = `// typia command: ${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
+                    routeFileExports += "export default { ";
+                    routeFileExports += `\ntype: "${file.type}", `;
+                    routeFileExports += "\ntypes: undefined as any as { ";
+                    routeFileExports += `\n"🥛": ${file.type === "action" ? "boolean" : "number"}, `;
+                    routeFileExports += `\nmeta: typeof ${file.importName}["meta"], `;
+                    routeFileExports += `\nparams: Parameters<typeof ${file.importName}["handler"]>[1], `;
+                    routeFileExports += `\nresult: Awaited<ReturnType<typeof ${file.importName}["handler"]>> `;
                     routeFileExports += "},";
                     if (project?.lazyRoutes === undefined || project?.lazyRoutes === true) {
                         routeFileImports += `\nimport type * as ${file.importName} from "../../../../../app/${file.path}";`;
-                        routeFileExports += `module: () => import("../../../../../app/${file.path}"), `;
+                        routeFileExports += `\nmodule: () => import("../../../../../app/${file.path}"), `;
                     } else {
                         routeFileImports += `\nimport ${file.importName} from "../../../../../app/${file.path}";`;
-                        routeFileExports += `module: () => ${file.importName}, `;
+                        routeFileExports += `\nmodule: () => ${file.importName}, `;
                     }
-                    routeFileExports += `validateParams: (params: any): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.misc.validatePrune<Parameters<typeof ${file.importName}["handler"]>[1]>(params) as any, `;
-                    routeFileExports += `randomParams: (): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.random<Parameters<typeof ${file.importName}["handler"]>[1]>() as any, `;
-                    routeFileExports += `validateResults: (results: any): IValidation<Awaited<ReturnType<typeof ${file.importName}["handler"]>>> => typia.misc.validatePrune<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any, `;
-                    routeFileExports += `resultsToJSON: (results: any): Awaited<ReturnType<typeof ${file.importName}["handler"]>> => {
+                    routeFileExports += `\nvalidateParams: (params: any): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.misc.validatePrune<Parameters<typeof ${file.importName}["handler"]>[1]>(params) as any, `;
+                    routeFileExports += `\nrandomParams: (): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.random<Parameters<typeof ${file.importName}["handler"]>[1]>() as any, `;
+                    routeFileExports += `\nvalidateResults: (results: any): IValidation<Awaited<ReturnType<typeof ${file.importName}["handler"]>>> => typia.misc.validatePrune<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any, `;
+                    routeFileExports += `\nresultsToJSON: (results: any): Awaited<ReturnType<typeof ${file.importName}["handler"]>> => {
   // @ts-ignore
   return typia.json.stringify<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any
 }, `;
-                    routeFileExports += "};";
+                    routeFileExports += "\n};";
 
                     const oldFiles = await readdir(generatedDirPath);
 
