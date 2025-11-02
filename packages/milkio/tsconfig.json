@@ -1,25 +1,32 @@
 {
-  "compilerOptions": {
-    "composite": true,
-    "target": "esnext",
-    "jsx": "react-jsx",
-    "erasableSyntaxOnly": true,
-    "lib": ["ESNext"],
-    "moduleDetection": "force",
-    "rootDir": "./../../../",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "paths": {
-      "../../*": ["../../*"]
-    },
-    "types": ["node"],
-    "allowImportingTsExtensions": true,
-    "allowJs": true,
-    "strict": true,
-    "downlevelIteration": true,
-    "noEmit": true,
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
-  }
+    "compilerOptions": {
+        "composite": true,
+        "target": "esnext",
+        "jsx": "react-jsx",
+        "erasableSyntaxOnly": true,
+        "lib": [
+            "ESNext",
+            "DOM",
+        ],
+        "moduleDetection": "force",
+        "rootDir": "./../../../",
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
+        "paths": {
+            "../../*": [
+                "../../*"
+            ]
+        },
+        "types": [
+            "node"
+        ],
+        "allowImportingTsExtensions": true,
+        "allowJs": true,
+        "strict": true,
+        "downlevelIteration": true,
+        "noEmit": true,
+        "allowSyntheticDefaultImports": true,
+        "forceConsistentCasingInFileNames": true,
+        "skipLibCheck": true
+    }
 }
