@@ -62,8 +62,9 @@ export const routeWatcherExtension = defineWatcherExtension({
 
                     let routeFileImports = "// route-schema";
                     routeFileImports += `\nimport typia, { type IValidation } from "typia";`;
-                    let routeFileExports = `// typia command: ${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
-                    routeFileExports += "export default { ";
+                    const typiaCommand = `${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
+                    let routeFileExports = `// typia command: ${typiaCommand}`;
+                    routeFileExports += "\nexport default { ";
                     routeFileExports += `\ntype: "${file.type}", `;
                     routeFileExports += "\ntypes: undefined as any as { ";
                     routeFileExports += `\n"🥛": ${file.type === "action" ? "boolean" : "number"}, `;
@@ -102,7 +103,10 @@ export const routeWatcherExtension = defineWatcherExtension({
                     await Promise.all(deleteTasks);
 
                     try {
-                        await $`${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`.cwd(root).quiet();
+                        const output = await $`${{ raw: typiaCommand }}`.cwd(root).text();
+                        if (output.includes("error ")) {
+                            consola.warn(`[${getRate()}] ⚠️ type-safety fail, skip: ${file.path}\n${output}`);
+                        }
                     } catch (error) {
                         consola.warn(`[${getRate()}] ⚠️ type-safety fail, skip: ${file.path}\n${error}`);
                     }
