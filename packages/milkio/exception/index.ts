@@ -12,6 +12,7 @@ export interface $rejectCode {
     RESULTS_TYPE_NOT_SUPPORTED: { expected: string };
     INTERNAL_SERVER_ERROR: undefined;
     METHOD_NOT_ALLOWED: undefined;
+    NETWORK_ERROR: undefined;
 }
 
 export function reject<Code extends keyof $rejectCode, RejectData extends $rejectCode[Code]>(code: Code, data: RejectData): MilkioRejectError<Code, RejectData> {

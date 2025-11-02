@@ -34,7 +34,6 @@ export const routeWatcherExtension = defineWatcherExtension({
         let tasks: Array<Promise<void>> = [];
         const hashes: Map<string, string> = new Map();
         for (const file of changeFiles) {
-            if (file.path.includes("$")) continue;
             tasks.push(
                 (async () => {
                     let isGenerate = false;
@@ -149,7 +148,6 @@ export const routeWatcherExtension = defineWatcherExtension({
 
         const routePaths: Set<string> = new Set();
         for (const file of allFiles) {
-            if (file.path.includes("$")) continue;
             let hashFile = hashes.get(file.importName);
             if (!hashFile) hashFile = await getLatestSchemaFolder(join(milkioGeneratedRouteDirPath, file.importName));
             const hashFileName = `${hashFile}/schema.ts`;

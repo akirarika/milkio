@@ -107,7 +107,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             if (!options.request.headers.get("Accept")?.startsWith("text/event-stream")) {
                 // action
                 let routeSchema = options.routeSchema;
-                if (!routeSchema) {
+                if ((http.path.string as string).includes("$") || !routeSchema) {
                     routeSchema = trie.get(http.path.string as string);
                     if (routeSchema === null) {
                         routeSchema = generated.routeSchema?.[http.path.string];
@@ -164,7 +164,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 let routeSchema = options.routeSchema;
                 if (!routeSchema) {
                     routeSchema = trie.get(http.path.string as string);
-                    if (routeSchema === null) {
+                    if ((http.path.string as string).includes("$") || !(http.path.string as string).endsWith("~") || routeSchema === null) {
                         routeSchema = generated.routeSchema?.[http.path.string];
                         if (routeSchema === undefined) {
                             await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject });
