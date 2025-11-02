@@ -103,12 +103,14 @@ export const routeWatcherExtension = defineWatcherExtension({
                     await Promise.all(deleteTasks);
 
                     try {
-                        const output = await $`${{ raw: typiaCommand }}`.cwd(root).text();
+                        const output = await $`${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`.cwd(root).quiet().text();
                         if (output.includes("error ")) {
-                            consola.warn(`[${getRate()}] ⚠️ type-safety fail, skip: ${file.path}\n${output}`);
+                            consola.error(`[${getRate()}] 🚨 type-safety fail, skip: ${file.path}\n${output}`);
+                            exit(1);
                         }
                     } catch (error) {
-                        consola.warn(`[${getRate()}] ⚠️ type-safety fail, skip: ${file.path}\n${error}`);
+                        consola.error(`[${getRate()}] 🚨 type-safety fail, skip: ${file.path}\n${error}`);
+                        exit(1);
                     }
                     consola.info(chalk.gray(`[${getRate()}] ✨ type-safety now: ${file.path}`));
                 })(),
