@@ -46,27 +46,25 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             params = options.params;
             if (typeof params === "undefined") params = {};
         } else {
-            if (options.params === "") {
+            if (!options.params || options.params === "" || options.params === "{}") {
                 params = {};
-            } else {
-                if (headers.get("content-type")?.includes("application/json")) {
-                    try {
-                        params = reviveJSONParse(JSON.parse(options.params));
-                    } catch (error) {
-                        throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
-                    }
-                    if (typeof params === "undefined") params = {};
-                } else if (headers.get("content-type")?.includes("application/x-www-form-urlencoded")) {
-                    try {
-                        const formData = new URLSearchParams(options.params);
-                        params = {};
-                        formData.forEach((value, key) => params[key] = value);
-                    } catch (error) {
-                        throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "form-urlencoded" });
-                    }
-                } else {
+            } else if (headers.get("content-type")?.startsWith("application/json")) {
+                try {
+                    params = reviveJSONParse(JSON.parse(options.params));
+                } catch (error) {
                     throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
                 }
+                if (typeof params === "undefined") params = {};
+            } else if (headers.get("content-type")?.startsWith("application/x-www-form-urlencoded")) {
+                try {
+                    const formData = new URLSearchParams(options.params);
+                    params = {};
+                    formData.forEach((value, key) => params[key] = value);
+                } catch (error) {
+                    throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "form-urlencoded" });
+                }
+            } else {
+                throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
             }
         }
         if (typeof params !== "object" || Array.isArray(params)) throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
