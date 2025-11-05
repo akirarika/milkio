@@ -115,6 +115,21 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
                 }
             });
         },
+        types: {
+            error<Path extends keyof Generated["routeSchema"]>(path: Path): Generated["rejectCode"] {
+                throw new Error("This method is used to retrieve types and cannot be actually executed.");
+            },
+            params<Path extends keyof Generated["routeSchema"]>(path: Path): Generated["routeSchema"][Path]["types"]["params"] {
+                throw new Error("This method is used to retrieve types and cannot be actually executed.");
+            },
+            results<Path extends keyof Generated["routeSchema"]>(path: Path): Generated["routeSchema"][Path]["types"]["🥛"] extends boolean
+                ? // action
+                Generated["routeSchema"][Path]["types"]["result"]
+                : // stream
+                AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], undefined> {
+                throw new Error("This method is used to retrieve types and cannot be actually executed.");
+            },
+        },
     };
 
     return stargate;
