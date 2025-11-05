@@ -107,9 +107,6 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
 
     const stargate = {
         ...eventManager,
-        $types: {
-            generated: void 0 as unknown as Generated,
-        },
         options: stargateOptions,
         async execute<Path extends keyof Generated["routeSchema"]>(
             path: Path,
@@ -456,19 +453,18 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                 }
             });
         },
-        types: {
-            error<Path extends keyof Generated["routeSchema"]>(path: Path): Generated["rejectCode"] {
-                throw new Error("This method is used to retrieve types and cannot be actually executed.");
+        $types: undefined as unknown as {
+            generated: Generated,
+            error: Generated["rejectCode"];
+            params: {
+                [Path in keyof Generated["routeSchema"]]: Generated["routeSchema"][Path]["types"]["params"]
             },
-            params<Path extends keyof Generated["routeSchema"]>(path: Path): Generated["routeSchema"][Path]["types"]["params"] {
-                throw new Error("This method is used to retrieve types and cannot be actually executed.");
-            },
-            results<Path extends keyof Generated["routeSchema"]>(path: Path): Generated["routeSchema"][Path]["types"]["🥛"] extends boolean
+            results: {
+                [Path in keyof Generated["routeSchema"]]: Generated["routeSchema"][Path]["types"]["🥛"] extends boolean
                 ? // action
                 Generated["routeSchema"][Path]["types"]["result"]
                 : // stream
-                AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], undefined> {
-                throw new Error("This method is used to retrieve types and cannot be actually executed.");
+                AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], undefined>
             },
         },
     };
