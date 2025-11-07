@@ -1,22 +1,22 @@
 export type MilkioRedisCacheOptions<T> = {
     defaultValue?: T | undefined;
-    expireMs: number;
+    expireMs: number | null;
 };
 
 export type MilkioRedisFetchOptions<T> = {
     defaultValue?: T | undefined;
-    expireMs: number;
-    realExpireMs?: number;
+    expireMs: number | null;
+    realExpireMs?: number | null;
     lockInterval?: number;
     refreshLockInterval?: number;
-    notFoundExpireMs?: number;
+    notFoundExpireMs?: number | null;
     fetch: () => T | undefined | Promise<T | undefined>;
 };
 
 export type MilkioRedis<RedisT = any> = {
     redis: RedisT;
     useCache: <T>(key: string, options?: MilkioRedisCacheOptions<T>) => {
-        set: (value: T, expireMs: number) => Promise<T>;
+        set: (value: T, expireMs: number | null) => Promise<T>;
         get: () => Promise<T | undefined>;
         pull: () => Promise<T | undefined>;
         has: () => Promise<boolean>;
@@ -30,7 +30,7 @@ export type MilkioRedis<RedisT = any> = {
     };
     useCount: (key: string) => {
         get: () => Promise<number>;
-        add: (amount: number, expireMs?: number) => Promise<number>;
+        add: (amount: number, expireMs?: number | null) => Promise<number>;
         sub: (amount: number) => Promise<number>;
     };
     useClockIn: (key: string, cleanDate: Date) => {
@@ -44,15 +44,19 @@ export type MilkioRedis<RedisT = any> = {
     };
 };
 
-export async function createRedis<RedisT extends { PSETEX: any, [others: string | number | symbol]: any }>(redisClient: RedisT): Promise<MilkioRedis<RedisT>> {
-    // const redis = redisClient as any as Awaited<ReturnType<ReturnType<typeof NodeRedis.createClient>['connect']>>;
+export async function createRedis<RedisT extends { PSETEX: any; SET: any;[others: string | number | symbol]: any }>(redisClient: RedisT): Promise<MilkioRedis<RedisT>> {
     const redis = redisClient as any;
 
     const milkioRedis: any = {
         redis,
         useCache: <T>(key: string, options?: MilkioRedisCacheOptions<T>) => ({
-            set: async (value: T, expireMs: number): Promise<T> => {
-                await redis.PSETEX(key, expireMs, JSON.stringify(value));
+            set: async (value: T, expireMs: number | null): Promise<T> => {
+                if (expireMs === null) {
+                    // 永久保存
+                    await redis.SET(key, JSON.stringify(value));
+                } else {
+                    await redis.PSETEX(key, expireMs, JSON.stringify(value));
+                }
                 return value;
             },
             get: async (): Promise<T | undefined> => {
@@ -76,20 +80,20 @@ export async function createRedis<RedisT extends { PSETEX: any, [others: string 
         }),
 
         useFetch: <Options extends MilkioRedisFetchOptions<any>>(key: string, options: Options) => {
-            if (typeof options.expireMs !== "number" || options.expireMs <= 0) {
-                throw new Error("expireMs must be a positive number");
+            if (options.expireMs !== null && (typeof options.expireMs !== "number" || options.expireMs <= 0)) {
+                throw new Error("expireMs must be a positive number or null");
             }
 
             if (options.lockInterval !== undefined && (typeof options.lockInterval !== "number" || options.lockInterval <= 0)) {
                 throw new Error("lockInterval must be a positive number if provided");
             }
 
-            if (options.realExpireMs !== undefined && (typeof options.realExpireMs !== "number" || options.realExpireMs <= 0)) {
-                throw new Error("realExpireMs must be a positive number if provided");
+            if (options.realExpireMs !== undefined && options.realExpireMs !== null && (typeof options.realExpireMs !== "number" || options.realExpireMs <= 0)) {
+                throw new Error("realExpireMs must be a positive number or null if provided");
             }
 
-            if (options.notFoundExpireMs !== undefined && (typeof options.notFoundExpireMs !== "number" || options.notFoundExpireMs <= 0)) {
-                throw new Error("notFoundExpireMs must be a positive number if provided");
+            if (options.notFoundExpireMs !== undefined && options.notFoundExpireMs !== null && (typeof options.notFoundExpireMs !== "number" || options.notFoundExpireMs <= 0)) {
+                throw new Error("notFoundExpireMs must be a positive number or null if provided");
             }
 
             if (options.refreshLockInterval !== undefined) {
@@ -117,9 +121,14 @@ export async function createRedis<RedisT extends { PSETEX: any, [others: string 
                 },
                 fetch: async (): Promise<Awaited<ReturnType<Options["fetch"]>>> => {
                     const lockInterval = options.lockInterval ?? 8192;
-                    const realExpireMs = options.realExpireMs ?? Math.floor(options.expireMs * (Math.random() + 0.5)) + 8192;
 
-                    const notFoundExpireMs = options.notFoundExpireMs ?? Math.min(options.expireMs, 16384);
+                    // 处理永久保存的情况
+                    let realExpireMs: number | null = options.realExpireMs ?? null;
+                    if (options.expireMs !== null) {
+                        realExpireMs = options.realExpireMs ?? Math.floor(options.expireMs * (Math.random() + 0.5)) + 8192;
+                    }
+
+                    const notFoundExpireMs = options.notFoundExpireMs ?? (options.expireMs !== null ? Math.min(options.expireMs, 16384) : 86400000); // 默认1天
 
                     const resultRaw = await redis.GET(key);
                     const result = resultRaw ? (reviveJSONParse(JSON.parse(resultRaw as string)) as { T: number; R: Awaited<ReturnType<Options["fetch"]>> }) : undefined;
@@ -155,10 +164,19 @@ export async function createRedis<RedisT extends { PSETEX: any, [others: string 
                         throw error;
                     }
 
-                    const effectiveExpireMs = data !== undefined ? options.expireMs + realExpireMs : notFoundExpireMs;
+                    // 计算过期时间
+                    let effectiveExpireMs: number | null = null;
+                    if (data !== undefined) {
+                        if (options.expireMs !== null) {
+                            effectiveExpireMs = options.expireMs + (realExpireMs ?? 0);
+                        }
+                        // 如果 expireMs 为 null，effectiveExpireMs 保持 null（永久保存）
+                    } else {
+                        effectiveExpireMs = notFoundExpireMs;
+                    }
 
                     const cacheValue = {
-                        T: now + (data !== undefined ? options.expireMs : notFoundExpireMs),
+                        T: now + (data !== undefined ? (options.expireMs ?? Number.MAX_SAFE_INTEGER) : notFoundExpireMs),
                         R: data,
                     };
 
@@ -168,7 +186,12 @@ export async function createRedis<RedisT extends { PSETEX: any, [others: string 
                         return data;
                     }
 
-                    await redis.MULTI().PSETEX(key, effectiveExpireMs, JSON.stringify(cacheValue)).DEL(lockKey).EXEC();
+                    if (effectiveExpireMs === null) {
+                        // 永久保存
+                        await redis.MULTI().SET(key, JSON.stringify(cacheValue)).DEL(lockKey).EXEC();
+                    } else {
+                        await redis.MULTI().PSETEX(key, effectiveExpireMs, JSON.stringify(cacheValue)).DEL(lockKey).EXEC();
+                    }
 
                     return data;
                 },
@@ -189,15 +212,35 @@ export async function createRedis<RedisT extends { PSETEX: any, [others: string 
                         throw error;
                     }
 
-                    const realExpireMs = options.realExpireMs ?? Math.floor(options.expireMs * (Math.random() + 0.5)) + 8192;
-                    const effectiveExpireMs = data !== undefined ? options.expireMs + realExpireMs : (options.notFoundExpireMs ?? Math.min(options.expireMs, 16384));
+                    // 处理永久保存的情况
+                    let realExpireMs: number | null = options.realExpireMs ?? null;
+                    if (options.expireMs !== null) {
+                        realExpireMs = options.realExpireMs ?? Math.floor(options.expireMs * (Math.random() + 0.5)) + 8192;
+                    }
+
+                    // 计算过期时间
+                    let effectiveExpireMs: number | null = null;
+                    if (data !== undefined) {
+                        if (options.expireMs !== null) {
+                            effectiveExpireMs = options.expireMs + (realExpireMs ?? 0);
+                        }
+                        // 如果 expireMs 为 null，effectiveExpireMs 保持 null（永久保存）
+                    } else {
+                        effectiveExpireMs = options.notFoundExpireMs ?? (options.expireMs !== null ? Math.min(options.expireMs, 16384) : 86400000);
+                    }
 
                     const cacheValue = {
-                        T: now + (data !== undefined ? options.expireMs : (options.notFoundExpireMs ?? Math.min(options.expireMs, 16384))),
+                        T: now + (data !== undefined ? (options.expireMs ?? Number.MAX_SAFE_INTEGER) : (options.notFoundExpireMs ?? (options.expireMs !== null ? Math.min(options.expireMs, 16384) : 86400000))),
                         R: data,
                     };
 
-                    await redis.PSETEX(key, effectiveExpireMs, JSON.stringify(cacheValue)); // Do not clean the update lock! Instead, wait for it to expire naturally
+                    if (effectiveExpireMs === null) {
+                        // 永久保存
+                        await redis.SET(key, JSON.stringify(cacheValue));
+                    } else {
+                        await redis.PSETEX(key, effectiveExpireMs, JSON.stringify(cacheValue));
+                    }
+                    // Do not clean the update lock! Instead, wait for it to expire naturally
                 },
             };
         },
@@ -207,8 +250,12 @@ export async function createRedis<RedisT extends { PSETEX: any, [others: string 
                 const result = await redis.GET(key);
                 return result ? Number(result) : 0;
             },
-            add: async (amount: number, expireMs?: number): Promise<number> => {
-                if (!expireMs) {
+            add: async (amount: number, expireMs?: number | null): Promise<number> => {
+                if (expireMs === null) {
+                    // 永久保存
+                    const result = await redis.INCRBY(key, amount);
+                    return result as number;
+                } else if (!expireMs) {
                     const result = await redis.INCRBY(key, amount);
                     return result as number;
                 } else {
