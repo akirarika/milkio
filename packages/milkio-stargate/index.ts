@@ -176,7 +176,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                     const error: any = {};
                     error[result.value.code] = result.value.reject ?? null;
                     await eventManager.emit("milkio:executeError", { handleError, path: path as string, options: options as any, error });
-                    return [error, null, { executeId: "unknown" }];
+                    return [error, null, { executeId: result.value.executeId }];
                 }
 
                 return [null, result.value.data, { executeId: result.value.executeId }] as any;
