@@ -10,13 +10,13 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@milkio/astra": "1.0.0-beta.188",
-    "@milkio/cookbook-command": "1.0.0-beta.188",
-    "@milkio/redis": "1.0.0-beta.188",
-    "@milkio/stargate": "1.0.0-beta.188",
-    "@milkio/stargate-worker": "1.0.0-beta.188",
-    "@milkio/vite-plugin-milkio": "1.0.0-beta.188",
-    "milkio": "1.0.0-beta.188",
+    "@milkio/astra": "1.0.0-beta.189",
+    "@milkio/cookbook-command": "1.0.0-beta.189",
+    "@milkio/redis": "1.0.0-beta.189",
+    "@milkio/stargate": "1.0.0-beta.189",
+    "@milkio/stargate-worker": "1.0.0-beta.189",
+    "@milkio/vite-plugin-milkio": "1.0.0-beta.189",
+    "milkio": "1.0.0-beta.189",
     "typia": "^9.7.2",
     "vite": "^7.1.10",
     "vitest": "^3.2.4"
