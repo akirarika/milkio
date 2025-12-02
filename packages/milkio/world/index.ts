@@ -31,6 +31,8 @@ export type MilkioRuntimeInit<T extends MilkioInit> = Mixin<
         on: Awaited<ReturnType<typeof __initEventManager>>["on"];
         off: Awaited<ReturnType<typeof __initEventManager>>["off"];
         emit: Awaited<ReturnType<typeof __initEventManager>>["emit"];
+        emitAnyApproved: Awaited<ReturnType<typeof __initEventManager>>["emitAnyApproved"];
+        emitAllApproved: Awaited<ReturnType<typeof __initEventManager>>["emitAllApproved"];
     }
 >;
 
@@ -54,6 +56,8 @@ export async function createWorld<MilkioOptions extends MilkioInit>(generated: G
         on: eventManager.on,
         off: eventManager.off,
         emit: eventManager.emit,
+        emitAnyApproved: eventManager.emitAnyApproved,
+        emitAllApproved: eventManager.emitAllApproved,
     };
 
     const executer = __initExecuter(generated, _);
@@ -66,6 +70,8 @@ export async function createWorld<MilkioOptions extends MilkioInit>(generated: G
         on: eventManager.on,
         off: eventManager.off,
         emit: eventManager.emit,
+        emitAnyApproved: eventManager.emitAnyApproved,
+        emitAllApproved: eventManager.emitAllApproved,
         // listener
         listener,
         // function
@@ -95,6 +101,8 @@ export interface MilkioWorld<Generated extends GeneratedInit, MilkioOptions exte
     on: <Key extends keyof Generated["events"], Handler extends (event: Generated["events"][Key]) => void>(key: Key, handler: Handler) => (() => void);
     off: <Key extends keyof Generated["events"], Handler extends (event: Generated["events"][Key]) => void>(key: Key, handler: Handler) => void;
     emit: <Key extends keyof Generated["events"], Value extends Generated["events"][Key]>(key: Key, value: Value) => Promise<void>;
+    emitAnyApproved: <Key extends keyof Generated["events"], Value extends Generated["events"][Key]>(key: Key, value: Value) => Promise<boolean>;
+    emitAllApproved: <Key extends keyof Generated["events"], Value extends Generated["events"][Key]>(key: Key, value: Value) => Promise<boolean>;
     ping: (options?: { timeout?: number }) => Promise<Ping>;
     // listener
     listener: Awaited<ReturnType<typeof __initListener>>;

@@ -22,7 +22,26 @@ export const contextWatcherExtension = defineWatcherExtension({
     typia: Readonly<MilkioTypes["generated"]["typiaSchema"]>;
     call: <Module extends Promise<Action<any>>>(module: Module, params: Parameters<Awaited<Module>["handler"]>[1]) => Promise<ReturnType<Awaited<Module>["handler"]>>;
     onFinally: (handler: () => void | Promise<void>) => void;
-    emit: <Key extends keyof MilkioEvents, Value extends MilkioEvents[Key]>(key: Key, value: Value) => Promise<void>
+    /**
+     * Emit event
+     * @param key Event name
+     * @param value Event data
+     */
+    emit: <Key extends keyof MilkioEvents, Value extends MilkioEvents[Key]>(key: Key, value: Value) => Promise<void>;
+    /**
+     * Emit event and check if any event handler returned true
+     * @param key Event name
+     * @param value Event data
+     * @returns Whether any event handler returned true
+     */
+    emitAnyApproved: <Key extends keyof MilkioEvents, Value extends MilkioEvents[Key]>(key: Key, value: Value) => Promise<boolean>;
+    /**
+     * Emit event and check if all event handlers returned true
+     * @param key Event name
+     * @param value Event data
+     * @returns Whether all event handlers returned true
+     */
+    emitAllApproved: <Key extends keyof MilkioEvents, Value extends MilkioEvents[Key]>(key: Key, value: Value) => Promise<boolean>;
     reject: <Code extends keyof MilkioRejectCode, RejectData extends MilkioRejectCode[Code]>(code: Code, data: RejectData) => MilkioRejectError<Code, RejectData>;
 };
 `;

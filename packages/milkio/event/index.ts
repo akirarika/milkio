@@ -11,10 +11,10 @@ export interface $events {
 
 export function __initEventManager() {
     const handlers = new Map<(event: any) => void, string>();
-    const indexed = new Map<string, Set<(event: any) => void>>();
+    const indexed = new Map<string, Set<(event: any) => Promise<void | boolean> | void | boolean>>();
 
     const eventManager = {
-        on: <Key extends keyof $events, Handler extends (event: $events[Key]) => void>(key: Key, handler: Handler) => {
+        on: <Key extends keyof $events, Handler extends (event: $events[Key]) => Promise<void | boolean> | void | boolean>(key: Key, handler: Handler) => {
             handlers.set(handler, key as string);
             if (key === '*') {
                 if (indexed.has('*') === false) {
@@ -72,6 +72,48 @@ export function __initEventManager() {
                     await handler(value);
                 }
             }
+        },
+        emitAnyApproved: async <Key extends keyof $events, Value extends $events[Key]>(key: Key, value: Value): Promise<boolean> => {
+            const wildcardHandlers = indexed.get('*');
+            let accepted = false;
+            if (wildcardHandlers) {
+                for (const handler of wildcardHandlers) {
+                    if ((await handler({ key, value })) === true) {
+                        accepted = true;
+                    }
+                }
+            }
+
+            const h = indexed.get(key as string);
+            if (h) {
+                for (const handler of h) {
+                    if ((await handler(value)) === true) {
+                        accepted = true;
+                    }
+                }
+            }
+            return accepted;
+        },
+        emitAllApproved: async <Key extends keyof $events, Value extends $events[Key]>(key: Key, value: Value): Promise<boolean> => {
+            const wildcardHandlers = indexed.get('*');
+            let approved = true;
+            if (wildcardHandlers) {
+                for (const handler of wildcardHandlers) {
+                    if ((await handler({ key, value })) !== true) {
+                        approved = false;
+                    }
+                }
+            }
+
+            const h = indexed.get(key as string);
+            if (h) {
+                for (const handler of h) {
+                    if ((await handler(value)) !== true) {
+                        approved = false;
+                    }
+                }
+            }
+            return approved;
         },
     };
 
