@@ -106,27 +106,36 @@ export const routeWatcherExtension = defineWatcherExtension({
                 }
                 await deleteQueue.waitAll();
 
-                try {
-                    const command = `${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
-                    const output = await new Promise<string>((resolve, reject) => {
-                        exec(command, { cwd: root }, (error, stdout, stderr) => {
-                            const fullOutput = stdout + stderr;
-                            if (error) {
-                                reject(new Error(fullOutput));
-                            } else {
-                                resolve(fullOutput);
-                            }
+                let success = false;
+                let retryCount = 0;
+                const maxRetries = 5;
+                
+                while (retryCount < maxRetries && !success) {
+                    try {
+                        retryCount++;
+                        const command = `${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
+                        const output = await new Promise<string>((resolve, reject) => {
+                            exec(command, { cwd: root }, (error, stdout, stderr) => {
+                                const fullOutput = stdout + stderr;
+                                if (error) {
+                                    reject(new Error(fullOutput));
+                                } else {
+                                    resolve(fullOutput);
+                                }
+                            });
                         });
-                    });
-                    if (output.includes("error ")) {
-                        consola.error(`[${getRate()}] 🚨 type-safety fail, skip: ${file.path}\n${output}`);
-                        consola.error(`[${getRate()}] 🚨 want to debug typia, try running:\n${typiaCommand}`);
-                        exit(1);
+                        if (output.includes("error ")) {
+                            throw new Error(output);
+                        }
+                        success = true;
+                    } catch (error) {
+                        if (retryCount >= maxRetries) {
+                            consola.error(`[${getRate()}] 🚨 type-safety fail after ${maxRetries} retries, skip: ${file.path}\n${error}`);
+                            consola.error(`[${getRate()}] 🚨 want to debug typia, try running:\n${typiaCommand}`);
+                            exit(1);
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 1000));
                     }
-                } catch (error) {
-                    consola.error(`[${getRate()}] 🚨 type-safety fail, skip: ${file.path}\n${error}`);
-                    consola.error(`[${getRate()}] 🚨 want to debug typia, try running:\n${typiaCommand}`);
-                    exit(1);
                 }
                 consola.info(chalk.gray(`[${getRate()}] ✨ type-safety now: ${file.path}`));
             });
