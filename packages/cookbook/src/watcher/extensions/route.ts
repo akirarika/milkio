@@ -1,7 +1,7 @@
-import { $ } from "bun";
 import consola from "consola";
 import { join } from "node:path";
 import os from "node:os";
+import { exec } from "node:child_process";
 import { getRate } from "../../progress";
 import { defineWatcherExtension } from "../extensions";
 import { exists, mkdir, readdir, readFile, rm } from "node:fs/promises";
@@ -107,7 +107,17 @@ export const routeWatcherExtension = defineWatcherExtension({
                 await deleteQueue.waitAll();
 
                 try {
-                    const output = await $`${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`.cwd(root).quiet().text();
+                    const command = `${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
+                    const output = await new Promise<string>((resolve, reject) => {
+                        exec(command, { cwd: root }, (error, stdout, stderr) => {
+                            const fullOutput = stdout + stderr;
+                            if (error) {
+                                reject(new Error(fullOutput));
+                            } else {
+                                resolve(fullOutput);
+                            }
+                        });
+                    });
                     if (output.includes("error ")) {
                         consola.error(`[${getRate()}] 🚨 type-safety fail, skip: ${file.path}\n${output}`);
                         consola.error(`[${getRate()}] 🚨 want to debug typia, try running:\n${typiaCommand}`);
