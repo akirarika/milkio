@@ -1,6 +1,6 @@
 {
   "name": "create-cookbook",
-  "version": "1.0.0-beta.191",
+  "version": "1.0.0-beta.192",
   "main": "index.mjs",
   "bin": {
     "create-cookbook": "./index.mjs"
