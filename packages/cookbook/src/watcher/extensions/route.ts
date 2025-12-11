@@ -1,6 +1,7 @@
 import { $ } from "bun";
 import consola from "consola";
 import { join } from "node:path";
+import os from "node:os";
 import { getRate } from "../../progress";
 import { defineWatcherExtension } from "../extensions";
 import { exists, mkdir, readdir, readFile, rm } from "node:fs/promises";
@@ -31,126 +32,128 @@ export const routeWatcherExtension = defineWatcherExtension({
 
         await generateRunTs(project, milkioDirPath);
 
-        let tasks: Array<Promise<void>> = [];
         const hashes: Map<string, string> = new Map();
+        const queue = new DynamicConcurrencyQueue();
+        
+        // 处理changeFiles的任务
         for (const file of changeFiles) {
-            tasks.push(
-                (async () => {
-                    let isGenerate = false;
-                    const hashFile = calcHash(await readFile(join(file.projectFsPath, file.path)));
-                    const hashFileName = `${hashFile}/schema.ts`;
-                    const generatedDirPath = join(milkioGeneratedRouteDirPath, file.importName);
-                    const transpiledDirPath = join(milkioTranspiledRouteDirPath, file.importName);
-                    const generatedHashFilePath = join(generatedDirPath, hashFileName);
-                    const transpiledHashFilePath = join(transpiledDirPath, hashFileName);
-                    hashes.set(file.importName, hashFile);
+            queue.add(async () => {
+                let isGenerate = false;
+                const hashFile = calcHash(await readFile(join(file.projectFsPath, file.path)));
+                const hashFileName = `${hashFile}/schema.ts`;
+                const generatedDirPath = join(milkioGeneratedRouteDirPath, file.importName);
+                const transpiledDirPath = join(milkioTranspiledRouteDirPath, file.importName);
+                const generatedHashFilePath = join(generatedDirPath, hashFileName);
+                const transpiledHashFilePath = join(transpiledDirPath, hashFileName);
+                hashes.set(file.importName, hashFile);
 
-                    if (!(await exists(generatedDirPath))) {
-                        isGenerate = true;
-                        await mkdir(generatedDirPath, { recursive: true });
-                    }
-                    if (!(await exists(transpiledDirPath))) {
-                        isGenerate = true;
-                        await mkdir(transpiledDirPath, { recursive: true });
-                    }
+                if (!(await exists(generatedDirPath))) {
+                    isGenerate = true;
+                    await mkdir(generatedDirPath, { recursive: true });
+                }
+                if (!(await exists(transpiledDirPath))) {
+                    isGenerate = true;
+                    await mkdir(transpiledDirPath, { recursive: true });
+                }
 
-                    if (!isGenerate && file.dependencyChanged) isGenerate = true;
+                if (!isGenerate && file.dependencyChanged) isGenerate = true;
 
-                    if (!isGenerate && (!(await exists(generatedHashFilePath)) || !(await exists(transpiledHashFilePath)))) isGenerate = true;
+                if (!isGenerate && (!(await exists(generatedHashFilePath)) || !(await exists(transpiledHashFilePath)))) isGenerate = true;
 
-                    if (isGenerate === false) return;
+                if (isGenerate === false) return;
 
-                    let routeFileImports = "// route-schema";
-                    routeFileImports += `\nimport typia, { type IValidation } from "typia";`;
-                    const typiaCommand = `${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
-                    let routeFileExports = `// typia command: ${typiaCommand}`;
-                    routeFileExports += "\nexport default { ";
-                    routeFileExports += `\ntype: "${file.type}", `;
-                    routeFileExports += "\ntypes: undefined as any as { ";
-                    routeFileExports += `\n"🥛": ${file.type === "action" ? "boolean" : "number"}, `;
-                    routeFileExports += `\nmeta: typeof ${file.importName}["meta"], `;
-                    routeFileExports += `\nparams: Parameters<typeof ${file.importName}["handler"]>[1], `;
-                    routeFileExports += `\nresult: Awaited<ReturnType<typeof ${file.importName}["handler"]>> `;
-                    routeFileExports += "},";
-                    if (project?.lazyRoutes === undefined || project?.lazyRoutes === true) {
-                        routeFileImports += `\nimport type * as ${file.importName} from "../../../../../app/${file.path}";`;
-                        routeFileExports += `\nmodule: () => import("../../../../../app/${file.path}"), `;
-                    } else {
-                        routeFileImports += `\nimport ${file.importName} from "../../../../../app/${file.path}";`;
-                        routeFileExports += `\nmodule: () => ${file.importName}, `;
-                    }
-                    routeFileExports += `\nvalidateParams: (params: any): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.misc.validatePrune<Parameters<typeof ${file.importName}["handler"]>[1]>(params) as any, `;
-                    routeFileExports += `\nrandomParams: (): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.random<Parameters<typeof ${file.importName}["handler"]>[1]>() as any, `;
-                    routeFileExports += `\nvalidateResults: (results: any): IValidation<Awaited<ReturnType<typeof ${file.importName}["handler"]>>> => typia.misc.validatePrune<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any, `;
-                    routeFileExports += `\nresultsToJSON: (results: any): Awaited<ReturnType<typeof ${file.importName}["handler"]>> => {
+                let routeFileImports = "// route-schema";
+                routeFileImports += `\nimport typia, { type IValidation } from "typia";`;
+                const typiaCommand = `${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
+                let routeFileExports = `// typia command: ${typiaCommand}`;
+                routeFileExports += "\nexport default { ";
+                routeFileExports += `\ntype: "${file.type}", `;
+                routeFileExports += "\ntypes: undefined as any as { ";
+                routeFileExports += `\n"🥛": ${file.type === "action" ? "boolean" : "number"}, `;
+                routeFileExports += `\nmeta: typeof ${file.importName}["meta"], `;
+                routeFileExports += `\nparams: Parameters<typeof ${file.importName}["handler"]>[1], `;
+                routeFileExports += `\nresult: Awaited<ReturnType<typeof ${file.importName}["handler"]>> `;
+                routeFileExports += "},";
+                if (project?.lazyRoutes === undefined || project?.lazyRoutes === true) {
+                    routeFileImports += `\nimport type * as ${file.importName} from "../../../../../app/${file.path}";`;
+                    routeFileExports += `\nmodule: () => import("../../../../../app/${file.path}"), `;
+                } else {
+                    routeFileImports += `\nimport ${file.importName} from "../../../../../app/${file.path}";`;
+                    routeFileExports += `\nmodule: () => ${file.importName}, `;
+                }
+                routeFileExports += `\nvalidateParams: (params: any): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.misc.validatePrune<Parameters<typeof ${file.importName}["handler"]>[1]>(params) as any, `;
+                routeFileExports += `\nrandomParams: (): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.random<Parameters<typeof ${file.importName}["handler"]>[1]>() as any, `;
+                routeFileExports += `\nvalidateResults: (results: any): IValidation<Awaited<ReturnType<typeof ${file.importName}["handler"]>>> => typia.misc.validatePrune<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any, `;
+                routeFileExports += `\nresultsToJSON: (results: any): Awaited<ReturnType<typeof ${file.importName}["handler"]>> => {
   // @ts-ignore
   return typia.json.stringify<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any
 }, `;
-                    routeFileExports += "\n};";
+                routeFileExports += "\n};";
 
-                    const oldFiles = await readdir(generatedDirPath);
+                const oldFiles = await readdir(generatedDirPath);
 
-                    await Bun.write(generatedHashFilePath, `${routeFileImports}\n\n${routeFileExports}\n`);
+                await Bun.write(generatedHashFilePath, `${routeFileImports}\n\n${routeFileExports}\n`);
 
-                    const deleteTasks: Array<Promise<any>> = [];
-                    for (const oldFile of oldFiles) {
+                // 使用动态队列处理删除任务
+                const deleteQueue = new DynamicConcurrencyQueue();
+                for (const oldFile of oldFiles) {
+                    deleteQueue.add(async () => {
                         const oldFileGeneratedPath = join(generatedDirPath, oldFile);
                         const oldFileTranspiledPath = join(transpiledDirPath, oldFile);
-                        if (await exists(oldFileGeneratedPath)) deleteTasks.push(unlinkIfTooLong(oldFileGeneratedPath));
-                        if (await exists(oldFileTranspiledPath)) deleteTasks.push(unlinkIfTooLong(oldFileTranspiledPath));
-                    }
+                        if (await exists(oldFileGeneratedPath)) await unlinkIfTooLong(oldFileGeneratedPath);
+                        if (await exists(oldFileTranspiledPath)) await unlinkIfTooLong(oldFileTranspiledPath);
+                    });
+                }
+                await deleteQueue.waitAll();
 
-                    await Promise.all(deleteTasks);
-
-                    try {
-                        const output = await $`${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`.cwd(root).quiet().text();
-                        if (output.includes("error ")) {
-                            consola.error(`[${getRate()}] 🚨 type-safety fail, skip: ${file.path}\n${output}`);
-                            consola.error(`[${getRate()}] 🚨 want to debug typia, try running:\n${typiaCommand}`);
-                            exit(1);
-                        }
-                    } catch (error) {
-                        consola.error(`[${getRate()}] 🚨 type-safety fail, skip: ${file.path}\n${error}`);
+                try {
+                    const output = await $`${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`.cwd(root).quiet().text();
+                    if (output.includes("error ")) {
+                        consola.error(`[${getRate()}] 🚨 type-safety fail, skip: ${file.path}\n${output}`);
                         consola.error(`[${getRate()}] 🚨 want to debug typia, try running:\n${typiaCommand}`);
                         exit(1);
                     }
-                    consola.info(chalk.gray(`[${getRate()}] ✨ type-safety now: ${file.path}`));
-                })(),
-            );
+                } catch (error) {
+                    consola.error(`[${getRate()}] 🚨 type-safety fail, skip: ${file.path}\n${error}`);
+                    consola.error(`[${getRate()}] 🚨 want to debug typia, try running:\n${typiaCommand}`);
+                    exit(1);
+                }
+                consola.info(chalk.gray(`[${getRate()}] ✨ type-safety now: ${file.path}`));
+            });
         }
 
-        await Promise.all(tasks);
-        tasks = [];
+        // 等待所有changeFiles任务完成
+        await queue.waitAll();
 
         const validImportNames = new Set(allFiles.map((file) => file.importName));
 
-        tasks.push(
-            (async () => {
-                const generatedRouteDirs = await readdir(milkioGeneratedRouteDirPath, { withFileTypes: true });
-                for (const dir of generatedRouteDirs) {
-                    if (!dir.isDirectory()) continue;
-                    if (validImportNames.has(dir.name)) continue;
+        // 处理清理任务
+        const cleanupQueue = new DynamicConcurrencyQueue();
+        
+        cleanupQueue.add(async () => {
+            const generatedRouteDirs = await readdir(milkioGeneratedRouteDirPath, { withFileTypes: true });
+            for (const dir of generatedRouteDirs) {
+                if (!dir.isDirectory()) continue;
+                if (validImportNames.has(dir.name)) continue;
 
-                    const dirPath = join(milkioGeneratedRouteDirPath, dir.name);
-                    await rm(dirPath, { recursive: true, force: true });
-                }
-            })(),
-        );
-        tasks.push(
-            (async () => {
-                const transpiledRouteDirs = await readdir(milkioTranspiledRouteDirPath, { withFileTypes: true });
-                for (const dir of transpiledRouteDirs) {
-                    if (!dir.isDirectory()) continue;
-                    if (validImportNames.has(dir.name)) continue;
+                const dirPath = join(milkioGeneratedRouteDirPath, dir.name);
+                await rm(dirPath, { recursive: true, force: true });
+            }
+        });
+        
+        cleanupQueue.add(async () => {
+            const transpiledRouteDirs = await readdir(milkioTranspiledRouteDirPath, { withFileTypes: true });
+            for (const dir of transpiledRouteDirs) {
+                if (!dir.isDirectory()) continue;
+                if (validImportNames.has(dir.name)) continue;
 
-                    const dirPath = join(milkioTranspiledRouteDirPath, dir.name);
-                    await rm(dirPath, { recursive: true, force: true });
-                }
-            })(),
-        );
+                const dirPath = join(milkioTranspiledRouteDirPath, dir.name);
+                await rm(dirPath, { recursive: true, force: true });
+            }
+        });
 
-        await Promise.all(tasks);
-        tasks = [];
+        // 等待所有清理任务完成
+        await cleanupQueue.waitAll();
 
         let routeSchemaFileImports = "// route-schema";
         let routeSchemaFileExports = "export default {";
@@ -183,3 +186,54 @@ export const routeWatcherExtension = defineWatcherExtension({
         await Bun.write(writePath, `${routeSchemaFileImports}\n\n${routeSchemaFileExports}\n`);
     },
 });
+
+class DynamicConcurrencyQueue {
+    private concurrency: number;
+    private queue: Array<() => Promise<void>> = [];
+    private running: number = 0;
+    public completed: number = 0;
+    public total: number = 0;
+
+    constructor() {
+        const totalMemoryBytes = os.totalmem();
+        const totalMemoryGB = Math.floor(totalMemoryBytes / (1024 * 1024 * 1024));
+        
+        if (totalMemoryGB <= 4) {
+            this.concurrency = 1; // Use sequential execution for ≤ 4GB memory
+        } else {
+            this.concurrency = (totalMemoryGB - 4) + 1; // For > 4GB memory, concurrency = (totalMemoryGB - 4GB) + 1
+        }
+    }
+
+    add(task: () => Promise<void>): void {
+        this.queue.push(task);
+        this.total++;
+        this.runNext();
+    }
+
+    private runNext(): void {
+        if (this.running >= this.concurrency || this.queue.length === 0) {
+            return;
+        }
+
+        const task = this.queue.shift();
+        if (!task) return;
+
+        this.running++;
+        
+        task()
+            .finally(() => {
+                this.running--;
+                this.completed++;
+                this.runNext();
+            });
+    }
+
+    async waitAll(): Promise<void> {
+        if (this.total === 0) return;
+        
+        while (this.running > 0 || this.queue.length > 0) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+    }
+}
