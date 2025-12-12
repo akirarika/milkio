@@ -106,36 +106,27 @@ export const routeWatcherExtension = defineWatcherExtension({
                 }
                 await deleteQueue.waitAll();
 
-                let success = false;
-                let retryCount = 0;
-                const maxRetries = 5;
-                
-                while (retryCount < maxRetries && !success) {
-                    try {
-                        retryCount++;
-                        const command = `${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
-                        const output = await new Promise<string>((resolve, reject) => {
-                            exec(command, { cwd: root }, (error, stdout, stderr) => {
-                                const fullOutput = stdout + stderr;
-                                if (error) {
-                                    reject(new Error(fullOutput));
-                                } else {
-                                    resolve(fullOutput);
-                                }
-                            });
+                try {
+                    const command = `${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
+                    const output = await new Promise<string>((resolve, reject) => {
+                        exec(command, { cwd: root }, (error, stdout, stderr) => {
+                            const fullOutput = stdout + stderr;
+                            if (error) {
+                                reject(new Error(fullOutput));
+                            } else {
+                                resolve(fullOutput);
+                            }
                         });
-                        if (output.includes("error ")) {
-                            throw new Error(output);
-                        }
-                        success = true;
-                    } catch (error) {
-                        if (retryCount >= maxRetries) {
-                            consola.error(`[${getRate()}] 🚨 type-safety fail after ${maxRetries} retries, skip: ${file.path}\n${error}`);
-                            consola.error(`[${getRate()}] 🚨 want to debug typia, try running:\n${typiaCommand}`);
-                            exit(1);
-                        }
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    });
+                    if (output.includes("error ")) {
+                        consola.error(`[${getRate()}] 🚨 type-safety fail, skip: ${file.path}\n${output}`);
+                        consola.error(`[${getRate()}] 🚨 want to debug typia, try running:\n${typiaCommand}`);
+                        exit(1);
                     }
+                } catch (error) {
+                    consola.error(`[${getRate()}] 🚨 type-safety fail, skip: ${file.path}\n${error}`);
+                    consola.error(`[${getRate()}] 🚨 want to debug typia, try running:\n${typiaCommand}`);
+                    exit(1);
                 }
                 consola.info(chalk.gray(`[${getRate()}] ✨ type-safety now: ${file.path}`));
             });
@@ -214,14 +205,13 @@ class DynamicConcurrencyQueue {
     public total: number = 0;
 
     constructor() {
+        const numCPUs = os.cpus().length;
         const totalMemoryBytes = os.totalmem();
         const totalMemoryGB = Math.floor(totalMemoryBytes / (1024 * 1024 * 1024));
-        
-        if (totalMemoryGB <= 4) {
-            this.concurrency = 1; // Use sequential execution for ≤ 4GB memory
-        } else {
-            this.concurrency = (totalMemoryGB - 4) + 1; // For > 4GB memory, concurrency = (totalMemoryGB - 4GB) + 1
-        }
+        const cpuBasedConcurrency = Math.max(1, Math.ceil(numCPUs / 2));
+        const memoryBasedConcurrency = totalMemoryGB <= 4 ? 1 : Math.min(8, (totalMemoryGB - 4) + 1);
+        this.concurrency = Math.min(cpuBasedConcurrency, memoryBasedConcurrency);
+        this.concurrency = Math.max(1, Math.floor(this.concurrency / 2));
     }
 
     add(task: () => Promise<void>): void {
