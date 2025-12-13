@@ -9,8 +9,8 @@ import { search } from "@inquirer/prompts";
 import type { Params } from "..";
 
 export async function selectMode(options: CookbookOptions, params?: Params) {
-    if (!options?.general?.modes || options.general.modes.length === 0 || options.general.modes.includes("development") === false) {
-        consola.warn("The 'general->modes' is not configured. Edit your cookbook.toml file and add at least one mode, with 'development' being mandatory.");
+    if (!options?.general?.modes || options.general.modes.length === 0 || options.general.modes.includes("test") === false) {
+        consola.warn("The 'general->modes' is not configured. Edit your cookbook.toml file and add at least one mode, with 'test' being mandatory.");
         process.exit(1);
     }
 
