@@ -14,11 +14,32 @@ import { getRuntime } from "../utils/get-runtime";
 export default await defineCookbookCommand(async (utils, userCommand?: string, projectUsed?: string, modeUsed?: string) => {
     const params = utils.getParams();
     const cookbookToml = await utils.getCookbookToml();
+    
+    // Check if we can get project from command line for CI/CD
+    let projectNameFromCommand: string | undefined;
+    
+    // For CI/CD, the first param is project name, followed by command
+    projectNameFromCommand = params.commands.at(0);
+    
+    // Check if it's actually a project name by looking it up in cookbookToml
+    const isProjectName = Object.keys(cookbookToml.projects).some(projectName => 
+        projectName === projectNameFromCommand ||
+        cookbookToml.projects[projectName].name === projectNameFromCommand
+    );
+    
+    if (!isProjectName) {
+        // If it's not a project name, it's probably just the command
+        projectNameFromCommand = undefined;
+    } else {
+        // If it is a project name, remove it from commands list before executing drizzle
+        params.commands.shift();
+    }
+    
     const project = await selectProject(cookbookToml, {
         filter: async (project) => {
             return (await exists(join(cwd(), "projects", project.value, "drizzle"))) || (await exists(join(cwd(), "projects", project.value, "drizzle.config.ts")));
         },
-        projectUsed,
+        projectUsed: projectNameFromCommand || projectUsed,
     });
     if (!project) exit(0);
     const packageJson = await readFile(join(cwd(), "projects", project.value, "package.json"), "utf-8");
@@ -45,7 +66,19 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
         exit(1);
     }
 
-    const mode = await select("Select the mode:", project.drizzle ?? [], "mode", modeUsed);
+    // Check for environment variables for mode
+    const envMode = env?.COOKBOOK_MODE || env?.MODE;
+    
+    let mode: any;
+    if (envMode) {
+        mode = project.drizzle.find(m => m.mode === envMode);
+        if (!mode) {
+            consola.error(`Mode ${envMode} not found in project configuration.`);
+            exit(1);
+        }
+    } else {
+        mode = await select("Select the mode:", project.drizzle ?? [], "mode", modeUsed);
+    }
     if (!mode?.migrateMode) {
         consola.error("Drizzle configuration not found, please add a 'migrateMode = \"generate\"' in your cookbook.toml.");
         exit(1);
@@ -73,8 +106,6 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
 
     env.DATABASE_URL = mode.migrateDatabaseUrl;
     process.env.DATABASE_URL = mode.migrateDatabaseUrl;
-
-    
 
     if ((params.commands.at(0) !== "migrate" && userCommand !== "migrate") || !existsSync(join(cwd(), "projects", project.value, "drizzle.migrate.ts"))) {
         await execScript(command, {
