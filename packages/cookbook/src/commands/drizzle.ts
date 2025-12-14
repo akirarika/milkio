@@ -87,8 +87,10 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
         const runtime = await getRuntime("bun");
         const scriptPath = join(cwd(), "projects", project.value, "drizzle.migrate.ts");
         await execScript(`${runtime} ${scriptPath}`, {
+            cwd: project.path,
             env: { DATABASE_URL: mode.migrateDatabaseUrl },
         });
+        exit(0);
     }
 
     if (params.commands.at(0) === "generate" || userCommand === "generate") {
@@ -102,8 +104,10 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
             const runtime = await getRuntime("bun");
             const scriptPath = join(cwd(), "projects", project.value, "drizzle.migrate.ts");
             await execScript(`${runtime} ${scriptPath}`, {
+                cwd: project.path,
                 env: { DATABASE_URL: mode.migrateDatabaseUrl },
             });
+            exit(0);
         } else {
             consola.info("If you want to automatically execute the `migrate` command after `generate`, you can try creating a `drizzle.migrate.ts` file, which will be automatically executed by the cookbook.");
         }
