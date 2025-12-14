@@ -10,7 +10,6 @@ import { existsSync } from "fs-extra";
 import consola from "consola";
 import { progress } from "../progress";
 import { getRuntime } from "../utils/get-runtime";
-import type { CookbookOptions } from "../utils/cookbook-dto-types";
 
 export default await defineCookbookCommand(async (utils, userCommand?: string, projectUsed?: string, modeUsed?: string) => {
     const params = utils.getParams();
@@ -50,6 +49,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
         if (!project) exit(0);
     }
     
+    
     const packageJson = await readFile(join(cwd(), "projects", project.value, "package.json"), "utf-8");
     const packageJsonParsed = JSON.parse(packageJson);
     if (packageJsonParsed?.scripts?.drizzle === undefined || packageJsonParsed.scripts.drizzle === "") {
@@ -74,7 +74,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
         exit(1);
     }
 
-    const mode: CookbookOptions['projects'][string]['drizzle'][0] = await select("Select the mode:", project.drizzle ?? [], "mode", modeUsed);
+    const mode: any = await select("Select the mode:", project.drizzle ?? [], "mode", modeUsed);
     if (!mode?.migrateMode) {
         consola.error("Drizzle configuration not found, please add a 'migrateMode = \"generate\"' in your cookbook.toml.");
         exit(1);
