@@ -10,38 +10,46 @@ import { existsSync } from "fs-extra";
 import consola from "consola";
 import { progress } from "../progress";
 import { getRuntime } from "../utils/get-runtime";
+import type { CookbookOptions } from "../utils/cookbook-dto-types";
 
 export default await defineCookbookCommand(async (utils, userCommand?: string, projectUsed?: string, modeUsed?: string) => {
     const params = utils.getParams();
     const cookbookToml = await utils.getCookbookToml();
     
-    // Check if we can get project from command line for CI/CD
-    let projectNameFromCommand: string | undefined;
+    // Get mode from environment variables if available
+    modeUsed = modeUsed || env.COOKBOOK_MODE || env.MODE;
     
-    // For CI/CD, the first param is project name, followed by command
-    projectNameFromCommand = params.commands.at(0);
+    // Project selection logic with params.options.project support
+    let project;
+    const isMigrationOrGenerate = (params.commands.at(0) === "migrate" || userCommand === "migrate" || params.commands.at(0) === "generate" || userCommand === "generate");
     
-    // Check if it's actually a project name by looking it up in cookbookToml
-    const isProjectName = Object.keys(cookbookToml.projects).some(projectName => 
-        projectName === projectNameFromCommand ||
-        cookbookToml.projects[projectName].name === projectNameFromCommand
-    );
-    
-    if (!isProjectName) {
-        // If it's not a project name, it's probably just the command
-        projectNameFromCommand = undefined;
+    if (params.options.project && isMigrationOrGenerate) {
+        // Find project by matching params.options.project
+        const projectName = params.options.project;
+        for (const name in cookbookToml.projects) {
+            if (name === projectName) {
+                let proj = cookbookToml.projects[name] as any;
+                proj = { ...proj, name: proj.name ?? proj.key, value: name };
+                project = { ...proj, path: join(cwd(), "projects", name) };
+                break;
+            }
+        }
+        
+        if (!project) {
+            consola.error(`Project '${projectName}' not found in cookbook.toml`);
+            exit(1);
+        }
     } else {
-        // If it is a project name, remove it from commands list before executing drizzle
-        params.commands.shift();
+        // Use normal project selection
+        project = await selectProject(cookbookToml, {
+            filter: async (project) => {
+                return (await exists(join(cwd(), "projects", project.value, "drizzle"))) || (await exists(join(cwd(), "projects", project.value, "drizzle.config.ts")));
+            },
+            projectUsed,
+        });
+        if (!project) exit(0);
     }
     
-    const project = await selectProject(cookbookToml, {
-        filter: async (project) => {
-            return (await exists(join(cwd(), "projects", project.value, "drizzle"))) || (await exists(join(cwd(), "projects", project.value, "drizzle.config.ts")));
-        },
-        projectUsed: projectNameFromCommand || projectUsed,
-    });
-    if (!project) exit(0);
     const packageJson = await readFile(join(cwd(), "projects", project.value, "package.json"), "utf-8");
     const packageJsonParsed = JSON.parse(packageJson);
     if (packageJsonParsed?.scripts?.drizzle === undefined || packageJsonParsed.scripts.drizzle === "") {
@@ -66,19 +74,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
         exit(1);
     }
 
-    // Check for environment variables for mode
-    const envMode = env?.COOKBOOK_MODE || env?.MODE;
-    
-    let mode: any;
-    if (envMode) {
-        mode = project.drizzle.find(m => m.mode === envMode);
-        if (!mode) {
-            consola.error(`Mode ${envMode} not found in project configuration.`);
-            exit(1);
-        }
-    } else {
-        mode = await select("Select the mode:", project.drizzle ?? [], "mode", modeUsed);
-    }
+    const mode: CookbookOptions['projects'][string]['drizzle'][0] = await select("Select the mode:", project.drizzle ?? [], "mode", modeUsed);
     if (!mode?.migrateMode) {
         consola.error("Drizzle configuration not found, please add a 'migrateMode = \"generate\"' in your cookbook.toml.");
         exit(1);
@@ -107,16 +103,18 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
     env.DATABASE_URL = mode.migrateDatabaseUrl;
     process.env.DATABASE_URL = mode.migrateDatabaseUrl;
 
-    if ((params.commands.at(0) !== "migrate" && userCommand !== "migrate") || !existsSync(join(cwd(), "projects", project.value, "drizzle.migrate.ts"))) {
+    
+
+    if ((params.commands.at(0) !== "migrate" && userCommand !== "migrate") || !existsSync(join(project.path, "drizzle.migrate.ts"))) {
         await execScript(command, {
             cwd: project.path,
             env: { DATABASE_URL: mode.migrateDatabaseUrl },
         });
     }
 
-    if ((params.commands.at(0) === "migrate" || userCommand === "migrate") && existsSync(join(cwd(), "projects", project.value, "drizzle.migrate.ts"))) {
+    if ((params.commands.at(0) === "migrate" || userCommand === "migrate") && existsSync(join(project.path, "drizzle.migrate.ts"))) {
         const runtime = await getRuntime("bun");
-        const scriptPath = join(cwd(), "projects", project.value, "drizzle.migrate.ts");
+        const scriptPath = join(project.path, "drizzle.migrate.ts");
         await execScript(`${runtime} ${scriptPath}`, {
             cwd: project.path,
             env: { DATABASE_URL: mode.migrateDatabaseUrl },
@@ -125,15 +123,15 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
     }
 
     if (params.commands.at(0) === "generate" || userCommand === "generate") {
-        const journal = JSON.parse(await readFile(join(cwd(), "projects", project.value, "drizzle", "meta", "_journal.json"), "utf-8"));
+        const journal = JSON.parse(await readFile(join(project.path, "drizzle", "meta", "_journal.json"), "utf-8"));
         for (const entry of journal.entries) {
-            entry.sql = await readFile(join(cwd(), "projects", project.value, "drizzle", `${entry.tag}.sql`), "utf-8");
+            entry.sql = await readFile(join(project.path, "drizzle", `${entry.tag}.sql`), "utf-8");
         }
-        await writeFile(join(cwd(), "projects", project.value, ".milkio", "drizzle-migrations.ts"), `export const drizzleMigrations = ${JSON.stringify(journal)}`);
+        await writeFile(join(project.path, ".milkio", "drizzle-migrations.ts"), `export const drizzleMigrations = ${JSON.stringify(journal)}`);
         consola.success("Drizzle migration successfully generated.");
-        if (existsSync(join(cwd(), "projects", project.value, "drizzle.migrate.ts"))) {
+        if (existsSync(join(project.path, "drizzle.migrate.ts"))) {
             const runtime = await getRuntime("bun");
-            const scriptPath = join(cwd(), "projects", project.value, "drizzle.migrate.ts");
+            const scriptPath = join(project.path, "drizzle.migrate.ts");
             await execScript(`${runtime} ${scriptPath}`, {
                 cwd: project.path,
                 env: { DATABASE_URL: mode.migrateDatabaseUrl },
