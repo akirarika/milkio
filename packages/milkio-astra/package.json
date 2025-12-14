@@ -1,7 +1,7 @@
 {
   "name": "@milkio/astra",
   "type": "module",
-  "version": "1.0.0-beta.199",
+  "version": "1.0.0-beta.200",
   "exports": "./index.ts",
   "dependencies": {
     "date-fns": "^4.1.0",
