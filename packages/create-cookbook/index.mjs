@@ -43,7 +43,7 @@ const color = gradient(["cyan", "#2d9b87"]);
   consola.start(color("Finding the appropriate mirror.."));
   const mirrors = [
     "https://registry.npmjs.org/",
-    "https://registry.npmmirror.com/",
+    // "https://registry.npmmirror.com/", // binary removal blocked
     "https://mirrors.cloud.tencent.com/npm/",
     "https://cdn.jsdelivr.net/npm/"
   ];
