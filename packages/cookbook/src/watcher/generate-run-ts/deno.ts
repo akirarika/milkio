@@ -17,7 +17,7 @@ async function bootstrap() {
     return world.listener.fetch({
       request,
       env: Deno.env.toObject(),
-      envMode: Deno.env.get("COOKBOOK_MODE") ?? "development",
+      envMode: Deno.env.get("COOKBOOK_MODE") ?? "test",
     });
   });
 }

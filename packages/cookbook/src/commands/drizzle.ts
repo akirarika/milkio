@@ -9,6 +9,7 @@ import { env } from "bun";
 import { existsSync } from "fs-extra";
 import consola from "consola";
 import { progress } from "../progress";
+import { getRuntime } from "../utils/get-runtime";
 
 export default await defineCookbookCommand(async (utils, userCommand?: string, projectUsed?: string, modeUsed?: string) => {
     const params = utils.getParams();
@@ -73,25 +74,36 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
     env.DATABASE_URL = mode.migrateDatabaseUrl;
     process.env.DATABASE_URL = mode.migrateDatabaseUrl;
 
-    await execScript(command, {
-        cwd: project.path,
-        env: {
-            ...env,
-            DATABASE_URL: mode.migrateDatabaseUrl,
-        },
-    });
+    
+
+    if ((params.commands.at(0) !== "migrate" && userCommand !== "migrate") || !existsSync(join(cwd(), "projects", project.value, "drizzle.migrate.ts"))) {
+        await execScript(command, {
+            cwd: project.path,
+            env: { DATABASE_URL: mode.migrateDatabaseUrl },
+        });
+    }
+
+    if ((params.commands.at(0) === "migrate" || userCommand === "migrate") && existsSync(join(cwd(), "projects", project.value, "drizzle.migrate.ts"))) {
+        const runtime = await getRuntime("bun");
+        const scriptPath = join(cwd(), "projects", project.value, "drizzle.migrate.ts");
+        await execScript(`${runtime} ${scriptPath}`, {
+            env: { DATABASE_URL: mode.migrateDatabaseUrl },
+        });
+    }
 
     if (params.commands.at(0) === "generate" || userCommand === "generate") {
         const journal = JSON.parse(await readFile(join(cwd(), "projects", project.value, "drizzle", "meta", "_journal.json"), "utf-8"));
         for (const entry of journal.entries) {
             entry.sql = await readFile(join(cwd(), "projects", project.value, "drizzle", `${entry.tag}.sql`), "utf-8");
         }
-
         await writeFile(join(cwd(), "projects", project.value, ".milkio", "drizzle-migrations.ts"), `export const drizzleMigrations = ${JSON.stringify(journal)}`);
-
         consola.success("Drizzle migration successfully generated.");
         if (existsSync(join(cwd(), "projects", project.value, "drizzle.migrate.ts"))) {
-            await import(join(cwd(), "projects", project.value, "drizzle.migrate.ts"));
+            const runtime = await getRuntime("bun");
+            const scriptPath = join(cwd(), "projects", project.value, "drizzle.migrate.ts");
+            await execScript(`${runtime} ${scriptPath}`, {
+                env: { DATABASE_URL: mode.migrateDatabaseUrl },
+            });
         } else {
             consola.info("If you want to automatically execute the `migrate` command after `generate`, you can try creating a `drizzle.migrate.ts` file, which will be automatically executed by the cookbook.");
         }

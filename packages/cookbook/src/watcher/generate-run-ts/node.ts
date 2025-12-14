@@ -21,7 +21,7 @@ async function bootstrap() {
     return world.listener.fetch({
       request,
       env,
-      envMode: env.COOKBOOK_MODE ?? "development",
+      envMode: env.COOKBOOK_MODE ?? "test",
     });
   }
 

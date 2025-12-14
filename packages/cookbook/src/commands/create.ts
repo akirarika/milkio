@@ -2,7 +2,7 @@ import { defineCookbookCommand } from "@milkio/cookbook-command";
 import consola from "consola";
 import chalk from "chalk";
 import { finished } from "node:stream/promises";
-import { copySync, createWriteStream, existsSync, mkdirSync, readdir, remove, renameSync } from "fs-extra";
+import { copySync, createWriteStream, existsSync, mkdirSync, remove, renameSync } from "fs-extra";
 import { join, basename, dirname } from "node:path";
 import { cwd, exit } from "node:process";
 import { __VERSION__ } from "../../__VERSION__";

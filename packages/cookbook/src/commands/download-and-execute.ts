@@ -1,13 +1,8 @@
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import consola from "consola";
-import { finished } from "node:stream/promises";
-import { copySync, createWriteStream, existsSync, mkdirSync, readdir, remove, renameSync } from "fs-extra";
-import { join, basename, dirname } from "node:path";
+import { join } from "node:path";
 import { cwd, exit } from "node:process";
 import { __VERSION__ } from "../../__VERSION__";
-import { Readable } from "node:stream";
-import compressing from "compressing";
-import { exists, readdir as readdirAsync, stat as statAsync, readFile, writeFile } from "node:fs/promises";
 import { execScript } from "../utils/exec-script";
 
 export default await defineCookbookCommand(async (utils, inputPackageName?: string) => {
