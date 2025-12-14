@@ -1,6 +1,6 @@
 {
   "name": "@milkio/redis",
   "type": "module",
-  "version": "1.0.0-beta.198",
+  "version": "1.0.0-beta.199",
   "exports": "./index.ts"
 }
