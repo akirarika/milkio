@@ -83,6 +83,8 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         options.context.path = options.path;
         options.context.logger = options.createdLogger;
         options.context.emit = runtime.emit;
+        options.context.emitAnyApproved = runtime.emitAnyApproved;
+        options.context.emitAllApproved = runtime.emitAllApproved;
         options.context.executeId = options.createdExecuteId;
         options.context.config = runtime.runtime.config;
         options.context.typia = generated.typiaSchema;
