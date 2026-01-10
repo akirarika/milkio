@@ -34,64 +34,8 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Publish node packages
-        run: bun run .commands/scripts/ci/publish-packages.ts
+      - name: publish packages
+        run: bun run .commands/scripts/ci/publish-ci.ts
 
-  publish_cookbook:
-    name: publish cookbook (matrix)
-    needs: [publish_packages]
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-latest
-            platform: darwin
-            arch: arm64
-            target: bun-darwin-arm64
 
-          - runner: macos-latest
-            platform: darwin
-            arch: x64
-            target: bun-darwin-x64
-
-          - runner: ubuntu-latest
-            platform: linux
-            arch: arm64
-            target: bun-linux-arm64
-
-          - runner: ubuntu-latest
-            platform: linux
-            arch: x64
-            target: bun-linux-x64
-
-          - runner: windows-latest
-            platform: win32
-            arch: x64
-            target: bun-windows-x64
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          registry-url: "https://registry.npmjs.org"
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "latest"
-
-      - name: Install dependencies
-        run: bun install
-
-      - name: Publish cookbook package
-        env:
-          PLATFORM: ${{ matrix.platform }}
-          ARCH: ${{ matrix.arch }}
-          TARGET: ${{ matrix.target }}
-        run: bun run .commands/scripts/ci/publish-cookbook.ts
   
