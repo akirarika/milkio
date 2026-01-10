@@ -43,8 +43,8 @@ export function npmViewExists(pgkName: string, version: string): boolean {
   const result = Bun.spawnSync({
     cmd: [npmCmd, "view", `${pgkName}@${version}`, "--json"],
     cwd: cwd,
-    stdout: "inherit",
-    stderr: "inherit",
+    stdout: "ignore",
+    stderr: "ignore",
   });
   return result.exitCode === 0;
 }

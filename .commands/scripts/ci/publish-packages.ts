@@ -7,10 +7,21 @@ type pkgJson = {
   name: string;
   version: string;
   dependencies?: Record<string, string>;
+  repository?: any;
 };
 
 function writeDistPackageJson(pkgDir: string, outDir: string) {
   const pkgJson = readJson<pkgJson>(join(pkgDir, "package.json"));
+  const DEFAULT_REPO = { type: "git", url: "https://github.com/akirarika/milkio" };
+  const repo =
+    pkgJson.repository == null
+      ? DEFAULT_REPO
+      : typeof pkgJson.repository === "string"
+        ? pkgJson.repository
+        : {
+            type: pkgJson.repository.type ?? DEFAULT_REPO.type,
+            url: pkgJson.repository.url || DEFAULT_REPO.url,
+          };
 
   const out: {
     name: string;
@@ -19,6 +30,7 @@ function writeDistPackageJson(pkgDir: string, outDir: string) {
     exports: "./index.js";
     types: "./index.d.ts";
     dependencies: Record<string, string>;
+    repository?: any;
   } = {
     name: pkgJson.name,
     version: pkgJson.version,
@@ -26,6 +38,7 @@ function writeDistPackageJson(pkgDir: string, outDir: string) {
     exports: "./index.js",
     types: "./index.d.ts",
     dependencies: {},
+    repository: repo,
   };
 
   //vite-plugin-milkio
@@ -61,7 +74,6 @@ async function buildDist(pkgName: string) {
   });
   if (!buildResult.success) {
     const msgs = buildResult.logs.map((l) => l.message).join("\n");
-
     throw new Error(`Build failed for ${pkgName}\n ${msgs}`);
   }
 

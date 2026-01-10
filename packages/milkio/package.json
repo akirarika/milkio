@@ -1,21 +1,25 @@
 {
-  "name": "milkio",
-  "type": "module",
-  "version": "1.0.0-beta.203",
-  "exports": "./index.ts",
-  "scripts": {},
-  "peerDependencies": {
-    "typescript": "^5.9.3"
-  },
-  "dependencies": {
-    "@poech/camel-hump-under": "^1.1.0",
-    "chalk": "^5.3.0",
-    "date-fns": "^4.1.0",
-    "typia": "*"
-  },
-  "devDependencies": {
-    "@vitest/ui": "^3.0.5",
-    "typescript": "^5.9.3",
-    "vitest": "^3.0.5"
-  }
+    "name": "milkio",
+    "type": "module",
+    "version": "1.0.0-beta.203",
+    "exports": "./index.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/akirarika/milkio"
+    },
+    "scripts": {},
+    "peerDependencies": {
+        "typescript": "^5.9.3"
+    },
+    "dependencies": {
+        "@poech/camel-hump-under": "^1.1.0",
+        "chalk": "^5.3.0",
+        "date-fns": "^4.1.0",
+        "typia": "*"
+    },
+    "devDependencies": {
+        "@vitest/ui": "^3.0.5",
+        "typescript": "^5.9.3",
+        "vitest": "^3.0.5"
+    }
 }

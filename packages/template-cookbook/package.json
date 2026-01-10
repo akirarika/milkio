@@ -1,15 +1,19 @@
 {
-  "name": "@milkio/template-cookbook",
-  "version": "1.0.0-beta.203",
-  "keywords": [
-    "template"
-  ],
-  "type": "module",
-  "exports": "./index.mjs",
-  "dependencies": {},
-  "files": [
-    "template",
-    "index.mjs",
-    "LICENSE"
-  ]
+    "name": "@milkio/template-cookbook",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/akirarika/milkio"
+    },
+    "version": "1.0.0-beta.203",
+    "keywords": [
+        "template"
+    ],
+    "type": "module",
+    "exports": "./index.mjs",
+    "dependencies": {},
+    "files": [
+        "template",
+        "index.mjs",
+        "LICENSE"
+    ]
 }

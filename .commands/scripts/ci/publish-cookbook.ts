@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { getNpmTag, getRepoVersion, npmViewExists, cwd, run, npmPublish } from "./utils";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 
 const platform = process.platform;
 const arch = process.env.ARCH;
@@ -19,15 +19,18 @@ if (npmViewExists(pkgName, version)) {
 }
 
 const outDir = join(cwd, "packages", "cookbook", "dist", `cookbook-${platform}-${arch}`);
+const repo = JSON.parse(readFileSync(join(cwd, "packages", "milkio", "package.json"), "utf-8"))
+  .repository ?? { type: "git", url: "https://github.com/akirarika/milkio" };
+
 run(process.execPath, [
   "build",
   join(cwd, "packages", "cookbook", "cookbook.ts"),
-  "--outFile",
+  "--outfile",
   join(outDir, "co"),
   "--compile",
   "--minify",
   "--sourcemap=inline",
-  "--env=COOKBOOK_",
+  "--env=COOKBOOK_*",
   "--target",
   target,
   "--external",
@@ -44,7 +47,11 @@ writeFileSync(
 );
 writeFileSync(
   join(outDir, "package.json"),
-  JSON.stringify({ name: pkgName, type: "module", version, exports: "./index.js" }, null, 2),
+  JSON.stringify(
+    { name: pkgName, type: "module", version, exports: "./index.js", repository: repo },
+    null,
+    2,
+  ),
 );
 console.log(`[publish] ${pkgName}@${version} (npmTag=${npmTag || "latest"})`);
 npmPublish(outDir, npmTag);
