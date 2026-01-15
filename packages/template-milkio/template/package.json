@@ -1,12 +1,8 @@
 {
-    "name": "REPLACE-YOUR-REPOSITORY-NAME",
+    "name": "@milkio/milkio",
     "exports": "./index.ts",
     "type": "module",
     "private": true,
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/akirarika/milkio"
-    },
     "scripts": {
         "dev": "vite dev",
         "build": "vite build"

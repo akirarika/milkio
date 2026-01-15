@@ -1,4 +1,3 @@
-// .commands/scripts/ci/publish-ci.ts
 import { join } from "node:path";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 

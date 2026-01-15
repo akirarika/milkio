@@ -33,6 +33,11 @@ jobs:
 
       - name: Install dependencies
         run: bun install
+        
+      - name: build .milkio
+        run: bun run co generate
+        env:
+            COOKBOOK_MODE: "test"
 
       - name: publish packages
         run: bun run .commands/scripts/ci/publish-ci.ts
