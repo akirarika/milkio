@@ -190,7 +190,6 @@ async function publishDistPackages(version: string, npmTag: string) {
     if (
       pkg.startsWith("template-") ||
       pkg === "cookbook" ||
-      pkg === "cookbook-ui" ||
       pkg === "create-cookbook" ||
       pkg === "milkio-electron"
     ) {

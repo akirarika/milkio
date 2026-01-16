@@ -1,5 +1,3 @@
-import { homedir } from "node:os";
-
 export const __router__ = [
   {
     commands: ["dev"],

@@ -1,31 +1,31 @@
 {
-    "name": "milkio-electron",
-    "version": "1.0.0-beta.203",
-    "type": "module",
-    "description": "Automated Electron project publisher",
-    "main": "index.mjs",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/akirarika/milkio"
-    },
-    "bin": {
-        "milkio-electron": "index.mjs"
-    },
-    "scripts": {
-        "dev": "node index.mjs"
-    },
-    "keywords": [
-        "electron",
-        "publisher",
-        "automation"
-    ],
-    "author": "Your Name",
-    "license": "MIT",
-    "devDependencies": {
-        "electron": "*"
-    },
-    "dependencies": {
-        "deepmerge": "^4.3.1",
-        "fs-extra": "^11.2.0"
-    }
+  "name": "milkio-electron",
+  "version": "1.0.0-beta.204",
+  "type": "module",
+  "description": "Automated Electron project publisher",
+  "main": "index.mjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akirarika/milkio"
+  },
+  "bin": {
+    "milkio-electron": "index.mjs"
+  },
+  "scripts": {
+    "dev": "node index.mjs"
+  },
+  "keywords": [
+    "electron",
+    "publisher",
+    "automation"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "*"
+  },
+  "dependencies": {
+    "deepmerge": "^4.3.1",
+    "fs-extra": "^11.2.0"
+  }
 }

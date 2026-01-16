@@ -1,14 +1,14 @@
 {
-    "name": "@milkio/milkio",
-    "exports": "./index.ts",
-    "type": "module",
-    "private": true,
-    "scripts": {
-        "dev": "vite dev",
-        "build": "vite build"
-    },
-    "devDependencies": {},
-    "peerDependencies": {
-        "typescript": "^5.9.3"
-    }
+  "name": "@milkio/milkio",
+  "exports": "./index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build"
+  },
+  "devDependencies": {},
+  "peerDependencies": {
+    "typescript": "^5.9.3"
+  }
 }

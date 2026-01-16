@@ -1,10 +1,10 @@
 {
-    "name": "@milkio/redis",
-    "type": "module",
-    "version": "1.0.0-beta.203",
-    "exports": "./index.ts",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/akirarika/milkio"
-    }
+  "name": "@milkio/redis",
+  "type": "module",
+  "version": "1.0.0-beta.204",
+  "exports": "./index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akirarika/milkio"
+  }
 }

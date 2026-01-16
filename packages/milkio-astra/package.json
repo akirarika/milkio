@@ -1,15 +1,15 @@
 {
-    "name": "@milkio/astra",
-    "type": "module",
-    "version": "1.0.0-beta.203",
-    "exports": "./index.ts",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/akirarika/milkio"
-    },
-    "dependencies": {
-        "date-fns": "^4.1.0",
-        "js-toml": "^1.0.0"
-    },
-    "devDependencies": {}
+  "name": "@milkio/astra",
+  "type": "module",
+  "version": "1.0.0-beta.204",
+  "exports": "./index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akirarika/milkio"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "js-toml": "^1.0.0"
+  },
+  "devDependencies": {}
 }
