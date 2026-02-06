@@ -129,6 +129,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
             ExecuteOptions,
             | {
                 params?: Generated["routeSchema"][Path]["types"]["params"];
+                generateParams: false;
             }
             | {
                 params?: DeepPartial<Generated["routeSchema"][Path]["types"]["params"]>;

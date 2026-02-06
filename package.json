@@ -19,6 +19,7 @@
         "@hono/node-server": "^1.13.8",
         "@ryoppippi/unplugin-typia": "^2.6.5",
         "@types/fs-extra": "^11.0.4",
+        "@types/node": "^25.2.1",
         "compressing": "^1.10.1",
         "drizzle-kit": "^0.31.1",
         "drizzle-orm": "^0.43.1",

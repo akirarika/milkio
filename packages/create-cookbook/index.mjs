@@ -127,10 +127,18 @@ const color = gradient(["cyan", "#2d9b87"]);
       await move(execPath, join(targetPath, execName), { overwrite: true });
 
       try {
-        execFileSync("powershell.exe", [
-          "-Command",
-          `[System.Environment]::SetEnvironmentVariable('PATH', $env:PATH + ';${targetPath}', 'User')`
-        ]);
+        const ps =
+        `${target}=' ${targetPath.replace(/'/g,"''")}'
+        $userPath = [Environment]::GetEnvironmentVariable('Path','User')
+        if($null -eq $userPath) { $userPath = ''}
+        $parts = $userPath -split ';' | Where-Object {$_ -and $_.Trim() -ne ''}
+        $partsLower = $parts | ForEach-Object { $_.Trim().ToLowerInvariant() }
+        if ($partsLower -notcontains $target.Trim().ToLowerInvariant()) {
+        $newPath = ($parts + $target) -join ';'
+        [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
+      }
+        `
+        execFileSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps], { stdio: 'ignore' });
         consola.success(color("Added to PATH (requires restart)"));
       } catch {
         consola.warn(color("Manual PATH configuration required"));
