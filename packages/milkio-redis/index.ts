@@ -315,7 +315,7 @@ const isoDatePattern = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)(Z|[
 
 export function reviveJSONParse<T>(json: T): T {
   if (json !== null && typeof json === 'object') {
-    if (typeof (json as any).getTime === 'function' && typeof (json as any).toISOString === 'function') {
+    if (json instanceof Date || (typeof (json as any).getTime === 'function' && typeof (json as any).toISOString === 'function')) {
       return json;
     }
     if (Array.isArray(json)) {
