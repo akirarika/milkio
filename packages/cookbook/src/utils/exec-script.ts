@@ -61,7 +61,12 @@ export async function execScript(script: string, options: SpawnOptionsWithoutStd
             rl.close();
             if (child.stdin.writable) child.stdin.end();
 
-            resolve(code !== null ? code : signal ? 1 : 0);
+            const exitCode = code !== null ? code : signal ? 1 : 0;
+            if (exitCode !== 0) {
+                consola.fail(`Script failed with exit code ${exitCode}`);
+                process.exit(exitCode);
+            }
+            resolve(exitCode);
         });
 
         const handleSignal = (signal: NodeJS.Signals) => {
