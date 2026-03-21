@@ -147,7 +147,29 @@ export async function createRedis<RedisT extends { PSETEX: any; SET: any;[others
                     const lockSet = await redis.SET(lockKey, "1", { PX: lockInterval, NX: true });
                     const gotLock = lockSet === "OK";
 
-                    if (!gotLock) return result ? result.R : options.defaultValue;
+                    if (!gotLock) {
+                        const maxWaitTime = lockInterval;
+                        const waitInterval = 16;
+                        let waited = 0;
+                        while (waited < maxWaitTime) {
+                            await new Promise((resolve) => setTimeout(resolve, waitInterval));
+                            waited += waitInterval;
+                            const waitedResultRaw = await redis.GET(key);
+                            const waitedResult = waitedResultRaw ? (reviveJSONParse(JSON.parse(waitedResultRaw as string)) as { T: number; R: Awaited<ReturnType<Options["fetch"]>> }) : undefined;
+                            if (waitedResult && waitedResult.T > now) {
+                                return waitedResult.R;
+                            }
+                            if (!(await redis.EXISTS(lockKey))) {
+                                break;
+                            }
+                        }
+                        const finalResultRaw = await redis.GET(key);
+                        const finalResult = finalResultRaw ? (reviveJSONParse(JSON.parse(finalResultRaw as string)) as { T: number; R: Awaited<ReturnType<Options["fetch"]>> }) : undefined;
+                        if (finalResult && finalResult.T > now) {
+                            return finalResult.R;
+                        }
+                        return result ? result.R : options.defaultValue;
+                    }
 
                     const recheckRaw = await redis.GET(key);
                     const recheck = recheckRaw ? (reviveJSONParse(JSON.parse(recheckRaw as string)) as { T: number; R: Awaited<ReturnType<Options["fetch"]>> }) : undefined;
