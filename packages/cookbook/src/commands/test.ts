@@ -64,9 +64,12 @@ export default await defineCookbookCommand(async (utils) => {
         console.log("");
     };
 
+    const params = utils.getParams();
+
     await start("test");
 
-    const exitcode = await execScript(`${options.general.packageManager} run test`, { cwd: cwd() });
+    const scriptParts = [`${options.general.packageManager} run test`, ...params.raw.map((arg) => `"${arg}"`)];
+    const exitcode = await execScript(scriptParts.join(" "), { cwd: cwd() });
 
     if (exitcode !== 0) {
         consola.error(`Test command failed with exit code ${exitcode}.`);
