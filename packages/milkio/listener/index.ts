@@ -157,6 +157,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     }
                 }
 
+                await logger._.submit(context as any);
                 runtime.runtime.request.delete(executeId);
                 return new Response(response.body, response);
             } else {
@@ -178,7 +179,6 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 }
 
                 const handleClose = async () => {
-                    runtime.runtime.request.delete(executeId);
                     for (const handler of finales) {
                         try {
                             await handler();
@@ -186,6 +186,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                             logger.error("An error occurred inside onFinally.", error);
                         }
                     }
+                    await logger._.submit(context as any);
+                    runtime.runtime.request.delete(executeId);
                 };
 
                 context.http = http;
@@ -291,6 +293,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             };
             if (results.value !== undefined) response.body = JSON.stringify(results.value);
             await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context, success: false, reject });
+            await logger._.submit(context as any);
             runtime.runtime.request.delete(executeId);
             return new Response(response.body, response);
         }
@@ -353,7 +356,6 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
         const handleClose = async (type: "action" | "stream") => {
             if (type === "stream") streamClosers.delete(options.executeId);
-            runtime.runtime.request.delete(options.executeId);
             for (const handler of finales) {
                 try {
                     await handler();
@@ -361,6 +363,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     logger.error("An error occurred inside onFinally.", error);
                 }
             }
+            await logger._.submit(context as any);
+            runtime.runtime.request.delete(options.executeId);
         };
 
         const context = { http: http, headers, reject };
@@ -424,6 +428,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             }
         } catch (error) {
             const result = exceptionHandler(options.executeId, logger, error);
+            await logger._.submit(context as any);
             port.postMessage({ success: false, data: undefined, error: result, executeId: options.executeId, done: true });
         }
     };
