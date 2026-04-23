@@ -6,13 +6,28 @@ export type MilkioStargateOptions = {
         addEventListener: (event: "message", callback: (event: { data: any }) => void) => void;
         removeEventListener: (event: "message", callback: (event: { data: any }) => void) => void;
     };
+    cacheStorage?: CacheStorage;
+    cacheEncryption?: boolean;
 };
 
 export type Mixin<T, U> = U & Omit<T, keyof U>;
 
-export type ExecuteOptions = {
+export type CacheStrategy = 'off' | 'fallback' | 'throttle';
+
+export type RetryStrategy = boolean | number;
+
+export interface CacheStorage {
+    get: (key: string) => Promise<{ data: any; timestamp: number } | null>;
+    set: (key: string, data: any) => Promise<void>;
+}
+
+export type ExecuteOptions<T extends any = any> = {
     params?: Record<any, any>;
     headers?: Record<string, string>;
+    cacheStrategy?: CacheStrategy;
+    cacheThrottleMs?: number;
+    onCacheHit?: (result: T) => void | Promise<void>;
+    retryStrategy?: RetryStrategy;
 };
 
 export type ExecuteResultsOption = { executeId: string };
@@ -42,7 +57,7 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
         async execute<Path extends keyof Generated["routeSchema"]>(
             path: Path,
             options: Mixin<
-                ExecuteOptions,
+                ExecuteOptions<Generated["routeSchema"][Path]["types"]["result"]>,
                 {
                     params?: Generated["routeSchema"][Path]["types"]["params"];
                 }
@@ -57,29 +72,98 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
             // oxlint-disable-next-line no-async-promise-executor
             return new Promise(async (resolve) => {
                 await connect;
-                const executeId = __createId();
-                executeIds.add(executeId);
+
                 if (!(path as string).endsWith("~")) {
-                    const handler = (event: { data: any }) => {
-                        if (typeof event.data !== "object") return;
-                        if (event.data.executeId !== executeId) return;
-                        executeIds.delete(executeId);
-                        stargateOptions.port.removeEventListener("message", handler);
-                        if (!event.data.success) {
-                            const error: any = {};
-                            error[event.data.error.code] = event.data.error.reject;
-                            resolve([error, null, { executeId }]);
+                    // action
+                    const cacheStrategy = options?.cacheStrategy ?? 'off';
+                    let retryCount = 0;
+                    if (options?.retryStrategy === true || options?.retryStrategy === 2) {
+                        retryCount = 2;
+                    } else if (typeof options?.retryStrategy === 'number' && options?.retryStrategy > 0) {
+                        retryCount = options?.retryStrategy;
+                    }
+                    const cacheThrottleMs = options?.cacheThrottleMs ?? 0;
+                    const cacheKey = generateCacheKey(path as string, options?.params);
+
+                    let cacheStorage = stargateOptions.cacheStorage;
+                    if (cacheStrategy !== 'off' && !cacheStorage) {
+                        cacheStorage = await createDefaultCacheStorage({ encryption: stargateOptions.cacheEncryption });
+                    }
+
+                    if (cacheStrategy !== 'off' && cacheStorage && options?.onCacheHit) {
+                        const cached = await cacheStorage.get(cacheKey);
+                        if (cached) {
+                            try {
+                                await options.onCacheHit(cached.data);
+                            } catch {
+                                // ignore onCacheHit errors
+                            }
                         }
-                        if (event.data.success) resolve([null, event.data.data, { executeId }] as any);
+                    }
+
+                    if (cacheStrategy === 'throttle' && cacheStorage) {
+                        const cached = await cacheStorage.get(cacheKey);
+                        if (cached && Date.now() - cached.timestamp < cacheThrottleMs) {
+                            return resolve([null, cached.data, { executeId: 'cached' }] as any);
+                        }
+                    }
+
+                    const executeRequest = (): Promise<[any, any, ExecuteResultsOption]> => {
+                        return new Promise((reqResolve) => {
+                            const reqExecuteId = __createId();
+                            executeIds.add(reqExecuteId);
+                            const handler = (event: { data: any }) => {
+                                if (typeof event.data !== "object") return;
+                                if (event.data.executeId !== reqExecuteId) return;
+                                executeIds.delete(reqExecuteId);
+                                stargateOptions.port.removeEventListener("message", handler);
+                                if (!event.data.success) {
+                                    const error: any = {};
+                                    error[event.data.error.code] = event.data.error.reject;
+                                    reqResolve([error, null, { executeId: reqExecuteId }]);
+                                } else {
+                                    reqResolve([null, event.data.data, { executeId: reqExecuteId }]);
+                                }
+                            };
+                            stargateOptions.port.addEventListener("message", handler);
+                            stargateOptions.port.postMessage({
+                                executeId: reqExecuteId,
+                                path,
+                                params: options?.params,
+                                headers: options?.headers,
+                            });
+                        });
                     };
-                    stargateOptions.port.addEventListener("message", handler);
-                    stargateOptions.port.postMessage({
-                        executeId,
-                        path,
-                        params: options?.params,
-                        headers: options?.headers,
-                    });
+
+                    let [error, result, resultOption] = await executeRequest();
+
+                    for (let retryIndex = 0; retryIndex < retryCount && error; retryIndex++) {
+                        if (retryIndex > 0) {
+                            await new Promise((r) => setTimeout(r, 500));
+                        }
+                        [error, result, resultOption] = await executeRequest();
+                    }
+
+                    if (error) {
+                        if (cacheStrategy !== 'off' && cacheStorage) {
+                            const cached = await cacheStorage.get(cacheKey);
+                            if (cached) {
+                                return resolve([null, cached.data, { executeId: 'cached' }] as any);
+                            }
+                        }
+                        return resolve([error, null, resultOption]);
+                    }
+
+                    if (cacheStrategy !== 'off' && cacheStorage) {
+                        await cacheStorage.set(cacheKey, result);
+                    }
+
+                    resolve([null, result, resultOption] as any);
                 } else {
+                    // stream
+                    const executeId = __createId();
+                    executeIds.add(executeId);
+
                     let flow: ReturnType<typeof createFlow> | undefined;
                     const handler = (event: { data: any }) => {
                         if (typeof event.data !== "object") return;
@@ -215,4 +299,170 @@ function withResolvers<T = any>(): PromiseWithResolvers<T> {
         reject = rej;
     });
     return { promise, resolve: resolve!, reject: reject! };
+}
+
+const isoDatePattern = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)(Z|[+-]\d{2}:?\d{2})?$/;
+
+export function reviveJSONParse<T>(json: T): T {
+    if (json !== null && typeof json === 'object') {
+        if (json instanceof Date || (typeof (json as any).getTime === 'function' && typeof (json as any).toISOString === 'function')) {
+            return json;
+        }
+        if (Array.isArray(json)) {
+            return json.map((item) => reviveJSONParse(item)) as any;
+        }
+        return Object.entries(json).reduce((acc, [key, value]) => {
+            acc[key as keyof T] = reviveJSONParse(value);
+            return acc;
+        }, {} as T);
+    }
+    if (typeof json === 'string') {
+        const match = json.match(isoDatePattern);
+        if (match) {
+            const normalizedDateString = match[2] ? `${match[1]}${match[2].replace(':', '')}` : `${match[1]}Z`;
+            return new Date(normalizedDateString) as any;
+        }
+    }
+    return json;
+}
+
+const DB_NAME = 'StargateWorker';
+const STORE_NAME = 'caches';
+let dbInstance: IDBDatabase | null = null;
+
+async function openDB(): Promise<IDBDatabase> {
+    if (dbInstance) return dbInstance;
+
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            dbInstance = request.result;
+            resolve(dbInstance);
+        };
+        request.onupgradeneeded = (event) => {
+            const db = (event.target as IDBOpenDBRequest).result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+    });
+}
+
+export async function createDefaultCacheStorage(options?: { encryption?: boolean; encryptionKey?: string }): Promise<CacheStorage> {
+    await openDB();
+
+    let encryptionKey: CryptoKey | null = null;
+    const counter = new Uint8Array(16);
+
+    if (options?.encryption) {
+        const keyString = options.encryptionKey ?? DB_NAME;
+        new TextEncoder().encode(keyString).forEach((byte, i) => {
+            if (i < 16) counter[i] = byte;
+        });
+
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode(keyString);
+        const importedKey = await crypto.subtle.importKey('raw', keyData, { name: 'PBKDF2' }, false, ['deriveKey']);
+
+        encryptionKey = await crypto.subtle.deriveKey(
+            {
+                name: 'PBKDF2',
+                salt: encoder.encode('milkio-stargate-worker-cache'),
+                iterations: 100000,
+                hash: 'SHA-256',
+            },
+            importedKey,
+            { name: 'AES-CTR', length: 256 },
+            false,
+            ['encrypt', 'decrypt'],
+        );
+    }
+
+    const encryptData = async (data: any): Promise<Uint8Array> => {
+        if (!encryptionKey) return data;
+
+        const jsonString = JSON.stringify(data);
+        const encoder = new TextEncoder();
+        const dataBytes = encoder.encode(jsonString);
+
+        const encryptedArrayBuffer = await crypto.subtle.encrypt(
+            {
+                name: 'AES-CTR',
+                counter: counter,
+                length: 64,
+            },
+            encryptionKey!,
+            dataBytes,
+        );
+
+        return new Uint8Array(encryptedArrayBuffer);
+    };
+
+    const decryptData = async (encryptedData: ArrayBuffer | Uint8Array): Promise<any> => {
+        if (!encryptionKey || !encryptedData) return encryptedData;
+
+        const arrayBuffer = encryptedData instanceof Uint8Array ? (encryptedData.buffer as ArrayBuffer) : encryptedData;
+
+        const decryptedBytes = await crypto.subtle.decrypt(
+            {
+                name: 'AES-CTR',
+                counter: counter,
+                length: 64,
+            },
+            encryptionKey!,
+            arrayBuffer,
+        );
+
+        const decoder = new TextDecoder();
+        const jsonString = decoder.decode(decryptedBytes);
+        return reviveJSONParse(JSON.parse(jsonString));
+    };
+
+    return {
+        async get(key: string): Promise<{ data: any; timestamp: number } | null> {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(key);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = async () => {
+                    const result = request.result;
+                    if (!result) {
+                        resolve(null);
+                        return;
+                    }
+
+                    if (options?.encryption && (result.data instanceof ArrayBuffer || result.data instanceof Uint8Array)) {
+                        const decryptedData = await decryptData(result.data);
+                        resolve({ data: decryptedData, timestamp: result.timestamp });
+                        return;
+                    }
+
+                    resolve(result ?? null);
+                };
+            });
+        },
+        async set(key: string, data: any): Promise<void> {
+            const db = await openDB();
+            let dataToStore: any = data;
+
+            if (options?.encryption) {
+                dataToStore = await encryptData(data);
+            }
+
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put({ data: dataToStore, timestamp: Date.now() }, key);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve();
+            });
+        },
+    };
+}
+
+function generateCacheKey(path: string, params: any): string {
+    return `${path}:${JSON.stringify(params ?? {})}`;
 }

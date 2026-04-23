@@ -15,8 +15,20 @@ export interface $rejectCode {
     NETWORK_ERROR: undefined;
 }
 
-export function reject<Code extends keyof $rejectCode, RejectData extends $rejectCode[Code]>(code: Code, data: RejectData): MilkioRejectError<Code, RejectData> {
-    const error = { $milkioReject: true, code, data } as MilkioRejectError<Code, RejectData>;
+export function reject<Code extends keyof $rejectCode, RejectData extends $rejectCode[Code]>(code: Code, data: RejectData): MilkioRejectError<Code, RejectData>;
+export function reject<T extends { [K in keyof T]: K extends keyof $rejectCode ? $rejectCode[K] : never }>(obj: T): MilkioRejectError<Extract<keyof T, keyof $rejectCode>, any>;
+export function reject(codeOrObj: any, data?: any): MilkioRejectError<any, any> {
+    let code: any;
+    let rejectData: any;
+    if (typeof codeOrObj === "string") {
+        code = codeOrObj;
+        rejectData = data;
+    } else {
+        const keys = Object.keys(codeOrObj);
+        code = keys[0];
+        rejectData = codeOrObj[code];
+    }
+    const error = { $milkioReject: true, code, data: rejectData } as MilkioRejectError<any, any>;
     Error.captureStackTrace(error);
     return error;
 }

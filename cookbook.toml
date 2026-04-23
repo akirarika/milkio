@@ -18,6 +18,7 @@ type = "milkio"
 runtime = "node"
 autoStart = true
 drizzle = [
+    { mode = "test", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
     { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
     { mode = "production", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
 ]

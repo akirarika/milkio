@@ -15,18 +15,20 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
     const params = utils.getParams();
     const cookbookToml = await utils.getCookbookToml();
     
-    // Get mode from environment variables if available
-    modeUsed = modeUsed || env.COOKBOOK_MODE || env.MODE;
+    // Get mode from --mode option, environment variables, or function argument
+    modeUsed = (params.options.mode as string) || modeUsed || env.COOKBOOK_MODE || env.MODE;
+    
+    // Get project name from --project option or function argument
+    const projectNameArg = (params.options.project as string) || projectUsed;
     
     // Project selection logic with params.options.project support
     let project;
     const isMigrationOrGenerate = (params.commands.at(0) === "migrate" || userCommand === "migrate" || params.commands.at(0) === "generate" || userCommand === "generate");
     
-    if (params.options.project && isMigrationOrGenerate) {
-        // Find project by matching params.options.project
-        const projectName = params.options.project;
+    if (projectNameArg && isMigrationOrGenerate) {
+        // Find project by matching project name
         for (const name in cookbookToml.projects) {
-            if (name === projectName) {
+            if (name === projectNameArg) {
                 let proj = cookbookToml.projects[name] as any;
                 proj = { ...proj, name: proj.name ?? proj.key, value: name };
                 project = { ...proj, path: join(cwd(), "projects", name) };
@@ -35,7 +37,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
         }
         
         if (!project) {
-            consola.error(`Project '${projectName}' not found in cookbook.toml`);
+            consola.error(`Project '${projectNameArg}' not found in cookbook.toml`);
             exit(1);
         }
     } else {

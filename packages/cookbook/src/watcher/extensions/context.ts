@@ -42,7 +42,7 @@ export const contextWatcherExtension = defineWatcherExtension({
      * @returns Whether all event handlers returned true
      */
     emitAllApproved: <Key extends keyof MilkioEvents, Value extends MilkioEvents[Key]>(key: Key, value: Value) => Promise<boolean>;
-    reject: <Code extends keyof MilkioRejectCode, RejectData extends MilkioRejectCode[Code]>(code: Code, data: RejectData) => MilkioRejectError<Code, RejectData>;
+    reject: MilkioRejectFunction;
 };
 `;
         content += "\nexport interface MilkioContext extends $contextMixin";
