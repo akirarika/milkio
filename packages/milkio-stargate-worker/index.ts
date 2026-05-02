@@ -8,6 +8,7 @@ export type MilkioStargateOptions = {
     };
     cacheStorage?: CacheStorage;
     cacheEncryption?: boolean;
+    onLog?: (level: string, args: any[]) => void;
 };
 
 export type Mixin<T, U> = U & Omit<T, keyof U>;
@@ -47,8 +48,22 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
         stargateOptions.port.postMessage("PING");
         const timer = setInterval(() => stargateOptions.port.postMessage("PING"), 42);
     });
+    const logHandler = (event: { data: any }) => {
+        if (typeof event.data !== "object" || !event.data.__milkio_log) return;
+        const { level, args } = event.data.__milkio_log;
+        const parsedArgs = JSON.parse(args);
+        if (stargateOptions.onLog) {
+            stargateOptions.onLog(level, parsedArgs);
+        } else {
+            const consoleFn = (console as any)[level] ?? console.log;
+            consoleFn(...parsedArgs);
+        }
+    };
+    stargateOptions.port.addEventListener("message", logHandler);
+
     const stargate = {
         close() {
+            stargateOptions.port.removeEventListener("message", logHandler);
             for (const executeId of executeIds) {
                 stargateOptions.port.postMessage(`CLOSE_STREAM:${executeId}`);
             }
