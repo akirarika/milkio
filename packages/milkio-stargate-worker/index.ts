@@ -56,7 +56,7 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
             stargateOptions.onLog(level, parsedArgs);
         } else {
             const consoleFn = (console as any)[level] ?? console.log;
-            consoleFn([...parsedArgs.slice(0, 5), ...parsedArgs.slice(5).map((v: any) => JSON.stringify(v))]);
+            consoleFn(...parsedArgs.slice(0, 5), ...parsedArgs.slice(5).map((v: any) => JSON.stringify(v)));
         }
     };
     stargateOptions.port.addEventListener("message", logHandler);
