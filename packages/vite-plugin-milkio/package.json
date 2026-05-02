@@ -1,7 +1,7 @@
 {
   "name": "@milkio/vite-plugin-milkio",
   "type": "module",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "exports": "./index.ts",
   "repository": {
     "type": "git",
