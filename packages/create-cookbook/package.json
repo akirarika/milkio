@@ -1,6 +1,6 @@
 {
   "name": "create-cookbook",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "main": "index.mjs",
   "repository": {
     "type": "git",

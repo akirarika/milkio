@@ -115,7 +115,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
     }
 
     if ((params.commands.at(0) === "migrate" || userCommand === "migrate") && existsSync(join(project.path, "drizzle.migrate.ts"))) {
-        const runtime = await getRuntime("bun");
+        const runtime = await getRuntime(project.runtime ?? "bun");
         const scriptPath = join(project.path, "drizzle.migrate.ts");
         await execScript(`${runtime} ${scriptPath}`, {
             cwd: project.path,
@@ -132,7 +132,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
         await writeFile(join(project.path, ".milkio", "drizzle-migrations.ts"), `export const drizzleMigrations = ${JSON.stringify(journal)}`);
         consola.success("Drizzle migration successfully generated.");
         if (existsSync(join(project.path, "drizzle.migrate.ts"))) {
-            const runtime = await getRuntime("bun");
+            const runtime = await getRuntime(project.runtime ?? "bun");
             const scriptPath = join(project.path, "drizzle.migrate.ts");
             await execScript(`${runtime} ${scriptPath}`, {
                 cwd: project.path,
