@@ -144,7 +144,7 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
                             stargateOptions.port.postMessage({
                                 executeId: reqExecuteId,
                                 path,
-                                params: options?.params,
+                                params: deepCloneIfVueReactive(options?.params),
                                 headers: options?.headers,
                             });
                         });
@@ -208,7 +208,7 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
                     stargateOptions.port.postMessage({
                         executeId,
                         path,
-                        params: options?.params,
+                        params: deepCloneIfVueReactive(options?.params),
                         headers: options?.headers,
                     });
                 }
@@ -481,3 +481,12 @@ export async function createDefaultCacheStorage(options?: { encryption?: boolean
 function generateCacheKey(path: string, params: any): string {
     return `${path}:${JSON.stringify(params ?? {})}`;
 }
+
+const deepCloneIfVueReactive = <T>(value: T): T => {
+    if (value === null || value === undefined || typeof value !== "object") return value;
+    const obj = value as Record<string, any>;
+    if (obj.__v_isReadonly !== undefined || obj.__v_isReactive !== undefined) {
+        return JSON.parse(JSON.stringify(value));
+    }
+    return value;
+};
