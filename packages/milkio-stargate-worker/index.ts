@@ -483,16 +483,30 @@ function generateCacheKey(path: string, params: any): string {
 }
 
 const deepCloneIfVueReactive = <T>(value: T): T => {
-    if (value === null || value === undefined || typeof value !== "object") return value;
-    const obj = value as Record<string, any>;
-    if (obj.__v_isReadonly !== undefined || obj.__v_isReactive !== undefined) {
+    if (value === null || value === undefined || typeof value !== 'object') return value;
+    if (hasVueReactive(value)) {
         return deepClone(value);
     }
     return value;
 };
 
+const hasVueReactive = (value: any): boolean => {
+    if (value === null || value === undefined || typeof value !== 'object') return false;
+    if (value.__v_isReadonly !== undefined || value.__v_isReactive !== undefined) return true;
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            if (hasVueReactive(item)) return true;
+        }
+    } else if (!(value instanceof Date)) {
+        for (const key of Object.keys(value)) {
+            if (hasVueReactive(value[key])) return true;
+        }
+    }
+    return false;
+};
+
 const deepClone = <T>(value: T): T => {
-    if (value === null || value === undefined || typeof value !== "object") return value;
+    if (value === null || value === undefined || typeof value !== 'object') return value;
     if (value instanceof Date) return new Date(value) as T;
     if (Array.isArray(value)) return value.map((item) => deepClone(item)) as T;
     const result: Record<string, any> = {};
