@@ -1,7 +1,7 @@
 {
   "name": "@milkio/cookbook",
   "type": "module",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "exports": "./exports.ts",
   "repository": {
     "type": "git",
