@@ -486,7 +486,18 @@ const deepCloneIfVueReactive = <T>(value: T): T => {
     if (value === null || value === undefined || typeof value !== "object") return value;
     const obj = value as Record<string, any>;
     if (obj.__v_isReadonly !== undefined || obj.__v_isReactive !== undefined) {
-        return JSON.parse(JSON.stringify(value));
+        return deepClone(value);
     }
     return value;
+};
+
+const deepClone = <T>(value: T): T => {
+    if (value === null || value === undefined || typeof value !== "object") return value;
+    if (value instanceof Date) return new Date(value) as T;
+    if (Array.isArray(value)) return value.map((item) => deepClone(item)) as T;
+    const result: Record<string, any> = {};
+    for (const key of Object.keys(value as Record<string, any>)) {
+        result[key] = deepClone((value as Record<string, any>)[key]);
+    }
+    return result as T;
 };
