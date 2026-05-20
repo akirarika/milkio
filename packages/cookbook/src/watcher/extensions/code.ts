@@ -12,8 +12,8 @@ export const codeWatcherExtension = defineWatcherExtension({
 
         content += `\n
 export type MilkioRejectFunction = {
-    <Code extends keyof MilkioRejectCode, RejectData extends MilkioRejectCode[Code]>(code: Code, data: RejectData): MilkioRejectError<Code, RejectData>;
-    <T extends { [K in keyof T]: K extends keyof MilkioRejectCode ? MilkioRejectCode[K] : never }>(obj: T): MilkioRejectError<Extract<keyof T, keyof MilkioRejectCode>, T[Extract<keyof T, keyof MilkioRejectCode>]>;
+    <Code extends keyof MilkioRejectCode>(code: Code, ...data: MilkioRejectCode[Code] extends undefined ? [] : [MilkioRejectCode[Code]]): MilkioRejectError<Code, MilkioRejectCode[Code]>;
+    <T extends { [K in keyof T]: K extends keyof MilkioRejectCode ? MilkioRejectCode[K] | undefined : never }>(obj: T): MilkioRejectError<Extract<keyof T, keyof MilkioRejectCode>, any>;
 };
 export type MilkioRejectError<Code extends keyof MilkioRejectCode = keyof MilkioRejectCode, RejectData extends MilkioRejectCode[Code] = MilkioRejectCode[Code]> = { code: Code; data: RejectData; stack: string; $milkioReject: true };
 export interface MilkioRejectCode extends $rejectCode`;
