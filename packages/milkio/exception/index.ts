@@ -17,7 +17,7 @@ export interface $rejectCode {
 
 export type Reject = {
     <Code extends keyof $rejectCode>(code: Code, ...data: $rejectCode[Code] extends undefined ? [] : [$rejectCode[Code]]): MilkioRejectError<Code, $rejectCode[Code]>;
-    <T extends { [K in keyof T]: K extends keyof $rejectCode ? $rejectCode[K] | undefined : never }>(obj: T): MilkioRejectError<Extract<keyof T, keyof $rejectCode>, any>;
+    <T>(obj: T): MilkioRejectError<Extract<keyof T, keyof $rejectCode>, any>;
 };
 
 export const reject = function reject(codeOrObj: any, data?: any): MilkioRejectError<any, any> {
