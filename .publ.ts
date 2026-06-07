@@ -1,5 +1,4 @@
 import { join } from "node:path";
-import { cli } from "./.commands/utils/cli.ts";
 import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import consola from "consola";
@@ -51,7 +50,7 @@ async function main() {
     const packagesTocheck = [mainPackage, ...childPackages];
     let newVersion = "";
     while (true) {
-        newVersion = (await cli.input("要发布的新版本号是:")) ?? "";
+        newVersion = prompt("要发布的新版本号是:") ?? "";
         if (!newVersion) {
             consola.info("版本号不能为空，请重新输入");
             continue;
@@ -81,83 +80,78 @@ async function main() {
         }
         break;
     }
-    if ((await cli.select("是否进行版本号修改", ["是", "否"])) === "是") {
-        packageJson.version = newVersion;
-        await writeFile(
-            join(cwd, "packages", mainPackage, "package.json"),
-            JSON.stringify(packageJson, null, 2),
+
+    packageJson.version = newVersion;
+    await writeFile(
+        join(cwd, "packages", mainPackage, "package.json"),
+        JSON.stringify(packageJson, null, 2),
+    );
+    for (const childpackage of childPackages) {
+        const childPackageJson = JSON.parse(
+            await readFile(join(cwd, "packages", childpackage, "package.json"), "utf-8"),
         );
-        for (const childpackage of childPackages) {
-            const childPackageJson = JSON.parse(
-                await readFile(join(cwd, "packages", childpackage, "package.json"), "utf-8"),
+        childPackageJson.version = newVersion;
+        await writeFile(
+            join(cwd, "packages", childpackage, "package.json"),
+            JSON.stringify(childPackageJson, null, 2),
+        );
+
+        if (existsSync(join(cwd, "packages", childpackage, "template", "package.json"))) {
+            const templatePackageJson = JSON.parse(
+                await readFile(join(cwd, "packages", childpackage, "template", "package.json"), "utf-8"),
             );
-            childPackageJson.version = newVersion;
+
+            if (templatePackageJson.peerDependencies) {
+                for (const dep in templatePackageJson.peerDependencies) {
+                    if (dep.startsWith("@milkio/") || dep === "milkio") {
+                        templatePackageJson.peerDependencies[dep] = newVersion;
+                    }
+                }
+            }
+
+            if (templatePackageJson.dependencies) {
+                for (const dep in templatePackageJson.dependencies) {
+                    if (dep.startsWith("@milkio/") || dep === "milkio") {
+                        templatePackageJson.dependencies[dep] = newVersion;
+                    }
+                }
+            }
+
+            if (templatePackageJson.devDependencies) {
+                for (const dep in templatePackageJson.devDependencies) {
+                    if (dep.startsWith("@milkio/") || dep === "milkio") {
+                        templatePackageJson.devDependencies[dep] = newVersion;
+                    }
+                }
+            }
+
             await writeFile(
-                join(cwd, "packages", childpackage, "package.json"),
-                JSON.stringify(childPackageJson, null, 2),
+                join(cwd, "packages", childpackage, "template", "package.json"),
+                JSON.stringify(templatePackageJson, null, 2),
             );
-
-            if (existsSync(join(cwd, "packages", childpackage, "template", "package.json"))) {
-                const templatePackageJson = JSON.parse(
-                    await readFile(join(cwd, "packages", childpackage, "template", "package.json"), "utf-8"),
-                );
-
-                if (templatePackageJson.peerDependencies) {
-                    for (const dep in templatePackageJson.peerDependencies) {
-                        if (dep.startsWith("@milkio/") || dep === "milkio") {
-                            templatePackageJson.peerDependencies[dep] = newVersion;
-                        }
-                    }
-                }
-
-                if (templatePackageJson.dependencies) {
-                    for (const dep in templatePackageJson.dependencies) {
-                        if (dep.startsWith("@milkio/") || dep === "milkio") {
-                            templatePackageJson.dependencies[dep] = newVersion;
-                        }
-                    }
-                }
-
-                if (templatePackageJson.devDependencies) {
-                    for (const dep in templatePackageJson.devDependencies) {
-                        if (dep.startsWith("@milkio/") || dep === "milkio") {
-                            templatePackageJson.devDependencies[dep] = newVersion;
-                        }
-                    }
-                }
-
-                await writeFile(
-                    join(cwd, "packages", childpackage, "template", "package.json"),
-                    JSON.stringify(templatePackageJson, null, 2),
-                );
-            }
         }
-        for (const childPackage of [mainPackage, ...childPackages]) {
-            if (childPackage === "create-cookbook" || childPackage === "milkio-elecrton") {
-                await writeFile(
-                    join(cwd, "packages", childPackage, "__VERSION__.mjs"),
-                    `export const __VERSION__ = '${newVersion}'`,
-                );
-            } else {
-                await writeFile(
-                    join(cwd, "packages", childPackage, "__VERSION__.ts"),
-                    `export const __VERSION__ = '${newVersion}'`,
-                );
-            }
+    }
+    for (const childPackage of [mainPackage, ...childPackages]) {
+        if (childPackage === "create-cookbook" || childPackage === "milkio-elecrton") {
+            await writeFile(
+                join(cwd, "packages", childPackage, "__VERSION__.mjs"),
+                `export const __VERSION__ = '${newVersion}'`,
+            );
+        } else {
+            await writeFile(
+                join(cwd, "packages", childPackage, "__VERSION__.ts"),
+                `export const __VERSION__ = '${newVersion}'`,
+            );
         }
-        consola.success("所有包的版本号已修改");
     }
+    consola.success("所有包的版本号已修改");
 
-    if ((await cli.select("是否提交并推送到远程仓库以触发发布流水线", ["是", "否"])) === "是") {
-        consola.info("正在提交版本变更...");
-        $("git", ["add", "-A"], { cwd });
-        $("git", ["commit", "-m", `v${newVersion}`], { cwd });
-        consola.info("正在推送到远程仓库...");
-        $("git", ["push"], { cwd });
-        consola.success(`已推送 v${newVersion}，发布流水线已触发`);
-    } else {
-        consola.info("已跳过提交和推送，你可以手动提交和推送来触发发布流水线");
-    }
+    consola.info("正在提交版本变更...");
+    $("git", ["add", "-A"], { cwd });
+    $("git", ["commit", "-m", `v${newVersion}`], { cwd });
+    consola.info("正在推送到远程仓库...");
+    $("git", ["push"], { cwd });
+    consola.success(`已推送 v${newVersion}，发布流水线已触发`);
 }
 main().catch((error) => {
     console.error("发布过程中出现错误:", error);

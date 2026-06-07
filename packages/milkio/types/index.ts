@@ -101,3 +101,12 @@ export type BreadEdit<U extends Record<any, any> = {}> = U;
 export type BreadAdd<U extends Record<any, any> = {}> = U;
 
 export type BreadDelete<U extends Record<any, any> = {}> = U;
+
+export interface CorsConfig {
+    corsAllowMethods?: string[];
+    corsAllowHeaders?: string[];
+    corsExposeHeaders?: string[];
+    corsAllowOrigin?: string;
+    corsAllowCredentials?: boolean;
+    corsMaxAge?: number;
+}

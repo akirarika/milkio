@@ -1,4 +1,4 @@
-import type { MilkioHttpRequest, MilkioHttpResponse, $types, Logger, Action, MilkioRuntimeInit, MilkioInit } from "../index.ts";
+import type { MilkioHttpRequest, MilkioHttpResponse, $types, Logger, Action, MilkioRuntimeInit, MilkioInit, CorsConfig } from "../index.ts";
 
 export interface $context {
     _: MilkioRuntimeInit<MilkioInit>;
@@ -24,6 +24,7 @@ export interface ContextHttp<ParamsParsed = any> {
     };
     request: MilkioHttpRequest;
     response: MilkioHttpResponse;
+    cors: CorsConfig;
 }
 
 export type ContextCreatedHandler = (context: $context) => Promise<void> | void;

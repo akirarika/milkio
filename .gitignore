@@ -13,6 +13,7 @@ node_modules
 *.old
 dist
 
+.tmp/*
 .edgeone
 .edgeone/*
 .tef_dist/*

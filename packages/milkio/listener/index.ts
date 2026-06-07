@@ -1,8 +1,9 @@
 import { createLogger, exceptionHandler, reject } from "../index.ts";
-import type { Mixin, GeneratedInit, $types, ContextHttp, MilkioResponseReject, Results, MilkioResponseSuccess } from "../index.ts";
+import type { Mixin, GeneratedInit, $types, ContextHttp, MilkioResponseReject, Results, MilkioResponseSuccess, CorsConfig } from "../index.ts";
 import type { __initExecuter } from "../execute/index.ts";
 import { __createId } from "../utils/create-id.ts";
 import { Trie } from "../utils/trie.ts";
+import { buildCorsHeaders } from "../utils/build-cors-headers.ts";
 
 export type MilkioHttpRequest = Request;
 
@@ -25,13 +26,11 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         env?: Record<any, any>;
         routeSchema?: any;
     }): Promise<Response> => {
+        const cors: CorsConfig = { corsAllowMethods: ["POST", "OPTIONS"], corsAllowHeaders: ["Content-Type", "Authorization"], corsMaxAge: 0, ...runtime.http?.cors };
+
         if (options.request.method === "OPTIONS") {
             return new Response(undefined, {
-                headers: {
-                    "Access-Control-Allow-Methods": runtime.cors?.corsAllowMethods ?? "*",
-                    "Access-Control-Allow-Origin": runtime.cors?.corsAllowOrigin ?? "*",
-                    "Access-Control-Allow-Headers": runtime.cors?.corsAllowHeaders ?? "*",
-                },
+                headers: buildCorsHeaders(cors),
             });
         }
 
@@ -40,9 +39,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 status: 204,
                 headers: {
                     Server: "milkio",
-                    "Access-Control-Allow-Methods": runtime.cors?.corsAllowMethods ?? "*",
-                    "Access-Control-Allow-Origin": runtime.cors?.corsAllowOrigin ?? "*",
-                    "Access-Control-Allow-Headers": runtime.cors?.corsAllowHeaders ?? "*",
+                    ...buildCorsHeaders(cors),
                     "Cache-Control": "no-store",
                     "Content-Type": `text/plain; time=${Date.now()}`,
                 },
@@ -54,11 +51,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         if (runtime.accessKey && pathArray.at(0) !== runtime.accessKey) {
             return new Response(undefined, {
                 status: 403,
-                headers: {
-                    "Access-Control-Allow-Methods": runtime.cors?.corsAllowMethods ?? "*",
-                    "Access-Control-Allow-Origin": runtime.cors?.corsAllowOrigin ?? "*",
-                    "Access-Control-Allow-Headers": runtime.cors?.corsAllowHeaders ?? "*",
-                },
+                headers: buildCorsHeaders(cors),
             });
         }
         if (runtime.ignorePathLevel !== undefined && runtime.ignorePathLevel !== 0) pathArray = pathArray.slice(runtime.ignorePathLevel);
@@ -72,9 +65,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             body: "",
             status: 200,
             headers: {
-                "Access-Control-Allow-Methods": runtime.cors?.corsAllowMethods ?? "*",
-                "Access-Control-Allow-Origin": runtime.cors?.corsAllowOrigin ?? "*",
-                "Access-Control-Allow-Headers": runtime.cors?.corsAllowHeaders ?? "*",
+                ...buildCorsHeaders(cors),
                 "Cache-Control": "no-store",
                 "Content-Type": "application/json",
             },
@@ -97,6 +88,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 params,
                 request: options.request,
                 response,
+                cors,
             } as ContextHttp;
         })())!;
 
@@ -136,6 +128,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     paramsType: "string",
                 });
                 finales = executed.finales;
+                Object.assign(response.headers, buildCorsHeaders(http.cors));
 
                 if (response.body === "" && executed.results.value !== undefined) {
                     if (executed.emptyResult) {
@@ -203,6 +196,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     paramsType: "string",
                 });
                 finales = executed.finales;
+                Object.assign(response.headers, buildCorsHeaders(http.cors));
                 // @ts-ignore: bun
                 let stream: ReadableStream;
                 // @ts-ignore: bun
@@ -292,6 +286,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 value: exceptionHandler(executeId, logger, error),
             };
             if (results.value !== undefined) response.body = JSON.stringify(results.value);
+            Object.assign(response.headers, buildCorsHeaders(http.cors));
             await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context, success: false, reject });
             await logger._.submit(context as any);
             runtime.runtime.request.delete(executeId);

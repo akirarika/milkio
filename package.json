@@ -2,7 +2,6 @@
     "type": "module",
     "private": true,
     "workspaces": [
-        ".commands",
         "projects/*",
         "packages/*"
     ],
@@ -10,7 +9,7 @@
     "scripts": {
         "test": "vitest",
         "lint": "oxlint --fix",
-        "co": "bun run ./packages/cookbook/cookbook.ts prepare && bun run ./packages/cookbook/cookbook.ts"
+        "co": "bun run .prepare.ts && bun run ./packages/cookbook/cookbook.ts"
     },
     "trustedDependencies": [],
     "dependencies": {

@@ -1,4 +1,4 @@
-import { type $types, __initListener, __initExecuter, __initEventManager, type ExecuteId, type Logger, type Mixin, type GeneratedInit, type Ping, type LoggerSubmittingHandler, type LoggerInsertingHandler } from "../index.ts";
+import { type $types, __initListener, __initExecuter, __initEventManager, type ExecuteId, type Logger, type Mixin, type GeneratedInit, type Ping, type LoggerSubmittingHandler, type LoggerInsertingHandler, type CorsConfig } from "../index.ts";
 import { defineDefaultExecuteIdGenerator } from "../execute/execute-id-generator.ts";
 
 export interface MilkioInit {
@@ -6,10 +6,8 @@ export interface MilkioInit {
     develop: boolean;
     fetchEnv?: (key: string) => string | undefined;
     accessKey?: string;
-    cors?: {
-        corsAllowMethods?: string;
-        corsAllowHeaders?: string;
-        corsAllowOrigin?: string;
+    http?: {
+        cors?: CorsConfig;
     };
     ignorePathLevel?: number;
     realIp?: (headers: Headers) => string;
