@@ -96,6 +96,12 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         try {
             await runtime.emit("milkio:httpRequest", { executeId, logger, path: http.path.string as string, http, reject });
 
+            // 非 test 环境下拦截 $exports 内部路径
+            if (options.envMode !== "test" && (http.path.string as string).includes("$")) {
+                await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject });
+                throw reject("NOT_FOUND", { path: http.path.string as string });
+            }
+
             if (!options.request.headers.get("Accept")?.startsWith("text/event-stream")) {
                 // action
                 let routeSchema = options.routeSchema;

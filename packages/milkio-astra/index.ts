@@ -61,7 +61,7 @@ type DeepPartial<T> = T extends Function ? T : T extends object ? { [P in keyof 
 
 export async function createAstra<AstraOptions extends AstraOptionsInit, Generated extends AstraOptions["stargate"]["$types"]["generated"]>(astraOptions: AstraOptions) {
     if (!existsSync(join(cwd(), "cookbook.toml"))) throw new Error(`The "cookbook.toml" file does not exist in the current directory. If you are running the test with the VS Code extension, make sure it exists in the root directory of the folder you are opening with VS Code.`);
-    const cookbookOptions = load((await readFile(join(cwd(), "cookbook.toml"))).toString()) as CookbookOptions;
+    const cookbookOptions = load((await readFile(join(cwd(), "cookbook.toml"))).toString()) as unknown as CookbookOptions;
     // wait for all milkio projects with autoStart to start and can be accessed
     // only wait for projects where autoStart is true (or undefined, which defaults to true)
 
@@ -284,7 +284,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
     };
 }
 
-export async function fetchWithTimeout(url: string, options: FetchRequestInit & { timeout?: number } = {}) {
+export async function fetchWithTimeout(url: string, options: RequestInit & { timeout?: number } = {}) {
     const { timeout = 8000 } = options;
 
     const controller = new AbortController();

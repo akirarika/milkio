@@ -104,7 +104,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
 
         if (meta?.typeSafety === undefined || meta.typeSafety === true || (Array.isArray(meta.typeSafety) && meta.typeSafety.includes("params"))) {
             const validation = routeSchema.validateParams(params) as IValidation<any>;
-            if (!validation.success) throw reject("PARAMS_TYPE_INCORRECT", { ...validation.errors[0], message: `The value '${validation.errors[0].path}' is '${validation.errors[0].value}', which does not meet '${validation.errors[0].expected}' requirements.` });
+            if (!validation.success) throw reject("PARAMS_TYPE_INCORRECT", { ...(validation as any).errors[0], message: `The value '${(validation as any).errors[0].path}' is '${(validation as any).errors[0].value}', which does not meet '${(validation as any).errors[0].expected}' requirements.` });
         }
 
         await runtime.emit("milkio:executeBefore", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, reject });
@@ -130,7 +130,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             meta.typeSafety === true || (Array.isArray(meta.typeSafety) && meta.typeSafety.includes("results")))) {
             resultsTypeSafety = true;
             const validation = routeSchema.validateResults(results.value) as IValidation<any>;
-            if (!validation.success) throw reject("RESULTS_TYPE_INCORRECT", { ...validation.errors[0], message: `The value '${validation.errors[0].path}' is '${validation.errors[0].value}', which does not meet '${validation.errors[0].expected}' requirements.` });
+            if (!validation.success) throw reject("RESULTS_TYPE_INCORRECT", { ...(validation as any).errors[0], message: `The value '${(validation as any).errors[0].path}' is '${(validation as any).errors[0].value}', which does not meet '${(validation as any).errors[0].expected}' requirements.` });
         }
 
         await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results, reject });
