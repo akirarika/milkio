@@ -27,7 +27,7 @@ export function useVitePluginMilkio(options?: {
             return await milkio.listener.fetch({
               request,
               env: env,
-              envMode: env.COOKBOOK_DEVELOP === "ENABLE" ? "development" : "production",
+              envMode: env.COOKBOOK_MODE ?? (env.COOKBOOK_DEVELOP === "ENABLE" ? "development" : "production"),
             });
           })(req, res);
         } catch (e) {

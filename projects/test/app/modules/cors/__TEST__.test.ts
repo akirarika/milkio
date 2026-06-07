@@ -6,7 +6,7 @@ const BASE_URL = "http://localhost:9000";
 it.sequential("OPTIONS preflight returns CORS headers with defaults", async () => {
     const res = await fetch(`${BASE_URL}/hello-world`, { method: "OPTIONS" });
     expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
-    expect(res.headers.get("Access-Control-Allow-Methods")).toBe("GET, POST, OPTIONS");
+    expect(res.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");
     expect(res.headers.get("Access-Control-Allow-Headers")).toBe("Content-Type, Authorization");
     // Extended headers should NOT be present when not configured
     expect(res.headers.get("Access-Control-Allow-Credentials")).toBeNull();
@@ -17,7 +17,7 @@ it.sequential("OPTIONS preflight returns CORS headers with defaults", async () =
 it.sequential("OPTIONS preflight returns CORS headers even for unknown route", async () => {
     const res = await fetch(`${BASE_URL}/non-existent-path-xyz`, { method: "OPTIONS" });
     expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
-    expect(res.headers.get("Access-Control-Allow-Methods")).toBe("GET, POST, OPTIONS");
+    expect(res.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");
     expect(res.headers.get("Access-Control-Allow-Headers")).toBe("Content-Type, Authorization");
 });
 
@@ -29,7 +29,7 @@ it.sequential("normal POST response includes CORS headers", async () => {
     });
     expect(res.ok).toBe(true);
     expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
-    expect(res.headers.get("Access-Control-Allow-Methods")).toBe("GET, POST, OPTIONS");
+    expect(res.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");
     expect(res.headers.get("Access-Control-Allow-Headers")).toBe("Content-Type, Authorization");
     expect(res.headers.get("Cache-Control")).toBe("no-store");
     expect(res.headers.get("Content-Type")).toBe("application/json");
@@ -39,7 +39,7 @@ it.sequential("generate_204 includes CORS headers", async () => {
     const res = await fetch(`${BASE_URL}/generate_204`);
     expect(res.status).toBe(204);
     expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
-    expect(res.headers.get("Access-Control-Allow-Methods")).toBe("GET, POST, OPTIONS");
+    expect(res.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");
     expect(res.headers.get("Access-Control-Allow-Headers")).toBe("Content-Type, Authorization");
     expect(res.headers.get("Server")).toBe("milkio");
 });
@@ -51,7 +51,7 @@ it.sequential("non-existent route still returns CORS headers", async () => {
     });
     // Even on error/404, CORS headers are present
     expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
-    expect(res.headers.get("Access-Control-Allow-Methods")).toBe("GET, POST, OPTIONS");
+    expect(res.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");
     expect(res.headers.get("Access-Control-Allow-Headers")).toBe("Content-Type, Authorization");
 });
 
