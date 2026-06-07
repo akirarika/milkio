@@ -40,7 +40,7 @@ jobs:
             COOKBOOK_MODE: "test"
 
       - name: publish packages
-        run: bun run .commands/scripts/ci/publish-ci.ts
+        run: bun run .publ-ci.ts
 
 
   
