@@ -1,7 +1,7 @@
 {
   "name": "@milkio/redis",
   "type": "module",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "exports": "./index.ts",
   "repository": {
     "type": "git",
