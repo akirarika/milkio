@@ -106,7 +106,7 @@ export interface CorsConfig {
     corsAllowMethods?: string[];
     corsAllowHeaders?: string[];
     corsExposeHeaders?: string[];
-    corsAllowOrigin?: string;
+    corsAllowOrigin?: string[];
     corsAllowCredentials?: boolean;
     corsMaxAge?: number;
 }
