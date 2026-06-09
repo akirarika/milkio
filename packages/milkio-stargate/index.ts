@@ -52,48 +52,6 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
     const $fetch = stargateOptions.fetch ?? fetch;
     const $abort = stargateOptions.abort ?? AbortController;
 
-    // Detect if we can use Node.js http module for native HTTP transport
-    // Only use in pure Node.js environment (not Bun, not Deno, not serverless)
-    let nodeHttpRequest: any = null;
-    let nodeHttpAgent: any = null;
-    try {
-        // Bun also supports node:http, but its fetch is already optimized
-        // Only use native http when running in pure Node.js
-        if (typeof process !== 'undefined' && typeof (Bun as any) === 'undefined') {
-            const http = await import('node:http');
-            nodeHttpRequest = http.request;
-            nodeHttpAgent = new http.Agent({ keepAlive: true, maxSockets: 100 });
-        }
-    } catch {
-        // Not in Node.js environment (Deno, browser, serverless, etc.)
-    }
-
-    // Native HTTP POST using Node.js http module (bypasses undici overhead)
-    // Falls back to fetch in non-Node.js environments
-    const nativeHttpPost = nodeHttpRequest
-        ? (url: string, headers: Record<string, string>, body: string): Promise<string> => {
-            return new Promise((resolve, reject) => {
-                const parsedUrl = new URL(url);
-                const options = {
-                    hostname: parsedUrl.hostname,
-                    port: parsedUrl.port || 80,
-                    path: parsedUrl.pathname + parsedUrl.search,
-                    method: 'POST',
-                    headers: { ...headers, 'Content-Length': Buffer.byteLength(body) },
-                    agent: nodeHttpAgent,
-                };
-                const req = nodeHttpRequest(options, (res: any) => {
-                    let data = '';
-                    res.on('data', (chunk: any) => { data += chunk; });
-                    res.on('end', () => { resolve(data); });
-                });
-                req.on('error', reject);
-                req.write(body);
-                req.end();
-            });
-        }
-        : null;
-
     type StargateEvents = {
         'milkio:executeBefore': { path: string; options: Mixin<ExecuteOptions<any>, { headers: Record<string, string>; baseUrl: string }> };
         'milkio:fetchBefore': { path: string; options: Mixin<ExecuteOptions<any>, { headers: Record<string, string>; baseUrl: string }>; body: string };
@@ -227,13 +185,8 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                         const body = JSON.stringify(options.params) ?? '';
                         await eventManager.emit('milkio:fetchBefore', { path: path as string, options: options as any, body });
                         let text: string;
-                        if (nativeHttpPost) {
-                            // Use Node.js native http module for POST (bypasses undici overhead)
-                            text = await nativeHttpPost(url, options.headers, body);
-                        } else {
-                            const response = await $fetch(url, { method: 'POST', body, headers: options.headers });
-                            text = await response.text();
-                        }
+                        const response = await $fetch(url, { method: 'POST', body, headers: options.headers });
+                        text = await response.text();
                         const parsed = reviveJSONParse(JSON.parse(text));
                         if (parsed.success !== true) {
                             const err: any = {};
