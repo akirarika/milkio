@@ -4,6 +4,7 @@ import type { __initExecuter } from "../execute/index.ts";
 import { __createId } from "../utils/create-id.ts";
 import { Trie } from "../utils/trie.ts";
 import { buildCorsHeaders } from "../utils/build-cors-headers.ts";
+import { reviveJSONParse } from "../utils/revive-json-parse.ts";
 
 export type MilkioHttpRequest = Request;
 
@@ -214,7 +215,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                         params = {};
                     } else {
                         try {
-                            params = JSON.parse(body);
+                            params = reviveJSONParse(JSON.parse(body));
                             if (typeof params === "undefined") params = {};
                         } catch {
                             paramsOk = false;

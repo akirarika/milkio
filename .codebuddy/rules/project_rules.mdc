@@ -91,8 +91,8 @@ provider:
 更重要的是，正常情况下，用户也可以实时看得到命令的输出，如果你使用管道把输出写入到文件中，用户将看不到任何中间过程，这会让他们感到困惑，会沮丧从而打断任务的执行。混合错误输出和标准输出也会因为 PowerShell 的限制，让进程执行完毕后也永远不会结束。
 
 ❌ 反例：
-- `co test 2>&1` — 混合 stderr 到 stdout
-- `co test build > .tmp/build.log` — 重定向输出到文件
+- `co test 2>&1` — 混合 stderr 到 stdout，导致 powershell 卡死
+- `co test build > .tmp/build.log` — 重定向输出到文件，用户看不到实时输出
 - `co test 2>&1 | tee result.txt` — 管道写入文件，用户看不到实时输出
 
 ✅ 正例：
