@@ -193,6 +193,11 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             const corsHeaders = getCorsHeaders(origin);
             const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" };
 
+            // 自动注入 context — event 数据中约定俗成的 context 参数无法由外部传参，由服务端补全
+            if (eventData && typeof eventData === "object" && !Array.isArray(eventData) && !("context" in eventData)) {
+                eventData.context = { reject, develop: runtime.develop, executeId, path: pathString, emit: runtime.emit, emitAnyApproved: runtime.emitAnyApproved, emitAllApproved: runtime.emitAllApproved, _: runtime };
+            }
+
             try {
                 await runtime.emit(eventName, eventData);
             } catch (emitError) {
@@ -202,7 +207,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 return new Response(errBody, { status: 200, headers: jsonHeaders });
             }
 
-            const body = `{"data":${JSON.stringify(eventData ?? {})},"executeId":"${executeId}","success":true}`;
+            const body = `{"data":${JSON.stringify(eventData ?? {}, (key, value) => key === "context" ? undefined : value)},"executeId":"${executeId}","success":true}`;
             if (options.rawResponse) return { __rawResponse: true, body, status: 200, headers: jsonHeaders } as any;
             return new Response(body, { status: 200, headers: jsonHeaders });
         }

@@ -158,7 +158,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
     type Emit = <Key extends keyof Generated["events"]>(
         key: Key,
         options?: {
-            params?: Generated["events"][Key];
+            params?: Omit<Generated["events"][Key], "context">;
             headers?: Record<string, string>;
             timeout?: number;
         },

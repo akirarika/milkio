@@ -109,6 +109,21 @@ it.sequential("handler throws error returns INTERNAL_SERVER_ERROR", async () => 
 });
 
 /**
+ * context 自动注入测试：验证 world.emit 自动注入 context 到事件数据
+ */
+it.sequential("world.emit auto-injects context into event data", async () => {
+  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const eventData = { received: [] as string[] };
+  const [error, result] = await world.emit("event:context-check", { params: eventData });
+
+  if (error) throw reject("Milkio did not execute successfully", error);
+
+  // handler 检测到 context.reject 和 context.emit 存在时 push 'context-ok'
+  expect(result).toBeDefined();
+  expect(result!.received).toContain('context-ok');
+});
+
+/**
  * 非法 base64 路径测试
  */
 it.sequential("invalid base64 returns error", async () => {
