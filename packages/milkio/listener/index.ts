@@ -156,6 +156,57 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         const bodyText = (options.request as any).__bodyText;
         const ip = runtime.realIp ? runtime.realIp(options.request.headers) : "::1";
 
+        // 测试环境下的 $event 端点：通过 base64 编码的事件名触发事件
+        if (options.envMode === "test" && pathString.startsWith("/$event/")) {
+            const base64Name = decodeURIComponent(pathString.slice(8));
+            let eventName: string;
+            try {
+                // 兼容不同运行时：优先使用 atob，回退到 Buffer
+                if (typeof atob !== "undefined") {
+                    eventName = atob(base64Name);
+                } else if (typeof Buffer !== "undefined") {
+                    eventName = Buffer.from(base64Name, "base64").toString();
+                } else {
+                    throw new Error("No base64 decoder available");
+                }
+            } catch {
+                const corsHeaders = getCorsHeaders(origin);
+                const body = JSON.stringify({ success: false, code: "PARAMS_TYPE_NOT_SUPPORTED", reject: { expected: "valid base64 event name" } });
+                if (options.rawResponse) return { __rawResponse: true, body, status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } } as any;
+                return new Response(body, { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
+
+            let eventData: any = undefined;
+            const rawBody = bodyText !== undefined ? bodyText : await options.request.text();
+            if (rawBody && rawBody !== "" && rawBody !== "{}") {
+                try {
+                    eventData = reviveJSONParse(JSON.parse(rawBody));
+                } catch {
+                    const corsHeaders = getCorsHeaders(origin);
+                    const body = JSON.stringify({ success: false, code: "PARAMS_TYPE_NOT_SUPPORTED", reject: { expected: "json" } });
+                    if (options.rawResponse) return { __rawResponse: true, body, status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } } as any;
+                    return new Response(body, { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                }
+            }
+
+            const executeId = __createId();
+            const corsHeaders = getCorsHeaders(origin);
+            const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" };
+
+            try {
+                await runtime.emit(eventName, eventData);
+            } catch (emitError) {
+                const errResult = exceptionHandler(executeId, noopLogger, emitError);
+                const errBody = JSON.stringify(errResult);
+                if (options.rawResponse) return { __rawResponse: true, body: errBody, status: 200, headers: jsonHeaders } as any;
+                return new Response(errBody, { status: 200, headers: jsonHeaders });
+            }
+
+            const body = `{"data":${JSON.stringify(eventData ?? {})},"executeId":"${executeId}","success":true}`;
+            if (options.rawResponse) return { __rawResponse: true, body, status: 200, headers: jsonHeaders } as any;
+            return new Response(body, { status: 200, headers: jsonHeaders });
+        }
+
         // ===== FAST PATH for common action requests =====
         // Skip logger, request map, and most object creation when:
         // - rawResponse mode (adapter)

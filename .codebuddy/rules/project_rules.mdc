@@ -100,15 +100,15 @@ provider:
 
 ---
 
-## 项目概述
+## 工程概述
 
-这是一个 milkio 框架的开发仓库，这是一个 monorepo 项目，使用 `bun` 作为包管理器。
+这是一个 milkio 框架的开发仓库，这是一个 monorepo 工程，使用 `bun` 作为包管理器。
 
 你必须先阅读 `.codebuddy/skills/milkio/SKILL.md` 来了解 milkio 相关知识，这对你的所有的工作，都是十分必要的。
 
 ---
 
-## 项目架构
+## 工程架构
 
 ### 顶层结构
 
@@ -117,15 +117,15 @@ milkio/                         # monorepo 根目录
 ├── packages/                   # 13 个可发布的 npm 包（库）
 ├── projects/                   # 4 个不可发布的应用（测试/验证）
 ├── .codebuddy/                 # IDE 集成
-├── .templates/                 # 项目模板
+├── .templates/                 # 工程模板
 ├── package.json                # workspaces: packages/* + projects/*
 ├── bunfig.toml                 # Bun 包管理器配置（hoisted 链接）
 ├── vitest.workspace.json       # 全局 vitest 工作区
-├── cookbook.toml               # Cookbook 编排器配置（定义项目+端口+运行时）
+├── cookbook.toml               # Cookbook 编排器配置（定义工程+端口+运行时）
 └── docker-compose.yaml
 ```
 
-### `packages/` — 核心库
+### `packages/`
 
 | 包 | 分类 | 职责 |
 |---|---|---|
@@ -135,23 +135,60 @@ milkio/                         # monorepo 根目录
 | `@milkio/astra` | 客户端 SDK | 自动发现 cookbook base URL，通过 stargate 创建带类型的 API 客户端 |
 | `@milkio/cookbook` | 构建编排 | CLI 编排器，管理 dev/build/deploy 全生命周期（含 watcher、worker、emitter） |
 | `@milkio/cookbook-command` | 构建编排 | 定义 cookbook 命令的工具包（consola + AI + 交互式 prompt） |
-| `create-cookbook` | 脚手架 | 项目脚手架 CLI，基于模板创建新工程 |
-| `@milkio/template-cookbook` | 模板 | cookbook 项目模板文件 |
-| `@milkio/template-milkio` | 模板 | milkio 项目模板文件 |
+| `create-cookbook` | 脚手架 | 工程脚手架 CLI，基于模板创建新工程 |
+| `@milkio/template-cookbook` | 模板 | cookbook 工程模板文件 |
+| `@milkio/template-milkio` | 模板 | milkio 工程模板文件 |
 | `@milkio/vite-plugin-milkio` | 集成 | Vite 开发服务器插件，拦截 HTTP 路由到 milkio app |
 | `milkio-electron` | 集成 | Electron 应用适配器 |
 | `@milkio/redis` | 集成 | Redis 适配器 |
 
-### `projects/` — 测试应用
+### `projects/`
 
-| 项目 | 运行时 | 用途 |
+| 工程 | 运行时 | 用途 |
 |---|---|---|
 | `cookbook-server` | Bun (Vite) | cookbook 编排器的管理服务器 |
 | `test` | Node (Vite) | Node.js 兼容性测试（含 Koa/NestJS/Elysia 跨框架测试） |
 | `test-bun` | Bun 原生 | Bun 运行时兼容性测试 |
 | `test-deno` | Deno | Deno 运行时兼容性测试 |
 
-当你完成一个更改时，你必须运行 `bun run co test` 来执行测试，确保更改没有破坏任何测试。注意，`package.json` 中，`co` 会在运行测试之前执行 `/.prepare.ts` 文件，它会把所有的测试从 `projects/test` 同步复制到 `projects/test-bun` 和 `projects/test-deno` 中。因此，你在添加测试时，只需要以 `projects/test` 为主即可。
+可以注意到，`projects` 下面的大部分工程都是测试用例。测试是以集成测试的思维编写的，没有大量的 mock，而是直接以串行的方式发送真实的请求，来检查是否符合预期。当你完成一个更改时，必须运行测试，确保更改没有破坏任何测试。
+
+#### 运行单个测试文件
+
+```bash
+bun run co test <文件路径>
+```
+
+例如：
+
+```bash
+bun run co test ./projects/test/app/modules/hello-world/headers.test.ts
+```
+
+**为什么必须用 `bun run co test` 而不是直接跑 `vitest`？**
+
+`co test` 在运行测试之前会：
+1. 启动开发服务器（vite dev server + milkio app）
+2. 运行 `/.prepare.ts`，将测试从 `projects/test` 同步复制到 `projects/test-bun` 和 `projects/test-deno`
+
+直接使用 `vitest` 不会启动开发服务器，测试将因缺少运行环境而失败。因此，你添加测试时，只维护 `projects/test` 内的文件即可，其余运行时目录由 prepare 脚本自动同步。
+
+#### 运行全部测试
+
+```bash
+bun run co test
+```
+
+不带任何路径参数时，`co test` 会运行工作区内所有测试。
+
+### `bun run co` vs 直接 `co`
+
+| 命令 | 行为 |
+|---|---|
+| `bun run co test <文件>` | 调用**工程当前源码**中的 cookbook，反映你本地未提交的修改 |
+| `co test <文件>` | 调用**系统全局安装**的 cookbook，可能与工程当前状态不一致 |
+
+始终使用 `bun run co` 以确保测试使用的是你正在开发的代码。
 
 ### 架构核心关系
 

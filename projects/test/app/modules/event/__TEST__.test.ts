@@ -52,3 +52,76 @@ it.sequential("emitAnyApproved success", async () => {
   expect(results.received).toContain('handler-a');
   expect(results.received).toContain('handler-b');
 });
+
+/**
+ * $event 端点测试：通过直接 fetch 触发事件
+ * 验证测试环境下的 $event 端点能正确触发事件
+ */
+it.sequential("direct fetch to $event endpoint", async () => {
+  const eventName = "event:notify";
+  const base64Name = btoa(eventName);
+  const url = `http://localhost:9000/$event/${encodeURIComponent(base64Name)}`;
+  const eventData = { message: 'hello', received: [] as string[] };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(eventData),
+  });
+  const text = await response.text();
+
+  expect(response.status).toBe(200);
+  const data = JSON.parse(text);
+  expect(data.success).toBe(true);
+  expect(data.data.received).toContain('handler-a');
+  expect(data.data.received).toContain('handler-b');
+});
+
+/**
+ * 通过 world.emit 触发事件
+ * 验证返回的 data 包含 handler 的修改
+ */
+it.sequential("world.emit triggers event and returns modified data", async () => {
+  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const eventData = { message: 'hello', received: [] as string[] };
+  const [error, result, meta] = await world.emit("event:notify", { params: eventData });
+
+  if (error) throw reject("Milkio did not execute successfully", error);
+
+  expect(meta.executeId).toBeDefined();
+  expect(result).toBeDefined();
+  expect(result!.received).toContain('handler-a');
+  expect(result!.received).toContain('handler-b');
+  expect(result!.received.length).toBe(2);
+});
+
+/**
+ * handler 抛异常测试：验证 world.emit 返回 INTERNAL_SERVER_ERROR
+ */
+it.sequential("handler throws error returns INTERNAL_SERVER_ERROR", async () => {
+  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [error, result, meta] = await world.emit("event:fail", { params: { message: 'boom' } });
+
+  expect(error).toBeDefined();
+  expect(error).toHaveProperty("INTERNAL_SERVER_ERROR");
+  expect(result).toBeNull();
+  expect(meta.executeId).toBeDefined();
+});
+
+/**
+ * 非法 base64 路径测试
+ */
+it.sequential("invalid base64 returns error", async () => {
+  const url = `http://localhost:9000/$event/!!!not-valid-base64!!!`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  const text = await response.text();
+  const data = JSON.parse(text);
+
+  expect(response.status).toBe(200);
+  expect(data.success).toBe(false);
+  expect(data.code).toBe("PARAMS_TYPE_NOT_SUPPORTED");
+});

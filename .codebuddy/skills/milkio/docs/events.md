@@ -382,6 +382,51 @@ world.on('space:delete', async ({ data, db, context }) => {
 
 ---
 
+## 测试事件
+
+通过 astra，你可以直接使用 `world.emit()` 来触发事件。这赋予了你在运行测试时，直接测试事件的能力。
+
+### 基本用法
+
+```ts
+const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+const [error, result, meta] = await world.emit("event:notify", {
+  params: { message: 'hello', received: [] },
+});
+
+if (error) throw reject("事件触发失败", error);
+// result 是 handler 修改后的事件数据
+expect(result.received).toContain('handler-a');
+expect(meta.executeId).toBeDefined();
+```
+
+### 验证 handler 副作用
+
+事件数据通过引用传递，handler 的修改反映在 `result` 中：
+
+```ts
+const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+const [error, result] = await world.emit("event:notify", {
+  params: { message: 'hello', received: [] },
+});
+if (error) throw reject("事件触发失败", error);
+// handler 内部 push 了 'handler-a'，返回的 result.received 包含该项
+expect(result.received).toEqual(['handler-a']);
+```
+
+### 测试 handler 异常
+
+```ts
+const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+const [error, result] = await world.emit("event:fail", {
+  params: { message: 'boom' },
+});
+expect(error).toHaveProperty("INTERNAL_SERVER_ERROR");
+expect(result).toBeNull();
+```
+
+---
+
 ## 最佳实践
 
 1. **审批事件必须检查 `fromModule`**：handler 应先判断 `fromModule` 是否是自己关心的模块，避免误处理其他模块的事件。

@@ -48,7 +48,7 @@ export type Ping =
             serverTimestamp: number;
         },
     ];
-export async function createStargate<Generated extends { routeSchema: any; rejectCode: any }>(stargateOptions: MilkioStargateOptions) {
+export async function createStargate<Generated extends { routeSchema: any; rejectCode: any; events: any }>(stargateOptions: MilkioStargateOptions) {
     const $fetch = stargateOptions.fetch ?? fetch;
     const $abort = stargateOptions.abort ?? AbortController;
 
@@ -538,6 +538,41 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                 }
             },
         },
+        __astraEmitEvent: async (key: any, options?: { params?: any; headers?: Record<string, string> }) => {
+            const opts = options ?? {};
+            if (opts.headers === undefined) opts.headers = {};
+            if (opts.headers['Content-Type'] === undefined) opts.headers['Content-Type'] = 'application/json';
+
+            let url: string;
+            if (!resolvedBaseUrl) resolvedBaseUrl = await baseUrlPromise;
+            // 兼容不同运行时：优先使用 btoa，回退到 Buffer
+            let base64Name: string;
+            if (typeof btoa !== 'undefined') {
+                base64Name = btoa(key as string);
+            } else if (typeof Buffer !== 'undefined') {
+                base64Name = Buffer.from(key as string).toString('base64');
+            } else {
+                throw new Error('No base64 encoder available');
+            }
+            url = `${resolvedBaseUrl}/$event/${encodeURIComponent(base64Name)}`;
+
+            try {
+                const body = JSON.stringify(opts.params) ?? '';
+                const response = await $fetch(url, { method: 'POST', body, headers: opts.headers });
+                const text = await response.text();
+                const parsed = reviveJSONParse(JSON.parse(text));
+                if (parsed.success !== true) {
+                    const err: any = {};
+                    err[parsed.code] = parsed.reject ?? null;
+                    return [err, null, { executeId: parsed.executeId }];
+                }
+                return [null, parsed.data, { executeId: parsed.executeId }];
+            } catch (error: any) {
+                const errorPined = { REQUEST_FAIL: error };
+                return [errorPined, null, { executeId: 'unknown' }];
+            }
+        },
+
         async ping(options?: { timeout?: number }): Promise<Ping> {
             // oxlint-disable-next-line no-async-promise-executor
             return await new Promise<Ping>(async (resolve) => {

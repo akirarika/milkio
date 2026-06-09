@@ -34,7 +34,7 @@ async function findCookbookBaseUrl(): Promise<string> {
 }
 
 export type AstraOptionsInit = {
-    stargate: { $types: any; execute: any; ping: any; __cookbook: any };
+    stargate: { $types: any; execute: any; ping: any; __cookbook: any; __astraEmitEvent: any };
     bootstrap: () => Promise<Record<string, any>>;
 };
 
@@ -45,7 +45,7 @@ type Mixin<T, U> = U & Omit<T, keyof U>;
 type ExecuteOptions = {
     headers?: Record<string, string>;
     timeout?: number;
-    type?: "action" | "stream";
+    type?: "action" | "stream" | "event";
 };
 
 type ExecuteResultsOption = { executeId: string };
@@ -155,11 +155,21 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
         [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], ExecuteResultsOption>]
     >;
 
+    type Emit = <Key extends keyof Generated["events"]>(
+        key: Key,
+        options?: {
+            params?: Generated["events"][Key];
+            headers?: Record<string, string>;
+            timeout?: number;
+        },
+    ) => Promise<[Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, Generated["events"][Key], ExecuteResultsOption]>;
+
     type MirrorWorld = Mixin<
         Awaited<ReturnType<AstraOptions["bootstrap"]>>,
         {
             paths: { cwd: string; milkio: string; generated: string };
             execute: Execute;
+            emit: Emit;
         }
     >;
 
@@ -222,6 +232,25 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
                 return response;
             };
 
+            const emit = async (key: Parameters<MirrorWorld["emit"]>[0], optionsInit?: Parameters<MirrorWorld["emit"]>[1]) => {
+                const options = (optionsInit as any) ?? {};
+
+                const results = await this.options.stargate.__cookbook.subscribe(`http://localhost:${cookbookOptions.general.cookbookPort}`);
+                void (async () => {
+                    for await (const result of results) {
+                        if (result.type !== "milkio@logger") continue;
+                        console.log("\n・[milkio]", ...(result.log ?? []));
+                    }
+                })();
+
+                const response = await this.options.stargate.__astraEmitEvent(key, options);
+
+                await new Promise((resolve) => setTimeout(resolve, 40));
+                context.logger.response(`$event:${key as string}`, `\n・> (error) - ${response[0] === null ? "null" : JSON.stringify(response[0])}`, `\n・> (response) - success`);
+
+                return response;
+            };
+
             const getNow = formatTimestamp;
             const onLoggerInserting = (log: Log) => {
                 // Build output string directly without array + join
@@ -269,6 +298,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
                 ...(await astraOptions.bootstrap()),
                 paths,
                 execute,
+                emit,
             } as any;
 
             const reject = (...params: Array<unknown>): Error => {
