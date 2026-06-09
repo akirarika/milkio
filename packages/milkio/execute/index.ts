@@ -152,8 +152,8 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
     };
 
     const __call = async (context: $context, module: { meta: any, handler: any }, params?: any): Promise<any> => {
-        const moduleAwaited = await module;
-        return await moduleAwaited.handler(context, params);
+        const { handler } = await module;
+        return handler(context, params);
     };
 
     return {

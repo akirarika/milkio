@@ -32,17 +32,16 @@ export const reject = function reject(codeOrObj: any, data?: any): MilkioRejectE
         rejectData = codeOrObj[code];
     }
     const error = { $milkioReject: true, code, data: rejectData } as MilkioRejectError<any, any>;
-    Error.captureStackTrace(error);
+    if (typeof Error.captureStackTrace === "function") Error.captureStackTrace(error);
     return error;
 } as Reject;
 
 export type MilkioRejectError<Code extends keyof $rejectCode = keyof $rejectCode, RejectData extends $rejectCode[Code] = $rejectCode[Code]> = { code: Code; data: RejectData; stack: string; $milkioReject: true };
 
 export function exceptionHandler(executeId: string, logger: Logger, error: MilkioRejectError<any, any> | any): MilkioResponseReject {
-    try {
-        if ("viteServer" in globalThis) (globalThis as any).viteServer?.ssrFixStacktrace(error); // fix vite ssr stacktrace
-    } catch (error) { }
-    if (error instanceof Error && "viteServer" in globalThis) (globalThis as any).viteServer.ssrFixStacktrace(error);
+    if (error instanceof Error && "viteServer" in globalThis) {
+        try { (globalThis as any).viteServer.ssrFixStacktrace(error); } catch {}
+    }
     const name = error?.code ?? error?.name ?? error?.constructor?.name ?? "Unnamed Exception";
 
     if (error?.$milkioReject === true && error?.code === "NOT_FOUND") {

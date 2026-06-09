@@ -9,6 +9,8 @@ export interface $events {
     "milkio:executeAfter": { executeId: string; path: string; logger: Logger; meta: $meta; context: $context; results: Results<any> };
 }
 
+const RESOLVED_PROMISE = Promise.resolve();
+
 export function __initEventManager() {
     const handlers = new Map<(event: any) => void, string>();
     const indexed = new Map<string, Set<(event: any) => Promise<void | boolean> | void | boolean>>();
@@ -64,7 +66,7 @@ export function __initEventManager() {
         emit: <Key extends keyof $events, Value extends $events[Key]>(key: Key, value: Value): Promise<void> => {
             const h = indexed.get(key as string);
             const wildcardHandlers = indexed.get('*');
-            if (!wildcardHandlers && !h) return Promise.resolve();
+            if (!wildcardHandlers && !h) return RESOLVED_PROMISE;
 
             if (wildcardHandlers && h) {
                 return (async () => {
