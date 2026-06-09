@@ -5,6 +5,7 @@ test.sequential("basic", async () => {
     const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
     const [error, results] = await world.execute("/stream/flow-success~", {
         type: "stream",
+        generateParams: false,
     });
     if (error) throw reject("Milkio did not execute successfully", error);
 

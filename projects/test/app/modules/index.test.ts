@@ -8,6 +8,7 @@ it.sequential("basic", async () => {
             a: "2",
             b: 2,
         },
+        generateParams: false,
     });
     if (error) throw reject("Milkio did not execute successfully", error);
 

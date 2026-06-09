@@ -10,6 +10,7 @@ test.sequential("basic", async () => {
             b: 8,
             sleep: 0,
         },
+        generateParams: false,
     });
     if (error) throw reject("Milkio did not execute successfully", error);
 
@@ -32,6 +33,7 @@ test.sequential("sleep", async () => {
             b: 8,
             sleep: 100,
         },
+        generateParams: false,
     });
     context.logger.info("stream-hello-world sleep 100ms", error);
     if (error) throw reject("Milkio did not execute successfully", error);

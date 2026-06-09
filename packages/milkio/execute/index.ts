@@ -3,7 +3,6 @@ import { reject } from "../index.ts";
 import type { $context, $meta, Logger, Results, GeneratedInit } from "../index.ts";
 import { headersToJSON } from "../utils/headers-to-json.ts";
 import { mergeDeep } from "../utils/merge-deep.ts";
-import { reviveJSONParse } from "../utils/revive-json-parse.ts";
 
 export function __initExecuter(generated: GeneratedInit, runtime: any) {
     const __execute = async (
@@ -14,6 +13,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             path: string;
             headers: Record<string, string> | Headers;
             context: any | undefined;
+            paramsContentType?: string;
         } & (
                 | {
                     params: Record<any, any>;
@@ -29,14 +29,21 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         const executeId: string = options.createdExecuteId;
         let headers: Headers;
         if (!(options.headers instanceof Headers)) {
-            // @ts-ignore
-            headers = new Headers({
-                ...options.headers,
-            });
+            // Support lightweight headers proxy with get() method
+            if (typeof (options.headers as any)?.get === "function" && !(options.headers instanceof Headers)) {
+                headers = options.headers as unknown as Headers;
+                // Skip toJSON for lightweight proxy - not needed in HTTP request path
+            } else {
+                // @ts-ignore
+                headers = new Headers({
+                    ...options.headers,
+                });
+                if (!("toJSON" in headers)) (headers as any).toJSON = () => headersToJSON(headers);
+            }
         } else {
             headers = options.headers;
+            if (!("toJSON" in headers)) (headers as any).toJSON = () => headersToJSON(headers);
         }
-        if (!("toJSON" in headers)) (headers as any).toJSON = () => headersToJSON(headers);
 
         const finales: Array<any> = [];
         const onFinally = (handler: any) => finales.unshift(handler);
@@ -48,9 +55,9 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         } else {
             if (!options.params || options.params === "" || options.params === "{}") {
                 params = {};
-            } else if (headers.get("content-type")?.startsWith("application/json")) {
+            } else if (options.paramsContentType === "json" || headers.get("content-type")?.startsWith("application/json")) {
                 try {
-                    params = reviveJSONParse(JSON.parse(options.params));
+                    params = JSON.parse(options.params);
                 } catch (error) {
                     throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
                 }
@@ -79,18 +86,19 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         if (!options.context?.http?.notFound && options.context?.http?.params?.string) options.context.http.params.parsed = params;
 
         if (!options.context) options.context = {};
-        options.context.develop = runtime.develop;
-        options.context.path = options.path;
-        options.context.logger = options.createdLogger;
-        options.context.emit = runtime.emit;
-        options.context.emitAnyApproved = runtime.emitAnyApproved;
-        options.context.emitAllApproved = runtime.emitAllApproved;
-        options.context.executeId = options.createdExecuteId;
-        options.context.config = runtime.runtime.config;
-        options.context.typia = generated.typiaSchema;
-        options.context.call = (module: any, params: any) => __call(options.context, module, params);
-        options.context.onFinally = onFinally;
-        options.context._ = runtime;
+        const ctx = options.context;
+        ctx.develop = runtime.develop;
+        ctx.path = options.path;
+        ctx.logger = options.createdLogger;
+        ctx.emit = runtime.emit;
+        ctx.emitAnyApproved = runtime.emitAnyApproved;
+        ctx.emitAllApproved = runtime.emitAllApproved;
+        ctx.executeId = options.createdExecuteId;
+        ctx.config = runtime.runtime.config;
+        ctx.typia = generated.typiaSchema;
+        ctx.call = (module: any, params: any) => __call(ctx, module, params);
+        ctx.onFinally = onFinally;
+        ctx._ = runtime;
 
         const results: Results<any> = { value: undefined };
 
@@ -107,7 +115,9 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             if (!validation.success) throw reject("PARAMS_TYPE_INCORRECT", { ...(validation as any).errors[0], message: `The value '${(validation as any).errors[0].path}' is '${(validation as any).errors[0].value}', which does not meet '${(validation as any).errors[0].expected}' requirements.` });
         }
 
-        await runtime.emit("milkio:executeBefore", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, reject });
+        if (runtime._hasEmitHandlers?.("milkio:executeBefore") ?? true) {
+            await runtime.emit("milkio:executeBefore", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, reject });
+        }
 
         results.value = await module.handler(options.context, params);
 
@@ -133,7 +143,9 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             if (!validation.success) throw reject("RESULTS_TYPE_INCORRECT", { ...(validation as any).errors[0], message: `The value '${(validation as any).errors[0].path}' is '${(validation as any).errors[0].value}', which does not meet '${(validation as any).errors[0].expected}' requirements.` });
         }
 
-        await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results, reject });
+        if (runtime._hasEmitHandlers?.("milkio:executeAfter") ?? true) {
+            await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results, reject });
+        }
 
         return { executeId, headers, params, results, context: options.context, meta, type, emptyResult, resultsTypeSafety, finales };
     };

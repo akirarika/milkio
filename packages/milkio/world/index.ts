@@ -31,6 +31,8 @@ export type MilkioRuntimeInit<T extends MilkioInit> = Mixin<
         emit: Awaited<ReturnType<typeof __initEventManager>>["emit"];
         emitAnyApproved: Awaited<ReturnType<typeof __initEventManager>>["emitAnyApproved"];
         emitAllApproved: Awaited<ReturnType<typeof __initEventManager>>["emitAllApproved"];
+        _hasEmitHandlers: Awaited<ReturnType<typeof __initEventManager>>["_hasEmitHandlers"];
+        _emitHandlersVersion: number;
     }
 >;
 
@@ -56,6 +58,8 @@ export async function createWorld<MilkioOptions extends MilkioInit>(generated: G
         emit: eventManager.emit,
         emitAnyApproved: eventManager.emitAnyApproved,
         emitAllApproved: eventManager.emitAllApproved,
+        _hasEmitHandlers: eventManager._hasEmitHandlers,
+        _emitHandlersVersion: eventManager._version,
     };
 
     const executer = __initExecuter(generated, _);

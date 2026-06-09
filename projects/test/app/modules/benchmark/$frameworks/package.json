@@ -1,0 +1,16 @@
+{
+	"name": "benchmark-frameworks",
+	"private": true,
+	"type": "module",
+	"dependencies": {
+		"@koa/bodyparser": "^5.0.0",
+		"@koa/router": "^13.0.0",
+		"@nestjs/common": "^11.0.0",
+		"@nestjs/core": "^11.0.0",
+		"@nestjs/platform-express": "^11.0.0",
+		"elysia": "^1.0.0",
+		"koa": "^3.0.0",
+		"reflect-metadata": "^0.2.0",
+		"rxjs": "^7.0.0"
+	}
+}

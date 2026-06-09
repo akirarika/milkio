@@ -12,9 +12,11 @@ export interface $events {
 export function __initEventManager() {
     const handlers = new Map<(event: any) => void, string>();
     const indexed = new Map<string, Set<(event: any) => Promise<void | boolean> | void | boolean>>();
+    let _version = 0;
 
     const eventManager = {
         on: <Key extends keyof $events, Handler extends (event: $events[Key]) => Promise<void | boolean> | void | boolean>(key: Key, handler: Handler) => {
+            _version++;
             handlers.set(handler, key as string);
             if (key === '*') {
                 if (indexed.has('*') === false) {
@@ -46,6 +48,7 @@ export function __initEventManager() {
             };
         },
         off: <Key extends keyof $events, Handler extends (event: $events[Key]) => void>(key: Key, handler: Handler) => {
+            _version++;
             if (key === '*') {
                 const wildcardSet = indexed.get('*');
                 if (!wildcardSet) return;
@@ -58,21 +61,40 @@ export function __initEventManager() {
                 set.delete(handler);
             }
         },
-        emit: async <Key extends keyof $events, Value extends $events[Key]>(key: Key, value: Value): Promise<void> => {
+        emit: <Key extends keyof $events, Value extends $events[Key]>(key: Key, value: Value): Promise<void> => {
+            const h = indexed.get(key as string);
             const wildcardHandlers = indexed.get('*');
-            if (wildcardHandlers) {
-                for (const handler of wildcardHandlers) {
-                    await handler({ key, value });
-                }
+            if (!wildcardHandlers && !h) return Promise.resolve();
+
+            if (wildcardHandlers && h) {
+                return (async () => {
+                    for (const handler of wildcardHandlers) {
+                        await handler({ key, value });
+                    }
+                    for (const handler of h) {
+                        await handler(value);
+                    }
+                })();
             }
 
-            const h = indexed.get(key as string);
-            if (h) {
-                for (const handler of h) {
+            if (wildcardHandlers) {
+                return (async () => {
+                    for (const handler of wildcardHandlers) {
+                        await handler({ key, value });
+                    }
+                })();
+            }
+
+            return (async () => {
+                for (const handler of h!) {
                     await handler(value);
                 }
-            }
+            })();
         },
+        _hasEmitHandlers: (key: string): boolean => {
+            return indexed.has(key) || indexed.has('*');
+        },
+        get _version() { return _version; },
         emitAnyApproved: async <Key extends keyof $events, Value extends $events[Key]>(key: Key, value: Value): Promise<boolean> => {
             const wildcardHandlers = indexed.get('*');
             let accepted = false;

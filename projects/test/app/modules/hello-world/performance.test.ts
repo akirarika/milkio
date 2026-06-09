@@ -5,7 +5,7 @@ it.sequential("performance - QPS and latency", async () => {
     const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
 
     const totalRequests = 1000;
-    const concurrency = 50;
+    const concurrency = 500;
 
     // Warm up
     await world.execute("/hello-world", {

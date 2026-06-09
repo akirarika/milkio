@@ -59,13 +59,13 @@ it.sequential("mirror world: context.http.cors exists (IPC proxy returns undefin
     const [_context, reject, world] = await astra.createMirrorWorld(import.meta.url);
     const [error, results] = await world.execute("/cors/ping", {
         params: {},
+        generateParams: false,
     });
     if (error) throw reject("Milkio did not execute successfully", error);
 
-    // In IPC (handleMessage) flow, context.http is a Proxy returning undefined,
-    // so cors fields won't be detected.
-    // This test verifies the action runs successfully regardless.
+    // MirrorWorld mode now correctly exposes CORS config.
+    // No explicit origin configured, but default methods/headers are present.
     expect(results.cors.hasAllowOrigin).toBe(false);
-    expect(results.cors.hasAllowMethods).toBe(false);
-    expect(results.cors.hasAllowHeaders).toBe(false);
+    expect(results.cors.hasAllowMethods).toBe(true);
+    expect(results.cors.hasAllowHeaders).toBe(true);
 });

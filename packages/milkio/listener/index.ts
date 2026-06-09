@@ -1,5 +1,5 @@
 import { createLogger, exceptionHandler, reject } from "../index.ts";
-import type { Mixin, GeneratedInit, $types, ContextHttp, MilkioResponseReject, Results, MilkioResponseSuccess, CorsConfig } from "../index.ts";
+import type { Mixin, GeneratedInit, $types, ContextHttp, MilkioResponseReject, Results, MilkioResponseSuccess, CorsConfig, Logger, Log } from "../index.ts";
 import type { __initExecuter } from "../execute/index.ts";
 import { __createId } from "../utils/create-id.ts";
 import { Trie } from "../utils/trie.ts";
@@ -10,8 +10,7 @@ export type MilkioHttpRequest = Request;
 export type MilkioHttpResponse = Mixin<
     ResponseInit,
     {
-        // body: string | Blob | FormData | URLSearchParams | ReadableStream<Uint8Array>;
-        body: any;
+        body: string | ReadableStream<Uint8Array> | Uint8Array | ArrayBuffer | Blob | null;
         status: number;
         headers: Record<string, string>;
     }
@@ -20,82 +19,291 @@ export type MilkioHttpResponse = Mixin<
 export function __initListener(generated: GeneratedInit, runtime: any, executer: ReturnType<typeof __initExecuter>) {
     const port = runtime.port;
     const trie = new Trie<any>();
+    // Pre-compute default CORS config and cache headers per origin
+    const cors: CorsConfig = { corsAllowMethods: ["POST", "OPTIONS"], corsAllowHeaders: ["Content-Type", "Authorization"], corsMaxAge: 0, ...runtime.http?.cors };
+    const corsHeadersCache = new Map<string, Record<string, string>>();
+    const getCorsHeaders = (origin: string | null): Record<string, string> => {
+        const key = origin ?? "";
+        let cached = corsHeadersCache.get(key);
+        if (cached !== undefined) return cached;
+        cached = buildCorsHeaders(cors, origin);
+        corsHeadersCache.set(key, cached);
+        return cached;
+    };
+    // Pre-compute default response headers (without origin-specific CORS)
+    const defaultResponseHeaders: Record<string, string> = {
+        "Cache-Control": "no-store",
+        "Content-Type": "application/json",
+    };
+    // Pre-compute merged headers for null origin (most common case)
+    const defaultMergedHeaders: Record<string, string> = { ...getCorsHeaders(null), ...defaultResponseHeaders };
+
+    // Pre-allocate response template parts for Fast Path
+    const emptyResultPrefix = '{"data":{},"executeId":"';
+    const resultPrefix = '{"data":';
+    const idSuffix = '","success":true}';
+    // Shared response object for Fast Path (handler returns result directly, never modifies response)
+    const fastPathResponse = { body: "", status: 200, headers: defaultMergedHeaders };
+
+    // Dynamic check for event handlers with version-based caching
+    let cachedNoEmitHandlers = true;
+    let lastEmitHandlersVersion = -1;
+    const checkNoEmitHandlers = (): boolean => {
+        const v = runtime._emitHandlersVersion;
+        if (v !== lastEmitHandlersVersion) {
+            lastEmitHandlersVersion = v;
+            cachedNoEmitHandlers =
+                !runtime._hasEmitHandlers?.("milkio:executeBefore") &&
+                !runtime._hasEmitHandlers?.("milkio:executeAfter") &&
+                !runtime._hasEmitHandlers?.("milkio:httpRequest") &&
+                !runtime._hasEmitHandlers?.("milkio:httpResponse") &&
+                !runtime._hasEmitHandlers?.("milkio:httpNotFound");
+        }
+        return cachedNoEmitHandlers;
+    };
+    const hasOnLoggerSubmitting = !!runtime.onLoggerSubmitting;
+
+    // Shared no-op logger for fast path (used when no event handlers)
+    const noopLogger: Logger = {
+        _: { logs: [] as any, tags: new Map<string, unknown>(), submit: () => { } },
+        setTag: () => { },
+        setLog: (..._log: Log) => ({} as Log),
+        debug: (_description: string, ..._params: Array<unknown>) => ({} as Log),
+        info: (_description: string, ..._params: Array<unknown>) => ({} as Log),
+        warn: (_description: string, ..._params: Array<unknown>) => ({} as Log),
+        error: (_description: string, ..._params: Array<unknown>) => ({} as Log),
+        request: (_description: string, ..._params: Array<unknown>) => ({} as Log),
+        response: (_description: string, ..._params: Array<unknown>) => ({} as Log),
+    };
+
+    // Pre-create base context prototype for Fast Path (shared immutable properties)
+    // `call` is defined on prototype to avoid creating a closure per request
+    const baseContextProto: any = {
+        reject,
+        develop: runtime.develop,
+        logger: noopLogger,
+        emit: runtime.emit,
+        emitAnyApproved: runtime.emitAnyApproved,
+        emitAllApproved: runtime.emitAllApproved,
+        config: runtime.runtime.config,
+        typia: generated.typiaSchema,
+        onFinally: () => { },
+        _: runtime,
+        call(module: any, p: any) { return executer.__call(this, module, p); },
+    };
+
+    // Hot path cache: pre-resolve the most common route
+    let cachedRouteSchema: any = null;
+    let cachedPathString: string | null = null;
+    // Cache validateParams and handler references to avoid property lookups
+    let cachedValidateParams: any = null;
+    let cachedHandler: any = null;
+    let cachedSkipValidation: boolean = false;
+
     const fetch = async (options: {
         request: MilkioHttpRequest;
         envMode?: string;
         env?: Record<any, any>;
         routeSchema?: any;
+        rawResponse?: boolean;
     }): Promise<Response> => {
-        const cors: CorsConfig = { corsAllowMethods: ["POST", "OPTIONS"], corsAllowHeaders: ["Content-Type", "Authorization"], corsMaxAge: 0, ...runtime.http?.cors };
-        const origin = options.request.headers.get("Origin");
+        // Use pre-passed origin from adapter to avoid headers.get() call
+        const origin = (options.request as any).__origin ?? options.request.headers.get("Origin");
 
         if (options.request.method === "OPTIONS") {
             return new Response(undefined, {
-                headers: buildCorsHeaders(cors, origin),
+                headers: getCorsHeaders(origin),
             });
         }
 
-        if (options.request.url.endsWith("/generate_204")) {
+        // Use pre-parsed pathname and pathArray if available (from adapter), otherwise parse
+        const pathname = (options.request as any).__pathname ?? new URL(options.request.url).pathname;
+        if (pathname.endsWith("/generate_204")) {
+            const corsHeaders = getCorsHeaders(origin);
             return new Response(null, {
                 status: 204,
                 headers: {
                     Server: "milkio",
-                    ...buildCorsHeaders(cors, origin),
+                    ...corsHeaders,
                     "Cache-Control": "no-store",
                     "Content-Type": `text/plain; time=${Date.now()}`,
                 },
             });
         }
 
-        const url = new URL(options.request.url);
-        let pathArray = url.pathname.substring(1).split("/");
-        if (runtime.accessKey && pathArray.at(0) !== runtime.accessKey) {
-            return new Response(undefined, {
-                status: 403,
-                headers: buildCorsHeaders(cors, origin),
-            });
+        const prePathArray = (options.request as any).__pathArray;
+        let pathString: string;
+        let pathArray: string[];
+        if (!runtime.accessKey && (!runtime.ignorePathLevel || runtime.ignorePathLevel === 0)) {
+            pathString = pathname;
+            pathArray = prePathArray ?? pathname.substring(1).split("/");
+        } else {
+            pathArray = prePathArray ?? pathname.substring(1).split("/");
+            if (runtime.accessKey && pathArray.at(0) !== runtime.accessKey) {
+                const corsHeaders = getCorsHeaders(origin);
+                if (options.rawResponse) return { __rawResponse: true, body: "", status: 403, headers: corsHeaders } as any;
+                return new Response(undefined, {
+                    status: 403,
+                    headers: corsHeaders,
+                });
+            }
+            if (runtime.ignorePathLevel !== undefined && runtime.ignorePathLevel !== 0) pathArray = pathArray.slice(runtime.ignorePathLevel);
+            pathString = `/${pathArray.join("/")}`;
         }
-        if (runtime.ignorePathLevel !== undefined && runtime.ignorePathLevel !== 0) pathArray = pathArray.slice(runtime.ignorePathLevel);
-        const pathString = `/${pathArray.join("/")}`;
 
+        // Pre-read body text if available (from adapter), otherwise use async request.text()
+        const bodyText = (options.request as any).__bodyText;
+        const ip = runtime.realIp ? runtime.realIp(options.request.headers) : "::1";
+
+        // ===== FAST PATH for common action requests =====
+        // Skip logger, request map, and most object creation when:
+        // - rawResponse mode (adapter)
+        // - No origin header (no CORS needed)
+        // - No event handlers registered (dynamic check)
+        // - Not a stream request
+        if (options.rawResponse && !origin && checkNoEmitHandlers()) {
+            const __isAction = (options.request as any).__isAction;
+            if (__isAction !== false) {
+                // Resolve route schema with hot cache
+                let routeSchema = options.routeSchema;
+                if (!routeSchema) {
+                    if (pathString === cachedPathString && cachedRouteSchema) {
+                        routeSchema = cachedRouteSchema;
+                    } else {
+                        routeSchema = trie.get(pathString);
+                        if (routeSchema !== null) {
+                            cachedRouteSchema = routeSchema;
+                            cachedPathString = pathString;
+                        } else {
+                            routeSchema = generated.routeSchema?.[pathString];
+                            if (routeSchema === undefined) {
+                                // 404 - fall through to slow path for proper error handling
+                            } else {
+                                if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
+                                else routeSchema.module = await routeSchema.module();
+                                trie.add(pathString, routeSchema);
+                                cachedRouteSchema = routeSchema;
+                                cachedPathString = pathString;
+                            }
+                        }
+                    }
+                }
+
+                if (routeSchema && routeSchema.type === "action") {
+                    // Use cached function references when hitting the same route
+                    let validateParams = cachedValidateParams;
+                    let handler = cachedHandler;
+                    let skipValidation = cachedSkipValidation;
+                    if (routeSchema !== cachedRouteSchema) {
+                        validateParams = routeSchema.validateParams;
+                        handler = routeSchema.module.handler;
+                        const meta = routeSchema.module?.meta;
+                        skipValidation = meta?.typeSafety === false || (Array.isArray(meta?.typeSafety) && !meta.typeSafety.includes("params"));
+                        cachedValidateParams = validateParams;
+                        cachedHandler = handler;
+                        cachedSkipValidation = skipValidation;
+                    }
+
+                    const executeId = __createId();
+                    const body = bodyText !== undefined ? bodyText : await options.request.text();
+
+                    // Parse params
+                    let params: any;
+                    let paramsOk = true;
+                    if (!body || body === "" || body === "{}") {
+                        params = {};
+                    } else {
+                        try {
+                            params = JSON.parse(body);
+                            if (typeof params === "undefined") params = {};
+                        } catch {
+                            paramsOk = false;
+                        }
+                    }
+
+                    if (paramsOk && params !== null && typeof params === "object" && !Array.isArray(params)) {
+                        // Skip $milkioGenerateParams in test mode
+                        if (options.envMode === "test" || !("$milkioGenerateParams" in params)) {
+                            // Validate params when typeSafety is enabled
+                            if (!skipValidation) {
+                                const validation = validateParams(params);
+                                if (!validation.success) {
+                                    // Validation failed - fall through to slow path
+                                    paramsOk = false;
+                                }
+                            }
+
+                            if (paramsOk) {
+                                // Build minimal context using prototype for shared properties
+                                const context: any = Object.create(baseContextProto);
+                                context.path = pathString;
+                                context.executeId = executeId;
+                                context.http = {
+                                    url: pathname,
+                                    ip,
+                                    path: { string: pathString, array: pathArray },
+                                    params: { string: body, parsed: params },
+                                    request: options.request,
+                                    response: fastPathResponse,
+                                    cors,
+                                };
+                                context.headers = options.request.headers;
+
+                                try {
+                                    const result = await handler(context, params);
+
+                                    if (result === undefined || result === null || result === "") {
+                                        return { __rawResponse: true, body: emptyResultPrefix + executeId + idSuffix, status: 200, headers: defaultMergedHeaders } as any;
+                                    } else if (!Array.isArray(result) && typeof result === "object") {
+                                        return { __rawResponse: true, body: resultPrefix + JSON.stringify(result) + ',"executeId":"' + executeId + idSuffix, status: 200, headers: defaultMergedHeaders } as any;
+                                    }
+                                    // Invalid result type - fall through to slow path
+                                } catch {
+                                    // Handler threw - fall through to slow path for proper error handling
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ===== SLOW PATH =====
+        const corsHeaders = getCorsHeaders(origin);
         const executeId = runtime?.executeId ? await runtime.executeId(options.request.headers) : __createId();
+        const anyEmitHandlers = !checkNoEmitHandlers();
 
         const logger = createLogger(runtime, pathString, executeId);
-        runtime.runtime.request.set(executeId, { logger });
-        const response: MilkioHttpResponse = {
-            body: "",
-            status: 200,
-            headers: {
-                ...buildCorsHeaders(cors, origin),
-                "Cache-Control": "no-store",
-                "Content-Type": "application/json",
-            },
-        };
+        if (anyEmitHandlers) runtime.runtime.request.set(executeId, { logger });
+        // Pre-compute base headers for this request (CORS + defaults)
+        const baseHeaders: Record<string, string> = origin ? { ...corsHeaders, ...defaultResponseHeaders } : defaultMergedHeaders;
 
         let finales: Array<() => void | Promise<void>> = [];
 
+        const response: MilkioHttpResponse = {
+            body: "",
+            status: 200,
+            headers: { ...baseHeaders },
+        };
 
-        const http = (await (async () => {
-            const ip = runtime.realIp ? runtime.realIp(options.request.headers) : "::1";
-            const params = {
-                string: await options.request.text(),
+        const http: ContextHttp = {
+            url: pathname as any,
+            ip,
+            path: { string: pathString as keyof $types["generated"]["routeSchema"], array: pathArray },
+            params: {
+                string: bodyText !== undefined ? bodyText : await options.request.text(),
                 parsed: undefined,
-            };
-
-            return {
-                url,
-                ip,
-                path: { string: pathString as keyof $types["generated"]["routeSchema"], array: pathArray },
-                params,
-                request: options.request,
-                response,
-                cors,
-            } as ContextHttp;
-        })())!;
+            },
+            request: options.request,
+            response,
+            cors,
+        };
 
         const context: any = { reject };
         try {
-            await runtime.emit("milkio:httpRequest", { executeId, logger, path: http.path.string as string, http, reject });
+            // Check if emit has handlers before awaiting
+            const hasHttpRequestHandlers = runtime._hasEmitHandlers?.("milkio:httpRequest") ?? true;
+            if (hasHttpRequestHandlers) await runtime.emit("milkio:httpRequest", { executeId, logger, path: http.path.string as string, http, reject });
 
             // 非 test 环境下拦截 $exports 内部路径
             if (options.envMode !== "test" && (http.path.string as string).includes("$")) {
@@ -106,17 +314,37 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             if (!options.request.headers.get("Accept")?.startsWith("text/event-stream")) {
                 // action
                 let routeSchema = options.routeSchema;
-                if ((http.path.string as string).includes("$") || !routeSchema) {
-                    routeSchema = trie.get(http.path.string as string);
-                    if (routeSchema === null) {
-                        routeSchema = generated.routeSchema?.[http.path.string];
-                        if (routeSchema === undefined) {
-                            await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject });
-                            throw reject("NOT_FOUND", { path: http.path.string as string });
+                if (!routeSchema) {
+                    // Hot path: check single-entry cache first
+                    if (pathString === cachedPathString && cachedRouteSchema) {
+                        routeSchema = cachedRouteSchema;
+                    } else if ((http.path.string as string).includes("$")) {
+                        routeSchema = trie.get(http.path.string as string);
+                        if (routeSchema === null) {
+                            routeSchema = generated.routeSchema?.[http.path.string];
+                            if (routeSchema === undefined) {
+                                await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject });
+                                throw reject("NOT_FOUND", { path: http.path.string as string });
+                            }
+                            if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
+                            else routeSchema.module = await routeSchema.module();
+                            trie.add(http.path.string as string, routeSchema);
                         }
-                        if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
-                        else routeSchema.module = await routeSchema.module();
-                        trie.add(http.path.string as string, routeSchema);
+                    } else {
+                        routeSchema = trie.get(http.path.string as string);
+                        if (routeSchema === null) {
+                            routeSchema = generated.routeSchema?.[http.path.string];
+                            if (routeSchema === undefined) {
+                                await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject });
+                                throw reject("NOT_FOUND", { path: http.path.string as string });
+                            }
+                            if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
+                            else routeSchema.module = await routeSchema.module();
+                            trie.add(http.path.string as string, routeSchema);
+                        }
+                        // Update hot path cache
+                        cachedRouteSchema = routeSchema;
+                        cachedPathString = pathString;
                     }
 
                     if (routeSchema.type !== "action") throw reject("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "text/event-stream". If you are using the "@milkio/stargate" package, please add \`type: "stream"\` to the execute options.` });
@@ -133,9 +361,9 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     context,
                     params: http.params.string,
                     paramsType: "string",
+                    paramsContentType: "json",
                 });
                 finales = executed.finales;
-                Object.assign(response.headers, buildCorsHeaders(http.cors, origin));
 
                 if (response.body === "" && executed.results.value !== undefined) {
                     if (executed.emptyResult) {
@@ -147,19 +375,25 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     }
                 }
 
-                await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: executed.context, success: true, reject });
+                const hasHttpResponseHandlers = runtime._hasEmitHandlers?.("milkio:httpResponse") ?? true;
+                if (hasHttpResponseHandlers) await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: executed.context, success: true, reject });
 
-                for (const handler of finales) {
-                    try {
-                        await handler();
-                    } catch (error) {
-                        logger.error("An error occurred inside onFinally.", error);
+                if (finales.length > 0) {
+                    for (const handler of finales) {
+                        try {
+                            await handler();
+                        } catch (error) {
+                            logger.error("An error occurred inside onFinally.", error);
+                        }
                     }
                 }
 
-                await logger._.submit(context as any);
-                runtime.runtime.request.delete(executeId);
-                return new Response(response.body, response);
+                if (hasOnLoggerSubmitting) await logger._.submit(context as any);
+                if (anyEmitHandlers) runtime.runtime.request.delete(executeId);
+                if (options.rawResponse) {
+                    return { __rawResponse: true, body: response.body, status: response.status, headers: response.headers } as any;
+                }
+                return new Response(response.body as BodyInit | null, response);
             } else {
                 // stream
                 let routeSchema = options.routeSchema;
@@ -186,8 +420,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                             logger.error("An error occurred inside onFinally.", error);
                         }
                     }
-                    await logger._.submit(context as any);
-                    runtime.runtime.request.delete(executeId);
+                    if (hasOnLoggerSubmitting) await logger._.submit(context as any);
+                    if (anyEmitHandlers) runtime.runtime.request.delete(executeId);
                 };
 
                 context.http = http;
@@ -203,7 +437,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     paramsType: "string",
                 });
                 finales = executed.finales;
-                Object.assign(response.headers, buildCorsHeaders(http.cors, origin));
+                // Stream path: create new headers object to avoid polluting shared defaultMergedHeaders
+                response.headers = { ...response.headers, ...buildCorsHeaders(http.cors, origin) };
                 // @ts-ignore: bun
                 let stream: ReadableStream;
                 // @ts-ignore: bun
@@ -254,7 +489,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                             try {
                                 controller.enqueue(`data:@${JSON.stringify({ success: true, data: undefined, executeId } satisfies MilkioResponseSuccess<any>)}\n\n`);
                                 for await (const value of executed.results.value) {
-                                    if (!options.request.signal.aborted) {
+                                    if (!options.request.signal?.aborted) {
                                         const result: string = JSON.stringify([null, value]);
                                         controller.enqueue(`data:${result}\n\n`);
                                     } else {
@@ -281,8 +516,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 }
 
                 response.body = stream;
-                response.headers["Content-Type"] = "text/event-stream";
-                response.headers["Cache-Control"] = "no-cache";
+                // Stream path: create new headers to avoid polluting shared object
+                response.headers = { ...response.headers, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" };
 
                 await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: executed.context, success: true, reject });
 
@@ -293,11 +528,15 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 value: exceptionHandler(executeId, logger, error),
             };
             if (results.value !== undefined) response.body = JSON.stringify(results.value);
-            Object.assign(response.headers, buildCorsHeaders(http.cors, origin));
+            // Error path: create new headers to avoid polluting shared object
+            response.headers = { ...response.headers, ...corsHeaders };
             await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context, success: false, reject });
-            await logger._.submit(context as any);
-            runtime.runtime.request.delete(executeId);
-            return new Response(response.body, response);
+            if (hasOnLoggerSubmitting) await logger._.submit(context as any);
+            if (anyEmitHandlers) runtime.runtime.request.delete(executeId);
+            if (options.rawResponse) {
+                return { __rawResponse: true, body: response.body, status: response.status, headers: response.headers } as any;
+            }
+            return new Response(response.body as BodyInit | null, response);
         }
     };
 

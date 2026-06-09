@@ -28,7 +28,7 @@ it.sequential("call internal action via context.call", async () => {
  */
 it.sequential("internal action not accessible via http", async () => {
   const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
-  const [error] = await world.execute("/internal/helper", {
+  const [error] = await world.execute("/internal/helper" as any, {
     params: {
       a: 3,
       b: 7,

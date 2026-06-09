@@ -4,8 +4,18 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { cwd } from "node:process";
 import { load } from "js-toml";
-import { format } from "date-fns";
 import type { CookbookOptions } from "./utils/cookbook-dto-types.ts";
+
+function formatTimestamp(): string {
+    const d = new Date();
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    const h = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    const s = String(d.getSeconds()).padStart(2, "0");
+    return `(${y}-${mo}-${da} ${h}:${mi}:${s})`;
+}
 
 async function findCookbookBaseUrl(): Promise<string> {
     const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -100,7 +110,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
                     error = e;
                 }
             };
-            let timer: Timer | null = setInterval(handler, 1024);
+            let timer: ReturnType<typeof setInterval> | null = setInterval(handler, 1024);
             handler();
         }
         return [
@@ -207,16 +217,21 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
                 const response = await this.options.stargate.execute(path, options);
 
                 await new Promise((resolve) => setTimeout(resolve, 40));
-                context.logger.response(path as string, `\n・> (error) - ${JSON.stringify(response[0])}`, `\n・> (response) - ${typeof response[1]?.next === "function" ? "AsyncGenerator" : JSON.stringify(response[1])}`);
+                context.logger.response(path as string, `\n・> (error) - ${response[0] === null ? "null" : JSON.stringify(response[0])}`, `\n・> (response) - ${response[1] === null ? "null" : typeof response[1]?.next === "function" ? "AsyncGenerator" : JSON.stringify(response[1])}`);
 
                 return response;
             };
 
-            const getNow = () => format(new Date(), "(yyyy-MM-dd hh:mm:ss)");
+            const getNow = formatTimestamp;
             const onLoggerInserting = (log: Log) => {
-                log = [...log];
-                log[0] = `\n${log[0]}` as any;
-                console.log(...log);
+                // Build output string directly without array + join
+                let out = `\n${log[0]}`;
+                for (let i = 1; i < log.length; i++) {
+                    out += " ";
+                    out += String(log[i]);
+                }
+                out += "\n";
+                process.stdout.write(out);
                 return true;
             };
 

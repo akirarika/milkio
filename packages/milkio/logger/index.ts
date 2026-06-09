@@ -1,4 +1,3 @@
-import { format } from "date-fns";
 import type { $context, MilkioInit, MilkioRuntimeInit } from "../index.ts";
 import { sendCookbookEvent } from "../utils/send-cookbook-event.ts";
 
@@ -24,49 +23,51 @@ export type LoggerInsertingHandler = (log: Log) => boolean;
 
 export type LoggerSubmittingHandler = (context: $context, logs: Array<Log>, tags: Map<string, unknown>) => Promise<void> | void;
 
+function fastTimestamp(): string {
+    const d = new Date();
+    return `(${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")})`;
+}
+
+// Pre-created default inserting handler - shared across all loggers
+const defaultInserting = (log: Log): boolean => {
+    log[0] = `\n${log[0]}` as any;
+    console.log(...log);
+    return true;
+};
+
 export function createLogger<MilkioRuntime extends MilkioRuntimeInit<MilkioRuntimeInit<MilkioInit>> = MilkioRuntimeInit<MilkioInit>>(runtime: MilkioRuntime, path: string, executeId: string): Logger {
     const logger = {} as Logger;
 
+    const logs: Array<Log> = [];
+    const tags: Map<string, unknown> = new Map();
+
+    const inserting = runtime.onLoggerInserting || defaultInserting;
+    const hasSubmitting = !!runtime.onLoggerSubmitting;
+    const isDevelop = runtime.develop;
+
     logger._ = {
-        logs: [],
-        tags: new Map(),
+        logs,
+        tags,
         submit: (context: $context) => {
             if (!runtime.onLoggerSubmitting) return;
-            return runtime.onLoggerSubmitting(context, logger._.logs, logger._.tags);
+            return runtime.onLoggerSubmitting(context, logs, tags);
         },
     };
 
     const __tagPush = (key: string, value: unknown): void => {
-        logger._.tags.set(key, value);
+        tags.set(key, value);
     };
     const __logPush = (log: Log): Log => {
-        const inserting = runtime.onLoggerInserting
-            ? runtime.onLoggerInserting
-            : (log: Log) => {
-                log = [...log];
-                log[0] = `\n${log[0]}` as any;
-                console.log(...log);
-                return true;
-            };
-
         if (!inserting(log)) return log;
-
-        logger._.logs.push([...log]);
-
-        if (runtime.develop) {
-            void sendCookbookEvent(runtime, {
-                type: "milkio@logger",
-                log,
-            });
-        }
-
+        if (hasSubmitting) logs.push([...log]);
+        if (isDevelop) void sendCookbookEvent(runtime, { type: "milkio@logger", log });
         return log;
     };
 
-    logger.setTag = (key: string, value: unknown) => __tagPush(key, value);
+    logger.setTag = __tagPush;
     logger.setLog = (...log: Log) => __logPush(log);
 
-    const getNow = () => `${format(new Date(), "(yyyy-MM-dd hh:mm:ss)")}`;
+    const getNow = fastTimestamp;
 
     logger.debug = (description: string, ...params: Array<unknown>) => __logPush(["(debug)", path, executeId, getNow(), `\n${description}`, ...params]);
     logger.info = (description: string, ...params: Array<unknown>) => __logPush(["(info)", path, executeId, getNow(), `\n${description}`, ...params]);
