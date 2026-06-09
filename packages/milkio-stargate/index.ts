@@ -223,7 +223,9 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                 // Fast path: no cache, no retry
                 if (cacheStrategy === 'off' && retryCount === 0) {
                     try {
+                        await eventManager.emit('milkio:executeBefore', { path: path as string, options: options as any });
                         const body = JSON.stringify(options.params) ?? '';
+                        await eventManager.emit('milkio:fetchBefore', { path: path as string, options: options as any, body });
                         let text: string;
                         if (nativeHttpPost) {
                             // Use Node.js native http module for POST (bypasses undici overhead)
@@ -274,10 +276,12 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                     }
                 }
 
+                await eventManager.emit('milkio:executeBefore', { path: path as string, options: options as any });
+                const body = JSON.stringify(options.params) ?? '';
+                await eventManager.emit('milkio:fetchBefore', { path: path as string, options: options as any, body });
+
                 const executeRequest = async (isRetry: boolean): Promise<{ result: { value: Record<any, any> } | null; error: any; isNetworkError: boolean }> => {
                     try {
-                        const body = JSON.stringify(options.params) ?? '';
-
                         const response = await $fetch(url, { method: 'POST', body, headers: options.headers });
                         const text = await response.text();
                         const parsed = JSON.parse(text);

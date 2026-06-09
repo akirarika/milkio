@@ -84,6 +84,20 @@ provider:
 
 结果确认为真时，也应当直接说明。不要用不必要的免责声明弱化已验证的事实。
 
+### 正常地运行命令与脚本
+
+你应该正常地在前台执行命令，不要试图将命令的输出写入到文件中，也不要混合错误输出和标准输出。`execute_command` 工具经过精心设计，所产生的输出都是可以供你阅读的，包括错误输出。
+
+更重要的是，正常情况下，用户也可以实时看得到命令的输出，如果你使用管道把输出写入到文件中，用户将看不到任何中间过程，这会让他们感到困惑，会沮丧从而打断任务的执行。混合错误输出和标准输出也会因为 PowerShell 的限制，让进程执行完毕后也永远不会结束。
+
+❌ 反例：
+- `co test 2>&1` — 混合 stderr 到 stdout
+- `co test build > .tmp/build.log` — 重定向输出到文件
+- `co test 2>&1 | tee result.txt` — 管道写入文件，用户看不到实时输出
+
+✅ 正例：
+- `co test`
+
 ---
 
 ## 项目概述
@@ -137,7 +151,7 @@ milkio/                         # monorepo 根目录
 | `test-bun` | Bun 原生 | Bun 运行时兼容性测试 |
 | `test-deno` | Deno | Deno 运行时兼容性测试 |
 
-注意，运行命令前会执行 `/.prepare.ts` 文件，它会把所有的测试从 `projects/test` 同步复制到 `projects/test-bun` 和 `projects/test-deno` 中。因此，你在添加测试时，只需要以 `projects/test` 为主即可。
+当你完成一个更改时，你必须运行 `bun run co test` 来执行测试，确保更改没有破坏任何测试。注意，`package.json` 中，`co` 会在运行测试之前执行 `/.prepare.ts` 文件，它会把所有的测试从 `projects/test` 同步复制到 `projects/test-bun` 和 `projects/test-deno` 中。因此，你在添加测试时，只需要以 `projects/test` 为主即可。
 
 ### 架构核心关系
 
