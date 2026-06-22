@@ -8,7 +8,7 @@ export interface $rejectCode {
     PARAMS_TYPE_INCORRECT: { path: string; expected: string; value: any; message: string } | null;
     RESULTS_TYPE_INCORRECT: { path: string; expected: string; value: any; message: string } | null;
     UNACCEPTABLE: { expected: string; message: string };
-    PARAMS_TYPE_NOT_SUPPORTED: { expected: string; contentType: string | null; paramsPreview: string };
+    PARAMS_TYPE_NOT_SUPPORTED: { expected: string; contentType: string | null; params: string };
     RESULTS_TYPE_NOT_SUPPORTED: { expected: string };
     INTERNAL_SERVER_ERROR: undefined;
     METHOD_NOT_ALLOWED: undefined;
