@@ -60,7 +60,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
                 try {
                     params = reviveJSONParse(JSON.parse(options.params));
                 } catch (error) {
-                    throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
+                    throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json", contentType: headers.get("content-type") ?? null, paramsPreview: options.params.slice(0, 4096) });
                 }
                 if (typeof params === "undefined") params = {};
             } else if (headers.get("content-type")?.startsWith("application/x-www-form-urlencoded")) {
@@ -69,20 +69,20 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
                     params = {};
                     formData.forEach((value, key) => params[key] = value);
                 } catch (error) {
-                    throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "form-urlencoded" });
+                    throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "form-urlencoded", contentType: headers.get("content-type") ?? null, paramsPreview: options.params.slice(0, 4096) });
                 }
             } else if (options.params.startsWith("{")) {
                 try {
                     params = reviveJSONParse(JSON.parse(options.params));
                 } catch (error) {
-                    throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
+                    throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json", contentType: headers.get("content-type") ?? null, paramsPreview: options.params.slice(0, 4096) });
                 }
             }
             else {
-                throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
+                throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json", contentType: headers.get("content-type") ?? null, paramsPreview: options.params.slice(0, 4096) });
             }
         }
-        if (typeof params !== "object" || Array.isArray(params)) throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
+        if (typeof params !== "object" || Array.isArray(params)) throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json", contentType: headers.get("content-type") ?? null, paramsPreview: (typeof options.params === "string" ? options.params : JSON.stringify(options.params)).slice(0, 4096) });
         if ("$milkioGenerateParams" in params && params.$milkioGenerateParams === "enable") {
             if (!runtime.develop) throw reject("NOT_DEVELOP_MODE", "This feature must be in cookbook to use.");
             delete params.$milkioGenerateParams;
