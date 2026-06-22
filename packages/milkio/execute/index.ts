@@ -71,7 +71,14 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
                 } catch (error) {
                     throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "form-urlencoded" });
                 }
-            } else {
+            } else if (options.params.startsWith("{")) {
+                try {
+                    params = reviveJSONParse(JSON.parse(options.params));
+                } catch (error) {
+                    throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
+                }
+            }
+            else {
                 throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" });
             }
         }

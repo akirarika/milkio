@@ -384,7 +384,7 @@ world.on('space:delete', async ({ data, db, context }) => {
 
 ## 测试事件
 
-通过 astra，你可以直接使用 `world.emit()` 来触发事件。这赋予了你在运行测试时，直接测试事件的能力。
+通过 astra，你可以直接使用 `world.emit()` 来触发事件。这赋予了你在运行测试时，直接测试事件的能力。测试代码需要写入到 `__TEST__.test.ts` 文件中。
 
 ### 基本用法
 
