@@ -56,7 +56,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         } else {
             if (!options.params || options.params === "" || options.params === "{}") {
                 params = {};
-            } else if (options.paramsContentType === "json" || headers.get("content-type")?.startsWith("application/json")) {
+            } else if (headers.get("content-type")?.startsWith("application/json")) {
                 try {
                     params = reviveJSONParse(JSON.parse(options.params));
                 } catch (error) {

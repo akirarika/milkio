@@ -14,13 +14,13 @@
     "url": "https://github.com/akirarika/milkio"
   },
   "dependencies": {
-    "@milkio/astra": "1.3.2",
-    "@milkio/cookbook-command": "1.3.2",
-    "@milkio/redis": "1.3.2",
-    "@milkio/stargate": "1.3.2",
-    "@milkio/stargate-worker": "1.3.2",
-    "@milkio/vite-plugin-milkio": "1.3.2",
-    "milkio": "1.3.2",
+    "@milkio/astra": "1.3.3",
+    "@milkio/cookbook-command": "1.3.3",
+    "@milkio/redis": "1.3.3",
+    "@milkio/stargate": "1.3.3",
+    "@milkio/stargate-worker": "1.3.3",
+    "@milkio/vite-plugin-milkio": "1.3.3",
+    "milkio": "1.3.3",
     "typia": "^9.7.2",
     "vite": "^7.1.10",
     "vitest": "^3.2.4"
