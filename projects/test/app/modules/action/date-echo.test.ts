@@ -15,7 +15,7 @@ test.sequential("Date param roundtrip via world.execute", async () => {
 	expect(result.timestamp).toBe(testDate.getTime());
 	// iso is revived to Date by client-side reviveJSONParse
 	expect(result.iso).toBeInstanceOf(Date);
-	expect((result.iso as Date).getTime()).toBe(testDate.getTime());
+	expect((result.iso as unknown as Date).getTime()).toBe(testDate.getTime());
 });
 
 test.sequential("Date param roundtrip via stargate.execute", async () => {

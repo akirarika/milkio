@@ -3,7 +3,7 @@ import type { generated } from '../../../../.milkio/index.ts'
 
 export default ((world: MilkioWorld<typeof generated>) => {
   world.on('event:context-check', async (event) => {
-    if (event.context?.reject && event.context?.emit) {
+    if (typeof event.context?.reject === 'function' && typeof event.context?.emit === 'function') {
       event.received.push('context-ok')
     }
   })

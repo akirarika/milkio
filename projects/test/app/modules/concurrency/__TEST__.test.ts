@@ -46,7 +46,7 @@ it.sequential("race condition on shared counter", async () => {
     if (resetResult) expect(resetResult.afterValue).toBe(0);
 
     const concurrentCount = 5;
-    const promises = [];
+    const promises: Array<Promise<any>> = [];
 
     for (let i = 0; i < concurrentCount; i++) {
         promises.push(

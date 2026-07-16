@@ -48,37 +48,36 @@ async function main() {
     consola.success(`当前版本为: ${LatestVersion}`);
 
     const packagesTocheck = [mainPackage, ...childPackages];
-    let newVersion = "";
-    while (true) {
-        newVersion = prompt("要发布的新版本号是:") ?? "";
-        if (!newVersion) {
-            consola.info("版本号不能为空，请重新输入");
-            continue;
+    // 获取新版本号：命令行参数 > 环境变量 VERSION > 自动递增 patch 版本
+    let newVersion = process.argv[2] || process.env.VERSION || "";
+    if (!newVersion) {
+        const [major, minor, patch] = LatestVersion.split(".").map(Number);
+        newVersion = `${major}.${minor}.${patch + 1}`;
+        consola.info(`未指定版本号，自动递增为: ${newVersion}`);
+    } else {
+        consola.info(`使用指定版本号: ${newVersion}`);
+    }
+    if (!/^(\d+)\.(\d+)\.(\d+)((-rc|-beta|-alpha)\.(\d+))?$/.test(newVersion)) {
+        consola.error("错误的版本号，未能满足正则表达式的校验");
+        process.exit(1);
+    }
+    consola.info(`检查 npm 版本是否存在...`);
+    let hasConflict = false;
+    for (const packageName of packagesTocheck) {
+        const pkgJson = JSON.parse(
+            await readFile(join(cwd, "packages", packageName, "package.json"), "utf-8"),
+        );
+        try {
+            $("npm", ["view", `${pkgJson.name}@${newVersion}`, "--json"]);
+            consola.error(`已存在${pkgJson.name}@${newVersion}`);
+            hasConflict = true;
+        } catch {
+            consola.success(`可以发布 ${pkgJson.name}@${newVersion}`);
         }
-        if (!/^(\d+)\.(\d+)\.(\d+)((-rc|-beta|-alpha)\.(\d+))?$/.test(newVersion)) {
-            console.log("错误的版本号，未能满足正则表达式的校验，请重新输入");
-            continue;
-        }
-        console.clear();
-        consola.info(`检查 npm 版本是否存在...`);
-        let hasConflict = false;
-        for (const packageName of packagesTocheck) {
-            const pkgJson = JSON.parse(
-                await readFile(join(cwd, "packages", packageName, "package.json"), "utf-8"),
-            );
-            try {
-                $("npm", ["view", `${pkgJson.name}@${newVersion}`, "--json"]);
-                consola.error(`已存在${pkgJson.name}@${newVersion}`);
-                hasConflict = true;
-            } catch {
-                consola.success(`可以发布 ${pkgJson.name}@${newVersion}`);
-            }
-        }
-        if (hasConflict) {
-            consola.warn("检测到至少一个包该版本已存在，请重新输入版本号。");
-            continue;
-        }
-        break;
+    }
+    if (hasConflict) {
+        consola.error("检测到至少一个包该版本已存在，请使用不同的版本号。");
+        process.exit(1);
     }
 
     packageJson.version = newVersion;

@@ -48,7 +48,7 @@ test.sequential("client disconnect via AbortController stops server", async () =
 		count++;
 		if (count >= 3) {
 			// Explicitly return the iterator to simulate disconnect
-			await results.return(undefined);
+			await results.return(undefined as any);
 			break;
 		}
 	}

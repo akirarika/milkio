@@ -19,7 +19,6 @@
         "@nestjs/common": "^11.1.26",
         "@nestjs/core": "^11.1.26",
         "@nestjs/platform-express": "^11.1.26",
-        "@ryoppippi/unplugin-typia": "^1.0.6",
         "elysia": "^1.4.28",
         "koa": "^3.2.1",
         "milkid": "2.0.7",
@@ -31,6 +30,7 @@
         "yaml": "^2.6.0"
     },
     "devDependencies": {
+        "typia": "^13.1.1",
         "vite": "^6.2.2",
         "vite-plugin-node": "^4.0.0"
     }

@@ -7,7 +7,7 @@ export default ((world: MilkioWorld<typeof generated>) => {
     if (!event.executeId) throw reject('REQUEST_FAIL', 'Event is not \'executeId\'')
     if (!event.logger) throw reject('REQUEST_FAIL', 'Event is not \'logger\'')
     if (!event.path) throw reject('REQUEST_FAIL', 'Event is not \'path\'')
-    event.context.hookData = 'before-executed'
+    ;(event.context as any).hookData = 'before-executed'
   })
 
   world.on('milkio:executeAfter', async (event) => {

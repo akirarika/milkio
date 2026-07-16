@@ -1,5 +1,5 @@
 import type { IValidation } from "typia";
-import { reject } from "../index.ts";
+import { reject, raise } from "../index.ts";
 import type { $context, $meta, Logger, Results, GeneratedInit } from "../index.ts";
 import { headersToJSON } from "../utils/headers-to-json.ts";
 import { mergeDeep } from "../utils/merge-deep.ts";
@@ -107,6 +107,8 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         ctx.call = (module: any, params: any) => __call(ctx, module, params);
         ctx.onFinally = onFinally;
         ctx._ = runtime;
+        ctx.reject = reject;
+        ctx.raise = raise;
 
         const results: Results<any> = { value: undefined };
 
@@ -124,7 +126,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         }
 
         if (runtime._hasEmitHandlers?.("milkio:executeBefore") ?? true) {
-            await runtime.emit("milkio:executeBefore", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, reject });
+            await runtime.emit("milkio:executeBefore", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, reject, raise });
         }
 
         results.value = await module.handler(options.context, params);
@@ -152,7 +154,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         }
 
         if (runtime._hasEmitHandlers?.("milkio:executeAfter") ?? true) {
-            await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results, reject });
+            await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results, reject, raise });
         }
 
         return { executeId, headers, params, results, context: options.context, meta, type, emptyResult, resultsTypeSafety, finales };

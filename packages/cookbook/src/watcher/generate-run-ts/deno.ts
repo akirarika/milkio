@@ -5,6 +5,7 @@ export async function denoHandler(project: CookbookOptions["projects"]["key"], m
     await Bun.write(
         join(milkioDirPath, "run.ts"),
         `#!/usr/bin/env deno
+// @ts-nocheck
 import { create } from "../index.ts";
 
 async function bootstrap() {

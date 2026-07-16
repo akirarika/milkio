@@ -5,6 +5,7 @@ export async function nodeHandler(project: CookbookOptions["projects"]["key"], m
     await Bun.write(
         join(milkioDirPath, "run.ts"),
         `#!/usr/bin/env node
+// @ts-nocheck
 import * as http from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { create } from "../index.ts";

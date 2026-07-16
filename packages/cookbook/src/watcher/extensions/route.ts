@@ -70,7 +70,7 @@ export const routeWatcherExtension = defineWatcherExtension({
                 routeFileExports += `\ntype: "${file.type}", `;
                 routeFileExports += "\ntypes: undefined as any as { ";
                 routeFileExports += `\n"🥛": ${file.type === "action" ? "boolean" : "number"}, `;
-                routeFileExports += `\nmeta: typeof ${file.importName}["meta"], `;
+                routeFileExports += `\nmeta: (typeof ${file.importName}) extends { meta: infer M } ? M : undefined, `;
                 routeFileExports += `\nparams: Parameters<typeof ${file.importName}["handler"]>[1], `;
                 routeFileExports += `\nresult: Awaited<ReturnType<typeof ${file.importName}["handler"]>> `;
                 routeFileExports += "},";
@@ -81,9 +81,9 @@ export const routeWatcherExtension = defineWatcherExtension({
                     routeFileImports += `\nimport ${file.importName} from "../../../../../app/${file.path}";`;
                     routeFileExports += `\nmodule: () => ${file.importName}, `;
                 }
-                routeFileExports += `\nvalidateParams: (params: any): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.misc.validatePrune<Parameters<typeof ${file.importName}["handler"]>[1]>(params) as any, `;
+                routeFileExports += `\nvalidateParams: (params: any): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.plain.validatePrune<Parameters<typeof ${file.importName}["handler"]>[1]>(params) as any, `;
                 routeFileExports += `\nrandomParams: (): IValidation<Parameters<typeof ${file.importName}["handler"]>[1]> => typia.random<Parameters<typeof ${file.importName}["handler"]>[1]>() as any, `;
-                routeFileExports += `\nvalidateResults: (results: any): IValidation<Awaited<ReturnType<typeof ${file.importName}["handler"]>>> => typia.misc.validatePrune<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any, `;
+                routeFileExports += `\nvalidateResults: (results: any): IValidation<Awaited<ReturnType<typeof ${file.importName}["handler"]>>> => typia.plain.validatePrune<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any, `;
                 routeFileExports += `\nresultsToJSON: (results: any): Awaited<ReturnType<typeof ${file.importName}["handler"]>> => {
   // @ts-ignore
   return typia.json.stringify<Awaited<ReturnType<typeof ${file.importName}["handler"]>>>(results) as any

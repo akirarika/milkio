@@ -12,11 +12,11 @@ export const eventWatcherExtension = defineWatcherExtension({
 
         content += `\ntype $eventsMixin = {
     "*": { key: keyof $events, value: any };
-    "milkio:httpRequest": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>>, reject: MilkioRejectFunction };
-    "milkio:httpResponse": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>>; context: MilkioContext; success: boolean, reject: MilkioRejectFunction };
-    "milkio:httpNotFound": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>>, reject: MilkioRejectFunction };
-    "milkio:executeBefore": { executeId: string; path: string; logger: Logger; meta: MilkioMeta; context: MilkioContext, reject: MilkioRejectFunction };
-    "milkio:executeAfter": { executeId: string; path: string; logger: Logger; meta: MilkioMeta; context: MilkioContext; results: Results<any>, reject: MilkioRejectFunction };
+    "milkio:httpRequest": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>>, reject: MilkioRejectFunction, raise: MilkioRaiseFunction };
+    "milkio:httpResponse": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>>; context: MilkioContext; success: boolean, reject: MilkioRejectFunction, raise: MilkioRaiseFunction };
+    "milkio:httpNotFound": { executeId: string; path: string; logger: Logger; http: ContextHttp<Record<string, any>>, reject: MilkioRejectFunction, raise: MilkioRaiseFunction };
+    "milkio:executeBefore": { executeId: string; path: string; logger: Logger; meta: MilkioMeta; context: MilkioContext, reject: MilkioRejectFunction, raise: MilkioRaiseFunction };
+    "milkio:executeAfter": { executeId: string; path: string; logger: Logger; meta: MilkioMeta; context: MilkioContext; results: Results<any>, reject: MilkioRejectFunction, raise: MilkioRaiseFunction };
 }`;
         content += "\nexport interface MilkioEvents extends $eventsMixin";
         let eventIndex = 0;

@@ -12,8 +12,5 @@
     "@mjackson/node-fetch-server": "0.6.1",
     "fs-extra": "^11.3.0",
     "glob": "^11.0.1"
-  },
-  "devDependencies": {
-    "@ryoppippi/unplugin-typia": "^2.6.5"
   }
 }

@@ -1,4 +1,4 @@
-import type { MilkioContext } from '../../../../../.milkio/declares.ts'
+import type { MilkioContext } from '../../../../.milkio/declares.ts'
 
 export interface _ {
   'event:context-check': {

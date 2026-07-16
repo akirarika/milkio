@@ -5,6 +5,7 @@ export async function bunHandler(project: CookbookOptions["projects"]["key"], mi
     await Bun.write(
         join(milkioDirPath, "run.ts"),
         `#!/usr/bin/env bun
+// @ts-nocheck
 import { create } from "../index.ts";
 import { env } from "bun";
 

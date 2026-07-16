@@ -36,7 +36,7 @@ export type MilkioRuntimeInit<T extends MilkioInit> = Mixin<
     }
 >;
 
-export async function createWorld<MilkioOptions extends MilkioInit>(generated: GeneratedInit, configSchema: { get: () => Promise<Record<any, any>> }, options: MilkioOptions): Promise<unknown> {
+export async function createWorld<MilkioOptions extends MilkioInit>(generated: GeneratedInit, configSchema: { get: () => Promise<Record<any, any>> }, options: MilkioOptions): Promise<MilkioWorld<GeneratedInit, MilkioOptions>> {
     const executeId = options.executeId ?? defineDefaultExecuteIdGenerator();
     const config = await configSchema.get();
 
@@ -94,7 +94,7 @@ export async function createWorld<MilkioOptions extends MilkioInit>(generated: G
     console.log(`\n△ Routes:\n    ${routeKeys.join("\n    ")}\n  A total of ${routeKeys.length} routes.`);
     console.log(`\n△ Server: http://localhost:${options.port}`);
 
-    return world as unknown;
+    return world as MilkioWorld<GeneratedInit, MilkioOptions>;
 }
 
 export interface MilkioWorld<Generated extends GeneratedInit, MilkioOptions extends MilkioInit = MilkioInit> {

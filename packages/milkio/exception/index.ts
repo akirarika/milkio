@@ -15,26 +15,24 @@ export interface $rejectCode {
     NETWORK_ERROR: undefined;
 }
 
-export type Reject = {
-    <Code extends keyof $rejectCode>(code: Code, ...data: $rejectCode[Code] extends undefined ? [] | [undefined] : [$rejectCode[Code]]): MilkioRejectError<Code, $rejectCode[Code]>;
-    <T>(obj: T): MilkioRejectError<Extract<keyof T, keyof $rejectCode>, any>;
-};
+// reject: 拒绝码形式，第一个参数必须是字符串（拒绝码），第二个参数是具体的错误数据
+// 注意：框架内部的 reject 使用宽松类型，用户侧 context.reject 的严格类型由 declares.ts 中的 MilkioRejectFunction 提供
+export function reject(code: string, data?: any): MilkioRejectError<any, any> {
+    const error = { $milkioReject: true, code, data } as MilkioRejectError<any, any>;
+    if (typeof Error.captureStackTrace === "function") Error.captureStackTrace(error);
+    return error;
+}
 
-export const reject = function reject(codeOrObj: any, data?: any): MilkioRejectError<any, any> {
-    let code: any;
-    let rejectData: any;
-    if (typeof codeOrObj === "string") {
-        code = codeOrObj;
-        rejectData = data;
-    } else {
-        const keys = Object.keys(codeOrObj);
-        code = keys[0];
-        rejectData = codeOrObj[code];
-    }
+// raise: 对象形式，传入一个 { 拒绝码: 错误数据 } 对象，将错误向上抛出（类似 golang 的显式错误处理）
+// 注意：框架内部的 raise 使用宽松类型，用户侧 context.raise 的严格类型由 declares.ts 中的 MilkioRaiseFunction 提供
+export function raise(obj: Record<string, any>): MilkioRejectError<any, any> {
+    const keys = Object.keys(obj);
+    const code = keys[0];
+    const rejectData = obj[code];
     const error = { $milkioReject: true, code, data: rejectData } as MilkioRejectError<any, any>;
     if (typeof Error.captureStackTrace === "function") Error.captureStackTrace(error);
     return error;
-} as Reject;
+}
 
 export type MilkioRejectError<Code extends keyof $rejectCode = keyof $rejectCode, RejectData extends $rejectCode[Code] = $rejectCode[Code]> = { code: Code; data: RejectData; stack: string; $milkioReject: true };
 

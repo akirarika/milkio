@@ -1,5 +1,5 @@
-import { $meta } from "../meta/index.ts";
-import { $context } from "../context/index.ts";
+import type { $meta } from "../meta/index.ts";
+import type { $context } from "../context/index.ts";
 
 export type ActionInit = {
     meta?: Record<any, any>;
