@@ -6,6 +6,6 @@
         "@types/bun": "latest"
     },
     "peerDependencies": {
-        "typescript": "7.0.1-rc"
+        "typescript": "^7.0.2"
     }
 }

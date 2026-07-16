@@ -67,7 +67,7 @@ async function bootstrap() {
       const request = new Request(fullUrl, {
         method,
         headers,
-        body: method !== "GET" && method !== "HEAD" ? body : undefined,
+        body: method !== "GET" && method !== "HEAD" ? (body as BodyInit | null) : undefined,
         signal,
       });
 

@@ -158,27 +158,30 @@ async function buildDist(pkgName: string) {
     throw new Error(`Build failed for ${pkgName}\n${msgs}`);
   }
 
-  // d.ts：保持你本地脚本行为：失败不阻断
-  try {
-    run(
-      process.execPath,
-      [
-        "../../node_modules/typescript/bin/tsc",
-        "index.ts",
-        "--declaration",
-        "--emitDeclarationOnly",
-        "--outDir",
-        "./dist",
-        "--module",
-        "nodenext",
-        "--moduleResolution",
-        "nodenext",
-        "--allowImportingTsExtensions",
-      ],
-      { cwd: pkgDir },
-    );
-  } catch {
-    console.log(`[tsc] skipped/failed for ${pkgName} (non-fatal)`);
+  // d.ts
+  run(
+    process.execPath,
+    [
+      "../../node_modules/typescript/bin/tsc",
+      "index.ts",
+      "--declaration",
+      "--emitDeclarationOnly",
+      "--outDir",
+      "./dist",
+      "--module",
+      "nodenext",
+      "--moduleResolution",
+      "nodenext",
+      "--allowImportingTsExtensions",
+      "--ignoreConfig",
+      "--types",
+      "node",
+    ],
+    { cwd: pkgDir },
+  );
+
+  if (!existsSync(join(outDir, "index.d.ts"))) {
+    throw new Error(`d.ts generation failed for ${pkgName}: index.d.ts not found in dist`);
   }
 
   copyLicenseTo(outDir);
@@ -345,6 +348,6 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error(e);
+  console.error(e instanceof Error ? e.stack ?? e.message : e);
   process.exit(1);
 });
