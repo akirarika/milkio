@@ -66,30 +66,34 @@ export async function initWatcher(options: CookbookOptions, mode: string, watch:
 }
 
 async function initializeProject(mode: string, root: string, appRoot: string, validDirs: string[], options: CookbookOptions, project: CookbookWatcherExtensionProject) {
-    if (!(await exists(join(root, ".milkio", ".version"))) || (await readFile(join(root, ".milkio", ".version"), "utf-8")) !== `v${__VERSION__}.${mode}.${options.hash}`) {
+    const versionKey = `v${__VERSION__}.${mode}.${options.hash}`;
+    const versionPath = join(root, ".milkio", ".version");
+    const needsReinit = !(await exists(versionPath)) || (await readFile(versionPath, "utf-8")) !== versionKey;
+
+    if (needsReinit) {
         await rm(join(root, ".milkio"), { recursive: true, force: true });
         try {
             await mkdir(join(root, ".milkio"));
         } catch (error) { }
-        await Bun.write(join(root, ".milkio", ".version"), `v${__VERSION__}.${mode}.${options.hash}`);
+        await Bun.write(versionPath, versionKey);
     }
 
-    // Create stub files for .milkio/ generated files so that TypeScript 7 (Go rewrite)
-    // can resolve imports in the project's index.ts during typia generate.
-    // These stubs will be overwritten by the watcher extensions as they run.
-    const milkioDir = join(root, ".milkio");
-    const stubs: Record<string, string> = {
-        "index.ts": indexTs,
-        "declares.ts": `// declares (stub)\nexport type MilkioMeta = any;\nexport type MilkioContext = any;\nexport type MilkioRejectCode = any;\nexport type MilkioEvents = any;\n`,
-        "config-schema.ts": `// config-schema (stub)\nexport const configSchema = { get: async () => ({}) };\n`,
-        "route-schema.ts": `// route-schema (stub)\nconst routeSchema: Record<string, any> = {};\nexport default routeSchema;\n`,
-        "typia-schema.ts": `// typia-schema (stub)\nconst typiaSchema: Record<string, any> = {};\nexport default typiaSchema;\n`,
-        "handler-schema.ts": `// handler-schema (stub)\nconst handlerSchema: Record<string, any> = {};\nexport default handlerSchema;\n`,
-        "drizzle-schema.ts": `// drizzle-schema\n`,
-    };
-    for (const [fileName, content] of Object.entries(stubs)) {
-        const filePath = join(milkioDir, fileName);
-        await Bun.write(filePath, content);
+    // Create stub files only on fresh init
+    if (needsReinit) {
+        const milkioDir = join(root, ".milkio");
+        const stubs: Record<string, string> = {
+            "index.ts": indexTs,
+            "declares.ts": `// declares (stub)\nexport type MilkioMeta = any;\nexport type MilkioContext = any;\nexport type MilkioRejectCode = any;\nexport type MilkioEvents = any;\n`,
+            "config-schema.ts": `// config-schema (stub)\nexport const configSchema = { get: async () => ({}) };\n`,
+            "route-schema.ts": `// route-schema (stub)\nconst routeSchema: Record<string, any> = {};\nexport default routeSchema;\n`,
+            "typia-schema.ts": `// typia-schema (stub)\nconst typiaSchema: Record<string, any> = {};\nexport default typiaSchema;\n`,
+            "handler-schema.ts": `// handler-schema (stub)\nconst handlerSchema: Record<string, any> = {};\nexport default handlerSchema;\n`,
+            "drizzle-schema.ts": `// drizzle-schema\n`,
+        };
+        for (const [fileName, content] of Object.entries(stubs)) {
+            const filePath = join(milkioDir, fileName);
+            await Bun.write(filePath, content);
+        }
     }
 
     if (!allFiles.has(root)) {
