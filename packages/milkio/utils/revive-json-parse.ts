@@ -37,6 +37,7 @@ export function reviveJSONParse<T>(json: T): T {
         }
         const obj = json as Record<string, unknown>;
         for (const key in obj) {
+            if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
             const v = obj[key];
             if (typeof v === 'string') {
                 const d = tryParseDate(v);

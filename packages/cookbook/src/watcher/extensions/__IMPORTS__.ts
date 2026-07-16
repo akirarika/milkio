@@ -12,10 +12,12 @@ import { seedWatcherExtension } from "./seed";
 
 export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
     // extensions
+    // drizzle must run BEFORE route: action files import drizzle-schema,
+    // so drizzle-schema.ts must be generated before typia runs in route
+    drizzleWatcherExtension,
     routeWatcherExtension,
     handlerWatcherExtension,
     configWatcherExtension,
-    drizzleWatcherExtension,
     metaWatcherExtension,
     contextWatcherExtension,
     codeWatcherExtension,

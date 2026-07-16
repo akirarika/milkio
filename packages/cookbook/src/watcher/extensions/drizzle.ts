@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { defineWatcherExtension } from "../extensions";
 
 export const drizzleWatcherExtension = defineWatcherExtension({
-  async: true,
+  async: false,
   filter: (file) => {
     return file.type === "table";
   },

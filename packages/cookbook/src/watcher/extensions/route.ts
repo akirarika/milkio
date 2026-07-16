@@ -11,7 +11,6 @@ import { unlinkIfTooLong } from "../../utils/unlink-if-too-long";
 import { getRuntime } from "../../utils/get-runtime";
 import { getTypiaPath } from "../../utils/get-typia-path";
 import { getLatestSchemaFolder } from "../../utils/get-latest-schema-folder";
-import { exit } from "node:process";
 import chalk from "chalk";
 
 export const routeWatcherExtension = defineWatcherExtension({
@@ -121,12 +120,12 @@ export const routeWatcherExtension = defineWatcherExtension({
                     if (output.includes("error ")) {
                         consola.error(`[${getRate()}] 🚨 type-safety fail, skip: ${file.path}\n${output}`);
                         consola.error(`[${getRate()}] 🚨 want to debug typia, try running:\n${typiaCommand}`);
-                        exit(1);
+                        return;
                     }
                 } catch (error) {
                     consola.error(`[${getRate()}] 🚨 type-safety fail, skip: ${file.path}\n${error}`);
                     consola.error(`[${getRate()}] 🚨 want to debug typia, try running:\n${typiaCommand}`);
-                    exit(1);
+                    return;
                 }
                 consola.info(chalk.gray(`[${getRate()}] ✨ type-safety now: ${file.path}`));
             });
@@ -172,7 +171,10 @@ export const routeWatcherExtension = defineWatcherExtension({
         for (const file of allFiles) {
             let hashFile = hashes.get(file.importName);
             if (!hashFile) hashFile = await getLatestSchemaFolder(join(milkioGeneratedRouteDirPath, file.importName));
+            if (!hashFile) continue;
             const hashFileName = `${hashFile}/schema.ts`;
+            const transpiledHashFilePath = join(milkioTranspiledRouteDirPath, file.importName, hashFileName);
+            if (!(await exists(transpiledHashFilePath))) continue;
 
             let routePath = file.path.slice(0, file.path.length - 10); // 10 === ".stream.ts".length && 10 === ".action.ts".length
             if (routePath.endsWith("/index") || routePath === "index") routePath = routePath.slice(0, routePath.length - 5); // 5 === "index".length
@@ -182,7 +184,7 @@ export const routeWatcherExtension = defineWatcherExtension({
             if (file.type === "stream") routePath = `${routePath}~`;
             if (routePaths.has(routePath)) {
                 consola.error(`Invalid path: "${file.path}". The most common reason for having paths duplicate is that you created a new "${file}" and have a "${file}/index.ts".\n`);
-                exit(1);
+                continue;
             }
             routePaths.add(routePath);
 
