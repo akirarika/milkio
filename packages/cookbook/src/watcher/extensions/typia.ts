@@ -99,7 +99,19 @@ export const typiaWatcherExtension = defineWatcherExtension({
 
           await Promise.all(deleteTasks);
 
-          buildTasks.push($`${await getRuntime()} ${await getTypiaPath()} generate --input ${join(milkioGeneratedTypiaDirPath, file.importName, hash)} --output ${transpiledDirPath} --project ${join(root, "tsconfig.json")}`.quiet().cwd(root));
+          // 直接 await typia generate 命令（此前是 push 到 buildTasks，
+          // 但 Promise.all 已经对数组做了快照，导致该命令成为 fire-and-forget，
+          // transpiled 输出来不及生成）。
+          // 使用 .quiet() 抑制成功时的输出；失败时捕获并打印错误日志。
+          try {
+            await $`${await getRuntime()} ${await getTypiaPath()} generate --input ${join(milkioGeneratedTypiaDirPath, file.importName, hash)} --output ${transpiledDirPath} --project ${join(root, "tsconfig.json")}`.quiet().cwd(root);
+          } catch (e: any) {
+            consola.error(`typia generate failed for "${file.path}" (exit code ${e?.exitCode ?? "?"})`);
+            const stdout = e?.stdout?.toString().trim();
+            const stderr = e?.stderr?.toString().trim();
+            if (stdout) console.log(stdout);
+            if (stderr) console.log(stderr);
+          }
         })(),
       );
     }

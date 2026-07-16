@@ -40,6 +40,9 @@ export default await defineCookbookCommand(async (utils) => {
         const { initWatcher } = await import("../watcher");
         await initWatcher(options, mode, true);
 
+        const { typecheckProjects } = await import("../utils/typecheck");
+        await typecheckProjects(options);
+
         const cookbookServerAccessKey = `c${await calcHash(crypto.randomUUID())}`;
 
         const cookbookServerPort = await getRandomPort();
