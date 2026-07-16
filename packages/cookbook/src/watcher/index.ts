@@ -85,7 +85,7 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
         "route-schema.ts": `// route-schema (stub)\nconst routeSchema: Record<string, any> = {};\nexport default routeSchema;\n`,
         "typia-schema.ts": `// typia-schema (stub)\nconst typiaSchema: Record<string, any> = {};\nexport default typiaSchema;\n`,
         "handler-schema.ts": `// handler-schema (stub)\nconst handlerSchema: Record<string, any> = {};\nexport default handlerSchema;\n`,
-        "drizzle-schema.ts": `// drizzle-schema (stub)\nexport default {};\n`,
+        "drizzle-schema.ts": `// drizzle-schema\n`,
     };
     for (const [fileName, content] of Object.entries(stubs)) {
         const filePath = join(milkioDir, fileName);
