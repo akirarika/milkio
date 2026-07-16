@@ -89,6 +89,7 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
             "typia-schema.ts": `// typia-schema (stub)\nconst typiaSchema: Record<string, any> = {};\nexport default typiaSchema;\n`,
             "handler-schema.ts": `// handler-schema (stub)\nconst handlerSchema: Record<string, any> = {};\nexport default handlerSchema;\n`,
             "drizzle-schema.ts": `// drizzle-schema\n`,
+            "seed.ts": `// seed (stub)\nexport const executeSeed = async (params: Record<any, any>): Promise<void> => {};\n`,
         };
         for (const [fileName, content] of Object.entries(stubs)) {
             const filePath = join(milkioDir, fileName);
