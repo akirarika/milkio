@@ -174,6 +174,8 @@ async function buildDist(pkgName: string) {
       "nodenext",
       "--allowImportingTsExtensions",
       "--ignoreConfig",
+      "--lib",
+      "ESNext,DOM",
       "--types",
       "node",
     ],
