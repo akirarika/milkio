@@ -10,13 +10,21 @@ export const metaWatcherExtension = defineWatcherExtension({
         const types = "";
         let content = "";
 
-        content += "\nexport interface MilkioMeta extends $meta";
         let metaIndex = 0;
+        const metaKeys: string[] = [];
         for await (const file of allFiles) {
             header += `\nimport type { _ as meta_${metaIndex} } from "../app/${file.path}";`;
-            content += ", ";
-            content += `meta_${metaIndex}`;
+            metaKeys.push(`meta_${metaIndex}`);
             ++metaIndex;
+        }
+        if (metaKeys.length > 0) {
+            const omitKeys = metaKeys.map((k) => `keyof ${k}`).join(" | ");
+            content += `\nexport interface MilkioMeta extends Omit<$meta, ${omitKeys}>`;
+            for (const k of metaKeys) {
+                content += `, ${k}`;
+            }
+        } else {
+            content += "\nexport interface MilkioMeta extends $meta";
         }
         content += " {}";
 

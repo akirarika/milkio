@@ -35,8 +35,8 @@ async function bootstrap() {
     });
     req.on("end", () => {
       const method = req.method ?? "GET";
-      const body = bodyChunks ? Buffer.concat(bodyChunks) : bodyBuffer;
-      const bodyText = body ? body.toString("utf-8") : "";
+      const body: Uint8Array | null = bodyChunks ? Buffer.concat(bodyChunks) : bodyBuffer;
+      const bodyText = body ? Buffer.from(body).toString("utf-8") : "";
 
       // Build full URL for standard Request
       const reqUrl = req.url ?? "/";
@@ -67,7 +67,7 @@ async function bootstrap() {
       const request = new Request(fullUrl, {
         method,
         headers,
-        body: method !== "GET" && method !== "HEAD" ? (body as BodyInit | null) : undefined,
+        body: method !== "GET" && method !== "HEAD" ? body : undefined,
         signal,
       });
 
