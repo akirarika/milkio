@@ -79,7 +79,8 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
     await Promise.all((() => {
         const projectStatus = new Map<string, { promise: Promise<undefined>; resolve: (value?: undefined | PromiseLike<undefined>) => void; reject: (reason?: any) => void }>();
         for (const projectName in cookbookOptions.projects ?? []) {
-            const project = cookbookOptions.projects[projectName];
+            const project = cookbookOptions.projects?.[projectName];
+            if (project === undefined) continue;
             if (project.type !== "milkio") continue;
             if (project.autoStart === false) continue;
             if (projectName === "cookbook-server" && project.port === 52593) continue; // the cookbook-server is not a milkio project
@@ -134,6 +135,8 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
             Array.from(projectStatus.values()).map((v) => v.promise)];
     })());
 
+    type RouteResult<Path extends keyof Generated["routeSchema"]> = Generated["routeSchema"][Path]["types"]["result"];
+
     type Execute = <Path extends keyof Generated["routeSchema"]>(
         path: Path,
         options?: Mixin<
@@ -150,9 +153,12 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
     ) => Promise<
         Generated["routeSchema"][Path]["types"]["🥛"] extends boolean
         ? // action
-        [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, Generated["routeSchema"][Path]["types"]["result"], ExecuteResultsOption]
+        [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, RouteResult<Path>, ExecuteResultsOption]
         : // stream
-        [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], ExecuteResultsOption>]
+        // Stream schemas store the yield type directly in `result` (route-generate.ts
+        // uses `Awaited<ReturnType<handler>> extends AsyncGenerator<infer I> ? I : never`),
+        // so no `GeneratorGeneric` wrapper is needed here.
+        [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, RouteResult<Path>], ExecuteResultsOption>]
     >;
 
     type Emit = <Key extends keyof Generated["events"]>(
@@ -189,7 +195,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
                         continue;
                     }
                     if (isProjectsDirectory === false) continue;
-                    projectName = thisFileDirPathArr[i];
+                    projectName = thisFileDirPathArr[i]!;
                     break;
                 }
                 if (projectName === "") throw new Error("Unable to determine the path of the current test, make sure the test is under a milkio project.");

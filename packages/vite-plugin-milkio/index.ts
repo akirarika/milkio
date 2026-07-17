@@ -9,7 +9,7 @@ import { adapters } from "./adapters/index.ts";
 
 export function useVitePluginMilkio(options?: {
     outputFormat?: "esm" | "cjs";
-}) {
+}): PluginOption {
     let outDir = "dist";
 
     return {

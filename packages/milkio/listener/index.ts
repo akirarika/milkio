@@ -614,7 +614,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 port.postMessage("PONG");
             }
             if (options.startsWith("CLOSE_STREAM:")) {
-                const executeId = options.split("CLOSE_STREAM:")[1];
+                const executeId = options.substring("CLOSE_STREAM:".length);
                 const streamCloser = streamClosers.get(executeId);
                 if (streamCloser) {
                     streamCloser.generator.return(undefined);

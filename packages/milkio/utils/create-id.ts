@@ -16,13 +16,13 @@ export function __createId(): string {
     let id = ts;
     // 中间 6 字符: 纯随机
     for (let i = 0; i < 6; i++) {
-        id += ENCODING[__fastIdPool[__fastIdPoolIndex++] % ENCODING_LEN];
+        id += ENCODING.charAt(__fastIdPool[__fastIdPoolIndex++]! % ENCODING_LEN);
     }
     // 后 10 字符: 计数器 + 随机混合
     const counter = __fastIdCounter++;
     for (let i = 0; i < 10; i++) {
-        const mix = (counter + __fastIdPool[__fastIdPoolIndex++ % 256]) & 0xFFFF;
-        id += ENCODING[mix % ENCODING_LEN];
+        const mix = (counter + __fastIdPool[__fastIdPoolIndex++ % 256]!) & 0xFFFF;
+        id += ENCODING.charAt(mix % ENCODING_LEN);
     }
     return id;
 }

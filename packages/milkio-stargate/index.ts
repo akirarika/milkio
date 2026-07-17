@@ -141,7 +141,10 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
             ? // action
             [Partial<Generated['rejectCode']>, null, ExecuteResultsOption] | [null, Generated['routeSchema'][Path]['types']['result'], ExecuteResultsOption]
             : // stream
-            [Partial<Generated['rejectCode']>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated['rejectCode']>, null] | [null, GeneratorGeneric<Generated['routeSchema'][Path]['types']['result']>], undefined>, ExecuteResultsOption]
+            // Stream schemas store the yield type directly in `result` (route-generate.ts
+            // uses `Awaited<ReturnType<handler>> extends AsyncGenerator<infer I> ? I : never`),
+            // so no `GeneratorGeneric` wrapper is needed here.
+            [Partial<Generated['rejectCode']>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated['rejectCode']>, null] | [null, Generated['routeSchema'][Path]['types']['result']], undefined>, ExecuteResultsOption]
         > {
             if (options.headers === undefined) options.headers = {};
 
@@ -610,7 +613,8 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                 ? // action
                 Generated['routeSchema'][Path]['types']['result']
                 : // stream
-                AsyncGenerator<[Partial<Generated['rejectCode']>, null] | [null, GeneratorGeneric<Generated['routeSchema'][Path]['types']['result']>], undefined>;
+                // Result is already the yield type (see route-generate.ts comment).
+                AsyncGenerator<[Partial<Generated['rejectCode']>, null] | [null, Generated['routeSchema'][Path]['types']['result']], undefined>;
             };
         },
     };
@@ -635,8 +639,7 @@ export function reviveJSONParse<T>(json: T): T {
         }
         const keys = Object.keys(json as object);
         const obj = json as Record<string, unknown>;
-        for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
+        for (const key of keys) {
             const value = obj[key];
             const result = reviveJSONParse(value);
             if (result !== value) obj[key] = result;
@@ -650,14 +653,18 @@ export function reviveJSONParse<T>(json: T): T {
         if (len >= 20 && len <= 32 && str.charCodeAt(0) >= 0x30 && str.charCodeAt(0) <= 0x39 && str.indexOf('T') !== -1) {
             const match = str.match(isoDatePattern);
             if (match !== null) {
-                if (match[2]) {
-                    const colonPos = match[2].charCodeAt(3) === 58 ? match[1].length + 3 : -1;
+                const datePart = match[1];
+                const tzPart = match[2];
+                if (tzPart !== undefined) {
+                    const colonPos = tzPart.charCodeAt(3) === 58 ? (datePart?.length ?? 0) + 3 : -1;
                     if (colonPos >= 0) {
                         return new Date(str.substring(0, colonPos) + str.substring(colonPos + 1)) as any;
                     }
                     return new Date(str) as any;
                 }
-                return new Date(match[1] + 'Z') as any;
+                if (datePart !== undefined) {
+                    return new Date(datePart + 'Z') as any;
+                }
             }
         }
     }

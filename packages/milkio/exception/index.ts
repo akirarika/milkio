@@ -28,6 +28,7 @@ export function reject(code: string, data?: any): MilkioRejectError<any, any> {
 export function raise(obj: Record<string, any>): MilkioRejectError<any, any> {
     const keys = Object.keys(obj);
     const code = keys[0];
+    if (code === undefined) throw new Error("raise() requires an object with at least one key as the rejection code");
     const rejectData = obj[code];
     const error = { $milkioReject: true, code, data: rejectData } as MilkioRejectError<any, any>;
     if (typeof Error.captureStackTrace === "function") Error.captureStackTrace(error);

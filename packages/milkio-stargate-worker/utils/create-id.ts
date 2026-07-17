@@ -65,11 +65,11 @@ function __bigIntToString(value: bigint): string {
   let result = "";
   let current = value;
 
-  if (current === 0n) return ENCODING[0];
+  if (current === 0n) return ENCODING.charAt(0);
 
   while (current > 0n) {
     const remainder = current % base;
-    result = ENCODING[Number(remainder)] + result;
+    result = ENCODING.charAt(Number(remainder)) + result;
     current = current / base;
   }
   return result;
@@ -78,14 +78,14 @@ function __bigIntToString(value: bigint): string {
 function __stringToBigInt(str: string): bigint {
   const charMap: { [key: string]: number } = {};
   for (let i = 0; i < ENCODING.length; i++) {
-    charMap[ENCODING[i]] = i;
+    charMap[ENCODING.charAt(i)] = i;
   }
 
   const base = BigInt(ENCODING.length);
   let result = 0n;
 
   for (let i = 0; i < str.length; i++) {
-    const char = str[i];
+    const char = str.charAt(i);
     if (!(char in charMap)) {
       throw new Error(`Invalid character '${char}' in input string`);
     }

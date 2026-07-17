@@ -29,7 +29,16 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
 
         await generateRunTs(project, milkioDirPath);
 
-        // Generate preliminary route-schema.ts so test files can type-check route paths
+        // Generate preliminary route-schema.ts so test files can type-check route paths.
+        // IMPORTANT: each entry must carry a proper "🥛" discriminator (false for actions,
+        // 0 for streams) so that stargate.execute()'s conditional type resolves to the
+        // correct branch (action tuple vs stream tuple) instead of distributing over
+        // `any` and producing a union that includes AsyncGenerator. Using `null` here
+        // causes `null['types']` to collapse to `any`, and `any extends boolean` takes
+        // BOTH branches — which creates cascade type errors in business code that
+        // accesses properties on the result. params/result are typed as `any` so that
+        // business code can be type-checked against route paths even before typia has
+        // generated the final schema.
         {
             let prelimRouteExports = "// route-schema (preliminary)\nconst routeSchema = {";
             const prelimRoutePaths = new Set<string>();
@@ -42,7 +51,10 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
                 if (file.type === "stream") routePath = `${routePath}~`;
                 if (prelimRoutePaths.has(routePath)) continue;
                 prelimRoutePaths.add(routePath);
-                prelimRouteExports += `\n  "/${routePath}": null,`;
+                // 🥛 discriminator: false (literal) for actions → `false extends boolean` = true → action branch
+                //                    0   (literal) for streams → `0 extends boolean` = false → stream branch
+                const discriminator = file.type === "stream" ? "0" : "false";
+                prelimRouteExports += `\n  "/${routePath}": { types: { "\u{1F95B}": ${discriminator}, params: undefined as any, result: undefined as any } },`;
             }
             prelimRouteExports += "\n} as const;\nexport default routeSchema;\n";
             await Bun.write(join(root, ".milkio", "route-schema.ts"), prelimRouteExports);
@@ -75,7 +87,7 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
                 if (isGenerate === false) return;
 
                 let routeFileImports = "// route-schema";
-                routeFileImports += `\nimport typia, { type IValidation } from "typia";`;
+                routeFileImports += `\nimport typia, { type IValidation, type Resolved } from "typia";`;
                 const typiaCommand = `${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
                 let routeFileExports = `// typia command: ${typiaCommand}`;
                 routeFileExports += "\nexport default { ";
@@ -83,8 +95,14 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
                 routeFileExports += "\ntypes: undefined as any as { ";
                 routeFileExports += `\n"🥛": ${file.type === "action" ? "boolean" : "number"}, `;
                 routeFileExports += `\nmeta: (typeof ${file.importName}) extends { meta: infer M } ? M : undefined, `;
-                routeFileExports += `\nparams: Parameters<typeof ${file.importName}["handler"]>[1], `;
-                routeFileExports += `\nresult: Awaited<ReturnType<typeof ${file.importName}["handler"]>> `;
+                routeFileExports += `\nparams: Resolved<Parameters<typeof ${file.importName}["handler"]>[1]>, `;
+                // For actions, `result` is the return value with typia tags stripped.
+                // For streams, the return type is `AsyncGenerator<YieldType>`, and
+                // `Resolved<T>` (from @typia/interface) destroys AsyncGenerator types
+                // by mapping over all properties. So for streams we store the yield
+                // type directly — the caller never needs the full AsyncGenerator shape
+                // from the schema.
+                routeFileExports += `\nresult: ${file.type === "action" ? "Resolved<Awaited<" : "Awaited<"}ReturnType<typeof ${file.importName}["handler"]>${file.type === "action" ? ">>" : "> extends AsyncGenerator<infer I> ? I : never"} `;
                 routeFileExports += "},";
                 if (project?.lazyRoutes === undefined || project?.lazyRoutes === true) {
                     routeFileImports += `\nimport type * as ${file.importName} from "../../../../../app/${file.path}";`;

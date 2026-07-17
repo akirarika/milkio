@@ -4,9 +4,58 @@ import type { CookbookOptions } from "./cookbook-dto-types";
 import chalk from "chalk";
 import { asciis } from "./asciis";
 import { uniqWith } from "lodash-es";
-import { exit } from "node:process";
+import { cwd, exit } from "node:process";
+import { existsSync, readFileSync } from "node:fs";
+import { basename, join, relative } from "node:path";
 import { search } from "@inquirer/prompts";
 import type { Params } from "..";
+
+/**
+ * Reconstruct the command the user actually ran, so we can suggest a
+ * non-interactive variant by appending `--mode=<mode>`.
+ *
+ * `process.argv` is `[bunPath, scriptPath, ...userArgs]`. We try to find an
+ * npm-script in the closest package.json whose value references the script
+ * file (e.g. milkio's "co" script), so the suggestion reads
+ * `bun run co dev --mode=test` rather than the raw script path.
+ * If no matching script is found we fall back to `bun <relativePath>`.
+ */
+function reconstructCommand(suffix: string): string {
+  const scriptPath = process.argv[1] ?? "";
+  const userArgs = process.argv.slice(2).filter((arg) => !arg.startsWith("--mode") && arg !== "--mode");
+
+  const scriptName = findMatchingScriptName(scriptPath);
+  if (scriptName) {
+    return ["bun run", scriptName, ...userArgs, suffix].filter(Boolean).join(" ");
+  }
+
+  let scriptDisplay = scriptPath;
+  try {
+    const rel = relative(cwd(), scriptPath);
+    if (rel) scriptDisplay = rel;
+  } catch {
+    // ignore
+  }
+  return ["bun", scriptDisplay, ...userArgs, suffix].filter(Boolean).join(" ");
+}
+
+function findMatchingScriptName(scriptPath: string): string | undefined {
+  try {
+    const pkgJsonPath = join(cwd(), "package.json");
+    if (!existsSync(pkgJsonPath)) return undefined;
+    const pkg = JSON.parse(readFileSync(pkgJsonPath, "utf-8"));
+    const scripts: Record<string, unknown> = pkg?.scripts ?? {};
+    const base = basename(scriptPath);
+    for (const [name, value] of Object.entries(scripts)) {
+      if (typeof value === "string" && value.includes(base)) {
+        return name;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return undefined;
+}
 
 export async function selectMode(options: CookbookOptions, params?: Params) {
   if (
@@ -18,6 +67,18 @@ export async function selectMode(options: CookbookOptions, params?: Params) {
       "The 'general->modes' is not configured. Edit your cookbook.toml file and add at least one mode, with 'test' being mandatory.",
     );
     process.exit(1);
+  }
+
+  const optionMode = params?.options?.mode;
+  if (typeof optionMode === "string" && optionMode.length > 0) {
+    if (options.general.modes.includes(optionMode) === false) {
+      consola.warn(
+        `The mode '${optionMode}' is not configured. Edit your cookbook.toml file and add it to the 'general->modes' array.`,
+      );
+      process.exit(1);
+    }
+    consola.info(`Mode: ${optionMode}`);
+    return optionMode;
   }
 
   if (params?.subCommand) {
@@ -54,13 +115,8 @@ export async function selectMode(options: CookbookOptions, params?: Params) {
 
   console.log(asciis().join("\n"));
   console.log("");
-  consola.start(
-    chalk.hex("#E6E7E9")("The configurations used by milkio vary under different modes."),
-  );
-  consola.start(
-    chalk.hex("#E6E7E9")(
-      "If the MODE environment variable is set, it will skip the mode selection dialog.",
-    ),
+  consola.info(
+    chalk.hex("#E6E7E9")("Exits if no mode is selected in 15s."),
   );
 
   const items: Array<{ value: string }> = [];
@@ -72,24 +128,49 @@ export async function selectMode(options: CookbookOptions, params?: Params) {
     items.push({ value: item });
   }
 
-  const selected = await search({
-    message: "Select a mode:",
-    source: async (input) => {
-      if (!input) return items;
-      const filtered = items.filter((item) =>
-        containsCharsInOrder(input.toLowerCase(), item.value.toLowerCase()),
-      );
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), 15000);
 
-      return uniqWith(filtered, (a, b) => a.value === b.value).sort((a, b) => {
-        const scoreA = calculateScore(input, a.value);
-        const scoreB = calculateScore(input, b.value);
-        if (scoreB.maxContiguous !== scoreA.maxContiguous) {
-          return scoreB.maxContiguous - scoreA.maxContiguous;
-        }
-        return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
-      });
-    },
-  });
+  let selected: string | undefined;
+  try {
+    selected = await search(
+      {
+        message: "Select a mode:",
+        source: async (input) => {
+          if (!input) return items;
+          const filtered = items.filter((item) =>
+            containsCharsInOrder(input.toLowerCase(), item.value.toLowerCase()),
+          );
+
+          return uniqWith(filtered, (a, b) => a.value === b.value).sort((a, b) => {
+            const scoreA = calculateScore(input, a.value);
+            const scoreB = calculateScore(input, b.value);
+            if (scoreB.maxContiguous !== scoreA.maxContiguous) {
+              return scoreB.maxContiguous - scoreA.maxContiguous;
+            }
+            return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
+          });
+        },
+      },
+      {
+        signal: abortController.signal,
+      },
+    );
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (abortController.signal.aborted) {
+      const exampleMode = options.general.modes[0];
+      const suggested = reconstructCommand(`--mode=${exampleMode}`);
+      consola.error(
+        `No mode was selected within 15 seconds. Exiting with code 1.\n\n` +
+          `Available modes: ${options.general.modes.join(", ")}\n\n` +
+          `To run non-interactively, re-run with a mode, e.g.:\n  ${suggested}`,
+      );
+      process.exit(1);
+    }
+    throw err;
+  }
+  clearTimeout(timeoutId);
 
   if (selected === "<cancel>") {
     consola.success("Cookbook cancelled");
