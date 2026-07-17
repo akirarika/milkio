@@ -1,4 +1,6 @@
 import { configWatcherExtension } from "./config";
+import { routeGenerateWatcherExtension } from "./route-generate";
+import { routeTypiaWatcherExtension } from "./route-typia";
 import { routeWatcherExtension } from "./route";
 import { handlerWatcherExtension } from "./handler";
 import { metaWatcherExtension } from "./meta";
@@ -13,8 +15,14 @@ import { seedWatcherExtension } from "./seed";
 export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
     // extensions
     // drizzle must run BEFORE route: action files import drizzle-schema,
-    // so drizzle-schema.ts must be generated before typia runs in route
+    // so drizzle-schema.ts must be generated before typia runs
     drizzleWatcherExtension,
+    // route-generate: write generated route schema files + preliminary route-schema.ts
+    routeGenerateWatcherExtension,
+    // route-typia: run typia generate on all generated route schemas
+    // (uses temp tsconfig excluding test files to prevent tsc errors from test files)
+    routeTypiaWatcherExtension,
+    // route: generate final route-schema.ts from typia output
     routeWatcherExtension,
     handlerWatcherExtension,
     configWatcherExtension,
