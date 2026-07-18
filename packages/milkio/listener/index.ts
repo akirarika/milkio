@@ -425,8 +425,6 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 if (response.body === "" && executed.results.value !== undefined) {
                     if (executed.emptyResult) {
                         response.body = `{"data":{},"executeId":"${executeId}","success":true}`;
-                    } else if (executed.resultsTypeSafety) {
-                        response.body = `{"data":${routeSchema.resultsToJSON(executed.results.value)},"executeId":"${executeId}","success":true}`;
                     } else {
                         response.body = `{"data":${JSON.stringify(executed.results.value)},"executeId":"${executeId}","success":true}`;
                     }

@@ -4,6 +4,7 @@ import { cwd, exit } from "node:process";
 import { exists, rm } from "node:fs/promises";
 import consola from "consola";
 import type { CookbookOptions } from "./cookbook-dto-types";
+import { getRuntime } from "./get-runtime";
 
 type TypecheckResult = {
   projectName: string;
@@ -52,7 +53,30 @@ type TypecheckResult = {
  * phase. The plugin binary is built on-demand by ttsc (cached after first
  * use); the route-typia phase runs before this check, so the cache is
  * typically already warm.
+ *
+ * Runtime resolution: each project's `runtime` field in cookbook.toml
+ * (e.g. `runtime = "node"`) determines which JavaScript runtime is used
+ * to launch ttsc. This is necessary because `co.exe` is a Bun-compiled
+ * binary — `process.execPath` points to `co.exe` itself, not to a real
+ * JS runtime, so spawning `process.execPath ttsc.js ...` would make
+ * co.exe treat `ttsc.js` as a command name. We honor the per-project
+ * `runtime` config (falling back to `getRuntime`'s default) and resolve
+ * it to an absolute executable path via `Bun.which`. Users with only
+ * Node.js or only Bun installed are both supported.
  */
+function resolveRuntimeExecutable(preferredRuntime: "node" | "bun"): string {
+  // Under Bun (including compiled binaries like co.exe), `Bun.which` finds
+  // an executable on PATH. Under plain Node.js, fall back to execPath.
+  if (typeof Bun !== "undefined") {
+    const resolved = Bun.which(preferredRuntime);
+    if (resolved) return resolved;
+    // Preferred runtime not on PATH — try the other one as a fallback.
+    const fallback = preferredRuntime === "node" ? Bun.which("bun") : Bun.which("node");
+    if (fallback) return fallback;
+  }
+  return process.execPath;
+}
+
 export async function typecheckProjects(options: CookbookOptions): Promise<void> {
   const workspacePath = cwd();
   const ttscPath = join(workspacePath, "node_modules", "ttsc", "lib", "launcher", "ttsc.js");
@@ -79,6 +103,13 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
         return { projectName, exitCode: 1, stdout: "", stderr: `Project directory not found: ${projectPath}` };
       }
 
+      // Resolve the JS runtime for this project from its cookbook.toml
+      // `runtime` field (e.g. `runtime = "node"`). Falls back to the
+      // default chosen by `getRuntime` (which checks availability).
+      const project = allProjects[projectName];
+      const preferredRuntime = await getRuntime((project.runtime === "bun" ? "bun" : "node") as "node" | "bun");
+      const runtimePath = resolveRuntimeExecutable(preferredRuntime);
+
       const tempTsconfigPath = join(projectPath, tempTsconfigName);
       const tempTsconfig = {
         extends: "./tsconfig.json",
@@ -95,7 +126,7 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
 
       try {
         return await new Promise<TypecheckResult>((resolve) => {
-          const child = spawn(process.execPath, [ttscPath, "check", "-p", tempTsconfigName], {
+          const child = spawn(runtimePath, [ttscPath, "check", "-p", tempTsconfigName], {
             cwd: projectPath,
             stdio: "pipe",
             shell: false,

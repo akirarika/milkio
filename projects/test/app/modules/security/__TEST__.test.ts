@@ -80,10 +80,11 @@ it.sequential("missing required field rejected", async () => {
 });
 
 /**
- * 额外字段过滤测试
- * 验证 typia 会过滤掉不在类型定义中的额外字段
+ * 额外字段过滤测试（开启 typeSafety，默认）
+ * 验证 typia.validatePrune 会过滤掉不在 Params 类型定义中的额外字段
+ * handler 收到的 params 不应包含 extraField
  */
-it.sequential("extra fields are stripped by typia", async () => {
+it.sequential("extra fields are stripped when typeSafety is on", async () => {
   const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, results] = await world.execute("/security/strict-params", {
     params: {
@@ -91,10 +92,92 @@ it.sequential("extra fields are stripped by typia", async () => {
       password: 'secret123',
       role: 'user',
       age: 25,
-    },
+      extraField: 'should-be-stripped',
+      anotherExtra: 42,
+    } as any,
     generateParams: false,
   });
   if (error) throw reject("Milkio did not execute successfully", error);
 
-  expect((results as any).password).toBeUndefined();
+  expect(results.receivedFields).not.toContain('extraField');
+  expect(results.receivedFields).not.toContain('anotherExtra');
+  expect(results.receivedFields).toContain('username');
+  expect(results.receivedFields).toContain('password');
+  expect(results.receivedFields).toContain('role');
+  expect(results.receivedFields).toContain('age');
+});
+
+// ============================================================================
+// 关闭 typeSafety 的测试（strict-params-off）
+// ============================================================================
+
+/**
+ * 关闭 typeSafety 后额外字段保留测试
+ * 验证关闭 typeSafety 后，typia 不再过滤额外字段
+ * handler 收到的 params 应包含 extraField
+ */
+it.sequential("extra fields are preserved when typeSafety is off", async () => {
+  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [error, results] = await world.execute("/security/strict-params-off", {
+    params: {
+      username: 'testuser',
+      password: 'secret123',
+      role: 'user',
+      age: 25,
+      extraField: 'should-be-preserved',
+      anotherExtra: 42,
+    } as any,
+    generateParams: false,
+  });
+  if (error) throw reject("Milkio did not execute successfully", error);
+
+  expect(results.receivedFields).toContain('extraField');
+  expect(results.receivedFields).toContain('anotherExtra');
+  expect(results.receivedFields).toContain('username');
+  expect(results.receivedFields).toContain('password');
+  expect(results.receivedFields).toContain('role');
+  expect(results.receivedFields).toContain('age');
+});
+
+/**
+ * 关闭 typeSafety 后类型校验失效测试
+ * 验证关闭 typeSafety 后，typia 不再校验参数类型
+ * 传入错误类型的 age 值不应被拒绝
+ */
+it.sequential("invalid type not rejected when typeSafety is off", async () => {
+  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [error, results] = await world.execute("/security/strict-params-off", {
+    params: {
+      username: 'testuser',
+      password: 'secret123',
+      role: 'user',
+      age: 'not-a-number',
+    } as any,
+    generateParams: false,
+  });
+  if (error) throw reject("Should not have failed when typeSafety is off", error);
+
+  expect(results.username).toBe('testuser');
+  expect(results.age).toBe('not-a-number');
+});
+
+/**
+ * 关闭 typeSafety 后非法联合类型不被拒绝测试
+ * 验证关闭 typeSafety 后，typia 不再校验联合类型
+ * 传入非法的 role 值不应被拒绝
+ */
+it.sequential("invalid role not rejected when typeSafety is off", async () => {
+  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [error, results] = await world.execute("/security/strict-params-off", {
+    params: {
+      username: 'testuser',
+      password: 'secret123',
+      role: 'superadmin',
+      age: 25,
+    } as any,
+    generateParams: false,
+  });
+  if (error) throw reject("Should not have failed when typeSafety is off", error);
+
+  expect(results.role).toBe('superadmin');
 });

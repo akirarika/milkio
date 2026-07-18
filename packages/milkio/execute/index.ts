@@ -25,7 +25,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
                     paramsType: "string";
                 }
             ),
-    ): Promise<{ executeId: string; headers: Headers; params: Record<any, unknown>; results: Results<any>; context: $context; meta: Readonly<$meta>; type: "action" | "stream"; emptyResult: boolean; resultsTypeSafety: boolean; finales: Array<() => void | Promise<void>> }> => {
+    ): Promise<{ executeId: string; headers: Headers; params: Record<any, unknown>; results: Results<any>; context: $context; meta: Readonly<$meta>; type: "action" | "stream"; emptyResult: boolean; finales: Array<() => void | Promise<void>> }> => {
         const type = options.path.endsWith("~") ? "stream" : "action";
         const executeId: string = options.createdExecuteId;
         let headers: Headers;
@@ -139,25 +139,11 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             throw reject("REQUEST_FAIL", "The return type of the handler must be an 'object', which is currently an '${typeof typeof results.value}'.");
         }
 
-        let resultsTypeSafety = false;
-        if (!emptyResult && type === "action" && (
-            // Temporary: type-safe default is false and this setting should not be exposed to users
-            // Due to current issues with typia, type safety cannot be achieved at the moment
-            // Therefore, the next line of code is currently commented out
-            // This means Milkio is using traditional JSON.stringify for result serialization
-            // meta?.typeSafety === undefined || 
-            // @ts-ignore
-            meta.typeSafety === true || (Array.isArray(meta.typeSafety) && meta.typeSafety.includes("results")))) {
-            resultsTypeSafety = true;
-            const validation = routeSchema.validateResults(results.value) as IValidation<any>;
-            if (!validation.success) throw reject("RESULTS_TYPE_INCORRECT", { ...(validation as any).errors[0], message: `The value '${(validation as any).errors[0].path}' is '${(validation as any).errors[0].value}', which does not meet '${(validation as any).errors[0].expected}' requirements.` });
-        }
-
         if (runtime._hasEmitHandlers?.("milkio:executeAfter") ?? true) {
             await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results, reject, raise });
         }
 
-        return { executeId, headers, params, results, context: options.context, meta, type, emptyResult, resultsTypeSafety, finales };
+        return { executeId, headers, params, results, context: options.context, meta, type, emptyResult, finales };
     };
 
     const __call = async (context: $context, module: { meta: any, handler: any }, params?: any): Promise<any> => {
