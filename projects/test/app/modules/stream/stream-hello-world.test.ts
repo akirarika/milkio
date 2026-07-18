@@ -17,7 +17,7 @@ test.sequential("basic", async () => {
     const values: Array<number> = [];
     for await (const [error, result] of results) {
         if (error) throw reject("Milkio did not execute successfully", error);
-        values.push(result);
+        values.push(result.value);
     }
 
     // Check if the return value is as expected
@@ -41,7 +41,7 @@ test.sequential("sleep", async () => {
     const values: Array<number> = [];
     for await (const [error, result] of results) {
         if (error) throw reject("Milkio did not execute successfully", error);
-        values.push(result);
+        values.push(result.value);
     }
 
     // Check if the return value is as expected

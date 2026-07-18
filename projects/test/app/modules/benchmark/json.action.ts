@@ -1,8 +1,9 @@
 import type { MilkioContext } from "../../../.milkio/declares.ts";
 
-export async function handler(
-	context: MilkioContext,
-	params: { a: number; b: number },
-): Promise<{ result: number }> {
+type Params = { a: number; b: number };
+
+type Result = { result: number };
+
+export async function handler(context: MilkioContext, params: Params): Promise<Result> {
 	return { result: params.a + params.b };
 }

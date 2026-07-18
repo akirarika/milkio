@@ -1,7 +1,11 @@
 import { createFlow, reject } from "milkio";
 import type { MilkioContext } from "../../../.milkio/declares.ts";
 
-export async function* handler(context: MilkioContext, params: {}): AsyncGenerator<{ counter: number; }, any, any> {
+type Params = {};
+
+type Result = AsyncGenerator<{ counter: number; }, any, any>;
+
+export async function* handler(context: MilkioContext, params: Params): Result {
     const flow = createFlow<{ counter: number }>();
 
     setTimeout(() => {

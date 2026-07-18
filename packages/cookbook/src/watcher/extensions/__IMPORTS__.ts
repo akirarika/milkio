@@ -1,3 +1,4 @@
+import { routeValidateWatcherExtension } from "./route-validate";
 import { configWatcherExtension } from "./config";
 import { routeGenerateWatcherExtension } from "./route-generate";
 import { routeTypiaWatcherExtension } from "./route-typia";
@@ -14,6 +15,10 @@ import { seedWatcherExtension } from "./seed";
 
 export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
     // extensions
+    // route-validate must run FIRST: validates that every action/stream file
+    // has Params, Result types and handler in the correct order. This runs
+    // before any other extension so issues are caught immediately.
+    routeValidateWatcherExtension,
     // drizzle must run BEFORE route: action files import drizzle-schema,
     // so drizzle-schema.ts must be generated before typia runs
     drizzleWatcherExtension,

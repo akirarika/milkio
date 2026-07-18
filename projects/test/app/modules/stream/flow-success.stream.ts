@@ -4,7 +4,11 @@ import type { MilkioContext, MilkioMeta } from "../../../.milkio/declares.ts";
 
 export const meta: MilkioMeta = {};
 
-export async function* handler(context: MilkioContext, params: {}): AsyncGenerator<{ counter: number }> {
+type Params = {};
+
+type Result = AsyncGenerator<{ counter: number }>;
+
+export async function* handler(context: MilkioContext, params: Params): Result {
     const flow = createFlow<{ counter: number }>();
 
     setTimeout(() => {

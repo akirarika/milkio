@@ -1,11 +1,12 @@
-import { type $context, type $meta } from "milkio";
+import type { MilkioContext, MilkioMeta } from "../../../.milkio/declares.ts";
 
-export const meta: $meta = {}
+export const meta: MilkioMeta = {}
 
-export async function handler(
-    context: $context,
-    params: {},
-): Promise<{ mode: string }> {
+type Params = {};
+
+type Result = { mode: string };
+
+export async function handler(context: MilkioContext, params: Params): Promise<Result> {
     const mode = context.config.mode;
     return { mode };
 }

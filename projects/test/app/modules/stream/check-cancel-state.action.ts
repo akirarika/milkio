@@ -3,9 +3,10 @@ import { cancelState } from "./stream-cancel.stream.ts";
 
 export const meta: MilkioMeta = {};
 
-export async function handler(
-	context: MilkioContext,
-	params: {},
-): Promise<{ done: boolean; yieldCount: number }> {
+type Params = {};
+
+type Result = { done: boolean; yieldCount: number };
+
+export async function handler(context: MilkioContext, params: Params): Promise<Result> {
 	return { ...cancelState };
 }

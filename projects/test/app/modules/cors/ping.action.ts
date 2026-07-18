@@ -4,10 +4,11 @@ import type { MilkioContext, MilkioMeta } from "../../../.milkio/declares.ts";
 
 export const meta: MilkioMeta = {};
 
-export async function handler(
-    context: MilkioContext,
-    params: {},
-): Promise<{ cors: { hasAllowOrigin: boolean; hasAllowMethods: boolean; hasAllowHeaders: boolean; hasExposeHeaders: boolean; hasCredentials: boolean; hasMaxAge: boolean } }> {
+type Params = {};
+
+type Result = { cors: { hasAllowOrigin: boolean; hasAllowMethods: boolean; hasAllowHeaders: boolean; hasExposeHeaders: boolean; hasCredentials: boolean; hasMaxAge: boolean } };
+
+export async function handler(context: MilkioContext, params: Params): Promise<Result> {
     return {
         cors: {
             hasAllowOrigin: "corsAllowOrigin" in (context.http.cors ?? {}),

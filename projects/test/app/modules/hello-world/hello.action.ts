@@ -4,11 +4,15 @@ import type { MilkioContext, MilkioMeta } from "../../../.milkio/declares.ts";
 
 export const meta: MilkioMeta = {}
 
-export async function handler(context: MilkioContext, params: {
+type Params = {
     a: string;
     b: number;
     throw?: boolean;
-}): Promise<{ count: number }> {
+};
+
+type Result = { count: number };
+
+export async function handler(context: MilkioContext, params: Params): Promise<Result> {
     const results = {
         count: 2 + params.b,
         say: "hello world",

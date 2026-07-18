@@ -2,10 +2,11 @@ import type { MilkioContext, MilkioMeta } from "../../../.milkio/declares.ts";
 
 export const meta: MilkioMeta = {};
 
-export async function handler(
-    context: MilkioContext,
-    params: { date: Date },
-): Promise<{ isDate: boolean; timestamp: number; iso: string }> {
+type Params = { date: Date };
+
+type Result = { isDate: boolean; timestamp: number; iso: string };
+
+export async function handler(context: MilkioContext, params: Params): Promise<Result> {
     const d = params.date;
     return {
         isDate: d instanceof Date,

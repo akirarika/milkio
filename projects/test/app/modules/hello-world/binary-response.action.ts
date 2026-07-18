@@ -4,7 +4,11 @@ export const meta = {
     typeSafety: false as const,
 };
 
-export async function handler(context: MilkioContext, params: { type: "uint8array" | "arraybuffer" | "blob" }): Promise<{ success: boolean }> {
+type Params = { type: "uint8array" | "arraybuffer" | "blob" };
+
+type Result = { success: boolean };
+
+export async function handler(context: MilkioContext, params: Params): Promise<Result> {
     const text = "Hello, Binary World!";
     const encoder = new TextEncoder();
     const uint8 = encoder.encode(text);

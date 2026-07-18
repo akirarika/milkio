@@ -4,9 +4,12 @@ export const meta: MilkioMeta = {
     onlyVip: true,
 }
 
+type Params = {};
+type Result = { message: string };
+
 export async function handler(
     context: MilkioContext,
-    params: {},
+    params: Params,
 ) {
     const message = `Hello world! UwU`;
 
