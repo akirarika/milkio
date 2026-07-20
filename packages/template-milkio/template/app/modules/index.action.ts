@@ -1,19 +1,15 @@
-import type { MilkioContext, MilkioMeta } from "../../.milkio/declares";
+import type { MilkioContext, MilkioMeta } from '../../.milkio/declares.ts';
 
-export const meta: MilkioMeta = {
-    onlyVip: true,
-}
+export const meta: MilkioMeta = {};
 
 type Params = {};
+
 type Result = { message: string };
 
-export async function handler(
-    context: MilkioContext,
-    params: Params,
-) {
-    const message = `Hello world! UwU`;
+export async function handler(context: MilkioContext, params: Params): Promise<Result> {
+    const message = 'Hello world! UwU';
 
     return {
-        message
-    }
-};
+        message,
+    };
+}

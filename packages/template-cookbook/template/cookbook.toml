@@ -1,4 +1,6 @@
 [general]
 cookbookPort = 8000
-packageManager = "bun"
-modes = ["test", "development", "production"]
+packageManager = "npm"
+modes = ["test", "dvlp-zh-cn", "dvlp-en", "prod-zh-cn", "prod-en"]
+
+[config]

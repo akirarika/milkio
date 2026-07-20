@@ -5,6 +5,7 @@ await createTemplate(async (tools) => {
   return {
     path: join(tools.directory(), `${tools.hyphen(tools.name())}.action.ts`),
     content: `
+import type { MilkioContext, MilkioMeta } from "../../.milkio/declares.ts";
 import { stream } from "milkio";
 
 /**
@@ -12,7 +13,7 @@ import { stream } from "milkio";
  */
 export default stream({
   async *handler(
-    context,
+    context: MilkioContext,
     params: {
       /* your params.. */
     },

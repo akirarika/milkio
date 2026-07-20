@@ -1,5 +1,5 @@
-import { createTemplate } from '@milkio/cookbook-template'
-import { join } from 'node:path'
+import { createTemplate } from '@milkio/cookbook-template';
+import { join } from 'node:path';
 
 await createTemplate(async (tools) => {
   return {
@@ -21,5 +21,5 @@ export default config(
   },
 );
 `.trim(),
-  }
-})
+  };
+});

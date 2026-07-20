@@ -5,25 +5,25 @@ await createTemplate(async (tools) => {
   return {
     path: join(tools.directory(), `${tools.hyphen(tools.name())}.action.ts`),
     content: `
-import { action } from "milkio";
+import type { MilkioContext, MilkioMeta } from "../../.milkio/declares.ts";
 
-/**
- * ${tools.name()}
- */
-export default action({
-  async handler(
-    context,
-    params: {
-      /* your params.. */
-    },
-  ) {
-    const message = "hello world!";
+export const meta: MilkioMeta = {};
 
-    return {
-      say: message,
-    }
-  }
-});`.trim(),
+type Params = {
+  /* your params.. */
+};
+
+type Result = {
+  say: string;
+};
+
+export async function handler(context: MilkioContext, params: Params): Promise<Result> {
+  const message = "hello world!";
+
+  return {
+    say: message,
+  };
+}`.trim(),
   };
 });
 

@@ -1,7 +1,7 @@
 {
   "name": "milkio",
   "type": "module",
-  "version": "1.3.21",
+  "version": "1.3.22",
   "exports": "./index.ts",
   "repository": {
     "type": "git",

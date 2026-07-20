@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { join } from "node:path";
-import { cwd, exit } from "node:process";
+import { cwd, exit, platform } from "node:process";
 import { exists, rm } from "node:fs/promises";
 import consola from "consola";
 import type { CookbookOptions } from "./cookbook-dto-types";
@@ -13,14 +13,23 @@ type TypecheckResult = {
   stderr: string;
 };
 
+type CheckResult = TypecheckResult & {
+  kind: "typecheck" | "lint";
+};
+
 /**
- * Concurrently runs `ttsc check` (Typia TypeScript Compiler, equivalent to
- * `tsc --noEmit` but with native typia transformer support) for every
- * milkio-typed project listed in cookbook.toml. Custom (non-milkio, e.g.
- * Nuxt) projects are skipped because their own toolchains already handle
- * type checking and they may legitimately rely on framework-internal types
- * that are not portable. If any milkio project has type errors, prints the
- * errors and exits with code 1 so the caller cannot continue.
+ * Concurrently runs type/lint checks for every project listed in cookbook.toml.
+ *
+ * Per-project dispatch:
+ *   - `milkio` projects always run `ttsc check` (Typia TypeScript Compiler,
+ *     equivalent to `tsc --noEmit` but with native typia transformer support).
+ *   - `custom` projects run their own `lint` script from package.json via the
+ *     configured package manager (`${packageManager} run lint`). If a custom
+ *     project does not declare a `lint` script, it falls back to `ttsc check`
+ *     (with a warning) so it is still covered.
+ *
+ * If any project fails, prints the failures and exits with code 1 so the
+ * caller cannot continue.
  *
  * Why `ttsc` instead of stock `tsc`:
  *   - `ttsc` is tsgo (TypeScript-Go) under the hood, same engine as `tsc`
@@ -30,10 +39,10 @@ type TypecheckResult = {
  *     that stock `tsc` cannot surface. This gives an earlier, richer
  *     signal when route schemas or business code misuse typia APIs.
  *
- * A temporary `tsconfig.typecheck.json` is created for each project that
- * extends the project's own `tsconfig.json` but overrides `composite`,
- * `declaration`, and `emitDeclarationOnly` to `false`. This is necessary
- * because some embed projects use `composite: true` (which implies
+ * A temporary `tsconfig.typecheck.json` is created for each ttsc-checked
+ * project that extends the project's own `tsconfig.json` but overrides
+ * `composite`, `declaration`, and `emitDeclarationOnly` to `false`. This is
+ * necessary because some embed projects use `composite: true` (which implies
  * `declaration: true`) so they can be referenced by other composite projects.
  * When `declaration: true` is active, the compiler validates that every
  * exported inferred type can be named in a declaration file, triggering
@@ -80,53 +89,154 @@ function resolveRuntimeExecutable(preferredRuntime: "node" | "bun"): string {
 export async function typecheckProjects(options: CookbookOptions): Promise<void> {
   const workspacePath = cwd();
   const ttscPath = join(workspacePath, "node_modules", "ttsc", "lib", "launcher", "ttsc.js");
+  const allProjects = options.projects ?? {};
 
-  if (!(await exists(ttscPath))) {
-    consola.warn(`ttsc compiler not found at "${ttscPath}", skipping type check.`);
-    return;
+  // Categorize projects based on type and lint script availability.
+  // - milkio projects always run ttsc check.
+  // - custom projects run their own `lint` script from package.json via the
+  //   configured package manager. If a custom project does not declare a
+  //   `lint` script, it falls back to ttsc check (with a warning) so it is
+  //   still covered.
+  const milkioProjectNames: string[] = [];
+  const customLintProjectNames: string[] = [];
+  const customFallbackProjectNames: string[] = [];
+
+  for (const [name, project] of Object.entries(allProjects)) {
+    if (project.type === "milkio") {
+      milkioProjectNames.push(name);
+    } else if (project.type === "custom") {
+      const projectPath = join(workspacePath, "projects", name);
+      const packageJsonPath = join(projectPath, "package.json");
+      let hasLintScript = false;
+      try {
+        if (await exists(packageJsonPath)) {
+          const packageJson = JSON.parse(await Bun.file(packageJsonPath).text());
+          if (packageJson?.scripts?.lint) {
+            hasLintScript = true;
+          }
+        }
+      } catch {}
+
+      if (hasLintScript) {
+        customLintProjectNames.push(name);
+      } else {
+        consola.warn(
+          `Project "${name}" does not have a "lint" script configured in its package.json scripts. Defaulting to ttsc check.`,
+        );
+        customFallbackProjectNames.push(name);
+      }
+    }
   }
 
-  const allProjects = options.projects ?? {};
-  const projectNames = Object.entries(allProjects)
-    .filter(([, project]) => project.type === "milkio")
-    .map(([name]) => name);
-  if (projectNames.length === 0) return;
+  const ttscProjectNames = [...milkioProjectNames, ...customFallbackProjectNames];
 
-  consola.info(`Type checking ${projectNames.length} milkio project(s) with ttsc check concurrently..`);
+  if (ttscProjectNames.length === 0 && customLintProjectNames.length === 0) return;
 
   const tempTsconfigName = "tsconfig.typecheck.json";
+  const results: CheckResult[] = [];
 
-  const results: TypecheckResult[] = await Promise.all(
-    projectNames.map(async (projectName): Promise<TypecheckResult> => {
-      const projectPath = join(workspacePath, "projects", projectName);
-      if (!(await exists(projectPath))) {
-        return { projectName, exitCode: 1, stdout: "", stderr: `Project directory not found: ${projectPath}` };
-      }
+  // Phase 1: ttsc check for milkio projects + custom projects without lint.
+  if (ttscProjectNames.length > 0) {
+    if (!(await exists(ttscPath))) {
+      consola.warn(`ttsc compiler not found at "${ttscPath}", skipping type check.`);
+    } else {
+      consola.info(`Type checking ${ttscProjectNames.length} project(s) with ttsc check concurrently..`);
 
-      // Resolve the JS runtime for this project from its cookbook.toml
-      // `runtime` field (e.g. `runtime = "node"`). Falls back to the
-      // default chosen by `getRuntime` (which checks availability).
-      const project = allProjects[projectName];
-      const preferredRuntime = await getRuntime((project.runtime === "bun" ? "bun" : "node") as "node" | "bun");
-      const runtimePath = resolveRuntimeExecutable(preferredRuntime);
+      const ttscResults = await Promise.all(
+        ttscProjectNames.map(async (projectName): Promise<CheckResult> => {
+          const projectPath = join(workspacePath, "projects", projectName);
+          if (!(await exists(projectPath))) {
+            return {
+              projectName,
+              exitCode: 1,
+              stdout: "",
+              stderr: `Project directory not found: ${projectPath}`,
+              kind: "typecheck",
+            };
+          }
 
-      const tempTsconfigPath = join(projectPath, tempTsconfigName);
-      const tempTsconfig = {
-        extends: "./tsconfig.json",
-        compilerOptions: {
-          composite: false,
-          declaration: false,
-          emitDeclarationOnly: false,
-          // Explicitly register the typia transformer plugin. See the
-          // function-level comment for why auto-discovery does not work here.
-          plugins: [{ transform: "typia/lib/transform" }],
-        },
-      };
-      await Bun.write(tempTsconfigPath, JSON.stringify(tempTsconfig, null, 2));
+          // Resolve the JS runtime for this project from its cookbook.toml
+          // `runtime` field (e.g. `runtime = "node"`). Falls back to the
+          // default chosen by `getRuntime` (which checks availability).
+          const project = allProjects[projectName];
+          const preferredRuntime = await getRuntime((project.runtime === "bun" ? "bun" : "node") as "node" | "bun");
+          const runtimePath = resolveRuntimeExecutable(preferredRuntime);
 
-      try {
-        return await new Promise<TypecheckResult>((resolve) => {
-          const child = spawn(runtimePath, [ttscPath, "check", "-p", tempTsconfigName], {
+          const tempTsconfigPath = join(projectPath, tempTsconfigName);
+          const tempTsconfig = {
+            extends: "./tsconfig.json",
+            compilerOptions: {
+              composite: false,
+              declaration: false,
+              emitDeclarationOnly: false,
+              // Explicitly register the typia transformer plugin. See the
+              // function-level comment for why auto-discovery does not work here.
+              plugins: [{ transform: "typia/lib/transform" }],
+            },
+          };
+          await Bun.write(tempTsconfigPath, JSON.stringify(tempTsconfig, null, 2));
+
+          try {
+            return await new Promise<CheckResult>((resolve) => {
+              const child = spawn(runtimePath, [ttscPath, "check", "-p", tempTsconfigName], {
+                cwd: projectPath,
+                stdio: "pipe",
+                shell: false,
+              });
+
+              let stdout = "";
+              let stderr = "";
+
+              child.stdout.on("data", (data: Buffer) => {
+                stdout += data.toString();
+              });
+              child.stderr.on("data", (data: Buffer) => {
+                stderr += data.toString();
+              });
+
+              child.on("error", (err: Error) => {
+                resolve({ projectName, exitCode: 1, stdout, stderr: stderr + `\n${err.message}`, kind: "typecheck" });
+              });
+
+              child.on("close", (code: number | null) => {
+                resolve({ projectName, exitCode: code ?? 1, stdout, stderr, kind: "typecheck" });
+              });
+            });
+          } finally {
+            await rm(tempTsconfigPath, { force: true }).catch(() => {});
+          }
+        }),
+      );
+      results.push(...ttscResults);
+    }
+  }
+
+  // Phase 2: lint for custom projects with a `lint` script in package.json.
+  // Uses the workspace's configured package manager (`options.general.packageManager`)
+  // to invoke the script, e.g. `npm run lint`, `pnpm run lint`, `bun run lint`.
+  if (customLintProjectNames.length > 0) {
+    consola.info(`Linting ${customLintProjectNames.length} custom project(s) with their lint script..`);
+
+    const shell = platform === "win32" ? "powershell.exe" : "bash";
+    const shellFlag = platform === "win32" ? "-Command" : "-c";
+
+    const lintResults = await Promise.all(
+      customLintProjectNames.map(async (projectName): Promise<CheckResult> => {
+        const projectPath = join(workspacePath, "projects", projectName);
+        if (!(await exists(projectPath))) {
+          return {
+            projectName,
+            exitCode: 1,
+            stdout: "",
+            stderr: `Project directory not found: ${projectPath}`,
+            kind: "lint",
+          };
+        }
+
+        const script = `${options.general.packageManager} run lint`;
+
+        return await new Promise<CheckResult>((resolve) => {
+          const child = spawn(shell, [shellFlag, script], {
             cwd: projectPath,
             stdio: "pipe",
             shell: false,
@@ -143,34 +253,36 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
           });
 
           child.on("error", (err: Error) => {
-            resolve({ projectName, exitCode: 1, stdout, stderr: stderr + `\n${err.message}` });
+            resolve({ projectName, exitCode: 1, stdout, stderr: stderr + `\n${err.message}`, kind: "lint" });
           });
 
           child.on("close", (code: number | null) => {
-            resolve({ projectName, exitCode: code ?? 1, stdout, stderr });
+            resolve({ projectName, exitCode: code ?? 1, stdout, stderr, kind: "lint" });
           });
         });
-      } finally {
-        await rm(tempTsconfigPath, { force: true }).catch(() => {});
-      }
-    }),
-  );
+      }),
+    );
+    results.push(...lintResults);
+  }
 
   const failures = results.filter((r) => r.exitCode !== 0);
 
   if (failures.length > 0) {
     console.log("");
     for (const failure of failures) {
-      consola.error(`Type check failed for project "${failure.projectName}" (exit code ${failure.exitCode}):`);
+      const label = failure.kind === "lint" ? "Lint" : "Type check";
+      consola.error(`${label} failed for project "${failure.projectName}" (exit code ${failure.exitCode}):`);
       if (failure.stdout.trim()) console.log(failure.stdout.trim());
       if (failure.stderr.trim()) console.log(failure.stderr.trim());
       console.log("");
     }
     consola.error(
-      `Encountered type errors in ${failures.length} of ${projectNames.length} project(s). Please fix the type errors before running.`,
+      `Encountered errors in ${failures.length} of ${results.length} project(s). Please fix the errors before running.`,
     );
     exit(1);
   }
 
-  consola.success(`Type check passed for all ${projectNames.length} project(s).`);
+  if (results.length > 0) {
+    consola.success(`All checks passed for ${results.length} project(s).`);
+  }
 }

@@ -1,9 +1,12 @@
-import { test } from "vitest";
-import { astra } from "../utils/astra";
+import { expect, test } from 'vitest';
+import { astra } from '../utils/astra.ts';
 
-test("adjust", async () => {
+test('basic', async () => {
     const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
-    await world.execute("/", {
-        generateParams: true
+    const [error, result] = await world.execute('/', {
+        generateParams: true,
     });
+    if (error) throw reject('Milkio did not execute successfully', error);
+
+    expect(result.message).toBe('Hello world! UwU');
 });

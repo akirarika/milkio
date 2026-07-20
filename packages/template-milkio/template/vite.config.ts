@@ -1,17 +1,17 @@
-import { defineConfig } from "vite";
-import { useVitePluginMilkio } from "@milkio/vite-plugin-milkio";
+import { defineConfig } from 'vite';
+import { useVitePluginMilkio } from '@milkio/vite-plugin-milkio';
 
 export default defineConfig(async () => {
     return {
         server: {
+            host: '0.0.0.0',
             port: 9000,
         },
         build: {
             manifest: true,
             sourcemap: true,
         },
-        resolve: {
-        },
-        plugins: [useVitePluginMilkio()],
+        resolve: {},
+        plugins: [useVitePluginMilkio({ outputFormat: 'esm' })],
     };
 });

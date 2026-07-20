@@ -213,7 +213,7 @@ export default await defineCookbookCommand(async (utils) => {
         if (await exists(cookbookTomlPath)) {
             const cookbookTomlContent = await readFile(cookbookTomlPath, 'utf8');
             const updatedContent = cookbookTomlContent.replace(
-                /packageManager = "bun"/g,
+                /packageManager = ".*"/g,
                 `packageManager = "${selectedPackageManager}"`
             );
             await writeFile(cookbookTomlPath, updatedContent, 'utf8');

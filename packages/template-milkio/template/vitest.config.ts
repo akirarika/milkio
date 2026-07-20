@@ -1,5 +1,11 @@
-import { defineProject } from 'vitest/config'
+import { defineProject } from 'vitest/config';
 
 export default defineProject({
-    test: {},
-})
+    test: {
+        testTimeout: 60000,
+        fileParallelism: false,
+        sequence: {
+            concurrent: false,
+        },
+    },
+});

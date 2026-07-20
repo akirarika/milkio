@@ -1,14 +1,13 @@
 {
-  "name": "@milkio/milkio",
-  "exports": "./index.ts",
+  "name": "REPLACE-YOUR-REPOSITORY-NAME",
   "type": "module",
   "private": true,
+  "module": "index.ts",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build"
   },
-  "devDependencies": {},
-  "peerDependencies": {
-    "typescript": ">=7.0.0"
-  }
+  "trustedDependencies": [],
+  "dependencies": {},
+  "devDependencies": {}
 }
