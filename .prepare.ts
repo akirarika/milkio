@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, lstatSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 
@@ -226,15 +226,29 @@ if (isDownstreamWorkspace) {
 // vite-plugin-milkio is imported by vite.config.ts, which is loaded by Node.js
 // (not Vite's own loader) when starting the dev server. Node.js supports type
 // stripping for .ts files in user code but NOT for files under node_modules.
-// Both step 2 (milkio workspace) and step 3 (downstream workspaces) copy the
-// .ts source into node_modules, so in either case we must also build a .js
+// Step 2 (milkio workspace) and step 3 (downstream workspaces) copy the .ts
+// source into node_modules as a REAL directory, so we must also build a .js
 // bundle so Node.js can load the plugin without
 // ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING. This is required for the
 // node-runtime "test" project in the milkio workspace as well.
+//
+// IMPORTANT: only do this when node_modules/@milkio/vite-plugin-milkio is a
+// real copy. When it is a symlink (a healthy bun workspace link, e.g. on
+// Linux/CI), Node resolves the real path under packages/* — which is OUTSIDE
+// node_modules — so type stripping already works and no build is needed.
+// Building in that case would write index.js and rewrite package.json THROUGH
+// the symlink into the source package, corrupting it and breaking the
+// subsequent `co generate` build in CI.
 
 {
   const vitePluginMilkioDir = path.join("node_modules", "@milkio", "vite-plugin-milkio");
-  if (existsSync(vitePluginMilkioDir)) {
+  let isSymlink = false;
+  try {
+    isSymlink = lstatSync(vitePluginMilkioDir).isSymbolicLink();
+  } catch {
+    isSymlink = false;
+  }
+  if (!isSymlink && existsSync(vitePluginMilkioDir)) {
     const entrypoint = path.join(vitePluginMilkioDir, "index.ts");
     if (existsSync(entrypoint)) {
       const buildResult = await Bun.build({

@@ -1,7 +1,7 @@
 {
   "name": "@milkio/stargate-worker",
   "type": "module",
-  "version": "1.3.23",
+  "version": "1.3.24",
   "exports": "./index.ts",
   "peerDependencies": {},
   "devDependencies": {},
