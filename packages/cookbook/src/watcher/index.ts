@@ -1,7 +1,7 @@
 import { watch, type FSWatcher } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { exists, mkdir, readdir, rm } from "node:fs/promises";
-import { cwd, exit } from "node:process";
+import { cwd } from "node:process";
 import type { CookbookOptions } from "../utils/cookbook-dto-types.ts";
 import { Glob } from "bun";
 import type { CookbookWatcherExtensionProject, CookbookWatcherFile, defineWatcherExtension } from "./extensions.ts";
@@ -115,7 +115,13 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
         const fileName = filePath.split("/").pop()!;
         if (fileName.startsWith(".")) continue;
         if (fileName.startsWith("_")) continue;
-        const fileData = processFile(filePath, appRoot, fileName);
+        let fileData: CookbookWatcherFile;
+        try {
+            fileData = processFile(filePath, appRoot, fileName);
+        } catch (error) {
+            consola.error(error);
+            continue;
+        }
         fileData.dependencyChanged = false;
         if (!projectFiles.has(filePath)) projectFiles.set(filePath, fileData);
         for (let i = 0; i < imports.length; i++) {
@@ -163,11 +169,15 @@ async function generateDeclares(root: string, mode: string, options: CookbookOpt
         const files = filterAllFiles(root, imports[i]);
         if (!files) continue;
 
-        const [rtnHeader, rtnTypes, rtnContent] = await (imports[i] as any).declares(root, mode, options, project, extensionChangeFiles[i], files);
+        try {
+            const [rtnHeader, rtnTypes, rtnContent] = await (imports[i] as any).declares(root, mode, options, project, extensionChangeFiles[i], files);
 
-        header += rtnHeader;
-        types += rtnTypes;
-        content += rtnContent;
+            header += rtnHeader;
+            types += rtnTypes;
+            content += rtnContent;
+        } catch (error) {
+            consola.error(`Failed to generate declares for extension ${imports[i].name ?? i}`, error);
+        }
     }
 
     content += "\nexport interface MilkioTypes {";
@@ -306,27 +316,23 @@ function processFile(filePath: string, appRoot: string, fileName: string): Cookb
         const isFileSegment = i === parts.length - 1;
 
         if (!segment) {
-            consola.error(`Invalid path: '${segment}' (${join(appRoot, filePath)}). Path segments cannot be empty.`);
-            exit(1);
+            throw new Error(`Invalid path: '${segment}' (${join(appRoot, filePath)}). Path segments cannot be empty.`);
         }
 
         if (!isFileSegment) {
             if (!/^\$?[a-z0-9-]+$/.test(segment)) {
-                consola.error(`Invalid folder: '${segment}' (${join(appRoot, filePath)}). Allow starting with $, followed by lowercase letters, digits, and hyphens. Files/directories starting with $ will not be exposed as routes.`);
-                exit(1);
+                throw new Error(`Invalid folder: '${segment}' (${join(appRoot, filePath)}). Allow starting with $, followed by lowercase letters, digits, and hyphens. Files/directories starting with $ will not be exposed as routes.`);
             }
         } else {
             const mainPart = segment.slice(0, -3);
 
             const dotCount = segment.split(".").length - 1;
             if (dotCount < 1 || dotCount > 2) {
-                consola.error(`Invalid file: '${segment}' (${join(appRoot, filePath)}). Must contain 1-2 dots (including extension).`);
-                exit(1);
+                throw new Error(`Invalid file: '${segment}' (${join(appRoot, filePath)}). Must contain 1-2 dots (including extension).`);
             }
 
             if (!/^[a-z0-9-.]+$/.test(mainPart)) {
-                consola.error(`Invalid file: '${segment}' (${join(appRoot, filePath)}). Only lowercase letters, digits, hyphens and dots are allowed.`);
-                exit(1);
+                throw new Error(`Invalid file: '${segment}' (${join(appRoot, filePath)}). Only lowercase letters, digits, hyphens and dots are allowed.`);
             }
         }
     }

@@ -1,0 +1,414 @@
+[36mℹ[39m Mode: test
+[35m◐[39m [0.0%] cookbook building..
+[35m◐[39m [4.0%] cookbook building..
+[35m◐[39m [7.9%] cookbook building..
+[35m◐[39m [12.0%] cookbook building..
+[35m◐[39m [15.3%] cookbook building..
+[35m◐[39m [18.8%] cookbook building..
+[35m◐[39m [22.3%] cookbook building..
+[35m◐[39m [25.8%] cookbook building..
+[35m◐[39m [28.8%] cookbook building..
+[35m◐[39m [31.5%] cookbook building..
+[35m◐[39m [34.3%] cookbook building..
+[35m◐[39m [36.7%] cookbook building..
+[35m◐[39m [39.3%] cookbook building..
+[35m◐[39m [42.0%] cookbook building..
+[35m◐[39m [44.1%] cookbook building..
+[35m◐[39m [46.4%] cookbook building..
+[35m◐[39m [48.8%] cookbook building..
+[35m◐[39m [50.9%] cookbook building..
+[35m◐[39m [52.9%] cookbook building..
+[35m◐[39m [54.8%] cookbook building..
+[35m◐[39m [56.6%] cookbook building..
+[35m◐[39m [58.3%] cookbook building..
+[35m◐[39m [59.8%] cookbook building..
+[35m◐[39m [61.5%] cookbook building..
+[35m◐[39m [63.0%] cookbook building..
+[35m◐[39m [64.4%] cookbook building..
+[35m◐[39m [66.0%] cookbook building..
+[35m◐[39m [67.4%] cookbook building..
+[36mℹ[39m [68.0%] ✨ route schema generated: modules/typia/hello.action.ts
+[36mℹ[39m [68.1%] ✨ route schema generated: modules/typia/index.action.ts
+[36mℹ[39m [68.2%] ✨ route schema generated: modules/typia/hello.action.ts
+[36mℹ[39m [68.3%] ✨ route schema generated: modules/index.action.ts
+[36mℹ[39m [68.4%] ✨ route schema generated: modules/typia/index.action.ts
+[36mℹ[39m [68.5%] ✨ route schema generated: modules/index.action.ts
+[36mℹ[39m [68.6%] ✨ route schema generated: modules/index.action.ts
+[36mℹ[39m [68.7%] ✨ route schema generated: modules/typia/index.action.ts
+[36mℹ[39m [68.8%] ✨ route schema generated: modules/typia/hello.action.ts
+[36mℹ[39m [68.9%] ✨ route schema generated: modules/stream/check-cancel-state.action.ts
+[36mℹ[39m [69.0%] ✨ route schema generated: modules/stream/check-cancel-state.action.ts
+[36mℹ[39m [69.1%] ✨ route schema generated: modules/stream/flow-fail.stream.ts
+[36mℹ[39m [69.2%] ✨ route schema generated: modules/stream/check-cancel-state.action.ts
+[36mℹ[39m [69.3%] ✨ route schema generated: modules/stream/flow-fail.stream.ts
+[36mℹ[39m [69.4%] ✨ route schema generated: modules/stream/flow-success.stream.ts
+[36mℹ[39m [69.5%] ✨ route schema generated: modules/stream/flow-success.stream.ts
+[36mℹ[39m [69.6%] ✨ route schema generated: modules/stream/flow-success.stream.ts
+[36mℹ[39m [68.2%] ✨ route schema generated: modules/stream/flow-fail.stream.ts
+[36mℹ[39m [68.3%] ✨ route schema generated: modules/stream/stream-cancel.stream.ts
+[36mℹ[39m [68.4%] ✨ route schema generated: modules/stream/stream-cancel.stream.ts
+[36mℹ[39m [68.5%] ✨ route schema generated: modules/stream/stream-cancel.stream.ts
+[36mℹ[39m [68.6%] ✨ route schema generated: modules/security/strict-params-off.action.ts
+[36mℹ[39m [68.7%] ✨ route schema generated: modules/stream/stream-hello-world.stream.ts
+[36mℹ[39m [68.8%] ✨ route schema generated: modules/stream/stream-hello-world.stream.ts
+[36mℹ[39m [68.9%] ✨ route schema generated: modules/security/strict-params-off.action.ts
+[36mℹ[39m [69.0%] ✨ route schema generated: modules/security/strict-params-off.action.ts
+[36mℹ[39m [69.1%] ✨ route schema generated: modules/stream/stream-hello-world.stream.ts
+[36mℹ[39m [69.2%] ✨ route schema generated: modules/security/strict-params.action.ts
+[36mℹ[39m [69.3%] ✨ route schema generated: modules/security/strict-params.action.ts
+[36mℹ[39m [69.4%] ✨ route schema generated: modules/security/strict-params.action.ts
+[36mℹ[39m [69.5%] ✨ route schema generated: modules/lifecycle/hook-test.action.ts
+[36mℹ[39m [68.3%] ✨ route schema generated: modules/internal/call-helper.action.ts
+[36mℹ[39m [68.4%] ✨ route schema generated: modules/lifecycle/hook-test.action.ts
+[36mℹ[39m [68.5%] ✨ route schema generated: modules/internal/call-helper.action.ts
+[36mℹ[39m [68.6%] ✨ route schema generated: modules/lifecycle/hook-test.action.ts
+[36mℹ[39m [68.7%] ✨ route schema generated: modules/internal/call-helper.action.ts
+[36mℹ[39m [68.8%] ✨ route schema generated: modules/internal/$exports/helper.action.ts
+[36mℹ[39m [68.9%] ✨ route schema generated: modules/internal/$exports/helper.action.ts
+[36mℹ[39m [69.0%] ✨ route schema generated: modules/internal/$exports/helper.action.ts
+[36mℹ[39m [69.1%] ✨ route schema generated: modules/hello-world/binary-response.action.ts
+[36mℹ[39m [69.2%] ✨ route schema generated: modules/hello-world/headers.action.ts
+[36mℹ[39m [69.3%] ✨ route schema generated: modules/hello-world/headers.action.ts
+[36mℹ[39m [69.4%] ✨ route schema generated: modules/hello-world/binary-response.action.ts
+[36mℹ[39m [69.5%] ✨ route schema generated: modules/hello-world/binary-response.action.ts
+[36mℹ[39m [69.6%] ✨ route schema generated: modules/hello-world/headers.action.ts
+[36mℹ[39m [69.7%] ✨ route schema generated: modules/hello-world/hello.action.ts
+[36mℹ[39m [69.8%] ✨ route schema generated: modules/hello-world/hello.action.ts
+[36mℹ[39m [69.9%] ✨ route schema generated: modules/hello-world/hello.action.ts
+[36mℹ[39m [70.0%] ✨ route schema generated: modules/hello-world/index.action.ts
+[36mℹ[39m [70.1%] ✨ route schema generated: modules/event/trigger.action.ts
+[36mℹ[39m [70.2%] ✨ route schema generated: modules/hello-world/index.action.ts
+[36mℹ[39m [68.4%] ✨ route schema generated: modules/hello-world/index.action.ts
+[36mℹ[39m [68.5%] ✨ route schema generated: modules/event/trigger.action.ts
+[36mℹ[39m [68.6%] ✨ route schema generated: modules/cors/ping.action.ts
+[36mℹ[39m [68.7%] ✨ route schema generated: modules/cors/ping.action.ts
+[36mℹ[39m [68.8%] ✨ route schema generated: modules/context/context.action.ts
+[36mℹ[39m [68.9%] ✨ route schema generated: modules/event/trigger.action.ts
+[36mℹ[39m [69.0%] ✨ route schema generated: modules/cors/ping.action.ts
+[36mℹ[39m [69.1%] ✨ route schema generated: modules/config/get-config.action.ts
+[36mℹ[39m [69.2%] ✨ route schema generated: modules/context/context.action.ts
+[36mℹ[39m [69.3%] ✨ route schema generated: modules/concurrency/counter.action.ts
+[36mℹ[39m [69.4%] ✨ route schema generated: modules/concurrency/counter.action.ts
+[36mℹ[39m [69.5%] ✨ route schema generated: modules/config/get-config.action.ts
+[36mℹ[39m [69.6%] ✨ route schema generated: modules/context/context.action.ts
+[36mℹ[39m [69.7%] ✨ route schema generated: modules/concurrency/delay.action.ts
+[36mℹ[39m [69.8%] ✨ route schema generated: modules/config/get-config.action.ts
+[36mℹ[39m [69.9%] ✨ route schema generated: modules/concurrency/counter.action.ts
+[36mℹ[39m [70.0%] ✨ route schema generated: modules/concurrency/delay.action.ts
+[36mℹ[39m [70.1%] ✨ route schema generated: modules/concurrency/delay.action.ts
+[36mℹ[39m [70.2%] ✨ route schema generated: modules/benchmark/json.action.ts
+[36mℹ[39m [70.3%] ✨ route schema generated: modules/benchmark/json.action.ts
+[36mℹ[39m [70.4%] ✨ route schema generated: modules/action/action-return-null.action.ts
+[36mℹ[39m [70.5%] ✨ route schema generated: modules/benchmark/json.action.ts
+[36mℹ[39m [70.6%] ✨ route schema generated: modules/action/action-return-null.action.ts
+[36mℹ[39m [70.7%] ✨ route schema generated: modules/action/action-return-null.action.ts
+[36mℹ[39m [70.8%] ✨ route schema generated: modules/action/date-echo.action.ts
+[36mℹ[39m [68.5%] ✨ route schema generated: modules/action/type-safety.action.ts
+[36mℹ[39m [68.6%] ✨ route schema generated: modules/action/type-safety.action.ts
+[36mℹ[39m [68.7%] ✨ route schema generated: modules/action/date-echo.action.ts
+[36mℹ[39m [68.8%] ✨ route schema generated: modules/action/type-safety.action.ts
+[36mℹ[39m [68.9%] ✨ route schema generated: modules/action/date-echo.action.ts
+[35m◐[39m [69.0%] cookbook building..
+[35m◐[39m [70.3%] cookbook building..
+[35m◐[39m [71.5%] cookbook building..
+[35m◐[39m [72.6%] cookbook building..
+[35m◐[39m [73.7%] cookbook building..
+[35m◐[39m [74.7%] cookbook building..
+[35m◐[39m [75.7%] cookbook building..
+[35m◐[39m [76.7%] cookbook building..
+[35m◐[39m [77.7%] cookbook building..
+[35m◐[39m [78.5%] cookbook building..
+[35m◐[39m [79.3%] cookbook building..
+[35m◐[39m [80.1%] cookbook building..
+[35m◐[39m [80.9%] cookbook building..
+[35m◐[39m [81.7%] cookbook building..
+[35m◐[39m [82.6%] cookbook building..
+[35m◐[39m [83.3%] cookbook building..
+[35m◐[39m [84.0%] cookbook building..
+[35m◐[39m [84.7%] cookbook building..
+[35m◐[39m [85.2%] cookbook building..
+[35m◐[39m [85.8%] cookbook building..
+[35m◐[39m [86.4%] cookbook building..
+[35m◐[39m [86.9%] cookbook building..
+[35m◐[39m [87.4%] cookbook building..
+[35m◐[39m [87.9%] cookbook building..
+[35m◐[39m [88.3%] cookbook building..
+[35m◐[39m [88.8%] cookbook building..
+[35m◐[39m [89.2%] cookbook building..
+[35m◐[39m [89.6%] cookbook building..
+[35m◐[39m [90.0%] cookbook building..
+[35m◐[39m [90.4%] cookbook building..
+[35m◐[39m [90.7%] cookbook building..
+[35m◐[39m [91.1%] cookbook building..
+[35m◐[39m [91.4%] cookbook building..
+[35m◐[39m [91.7%] cookbook building..
+[35m◐[39m [92.0%] cookbook building..
+[35m◐[39m [92.3%] cookbook building..
+[35m◐[39m [92.6%] cookbook building..
+[35m◐[39m [92.9%] cookbook building..
+[35m◐[39m [93.2%] cookbook building..
+[35m◐[39m [93.4%] cookbook building..
+[35m◐[39m [93.7%] cookbook building..
+[35m◐[39m [93.9%] cookbook building..
+[35m◐[39m [94.2%] cookbook building..
+[35m◐[39m [94.4%] cookbook building..
+[35m◐[39m [94.6%] cookbook building..
+[35m◐[39m [94.8%] cookbook building..
+[35m◐[39m [95.1%] cookbook building..
+[35m◐[39m [95.2%] cookbook building..
+[35m◐[39m [95.4%] cookbook building..
+[35m◐[39m [95.6%] cookbook building..
+[35m◐[39m [95.8%] cookbook building..
+[35m◐[39m [96.0%] cookbook building..
+[35m◐[39m [96.1%] cookbook building..
+[35m◐[39m [96.3%] cookbook building..
+[35m◐[39m [96.4%] cookbook building..
+[35m◐[39m [96.6%] cookbook building..
+[35m◐[39m [96.7%] cookbook building..
+[35m◐[39m [96.8%] cookbook building..
+[35m◐[39m [97.0%] cookbook building..
+[35m◐[39m [97.1%] cookbook building..
+[35m◐[39m [97.2%] cookbook building..
+[35m◐[39m [97.3%] cookbook building..
+[35m◐[39m [97.4%] cookbook building..
+[35m◐[39m [97.5%] cookbook building..
+[35m◐[39m [97.6%] cookbook building..
+[35m◐[39m [97.7%] cookbook building..
+[35m◐[39m [97.8%] cookbook building..
+[35m◐[39m [97.9%] cookbook building..
+[35m◐[39m [98.0%] cookbook building..
+[35m◐[39m [98.0%] cookbook building..
+[35m◐[39m [98.1%] cookbook building..
+[35m◐[39m [98.2%] cookbook building..
+[35m◐[39m [98.3%] cookbook building..
+[35m◐[39m [98.3%] cookbook building..
+[35m◐[39m [98.4%] cookbook building..
+[35m◐[39m [98.4%] cookbook building..
+[35m◐[39m [98.5%] cookbook building..
+[35m◐[39m [98.6%] cookbook building..
+[35m◐[39m [98.6%] cookbook building..
+[35m◐[39m [98.7%] cookbook building..
+[35m◐[39m [98.7%] cookbook building..
+[35m◐[39m [98.8%] cookbook building..
+[35m◐[39m [98.8%] cookbook building.. (repeated 2 times)
+[35m◐[39m [98.9%] cookbook building..
+[35m◐[39m [98.9%] cookbook building..
+[35m◐[39m [99.0%] cookbook building..
+[35m◐[39m [99.0%] cookbook building..
+[35m◐[39m [99.0%] cookbook building..
+[35m◐[39m [99.1%] cookbook building..
+[35m◐[39m [99.1%] cookbook building..
+[35m◐[39m [99.1%] cookbook building..
+[35m◐[39m [99.2%] cookbook building..
+[35m◐[39m [99.2%] cookbook building..
+[35m◐[39m [99.2%] cookbook building..
+[35m◐[39m [99.3%] cookbook building..
+[35m◐[39m [99.3%] cookbook building..
+[35m◐[39m [99.3%] cookbook building..
+[35m◐[39m [99.3%] cookbook building..
+[35m◐[39m [99.4%] cookbook building..
+[35m◐[39m [99.4%] cookbook building..
+[35m◐[39m [99.4%] cookbook building..
+[35m◐[39m [99.4%] cookbook building..
+[35m◐[39m [99.4%] cookbook building..
+[35m◐[39m [99.5%] cookbook building..
+[35m◐[39m [99.5%] cookbook building.. (repeated 5 times)
+[35m◐[39m [99.6%] cookbook building..
+[35m◐[39m [99.6%] cookbook building..
+[35m◐[39m [99.6%] cookbook building..
+[35m◐[39m [99.6%] cookbook building..
+[35m◐[39m [99.6%] cookbook building..
+[35m◐[39m [99.6%] cookbook building..
+[35m◐[39m [99.6%] cookbook building.. (repeated 2 times)
+[35m◐[39m [99.7%] cookbook building..
+[35m◐[39m [99.7%] cookbook building..
+[35m◐[39m [99.7%] cookbook building..
+[35m◐[39m [99.7%] cookbook building..
+[35m◐[39m [99.7%] cookbook building..
+[35m◐[39m [99.7%] cookbook building.. (repeated 5 times)
+[35m◐[39m [99.8%] cookbook building..
+[35m◐[39m [99.8%] cookbook building..
+[35m◐[39m [99.8%] cookbook building..
+[35m◐[39m [99.8%] cookbook building..
+[35m◐[39m [99.8%] cookbook building..
+[35m◐[39m [99.8%] cookbook building.. (repeated 12 times)
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building.. (repeated 38 times)
+[36mℹ[39m [99.9%] ✨ typia done: modules/index.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/typia/hello.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/typia/index.action.ts
+[36mℹ[39m [100.0%] ✨ typia done: modules/index.action.ts
+[36mℹ[39m [100.0%] ✨ typia done: modules/index.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/typia/index.action.ts
+[36mℹ[39m [100.0%] ✨ typia done: modules/typia/hello.action.ts
+[36mℹ[39m [100.0%] ✨ typia done: modules/typia/index.action.ts
+[36mℹ[39m [100.0%] ✨ typia done: modules/typia/hello.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building.. (repeated 19 times)
+[36mℹ[39m [99.9%] ✨ typia done: modules/stream/check-cancel-state.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/stream/check-cancel-state.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/stream/flow-success.stream.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/stream/flow-success.stream.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/stream/check-cancel-state.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/stream/flow-fail.stream.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/stream/flow-fail.stream.ts
+[36mℹ[39m [100.0%] ✨ typia done: modules/stream/flow-fail.stream.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [100.0%] ✨ typia done: modules/stream/flow-success.stream.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building.. (repeated 13 times)
+[36mℹ[39m [99.9%] ✨ typia done: modules/stream/stream-cancel.stream.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/stream/stream-cancel.stream.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/stream/stream-hello-world.stream.ts
+[36mℹ[39m [100.0%] ✨ typia done: modules/stream/stream-cancel.stream.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/stream/stream-hello-world.stream.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/security/strict-params-off.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/stream/stream-hello-world.stream.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/security/strict-params-off.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/security/strict-params-off.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building.. (repeated 3 times)
+[36mℹ[39m [99.9%] ✨ typia done: modules/security/strict-params.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/security/strict-params.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/security/strict-params.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/lifecycle/hook-test.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/lifecycle/hook-test.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/lifecycle/hook-test.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/internal/call-helper.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/internal/call-helper.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/internal/call-helper.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building.. (repeated 2 times)
+[36mℹ[39m [99.9%] ✨ typia done: modules/internal/$exports/helper.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [100.0%] ✨ typia done: modules/internal/$exports/helper.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/internal/$exports/helper.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/hello-world/binary-response.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/hello-world/binary-response.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/hello-world/headers.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/hello-world/binary-response.action.ts
+[36mℹ[39m [100.0%] ✨ typia done: modules/hello-world/headers.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/hello-world/headers.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building.. (repeated 4 times)
+[36mℹ[39m [99.9%] ✨ typia done: modules/hello-world/hello.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/hello-world/hello.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/hello-world/index.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/hello-world/index.action.ts
+[36mℹ[39m [100.0%] ✨ typia done: modules/hello-world/hello.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/event/trigger.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/hello-world/index.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/event/trigger.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/event/trigger.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/cors/ping.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building.. (repeated 4 times)
+[36mℹ[39m [99.9%] ✨ typia done: modules/cors/ping.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/context/context.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/context/context.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/cors/ping.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [100.0%] ✨ typia done: modules/config/get-config.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/config/get-config.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/context/context.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/config/get-config.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/concurrency/counter.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building.. (repeated 4 times)
+[36mℹ[39m [99.9%] ✨ typia done: modules/concurrency/counter.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/concurrency/delay.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/concurrency/delay.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/concurrency/counter.action.ts
+[36mℹ[39m [100.0%] ✨ typia done: modules/benchmark/json.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/benchmark/json.action.ts
+[36mℹ[39m [100.0%] ✨ typia done: modules/benchmark/json.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/concurrency/delay.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/action/action-return-null.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/action/action-return-null.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/action/date-echo.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/action/date-echo.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building..
+[36mℹ[39m [99.9%] ✨ typia done: modules/action/action-return-null.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/action/date-echo.action.ts
+[36mℹ[39m [100.0%] ✨ typia done: modules/action/type-safety.action.ts
+[36mℹ[39m [99.9%] ✨ typia done: modules/action/type-safety.action.ts
+[36mℹ[39m [100.0%] ✨ typia done: modules/action/type-safety.action.ts
+[35m◐[39m [99.9%] cookbook building..
+[35m◐[39m [99.9%] cookbook building.. (repeated 10 times)
+[32m✔[39m Cookbook builded!

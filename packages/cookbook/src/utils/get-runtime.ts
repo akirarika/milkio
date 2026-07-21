@@ -1,5 +1,4 @@
 import { $ } from "bun";
-import { exit } from "node:process";
 import consola from "consola";
 
 // 缓存两个运行时的可用性状态
@@ -51,5 +50,5 @@ export async function getRuntime(preferredRuntime: "node" | "bun" = "node"): Pro
   }
 
   consola.error("Please install Node.js or Bun.js");
-  exit(1);
+  throw new Error("Please install Node.js or Bun.js");
 }
