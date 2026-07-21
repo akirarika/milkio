@@ -19,7 +19,7 @@
         "@hono/node-server": "^1.13.8",
         "@types/fs-extra": "^11.0.4",
         "@types/node": "^25.2.1",
-        "compressing": "^1.10.1",
+        "compressing": "^2.0.0",
         "drizzle-kit": "^0.31.1",
         "drizzle-orm": "^0.43.1",
         "fs-extra": "^11.2.0",

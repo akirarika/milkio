@@ -1,4 +1,4 @@
-# milkio-starter
+# milkio-stargate
 
 To install dependencies:
 

@@ -22,15 +22,16 @@ async function findCookbookBaseUrl(): Promise<string> {
     let searchDir = currentDir;
 
     while (searchDir !== dirname(searchDir)) {
-        const cookbookPath = join(searchDir, "node_modules", ".cookbook");
-        if (existsSync(cookbookPath)) {
-            const content = await readFile(cookbookPath, "utf-8");
-            return content.trim();
+        // ".cookbook" is a directory and the base URL lives in ".cookbook/control-url.md"
+        const controlUrlPath = join(searchDir, "node_modules", ".cookbook", "control-url.md");
+        if (existsSync(controlUrlPath)) {
+            const content = await readFile(controlUrlPath, "utf-8");
+            if (content.trim()) return content.trim();
         }
         searchDir = dirname(searchDir);
     }
 
-    throw new Error("・[astra] Could not find \".cookbook\" file in any parent directory");
+    throw new Error("・[astra] Could not find \".cookbook/control-url.md\" file in any parent directory");
 }
 
 export type AstraOptionsInit = {

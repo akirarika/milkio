@@ -8,6 +8,7 @@ import { __VERSION__ } from "../../__VERSION__";
 import { Readable } from "node:stream";
 import compressing from "compressing";
 import { exists, readdir as readdirAsync, stat as statAsync, readFile, writeFile } from "node:fs/promises";
+import { withPromptTimeout } from "../utils/prompt-timeout";
 
 export default await defineCookbookCommand(async (utils) => {
     const packageName = `@milkio/template-cookbook`;
@@ -31,34 +32,36 @@ export default await defineCookbookCommand(async (utils) => {
     } else {
         for (const fileName of (await readdir(currentWriteDir))) {
             if (fileName === '.git') continue;
-            consola.error(`The current directory doesn't seem to be empty. You need to run this command in an empty directory.`);
+            consola.error(`The current directory is not empty. Please run "co init" in an empty directory.`);
             exit(1);
         }
     }
 
     // Package manager selection
     consola.info("📦 Package Manager Selection");
-    consola.info("To ensure the best development experience, we recommend using npm or bun.");
+    consola.info("Only npm is fully supported. Other package managers are experimental.");
 
     const packageManagers = [
         { label: "<cancel>", value: "<cancel>" },
-        { label: "npm  (💗 recommend)", value: "npm" },
-        { label: "bun  (💗 recommend)", value: "bun" },
-        { label: "deno (🩶 experimental)", value: "deno" },
+        { label: "npm  (💗 recommended)", value: "npm" },
+        { label: "bun  (🩶 experimental)", value: "bun" },
         { label: "yarn (🩶 experimental)", value: "yarn" },
         { label: "pnpm (🩶 experimental)", value: "pnpm" },
-        { label: "cnpm (🩶 experimental)", value: "cnpm" }
     ];
 
     let selectedPackageManager: string | undefined;
 
     while (!selectedPackageManager || !packageManagers.find((item) => item.value === selectedPackageManager)) {
-        selectedPackageManager = await consola.prompt("Please select a package manager:", {
-            type: "select",
-            options: packageManagers
-        });
+        selectedPackageManager = await withPromptTimeout(
+            consola.prompt("Please select a package manager:", {
+                type: "select",
+                options: packageManagers
+            }) as Promise<string>,
+            "select package manager",
+            "This prompt cannot be bypassed with flags. Run \"co init\" in a terminal and make a selection manually.",
+        );
 
-        const experimentalManagers = ["deno", "yarn", "pnpm", "cnpm"];
+        const experimentalManagers = ["bun", "yarn", "pnpm"];
         if (experimentalManagers.includes(selectedPackageManager)) {
             consola.warn(`⚠️  You've selected an experimental package manager: ${selectedPackageManager}`);
             console.log("> Experimental package managers may have compatibility     ");
@@ -67,17 +70,21 @@ export default await defineCookbookCommand(async (utils) => {
             console.log("> This is because the cookbook has not yet been made       ");
             console.log("> compatible with their monorepo syntax.                   ");
             console.log(">                                                          ");
-            console.log("> We strongly recommend using npm or bun to avoid          ");
+            console.log("> We strongly recommend using npm to avoid                 ");
             console.log("> frustrating errors.                                      ");
             console.log(">                                                          ");
             console.log("> When community volunteer contributions make this         ");
             console.log("> package manager run smoothly without frustrating errors, ");
             console.log("> we will remove this warning and look forward to          ");
             console.log("> supporting it.                                           ");
-            const confirm = await consola.prompt(`🚨 Are you sure you want to continue with ${selectedPackageManager}?`, {
-                type: "confirm",
-                initial: false
-            });
+            const confirm = await withPromptTimeout(
+                consola.prompt(`🚨 Are you sure you want to continue with ${selectedPackageManager}?`, {
+                    type: "confirm",
+                    initial: false
+                }) as Promise<boolean>,
+                "confirm experimental package manager",
+                "This prompt cannot be bypassed with flags. Run \"co init\" in a terminal and make a selection manually.",
+            );
             if (!confirm) {
                 selectedPackageManager = undefined;
                 consola.info("Please select a different package manager.");

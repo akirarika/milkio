@@ -9,7 +9,8 @@ import { __VERSION__ } from "../../__VERSION__";
 import { Readable } from "node:stream";
 import compressing from "compressing";
 import { exists, readdir as readdirAsync, stat as statAsync, readFile, writeFile } from "node:fs/promises";
-import { execScript } from "../utils/exec-script";
+import { execScript, execScriptOrFail } from "../utils/exec-script";
+import { fetchWithTimeout } from "../utils/fetch-with-timeout";
 import { progress } from "../progress";
 
 export default await defineCookbookCommand(async (utils, inputPackageName?: string) => {
@@ -25,8 +26,89 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
     const packageManager = cookbookToml.general.packageManager;
 
     if (!packageName.startsWith("@milkio/template-")) {
-        if (packageManager === "deno") await execScript(`deno init --npm ${packageName}`, { cwd: join(cwd(), "projects") });
-        else await execScript(`${packageManager} create ${packageName}`, { cwd: join(cwd(), "projects") });
+        const projectsDir = join(cwd(), "projects");
+        const before = new Set(await readdirAsync(projectsDir).catch(() => [] as string[]));
+
+        if (packageManager === "deno") await execScriptOrFail(`deno init --npm ${packageName}`, { cwd: projectsDir });
+        else await execScriptOrFail(`${packageManager} create ${packageName}`, { cwd: projectsDir });
+
+        const after = await readdirAsync(projectsDir);
+        const newDirs = after.filter((d) => !before.has(d));
+
+        if (newDirs.length === 0) {
+            consola.warn("No new project directory was detected. Skipping port allocation and cookbook.toml registration.");
+            return;
+        }
+        if (newDirs.length > 1) {
+            consola.warn(`Multiple new directories detected: ${newDirs.join(", ")}. Skipping port allocation and cookbook.toml registration.`);
+            return;
+        }
+
+        const projectName = newDirs[0];
+        const projectDir = join(projectsDir, projectName);
+
+        let maxPort = 8999;
+        if (cookbookToml.projects && typeof cookbookToml.projects === "object" && Object.keys(cookbookToml.projects).length > 0) {
+            for (const [_projectNameKey, projectConfig] of Object.entries(cookbookToml.projects)) {
+                if (projectConfig.port && projectConfig.port > maxPort) {
+                    maxPort = projectConfig.port;
+                }
+            }
+        }
+        const newPort = maxPort + 1;
+
+        const cookbookTomlPath = join(cwd(), "cookbook.toml");
+        if (await exists(cookbookTomlPath)) {
+            let cookbookContent = await readFile(cookbookTomlPath, "utf8");
+            const currentCookbookToml: any = Bun.TOML.parse(cookbookContent);
+            if (!currentCookbookToml?.projects?.[projectName]) {
+                const projectConfig = `\n\n[projects.${projectName}]\nport = ${newPort}\ntype = "custom"\nautoStart = true`;
+                cookbookContent += projectConfig;
+                await writeFile(cookbookTomlPath, cookbookContent, "utf8");
+                consola.success(`Registered "${projectName}" in cookbook.toml with port ${newPort}.`);
+            }
+        }
+
+        const nuxtConfigPath = join(projectDir, "nuxt.config.ts");
+        if (await exists(nuxtConfigPath)) {
+            let nuxtConfigContent = await readFile(nuxtConfigPath, "utf8");
+            if (nuxtConfigContent.includes("devServer")) {
+                nuxtConfigContent = nuxtConfigContent.replace(/port:\s*\d+/g, `port: ${newPort}`);
+            } else {
+                nuxtConfigContent = nuxtConfigContent.replace(
+                    /(defineNuxtConfig\(\{)([\s\S]*?)(\}\)\s*$)/,
+                    (_, open, inner, close) => {
+                        const trimmed = inner.trimEnd();
+                        const hasContent = trimmed.length > 0 && !trimmed.endsWith(",");
+                        const separator = hasContent ? ",\n" : "\n";
+                        return `${open}${trimmed}${separator}  devServer: {\n    port: ${newPort},\n  },\n${close}`;
+                    },
+                );
+            }
+            await writeFile(nuxtConfigPath, nuxtConfigContent, "utf8");
+            consola.success(`Updated nuxt.config.ts devServer.port to ${newPort}.`);
+        } else {
+            console.log(
+                `\n${chalk.yellow.bold("⚠️  Port Configuration Required")}\n` +
+                `${chalk.gray("-".repeat(16))}\n` +
+                `The project "${chalk.bold(projectName)}" was created successfully, but its dev server port was not automatically configured.\n\n` +
+                `${chalk.cyan("Why this matters:")}\n` +
+                `  When you have multiple frontend projects in the same monorepo, their dev servers\n` +
+                `  often default to the same port (e.g. Nuxt defaults to 3000, Vite to 5173, Next.js to 3000).\n` +
+                `  If two projects try to listen on the same port, one will fail to start.\n` +
+                `  Cookbook automatically assigns a unique port (${chalk.bold(newPort)}) to this project in\n` +
+                `  cookbook.toml, but your project's own config file needs to match.\n\n` +
+                `${chalk.cyan("What to do:")}\n` +
+                `  1. Open your project's config file (e.g. ${chalk.bold("vite.config.ts")}, ${chalk.bold("next.config.ts")}, etc.)\n` +
+                `  2. Find the dev server / port setting and change it to ${chalk.bold(newPort)}\n` +
+                `  3. Make sure it matches the port in ${chalk.bold("cookbook.toml")}:\n\n` +
+                `     ${chalk.gray(`[projects.${projectName}]`)}\n` +
+                `     ${chalk.gray(`port = ${newPort}`)}\n` +
+                `     ${chalk.gray(`type = "custom"`)}\n` +
+                `     ${chalk.gray(`autoStart = true`)}\n\n` +
+                `  4. Restart your dev server with ${chalk.magenta("co dev")}\n`
+            );
+        }
     } else {
         consola.info("We will create a new Milkio project in the ./projects directory, how about an impressive name?");
         let projectName = await utils.inputString({
@@ -119,7 +201,7 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
         consola.start(`Downloading package from ${downloadUrl}`);
 
         try {
-            const res = await fetch(downloadUrl);
+            const res = await fetchWithTimeout(downloadUrl, { timeout: 60000 });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const destination = join(tempspace, "package.tgz");
@@ -238,7 +320,12 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
 
         progress.open("Installing dependencies..");
         try {
-            await execScript(`${packageManager} i`, { cwd: currentWriteDir });
+            const installExitCode = await execScript(`${packageManager} i`, { cwd: currentWriteDir });
+            if (installExitCode !== 0) {
+                progress.close("Failed to install dependencies.");
+                consola.error(`Installation failed with exit code ${installExitCode}`);
+                exit(1);
+            }
         } catch (error: any) {
             progress.close("Failed to install dependencies.");
             consola.error(`Installation failed: ${error?.message ?? error}`);

@@ -5,17 +5,33 @@ import { getCookbookToml } from "../utils/get-cookbook-toml";
 import { selectMode } from "../utils/select-mode";
 import { join } from "node:path";
 import consola from "consola";
-import { cwd, exit } from "node:process";
+import { cwd, env, exit } from "node:process";
 import { calcHash } from "../utils/calc-hash";
 import { getRandomPort } from "../utils/get-random-port";
 import { writeFile } from "node:fs/promises";
+import { ensureCookbookDir } from "../utils/background";
 
 export default await defineCookbookCommand(async (utils) => {
     const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
     if (!(await cookbookToml.exists())) {
         consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`);
-        exit(0);
+        consola.info(`Hint: run "co init" in an empty directory to create a new cookbook project.`);
+        exit(1);
     }
+    // if a background dev server started by "co start" is still running, stop it first
+    // (skipped when this process itself is the background child spawned by "co start")
+    if (env.COOKBOOK_BACKGROUND !== "1") {
+        const { readState, isRunning, stopBackground, clearState } = await import("../utils/background");
+        const backgroundState = await readState();
+        if (backgroundState) {
+            if (isRunning(backgroundState)) {
+                consola.info(`A background cookbook dev server (pid ${backgroundState.pid}) is running. Stopping it first..`);
+                await stopBackground(backgroundState);
+            }
+            await clearState();
+        }
+    }
+
     const cookbookTomlText = await cookbookToml.text();
     const cookbookTomlHash = calcHash(cookbookTomlText);
     const options = await getCookbookToml(cookbookTomlText, progress);
@@ -36,7 +52,8 @@ export default await defineCookbookCommand(async (utils) => {
 
         const cookbookServerPort = await getRandomPort();
         const cookbookServerBaseUrl = `http://localhost:${cookbookServerPort}/${cookbookServerAccessKey}`;
-        await writeFile(join(cwd(), "node_modules", ".cookbook"), cookbookServerBaseUrl);
+        ensureCookbookDir();
+        await writeFile(join(cwd(), "node_modules", ".cookbook", "control-url.md"), cookbookServerBaseUrl);
 
         const { startCookbookServer } = await import("@milkio/cookbook-server");
         const _server = await startCookbookServer({ port: cookbookServerPort, accessKey: cookbookServerAccessKey });

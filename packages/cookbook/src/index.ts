@@ -2,14 +2,14 @@ import { search } from "@inquirer/prompts";
 import { argv, cwd, exit } from "node:process";
 import consola from "consola";
 import { join } from "node:path";
-import { exists, mkdir, writeFile } from "node:fs/promises";
-import { readdir, readFile } from "node:fs/promises";
-import { env } from "bun";
+import { exists } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { __router__ } from "./commands/__router__";
 import { uniqWith } from "lodash-es";
-import { execScript } from "./utils/exec-script";
+import { execScriptOrFail } from "./utils/exec-script";
 import { createCommandUtils } from "./commands/__utils__";
 import { handleNonCookbookPkgMgr } from "./utils/handle-non-cookbook-pkg-mgr";
+import { createPromptAbortController, handlePromptAbort } from "./utils/prompt-timeout";
 
 export type Params = {
   command: string;
@@ -56,11 +56,45 @@ export async function cookbook() {
   if (params.command.startsWith("--")) params.command = params.command.slice(2);
   if (params.command.startsWith("-") && params.command !== "-") params.command = params.command.slice(1);
 
+  // --help / -h / help / h: show top-level help
+  if (params.command === "help" || params.command === "h" || params.options.help === "1" || params.options.h === "1") {
+    if (params.command !== "help" && params.command !== "h" && params.command !== "index") {
+      const cmd = __router__.find((c) => c.commands.includes(params.command));
+      if (cmd) {
+        console.log(`co ${params.command}`);
+        console.log("");
+        console.log(`Aliases: ${cmd.commands.join(", ")}`);
+        console.log("");
+        console.log("Run without --help to execute this command.");
+        exit(0);
+      }
+    }
+    console.log("cookbook - project orchestration CLI");
+    console.log("");
+    console.log("Usage:");
+    console.log("  co                       Interactive command selector");
+    console.log("  co <command> [options]   Run a built-in command");
+    console.log("  co <npm-script>          Run an npm script from package.json");
+    console.log("");
+    console.log("Built-in commands:");
+    const visible = __router__.filter((c) => c.hidden !== true);
+    const nameWidth = Math.max(...visible.map((c) => c.commands[0].length));
+    for (const c of visible) {
+      console.log(`  ${c.commands[0].padEnd(nameWidth)}   (aliases: ${c.commands.join(", ")})`);
+    }
+    console.log("");
+    console.log("Hidden commands (still callable):");
+    const hidden = __router__.filter((c) => c.hidden === true);
+    const hiddenWidth = Math.max(...hidden.map((c) => c.commands[0].length));
+    for (const c of hidden) {
+      console.log(`  ${c.commands[0].padEnd(hiddenWidth)}   (aliases: ${c.commands.join(", ")})`);
+    }
+    console.log("");
+    console.log("Docs: https://github.com/akirarika/co");
+    exit(0);
+  }
+
   const packageJson = (await exists(join(cwd(), "package.json"))) ? JSON.parse(await readFile(join(cwd(), "package.json"), "utf-8")) : undefined;
-  exists(join(env.HOME || env.USERPROFILE || "/", ".commands"));
-  if (!(await exists(join(env.HOME || env.USERPROFILE || "/", ".commands")))) await mkdir(join(env.HOME || env.USERPROFILE || "/", ".commands"));
-  if (!(await exists(join(env.HOME || env.USERPROFILE || "/", ".commands", "package.json"))))
-    await writeFile(join(env.HOME || env.USERPROFILE || "/", ".commands", "package.json"), JSON.stringify({ name: "commands", private: true, scripts: {}, dependencies: { "@milkio/cookbook-command": "*" }, devDependencies: {} }, null, 2));
 
   if (params.command === "index") {
     const commands = [
@@ -69,7 +103,7 @@ export async function cookbook() {
         value: "<cancel>",
         description: "built-in",
       },
-    ] as Array<{ name: string; value: string; path?: string; description?: "global" | "npm-script" | "workspace" | "built-in" }>;
+    ] as Array<{ name: string; value: string; path?: string; description?: "npm-script" | "built-in" }>;
 
     for (const command of __router__) {
       if (command.hidden !== true) commands.push({ name: command.commands[0], value: command.commands[0], description: "built-in" });
@@ -80,30 +114,6 @@ export async function cookbook() {
       for (const key in packageJson?.scripts ?? {}) {
         commands.push({ name: key, value: key, path: key, description: "npm-script" });
       }
-    }
-
-    if (await exists(join(cwd(), ".commands"))) {
-      const dir = await readdir(join(cwd(), ".commands"));
-      const temp = [] as typeof commands;
-      for (const file of dir) {
-        if (!file.endsWith(".command.ts")) continue;
-        const key = file.slice(0, -11);
-        commands.push({ name: file.slice(0, -11), value: key, path: join(cwd(), ".commands", file), description: "workspace" });
-      }
-      temp.sort((a, b) => a.name.localeCompare(b.name));
-      commands.push(...temp);
-    }
-
-    if (await exists(join(env.HOME || env.USERPROFILE || "/", ".commands"))) {
-      const dir = await readdir(join(env.HOME || env.USERPROFILE || "/", ".commands"));
-      const temp = [] as typeof commands;
-      for (const file of dir) {
-        if (!file.endsWith(".command.ts")) continue;
-        const key = file.slice(0, -11);
-        commands.push({ name: file.slice(0, -11), value: key, path: join(cwd(), ".commands", file), description: "global" });
-      }
-      temp.sort((a, b) => a.name.localeCompare(b.name));
-      commands.push(...temp);
     }
 
     if (commands.length === 0) {
@@ -141,24 +151,44 @@ export async function cookbook() {
 
       return { maxContiguous, firstMatchIndex };
     };
-    const selected = await search({
-      message: "What kind of command:",
-      source: async (input) => {
-        if (!input) return commands;
-        const filtered = commands.filter((command) => containsCharsInOrder(input.toLowerCase(), command.name.toLowerCase()));
+    const selected = await (async () => {
+      const { controller, timeoutId } = createPromptAbortController();
+      try {
+        return await search(
+          {
+            message: "What kind of command:",
+            source: async (input) => {
+              if (!input) return commands;
+              const filtered = commands.filter((command) => containsCharsInOrder(input.toLowerCase(), command.name.toLowerCase()));
 
-        return uniqWith(filtered, (a, b) => a.value === b.value).sort((a, b) => {
-          const scoreA = calculateScore(input, a.name);
-          const scoreB = calculateScore(input, b.name);
+              return uniqWith(filtered, (a, b) => a.value === b.value).sort((a, b) => {
+                const scoreA = calculateScore(input, a.name);
+                const scoreB = calculateScore(input, b.name);
 
-          if (scoreB.maxContiguous !== scoreA.maxContiguous) {
-            return scoreB.maxContiguous - scoreA.maxContiguous;
-          }
+                if (scoreB.maxContiguous !== scoreA.maxContiguous) {
+                  return scoreB.maxContiguous - scoreA.maxContiguous;
+                }
 
-          return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
-        });
-      },
-    });
+                return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
+              });
+            },
+          },
+          { signal: controller.signal },
+        );
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        if (controller.signal.aborted) {
+          handlePromptAbort(
+            err,
+            "select command",
+            'To run non-interactively, directly invoke the subcommand, e.g. "co dev", "co test", "co build".',
+          );
+        }
+        throw err;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    })();
 
     if (!selected || selected === "<cancel>") {
       consola.success("Cookbook cancelled");
@@ -183,26 +213,19 @@ export async function cookbook() {
       await run(params, { path: params.command, description: "npm-script", pkgMgr });
     } else if (packageJson?.scripts?.[params.command]) {
       await run(params, { path: params.command, description: "npm-script" });
-    } else if (await exists(join(cwd(), ".commands", `${params.command}.command.ts`))) {
-      const modulePath = join(cwd(), ".commands", `${params.command}.command.ts`);
-      await run(params, { path: modulePath, description: "workspace" });
-    } else if (await exists(join(env.HOME || env.USERPROFILE || "/", ".commands", `${params.command}.command.ts`))) {
-      const modulePath = join(env.HOME || env.USERPROFILE || "/", ".commands", `${params.command}.command.ts`);
-      await run(params, { path: modulePath, description: "global" });
     } else {
       // not found
       consola.error(`Command not found: ${params.command}`);
-      console.log("");
+      consola.info(`Hint: run "co --help" to see the list of available commands.`);
       exit(1);
     }
   }
 }
 
-export async function run(params: Params, options: { path?: string; script?: () => Promise<any>; description?: "global" | "npm-script" | "workspace" | "built-in"; pkgMgr?: string }) {
+export async function run(params: Params, options: { path?: string; script?: () => Promise<any>; description?: "npm-script" | "built-in"; pkgMgr?: string }) {
   let packageManager: any;
   if (options.description === "npm-script") {
     if (!options.pkgMgr) {
-      if (!(await exists(join(cwd(), "cookbook.toml")))) await run(params, { path: "init", description: "workspace" });
       const config: any = Bun.TOML.parse(await Bun.file(join(cwd(), "cookbook.toml")).text());
       if (!config.general.packageManager) {
         consola.error('You need to specify which package manager to use to run this command, modify your cookbook.toml file, and [general] bar to packageManager = "npm" or any custom package manager you like.');
@@ -215,26 +238,19 @@ export async function run(params: Params, options: { path?: string; script?: () 
 
     try {
       if (packageManager === "bun") {
-        await execScript(`bun run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
+        await execScriptOrFail(`bun run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
+      } else if (packageManager === "npm") {
+        await execScriptOrFail(`npm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
+      } else if (packageManager === "cnpm") {
+        await execScriptOrFail(`cnpm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
+      } else if (packageManager === "yarn") {
+        await execScriptOrFail(`yarn run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
+      } else if (packageManager === "pnpm") {
+        await execScriptOrFail(`pnpm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
+      } else {
+        consola.error(`Package manager ${packageManager} is not supported`);
+        exit(1);
       }
-
-      if (packageManager === "npm") {
-        await execScript(`npm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
-      }
-
-      if (packageManager === "cnpm") {
-        await execScript(`cnpm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
-      }
-
-      if (packageManager === "yarn") {
-        await execScript(`yarn run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
-      }
-
-      if (packageManager === "pnpm") {
-        await execScript(`pnpm run ${[options.path!, ...params.raw].join(" ")}`, { cwd: cwd() });
-      }
-
-      exit(0);
     } catch (error: any) {
       consola.error(error?.message ?? "Running Error");
       exit(1);
@@ -250,18 +266,5 @@ export async function run(params: Params, options: { path?: string; script?: () 
       consola.error(error.toString ? error.toString() : (error?.message ?? "Running Error"));
       exit(1);
     }
-  }
-
-  try {
-    if (!(await exists(options.path ?? ""))) {
-      consola.error(`Command not found: ${options.path}`);
-      exit(1);
-    }
-    const module = await import(options.path!);
-    await module.default(await createCommandUtils(params, options));
-    exit(0);
-  } catch (error: any) {
-    consola.error(error.toString ? error.toString() : (error?.message ?? "Running Error"));
-    exit(1);
   }
 }

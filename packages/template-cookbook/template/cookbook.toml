@@ -1,6 +1,6 @@
 [general]
 cookbookPort = 8000
 packageManager = "npm"
-modes = ["test", "dvlp-zh-cn", "dvlp-en", "prod-zh-cn", "prod-en"]
+modes = ["test", "dvlp", "prod"]
 
 [config]

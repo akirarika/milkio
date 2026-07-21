@@ -113,6 +113,7 @@ export function createWorker(
                     cwd: options.cwd,
                     env: envMixed,
                     stdio: ["ignore", options.stdout !== "ignore" ? "pipe" : "ignore", "pipe"],
+                    windowsHide: true,
                 });
 
                 const handleStreamError = (err: Error) => {

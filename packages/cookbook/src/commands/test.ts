@@ -8,6 +8,7 @@ import { cwd, exit } from "node:process";
 import { calcHash } from "../utils/calc-hash";
 import { getRandomPort } from "../utils/get-random-port";
 import { exists, readFile, writeFile } from "node:fs/promises";
+import { ensureCookbookDir } from "../utils/background";
 import { execScript } from "../utils/exec-script";
 
 export default await defineCookbookCommand(async (utils) => {
@@ -47,7 +48,8 @@ export default await defineCookbookCommand(async (utils) => {
 
         const cookbookServerPort = await getRandomPort();
         const cookbookServerBaseUrl = `http://localhost:${cookbookServerPort}/${cookbookServerAccessKey}`;
-        await writeFile(join(cwd(), "node_modules", ".cookbook"), cookbookServerBaseUrl);
+        ensureCookbookDir();
+        await writeFile(join(cwd(), "node_modules", ".cookbook", "control-url.md"), cookbookServerBaseUrl);
 
         const { startCookbookServer } = await import("@milkio/cookbook-server");
         const _server = await startCookbookServer({ port: cookbookServerPort, accessKey: cookbookServerAccessKey });

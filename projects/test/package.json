@@ -21,7 +21,7 @@
         "@nestjs/platform-express": "^11.1.26",
         "elysia": "^1.4.28",
         "koa": "^3.2.1",
-        "milkid": "2.0.7",
+        "milkid": "^3.0.0",
         "milkio": "workspace:*",
         "reflect-metadata": "^0.2.2",
         "rolldown": "^1.0.0-beta.1",

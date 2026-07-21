@@ -13,7 +13,7 @@
     "@milkio/astra": "workspace:*",
     "@milkio/stargate": "workspace:*",
     "@mjackson/node-fetch-server": "^0.6.1",
-    "milkid": "2.0.7",
+    "milkid": "^3.0.0",
     "milkio": "workspace:*",
     "rolldown": "^1.0.0-beta.1",
     "tsx": "^4.19.3",

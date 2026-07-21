@@ -6,11 +6,12 @@ import { progress } from "../progress";
 import { fetchEventSource } from "../utils/fetch-event-source";
 import { getCookbookToml } from "../utils/get-cookbook-toml";
 import { selectProject } from "../utils/select-project";
+import { withPromptTimeout } from "../utils/prompt-timeout";
 
 const INVALID_HYPHEN_MSG = (str: string) => `Invalid hyphen string: ${str}. Only lowercase letters, numbers and hyphens allowed, and must be in hyphen-case format`;
 const HYPHEN_STRING_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-export async function createCommandUtils(params: Params, options: { path?: string; description?: "global" | "npm-script" | "workspace" | "built-in" }) {
+export async function createCommandUtils(params: Params, options: { path?: string; description?: "npm-script" | "built-in" }) {
     // Basic console methods
     const log = consola.log;
     const info = consola.info;
@@ -22,7 +23,8 @@ export async function createCommandUtils(params: Params, options: { path?: strin
     const trace = consola.trace;
     const start = consola.start;
     const box = consola.box;
-    const prompt = consola.prompt;
+    const prompt = <T = any>(message: string, opts: Parameters<typeof consola.prompt>[1], hint: string) =>
+        withPromptTimeout<T>(consola.prompt<T>(message, opts as any) as Promise<T>, message, hint);
 
     // Path retrieval methods
     const getScriptPath = () => options.path!;
@@ -38,10 +40,14 @@ export async function createCommandUtils(params: Params, options: { path?: strin
         if (config.env in params.options) {
             return params.options[config.env] === "1";
         }
-        return consola.prompt(config.message, {
-            type: "confirm",
-            placeholder: config.placeholder,
-        });
+        return withPromptTimeout(
+            consola.prompt(config.message, {
+                type: "confirm",
+                placeholder: config.placeholder,
+            }) as Promise<boolean>,
+            config.message,
+            `To run non-interactively, add --${config.env}=1 (or --${config.env}=0) to the command.`,
+        );
     };
 
     const getStringInput = async (config: {
@@ -52,10 +58,14 @@ export async function createCommandUtils(params: Params, options: { path?: strin
         if (config.env in params.options) {
             return params.options[config.env];
         }
-        return consola.prompt(config.message, {
-            type: "text",
-            placeholder: config.placeholder,
-        });
+        return withPromptTimeout(
+            consola.prompt(config.message, {
+                type: "text",
+                placeholder: config.placeholder,
+            }) as Promise<string>,
+            config.message,
+            `To run non-interactively, add --${config.env}=<value> to the command.`,
+        );
     };
 
     // Progress control

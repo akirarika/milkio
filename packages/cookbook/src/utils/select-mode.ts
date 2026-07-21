@@ -162,8 +162,7 @@ export async function selectMode(options: CookbookOptions, params?: Params) {
       const exampleMode = options.general.modes[0];
       const suggested = reconstructCommand(`--mode=${exampleMode}`);
       consola.error(
-        `No mode was selected within 15 seconds. Exiting with code 1.\n\n` +
-          `Available modes: ${options.general.modes.join(", ")}\n\n` +
+        `Interactive prompt (select mode) was not answered within 15 seconds.\n\n` +
           `To run non-interactively, re-run with a mode, e.g.:\n  ${suggested}`,
       );
       process.exit(1);

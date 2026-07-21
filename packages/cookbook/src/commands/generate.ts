@@ -13,7 +13,8 @@ export default await defineCookbookCommand(async (utils) => {
     consola.error(
       `The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`,
     );
-    exit(0);
+    consola.info(`Hint: run "co init" in an empty directory to create a new cookbook project.`);
+    exit(1);
   }
   const cookbookTomlText = await cookbookToml.text();
   const cookbookTomlHash = calcHash(cookbookTomlText);

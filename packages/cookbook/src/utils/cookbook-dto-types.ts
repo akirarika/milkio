@@ -58,7 +58,7 @@ export interface CookbookOptions {
       drizzle?: Array<{
         mode: string;
         migrateDatabaseUrl: string;
-        migrateMode: "generate" | "push" | "any";
+        migrateMode: "generate" | "push" | "any" | "migrate";
         schemaDir?: string;
       }>;
     }
@@ -71,6 +71,11 @@ export interface CookbookOptions {
   };
   config: {
     [key: string]: string | number | boolean;
+    // AI integration (optional, used by co create / co x commands)
+    aiModel?: string;
+    aiModelDeepResearch?: string;
+    aiBaseUrl?: string;
+    aiApiKey?: string;
   };
   hash: string;
 }

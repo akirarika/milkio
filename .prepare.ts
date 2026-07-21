@@ -2,6 +2,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { spawn } from "node:child_process";
 
 // The milkio source directory (where this script lives).
 // Used to locate milkio's own packages when this script is invoked from
@@ -225,10 +226,13 @@ if (isDownstreamWorkspace) {
 // vite-plugin-milkio is imported by vite.config.ts, which is loaded by Node.js
 // (not Vite's own loader) when starting the dev server. Node.js supports type
 // stripping for .ts files in user code but NOT for files under node_modules.
-// Since step 3 copies the .ts source into node_modules, we must also build a
-// .js bundle so Node.js can load the plugin without ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING.
+// Both step 2 (milkio workspace) and step 3 (downstream workspaces) copy the
+// .ts source into node_modules, so in either case we must also build a .js
+// bundle so Node.js can load the plugin without
+// ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING. This is required for the
+// node-runtime "test" project in the milkio workspace as well.
 
-if (isDownstreamWorkspace) {
+{
   const vitePluginMilkioDir = path.join("node_modules", "@milkio", "vite-plugin-milkio");
   if (existsSync(vitePluginMilkioDir)) {
     const entrypoint = path.join(vitePluginMilkioDir, "index.ts");
@@ -250,6 +254,132 @@ if (isDownstreamWorkspace) {
       pkg.exports = "./index.js";
       await fs.writeFile(pkgJsonPath, JSON.stringify(pkg, null, 2), "utf-8");
       console.log("built vite-plugin-milkio as JavaScript");
+    }
+  }
+}
+
+// ---- step 6: ttsc check milkio projects ----
+// Run `ttsc check` on every milkio-typed project declared in cookbook.toml to
+// surface type errors early — before `co test` / `co dev` / `co build` spawns
+// any watcher or worker. This mirrors the logic in
+// `packages/cookbook/src/utils/typecheck.ts` but runs as part of the prepare
+// phase so failures short-circuit the whole `co` invocation cleanly.
+//
+// Only runs when this script is invoked from inside the milkio workspace
+// itself. Downstream workspaces already get type checking via `co test`'s
+// typecheckProjects phase, so we skip there to avoid double work.
+//
+// A temporary `tsconfig.typecheck.json` is created per project that extends
+// the project's own `tsconfig.json` but overrides `composite`, `declaration`,
+// and `emitDeclarationOnly` to `false` (so composite projects don't trigger
+// TS2883 for typia phantom tag types) and explicitly registers the typia
+// transformer plugin (because `typia` is a dependency of the workspace root,
+// not of each individual project, so ttsc's auto-discovery can't find it).
+
+if (!isDownstreamWorkspace) {
+  const cookbookTomlPath = path.join(MILKIO_DIR, "cookbook.toml");
+  if (existsSync(cookbookTomlPath)) {
+    const cookbookTomlText = await fs.readFile(cookbookTomlPath, "utf-8");
+    const cookbookToml = (Bun as any).TOML.parse(cookbookTomlText) as {
+      projects?: Record<string, { type?: string; runtime?: string }>;
+    };
+    const projects = cookbookToml.projects ?? {};
+
+    const ttscPath = path.join(MILKIO_DIR, "node_modules", "ttsc", "lib", "launcher", "ttsc.js");
+    if (!existsSync(ttscPath)) {
+      console.log("skip step 6: ttsc not found");
+    } else {
+      const milkioProjectNames = Object.entries(projects)
+        .filter(([, p]) => p.type === "milkio")
+        .map(([name]) => name);
+
+      if (milkioProjectNames.length > 0) {
+        console.log(`step 6: ttsc check ${milkioProjectNames.length} milkio project(s)..`);
+
+        const tempTsconfigName = "tsconfig.typecheck.json";
+        const results: Array<{ projectName: string; exitCode: number; stdout: string; stderr: string }> = [];
+
+        await Promise.all(
+          milkioProjectNames.map(async (projectName) => {
+            const projectPath = path.join(MILKIO_DIR, "projects", projectName);
+            if (!existsSync(projectPath)) {
+              results.push({
+                projectName,
+                exitCode: 1,
+                stdout: "",
+                stderr: `Project directory not found: ${projectPath}`,
+              });
+              return;
+            }
+
+            const tempTsconfigPath = path.join(projectPath, tempTsconfigName);
+            const tempTsconfig = {
+              extends: "./tsconfig.json",
+              compilerOptions: {
+                composite: false,
+                declaration: false,
+                emitDeclarationOnly: false,
+                plugins: [{ transform: "typia/lib/transform" }],
+              },
+            };
+            await fs.writeFile(tempTsconfigPath, JSON.stringify(tempTsconfig, null, 2));
+
+            try {
+              const preferredRuntime = projects[projectName].runtime === "bun" ? "bun" : "node";
+              const runtimePath =
+                typeof Bun !== "undefined" && (Bun as any).which
+                  ? (Bun as any).which(preferredRuntime) ??
+                    (Bun as any).which(preferredRuntime === "bun" ? "node" : "bun") ??
+                    process.execPath
+                  : process.execPath;
+
+              const result = await new Promise<{ exitCode: number; stdout: string; stderr: string }>((resolve) => {
+                const child = spawn(runtimePath, [ttscPath, "check", "-p", tempTsconfigName], {
+                  cwd: projectPath,
+                  stdio: "pipe",
+                  shell: false,
+                });
+
+                let stdout = "";
+                let stderr = "";
+
+                child.stdout.on("data", (data: Buffer) => {
+                  stdout += data.toString();
+                });
+                child.stderr.on("data", (data: Buffer) => {
+                  stderr += data.toString();
+                });
+
+                child.on("error", (err: Error) => {
+                  resolve({ exitCode: 1, stdout, stderr: stderr + `\n${err.message}` });
+                });
+
+                child.on("close", (code: number | null) => {
+                  resolve({ exitCode: code ?? 1, stdout, stderr });
+                });
+              });
+
+              results.push({ projectName, ...result });
+            } finally {
+              await fs.rm(tempTsconfigPath, { force: true }).catch(() => {});
+            }
+          }),
+        );
+
+        const failures = results.filter((r) => r.exitCode !== 0);
+        if (failures.length > 0) {
+          for (const failure of failures) {
+            console.error(`Type check failed for project "${failure.projectName}" (exit code ${failure.exitCode}):`);
+            if (failure.stdout.trim()) console.log(failure.stdout.trim());
+            if (failure.stderr.trim()) console.error(failure.stderr.trim());
+            console.log("");
+          }
+          console.error(`Encountered errors in ${failures.length} of ${results.length} project(s).`);
+          process.exit(1);
+        }
+
+        console.log(`All type checks passed for ${results.length} project(s).`);
+      }
     }
   }
 }

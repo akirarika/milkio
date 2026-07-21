@@ -1,4 +1,4 @@
-# milkio-starter
+# vite-plugin-milkio
 
 To install dependencies:
 

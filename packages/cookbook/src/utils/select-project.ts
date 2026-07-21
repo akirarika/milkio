@@ -4,6 +4,7 @@ import { uniqWith } from "lodash-es";
 import { join } from "node:path";
 import { cwd, exit } from "node:process";
 import consola from "consola";
+import { createPromptAbortController, handlePromptAbort } from "./prompt-timeout";
 
 export async function selectProject(
   cookbookToml: CookbookOptions,
@@ -11,6 +12,7 @@ export async function selectProject(
     withRoot?: boolean;
     filter?: (project: CookbookOptions["projects"][0] & { value: string }) => boolean | Promise<boolean>;
     projectUsed?: string;
+    hint?: string;
   },
 ): Promise<CookbookOptions["projects"][0] & { value: any; path: string }> {
   const projects: Array<CookbookOptions["projects"] & { value: any }> = [{ value: "<cancel>", description: "Cancel and exit cookbook" } as any];
@@ -23,23 +25,41 @@ export async function selectProject(
     if (options?.filter === undefined || (await options.filter(project))) projects.push(project);
   }
 
-  const selected =
-    options?.projectUsed ??
-    (await search({
-      message: "Select the project to operate on:",
-      source: async (input) => {
-        if (!input) return projects;
-        const filtered = projects.filter((project) => containsCharsInOrder(input.toLowerCase(), project.value.toLowerCase()));
-        return uniqWith(filtered, (a, b) => a.value === b.value).sort((a, b) => {
-          const scoreA = calculateScore(input, a.value);
-          const scoreB = calculateScore(input, b.value);
-          if (scoreB.maxContiguous !== scoreA.maxContiguous) {
-            return scoreB.maxContiguous - scoreA.maxContiguous;
-          }
-          return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
-        });
-      },
-    }));
+  let selected = options?.projectUsed;
+  if (selected === undefined) {
+    const { controller, timeoutId } = createPromptAbortController();
+    try {
+      selected = await search(
+        {
+          message: "Select the project to operate on:",
+          source: async (input) => {
+            if (!input) return projects;
+            const filtered = projects.filter((project) => containsCharsInOrder(input.toLowerCase(), project.value.toLowerCase()));
+            return uniqWith(filtered, (a, b) => a.value === b.value).sort((a, b) => {
+              const scoreA = calculateScore(input, a.value);
+              const scoreB = calculateScore(input, b.value);
+              if (scoreB.maxContiguous !== scoreA.maxContiguous) {
+                return scoreB.maxContiguous - scoreA.maxContiguous;
+              }
+              return scoreA.firstMatchIndex - scoreB.firstMatchIndex;
+            });
+          },
+        },
+        { signal: controller.signal },
+      );
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (controller.signal.aborted) {
+        handlePromptAbort(
+          err,
+          "select project",
+          options?.hint ?? "To run non-interactively, add --project=<project-name> to the command.",
+        );
+      }
+      throw err;
+    }
+    clearTimeout(timeoutId);
+  }
 
   if (selected === "<cancel>") {
     consola.success("Cookbook cancelled");

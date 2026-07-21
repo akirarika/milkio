@@ -5,6 +5,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import gradient from "gradient-string";
 import { $ } from "bun";
+import { withPromptTimeout } from "../utils/prompt-timeout";
 
 export default await defineCookbookCommand(async (utils) => {
   const params = utils.getParams();
@@ -15,20 +16,25 @@ export default await defineCookbookCommand(async (utils) => {
 
   let result = params.commands[0] || "";
   if (!result) {
-    result = await consola.prompt("Which version do you want to upgrade cookbook and milkio to?", {
-      type: "text",
-      placeholder: "latest",
-    });
+    result = await withPromptTimeout(
+        consola.prompt("Which version do you want to upgrade cookbook and milkio to?", {
+            type: "text",
+            placeholder: "latest",
+        }) as Promise<string>,
+        "upgrade version",
+        'To run non-interactively, pass the version as an argument, e.g. "co upgrade 1.3.22" or "co upgrade latest".',
+    );
   }
 
   if (typeof result === "symbol") {
     consola.error("Cancelled.");
-    exit(0);
+    exit(1);
   }
 
   if (typeof result === "string" && !/^(\d+)\.(\d+)\.(\d+)((-rc|-beta|-alpha)\.(\d+))?$/.test(result) && result !== "latest") {
     consola.error("The version number is not entered or the format is incorrect.");
-    exit(0);
+    consola.info(`Hint: pass the version as an argument, e.g. "co upgrade 1.3.22" or "co upgrade latest".`);
+    exit(1);
   }
 
   if (!result || result === "latest") {
@@ -73,7 +79,8 @@ export default await defineCookbookCommand(async (utils) => {
 
     if (!packageInfo) {
       consola.error(`All mirrors failed to provide valid data for package '${packageName}'`);
-      exit(0);
+      consola.info(`Hint: check your network connection, or specify a version manually, e.g. "co upgrade 1.3.22".`);
+      exit(1);
     }
 
     result = packageInfo.data["dist-tags"].latest;
@@ -100,7 +107,11 @@ export default await defineCookbookCommand(async (utils) => {
   await writeFile(join(cwd(), "package.json"), JSON.stringify(packageJson, null, 2));
 
   const cmd = `${cookbookToml.general.packageManager} install`;
-  if (await consola.prompt(`Do you want to install dependencies now? (${cmd})`, { type: "confirm" })) {
+  if (await withPromptTimeout(
+      consola.prompt(`Do you want to install dependencies now? (${cmd})`, { type: "confirm" }) as Promise<boolean>,
+      "install dependencies",
+      "This prompt cannot be bypassed with flags. Run \"co upgrade <version>\" in a terminal and confirm manually.",
+  )) {
     try {
       await $`${{ raw: cmd }}`;
     } catch (error) {

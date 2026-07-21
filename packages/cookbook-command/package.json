@@ -7,8 +7,8 @@
     "url": "https://github.com/akirarika/milkio"
   },
   "dependencies": {
-    "consola": "^3.4.0",
+    "consola": "^3.4.2",
     "openai": "^4.87.3"
   },
-  "version": "1.3.22"
+  "version": "1.3.23"
 }

@@ -4,6 +4,18 @@ export const __router__ = [
     script: () => import("./dev.ts"),
   },
   {
+    commands: ["start"],
+    script: () => import("./start.ts"),
+  },
+  {
+    commands: ["stop"],
+    script: () => import("./stop.ts"),
+  },
+  {
+    commands: ["logs"],
+    script: () => import("./logs.ts"),
+  },
+  {
     commands: ["drizzle"],
     script: () => import("./drizzle.ts"),
   },
@@ -44,7 +56,7 @@ export const __router__ = [
   },
   {
     hidden: true,
-    commands: ["upgrade", "up"],
+    commands: ["upgrade"],
     script: () => import("./upgrade.ts"),
   },
   {

@@ -182,6 +182,7 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
                 cwd: projectPath,
                 stdio: "pipe",
                 shell: false,
+                windowsHide: true,
               });
 
               let stdout = "";
@@ -240,6 +241,7 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
             cwd: projectPath,
             stdio: "pipe",
             shell: false,
+            windowsHide: true,
           });
 
           let stdout = "";

@@ -3,7 +3,7 @@ import { defineCookbookCommand } from "@milkio/cookbook-command";
 import { selectProject } from "../utils/select-project";
 import { join } from "node:path";
 import { exists, mkdir, readFile, writeFile } from "node:fs/promises";
-import { execScript } from "../utils/exec-script";
+import { execScriptOrFail } from "../utils/exec-script";
 import { select } from "../utils/select";
 import { env } from "bun";
 import { existsSync } from "fs-extra";
@@ -62,7 +62,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
 
     if (!params.commands.at(0) && !userCommand) {
         const command = `${cookbookToml.general.packageManager} run drizzle`;
-        await execScript(command, {
+        await execScriptOrFail(command, {
             cwd: project.path,
             env: {
                 ...env,
@@ -76,7 +76,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
         exit(1);
     }
 
-    const mode: any = await select("Select the mode:", project.drizzle ?? [], "mode", modeUsed);
+    const mode: any = await select("Select the mode:", project.drizzle ?? [], "mode", modeUsed, "To run non-interactively, add --mode=<mode> to the command.");
     if (!mode?.migrateMode) {
         consola.error("Drizzle configuration not found, please add a 'migrateMode = \"generate\"' in your cookbook.toml.");
         exit(1);
@@ -108,7 +108,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
     
 
     if ((params.commands.at(0) !== "migrate" && userCommand !== "migrate") || !existsSync(join(project.path, "drizzle.migrate.ts"))) {
-        await execScript(command, {
+        await execScriptOrFail(command, {
             cwd: project.path,
             env: { DATABASE_URL: mode.migrateDatabaseUrl },
         });
@@ -117,7 +117,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
     if ((params.commands.at(0) === "migrate" || userCommand === "migrate") && existsSync(join(project.path, "drizzle.migrate.ts"))) {
         const runtime = await getRuntime(project.runtime ?? "bun");
         const scriptPath = join(project.path, "drizzle.migrate.ts");
-        await execScript(`${runtime} ${scriptPath}`, {
+        await execScriptOrFail(`${runtime} ${scriptPath}`, {
             cwd: project.path,
             env: { DATABASE_URL: mode.migrateDatabaseUrl },
         });
@@ -134,7 +134,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
         if (existsSync(join(project.path, "drizzle.migrate.ts"))) {
             const runtime = await getRuntime(project.runtime ?? "bun");
             const scriptPath = join(project.path, "drizzle.migrate.ts");
-            await execScript(`${runtime} ${scriptPath}`, {
+            await execScriptOrFail(`${runtime} ${scriptPath}`, {
                 cwd: project.path,
                 env: { DATABASE_URL: mode.migrateDatabaseUrl },
             });
