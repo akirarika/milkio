@@ -88,12 +88,7 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
 
                 let routeFileImports = "// route-schema";
                 routeFileImports += `\nimport typia, { type IValidation, type Resolved } from "typia";`;
-                let typiaCommand = "";
-                try {
-                    typiaCommand = `${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
-                } catch (error) {
-                    typiaCommand = `// typia command unavailable: ${(error as Error)?.message ?? error}`;
-                }
+                const typiaCommand = `${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
                 let routeFileExports = `// typia command: ${typiaCommand}`;
                 routeFileExports += "\nexport default { ";
                 routeFileExports += `\ntype: "${file.type}", `;

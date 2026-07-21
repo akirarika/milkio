@@ -1,6 +1,0 @@
-copy: projects\test\app -> projects\test-bun\app
-copy: projects\test\app -> projects\test-deno\app
-built vite-plugin-milkio as JavaScript
-step 6: ttsc check 4 milkio project(s)..
-All type checks passed for 4 project(s).
-prepare done.
