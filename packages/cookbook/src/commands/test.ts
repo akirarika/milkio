@@ -8,10 +8,12 @@ import { cwd, exit } from "node:process";
 import { calcHash } from "../utils/calc-hash";
 import { getRandomPort } from "../utils/get-random-port";
 import { exists, readFile, writeFile } from "node:fs/promises";
-import { ensureCookbookDir } from "../utils/background";
+import { getCookbookDir } from "../utils/background";
+import { installBackgroundLogger } from "../utils/background-logger";
 import { execScript } from "../utils/exec-script";
 
 export default await defineCookbookCommand(async (utils) => {
+    installBackgroundLogger();
     const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
     if (!(await cookbookToml.exists())) {
         consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`);
@@ -48,8 +50,7 @@ export default await defineCookbookCommand(async (utils) => {
 
         const cookbookServerPort = await getRandomPort();
         const cookbookServerBaseUrl = `http://localhost:${cookbookServerPort}/${cookbookServerAccessKey}`;
-        ensureCookbookDir();
-        await writeFile(join(cwd(), "node_modules", ".cookbook", "control-url.md"), cookbookServerBaseUrl);
+        await writeFile(join(getCookbookDir(), "control-url.md"), cookbookServerBaseUrl);
 
         const { startCookbookServer } = await import("@milkio/cookbook-server");
         const _server = await startCookbookServer({ port: cookbookServerPort, accessKey: cookbookServerAccessKey });

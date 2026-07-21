@@ -5,19 +5,17 @@ import { ensureCookbookDir, getLogsDir } from "./background";
 // Rotate to a fresh log file once the current one grows beyond ~64kb.
 const ROTATE_BYTES = 64 * 1024;
 
+const ANSI_RE = /\x1b\[[0-9;]*[a-zA-Z]/g;
+
 /**
  * Redirects the current process' stdout/stderr into rotating log files under
  * "<cwd>/node_modules/.cookbook/logs".
  *
- * This runs inside the detached background dev server process (spawned by
- * "co start"), so it is the long-lived process that performs rotation. The log
- * directory is cleared on every start. When a single log file exceeds ~64kb, a
- * new "<ms-timestamp>.log" file is started and a marker line is appended to the
- * old file pointing at the new one.
- *
- * Colors are preserved because "co start" spawns this process with
- * FORCE_COLOR=1, so chalk/consola emit ANSI codes even though stdout is not a
- * TTY; "co logs" then streams the raw bytes back to the terminal.
+ * Called by any command that starts a server and spawns child processes
+ * (dev / test / start's background child). The log directory is cleared on
+ * every start. When a single log file exceeds ~64kb, a new "<ms-timestamp>.log"
+ * file is started and a marker line is appended to the old file pointing at the
+ * new one. ANSI color codes are stripped before writing to disk.
  */
 export function installBackgroundLogger(): void {
     ensureCookbookDir();
@@ -39,7 +37,8 @@ export function installBackgroundLogger(): void {
     };
 
     const writeChunk = (chunk: unknown) => {
-        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(typeof chunk === "string" ? chunk : String(chunk));
+        const text = Buffer.isBuffer(chunk) ? chunk.toString() : typeof chunk === "string" ? chunk : String(chunk);
+        const buffer = Buffer.from(text.replace(ANSI_RE, ""));
         if (bytes > 0 && bytes + buffer.length > ROTATE_BYTES) rotate();
         stream.write(buffer);
         bytes += buffer.length;

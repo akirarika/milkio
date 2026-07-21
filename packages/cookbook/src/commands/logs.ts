@@ -55,7 +55,7 @@ export default await defineCookbookCommand(async (utils) => {
         const newest = await newestFile();
         if (!newest) {
             if (!announced) {
-                consola.info(`No logs yet. Waiting for "co start" to produce logs in ${logsDir} ..`);
+                consola.info(`No logs yet. Waiting for logs in ${logsDir} ..`);
                 announced = true;
             }
             return;

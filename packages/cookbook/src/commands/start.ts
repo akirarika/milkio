@@ -46,10 +46,9 @@ export default await defineCookbookCommand(async (utils) => {
 
     const child = spawn(command[0], command.slice(1), {
         cwd: cwd(),
-        // COOKBOOK_BACKGROUND makes the child install the rotating file logger and
-        // skip the "stop existing background server" step in dev.ts (so it does not
-        // kill itself). FORCE_COLOR keeps the captured logs colored like "co dev".
-        env: { ...env, COOKBOOK_BACKGROUND: "1", FORCE_COLOR: "1" },
+        // COOKBOOK_BACKGROUND skips the "stop existing background server" step
+        // in dev.ts (so it does not kill itself).
+        env: { ...env, COOKBOOK_BACKGROUND: "1" },
         detached: true,
         stdio: "ignore",
         windowsHide: true,
