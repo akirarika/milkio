@@ -189,14 +189,32 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
 
                 try {
                     const output = await new Promise<string>((resolve, reject) => {
-                        exec(typiaCommand, { cwd: root }, (error, stdout, stderr) => {
-                            const fullOutput = stdout + stderr;
-                            if (error) {
-                                reject(new Error(fullOutput));
-                            } else {
-                                resolve(fullOutput);
-                            }
-                        });
+                        const child = exec(
+                            typiaCommand,
+                            {
+                                cwd: root,
+                                // no windowsHide: inherit the parent console (the
+                                // background dev server already runs with a hidden
+                                // console), otherwise each spawned console app
+                                // creates its own visible console window.
+                                maxBuffer: 64 * 1024 * 1024,
+                                timeout: 180_000, // 3 min per file — prevent hanging forever
+                            },
+                            (error, stdout, stderr) => {
+                                const fullOutput = stdout + stderr;
+                                if (error) {
+                                    reject(new Error(fullOutput));
+                                } else {
+                                    resolve(fullOutput);
+                                }
+                            },
+                        );
+                        // If the child doesn't finish in time (exec's `timeout` fires SIGTERM),
+                        // forcefully kill it to avoid orphan processes.
+                        const forceTimer = setTimeout(() => {
+                            child.kill("SIGKILL");
+                        }, 180_000 + 10_000);
+                        child.on("close", () => clearTimeout(forceTimer));
                     });
                     if (output.includes("error ")) {
                         consola.error(`[${getRate()}] 🚨 typia fail, skip: ${file.path}\n${output}`);

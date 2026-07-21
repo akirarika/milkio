@@ -96,7 +96,7 @@ export async function killProcessTree(pid: number): Promise<void> {
     if (!isPidAlive(pid)) return;
     if (process.platform === "win32") {
         await new Promise<void>((resolve) => {
-            const killer = spawn("taskkill", ["/PID", `${pid}`, "/T", "/F"], { stdio: "ignore", windowsHide: true });
+            const killer = spawn("taskkill", ["/PID", `${pid}`, "/T", "/F"], { stdio: "ignore" });
             killer.on("exit", () => resolve());
             killer.on("error", () => resolve());
         });
@@ -130,6 +130,13 @@ export async function waitForProjectsReady(
         requestTimeoutMs?: number;
         overallTimeoutMs?: number;
         isAborted?: () => boolean;
+        /**
+         * Checked on every poll iteration. Return a human-readable failure
+         * message to abort the wait immediately (fail fast), or undefined to
+         * keep waiting. Used by "co start" to surface worker processes that
+         * died before their URL ever responded.
+         */
+        getFailure?: () => Promise<string | undefined>;
     } = {},
 ): Promise<{ success: boolean; error?: string }> {
     if (targets.length === 0) return { success: true };
@@ -141,6 +148,10 @@ export async function waitForProjectsReady(
     while (Date.now() < deadline) {
         if (options.isAborted?.()) {
             return { success: false, error: "The background dev server process exited before becoming ready." };
+        }
+        const failure = await options.getFailure?.();
+        if (failure) {
+            return { success: false, error: failure };
         }
         await Promise.all(
             [...pending.values()].map(async (target) => {

@@ -8,7 +8,7 @@ import consola from "consola";
 import { cwd, env, exit } from "node:process";
 import { calcHash } from "../utils/calc-hash";
 import { getRandomPort } from "../utils/get-random-port";
-import { writeFile } from "node:fs/promises";
+import { writeFile, rm } from "node:fs/promises";
 import { getCookbookDir } from "../utils/background";
 import { installBackgroundLogger } from "../utils/background-logger";
 
@@ -32,6 +32,16 @@ export default await defineCookbookCommand(async (utils) => {
             }
             await clearState();
         }
+    } else {
+        // When running as the background child of "co start", publish our pid
+        // so the parent can track liveness. On Windows the real pid is not
+        // directly observable because the process is launched through a
+        // hidden-console WScript wrapper.
+        const { ensureCookbookDir } = await import("../utils/background");
+        await writeFile(join(ensureCookbookDir(), "dev-pid"), `${process.pid}`, "utf-8");
+        // drop stale worker statuses from a previous run; fresh states are
+        // published by initWorkers / the workers themselves
+        await rm(join(ensureCookbookDir(), "workers-status.json"), { force: true }).catch(() => {});
     }
 
     const cookbookTomlText = await cookbookToml.text();

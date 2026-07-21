@@ -176,14 +176,21 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
           };
           await Bun.write(tempTsconfigPath, JSON.stringify(tempTsconfig, null, 2));
 
+          consola.info(`  Type checking "${projectName}"..`);
           try {
             return await new Promise<CheckResult>((resolve) => {
               const child = spawn(runtimePath, [ttscPath, "check", "-p", tempTsconfigName], {
                 cwd: projectPath,
                 stdio: "pipe",
                 shell: false,
-                windowsHide: true,
+                // no windowsHide: inherit the parent console so descendants
+                // (tsgo) don't each create a new visible console window
               });
+
+              // Kill after 10 minutes to prevent hanging forever
+              const timeout = setTimeout(() => {
+                child.kill("SIGKILL");
+              }, 600_000);
 
               let stdout = "";
               let stderr = "";
@@ -196,10 +203,12 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
               });
 
               child.on("error", (err: Error) => {
+                clearTimeout(timeout);
                 resolve({ projectName, exitCode: 1, stdout, stderr: stderr + `\n${err.message}`, kind: "typecheck" });
               });
 
               child.on("close", (code: number | null) => {
+                clearTimeout(timeout);
                 resolve({ projectName, exitCode: code ?? 1, stdout, stderr, kind: "typecheck" });
               });
             });
@@ -241,7 +250,6 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
             cwd: projectPath,
             stdio: "pipe",
             shell: false,
-            windowsHide: true,
           });
 
           let stdout = "";

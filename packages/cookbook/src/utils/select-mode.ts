@@ -4,57 +4,13 @@ import type { CookbookOptions } from "./cookbook-dto-types";
 import chalk from "chalk";
 import { asciis } from "./asciis";
 import { uniqWith } from "lodash-es";
-import { cwd, exit } from "node:process";
-import { existsSync, readFileSync } from "node:fs";
-import { basename, join, relative } from "node:path";
+import { exit } from "node:process";
 import { search } from "@inquirer/prompts";
 import type { Params } from "..";
 
-/**
- * Reconstruct the command the user actually ran, so we can suggest a
- * non-interactive variant by appending `--mode=<mode>`.
- *
- * `process.argv` is `[bunPath, scriptPath, ...userArgs]`. We try to find an
- * npm-script in the closest package.json whose value references the script
- * file (e.g. milkio's "co" script), so the suggestion reads
- * `bun run co dev --mode=test` rather than the raw script path.
- * If no matching script is found we fall back to `bun <relativePath>`.
- */
 function reconstructCommand(suffix: string): string {
-  const scriptPath = process.argv[1] ?? "";
   const userArgs = process.argv.slice(2).filter((arg) => !arg.startsWith("--mode") && arg !== "--mode");
-
-  const scriptName = findMatchingScriptName(scriptPath);
-  if (scriptName) {
-    return ["bun run", scriptName, ...userArgs, suffix].filter(Boolean).join(" ");
-  }
-
-  let scriptDisplay = scriptPath;
-  try {
-    const rel = relative(cwd(), scriptPath);
-    if (rel) scriptDisplay = rel;
-  } catch {
-    // ignore
-  }
-  return ["bun", scriptDisplay, ...userArgs, suffix].filter(Boolean).join(" ");
-}
-
-function findMatchingScriptName(scriptPath: string): string | undefined {
-  try {
-    const pkgJsonPath = join(cwd(), "package.json");
-    if (!existsSync(pkgJsonPath)) return undefined;
-    const pkg = JSON.parse(readFileSync(pkgJsonPath, "utf-8"));
-    const scripts: Record<string, unknown> = pkg?.scripts ?? {};
-    const base = basename(scriptPath);
-    for (const [name, value] of Object.entries(scripts)) {
-      if (typeof value === "string" && value.includes(base)) {
-        return name;
-      }
-    }
-  } catch {
-    // ignore
-  }
-  return undefined;
+  return ["co", ...userArgs, suffix].filter(Boolean).join(" ");
 }
 
 export async function selectMode(options: CookbookOptions, params?: Params) {

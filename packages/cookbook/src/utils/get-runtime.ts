@@ -1,6 +1,24 @@
-import { $ } from "bun";
+import { spawn } from "node:child_process";
 import { exit } from "node:process";
 import consola from "consola";
+
+/** Resolve a runtime executable path; returns null if not found. */
+function which(command: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const child = spawn(
+      process.platform === "win32" ? "where" : "which",
+      [command],
+      { stdio: ["ignore", "pipe", "ignore"] }
+    );
+    let out = "";
+    child.stdout?.on("data", (d: Buffer) => { out += d.toString(); });
+    child.on("close", (code) => {
+      if (code === 0 && out.trim()) resolve(out.trim().split("\n")[0].trim());
+      else resolve(null);
+    });
+    child.on("error", () => resolve(null));
+  });
+}
 
 // 缓存两个运行时的可用性状态
 let runtimeAvailability: null | Promise<{ node: boolean; bun: boolean }> = null;
@@ -8,28 +26,13 @@ let runtimeAvailability: null | Promise<{ node: boolean; bun: boolean }> = null;
 export async function getRuntime(preferredRuntime: "node" | "bun" = "node"): Promise<"node" | "bun"> {
   if (!runtimeAvailability) {
     runtimeAvailability = (async () => {
-      let nodeAvailable = false;
-      let bunAvailable = false;
-      
-      // Check Node.js
-      try {
-        await $`node --version`.quiet();
-        nodeAvailable = true;
-      } catch {
-        // Node.js not available
-      }
-      
-      // Check Bun
-      try {
-        await $`bun --version`.quiet();
-        bunAvailable = true;
-      } catch {
-        // Bun not available
-      }
-      
+      const [nodePath, bunPath] = await Promise.all([
+        which("node"),
+        which("bun"),
+      ]);
       return {
-        node: nodeAvailable,
-        bun: bunAvailable
+        node: nodePath !== null,
+        bun: process.execPath?.includes("bun") || bunPath !== null,
       };
     })();
   }

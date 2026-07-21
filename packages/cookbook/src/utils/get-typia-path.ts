@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { cwd } from "node:process";
 import { exists } from "node:fs/promises";
 import { exit } from "node:process";
+import { ensureTypiaExportsPatched } from "./patch-typia-exports";
 
 let typiaPath: Promise<string> | null = null;
 
@@ -16,6 +17,9 @@ export function getTypiaPath(): Promise<string> {
       consola.error(`Typia is not installed, so it cannot be found in the following path: ${typiaPath}`);
       exit(1);
     }
+    // typia is resolved through this function by every dev/start/test run, so
+    // this is a reliable choke point to keep its exports patch applied
+    await ensureTypiaExportsPatched(join(typiaPath, "..", "..", "..", "package.json"));
     return typiaPath;
   })();
   return typiaPath;
