@@ -44,7 +44,14 @@ export default await defineCookbookCommand(async (utils) => {
 
     const forwardedArgs = params.raw.filter((arg) => arg !== "--mode" && !arg.startsWith("--mode="));
     const entry = argv[1];
-    const command = entry && existsSync(entry) ? [execPath, entry, "dev", `--mode=${mode}`, ...forwardedArgs] : [execPath, "dev", `--mode=${mode}`, ...forwardedArgs];
+    // Bun-compiled binaries expose their embedded entry point as a virtual
+    // path like "B:/~BUN/root/co" — and existsSync() sees it through the
+    // embedded filesystem, so it passes the existsSync check. Forwarding that
+    // virtual path as a script argument makes the child process receive it as
+    // its COMMAND name and exit immediately. Only forward real on-disk entry
+    // scripts (e.g. when running via "bun run cookbook.ts").
+    const isVirtualEmbeddedEntry = typeof entry === "string" && entry.includes("/~BUN/");
+    const command = entry && !isVirtualEmbeddedEntry && existsSync(entry) ? [execPath, entry, "dev", `--mode=${mode}`, ...forwardedArgs] : [execPath, "dev", `--mode=${mode}`, ...forwardedArgs];
 
     let pid: number | undefined;
     let isChildAlive: () => boolean;
