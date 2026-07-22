@@ -16,7 +16,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
     const cookbookToml = await utils.getCookbookToml();
     
     // Get mode from --mode option, environment variables, or function argument
-    modeUsed = (params.options.mode as string) || modeUsed || env.COOKBOOK_MODE || env.MODE;
+    modeUsed = (params.options.mode as string) || modeUsed || env.VITE_MODE || env.MODE;
     
     // Get project name from --project option or function argument
     const projectNameArg = (params.options.project as string) || projectUsed;

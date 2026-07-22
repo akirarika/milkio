@@ -89,7 +89,7 @@ function startServer(config: FrameworkConfig): ChildProcess {
 	const proc = spawn(cmd, args, {
 		cwd: config.cwd,
 		stdio: "pipe",
-		env: { ...process.env, ...config.env, COOKBOOK_MODE: "test" },
+		env: { ...process.env, ...config.env, VITE_MODE: "test" },
 	});
 
 	proc.stdout?.on("data", (d: Buffer) => process.stdout.write(d));

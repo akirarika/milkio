@@ -31,7 +31,7 @@ export function useVitePluginMilkio(options?: {
                 return milkioPromise;
             };
 
-            const envMode = env.COOKBOOK_MODE ?? (env.COOKBOOK_DEVELOP === "ENABLE" ? "development" : "production");
+            const envMode = env.VITE_MODE ?? (env.COOKBOOK_DEVELOP === "ENABLE" ? "development" : "production");
 
             // Cache for pathArray to avoid repeated split() on same pathname
             let lastPathname = "";

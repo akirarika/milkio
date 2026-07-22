@@ -55,8 +55,8 @@ export async function selectMode(options: CookbookOptions, params?: Params) {
     return mode;
   }
 
-  if (env?.COOKBOOK_MODE || env?.MODE) {
-    const mode = `${env?.COOKBOOK_MODE || env?.MODE}`;
+  if (env?.VITE_MODE || env?.MODE) {
+    const mode = `${env?.VITE_MODE || env?.MODE}`;
     if (mode) {
       if (options.general.modes.includes(mode) === false) {
         consola.warn(

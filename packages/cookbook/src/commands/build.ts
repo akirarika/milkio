@@ -35,7 +35,8 @@ export default await defineCookbookCommand(async (utils) => {
         await execScriptOrFail(`${project.build ?? `${options.general.packageManager} run build`}`, {
             cwd: join(cwd(), "projects", key),
             env: {
-                COOKBOOK_MODE: mode,
+                VITE_MODE: mode,
+                NODE_ENV: mode,
             },
         });
     }

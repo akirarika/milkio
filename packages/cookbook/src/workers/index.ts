@@ -52,7 +52,7 @@ async function writeWorkersStatus(): Promise<void> {
 export async function initWorkers(options: CookbookOptions, mode: string, baseUrl: string) {
     for (const projectName in options.projects ?? []) {
         const project = options.projects[projectName];
-        const env: Record<string, string | undefined> = { MODE: mode, VITE_MODE: mode, COOKBOOK_MODE: mode, COOKBOOK_BASE_URL: baseUrl, MILKIO_PORT: `${project.port}` };
+        const env: Record<string, string | undefined> = { MODE: mode, VITE_MODE: mode, NODE_ENV: mode, COOKBOOK_BASE_URL: baseUrl, MILKIO_PORT: `${project.port}` };
         const worker = createWorker(projectName, {
             env,
             command: project.start ?? `${options.general.packageManager} run dev`,

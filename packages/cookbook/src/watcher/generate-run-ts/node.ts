@@ -76,7 +76,7 @@ async function bootstrap() {
       world.listener.fetch({
         request,
         env,
-        envMode: env.COOKBOOK_MODE ?? "test",
+        envMode: env.VITE_MODE ?? "test",
         rawResponse: true,
       }).then((response: any) => {
         if (response.__rawResponse) {
