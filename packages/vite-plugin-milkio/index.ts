@@ -40,24 +40,17 @@ export function useVitePluginMilkio(options?: {
             server.middlewares.use(async (req, res, next) => {
                 try {
                     const milkio = await getMilkio();
-                    // Read body chunks
-                    let bodyBuffer: Buffer | null = null;
-                    let bodyChunks: Buffer[] | null = null;
+                    // Read body chunks. Accumulate every chunk unconditionally:
+                    // Node emits ~64KB per "data" event, and any smarter
+                    // buffering scheme here previously dropped the third chunk
+                    // of large request bodies (>128KB), corrupting JSON params.
+                    const bodyChunks: Buffer[] = [];
                     req.on("data", (chunk: Buffer) => {
-                        if (bodyBuffer === null) {
-                            bodyBuffer = chunk;
-                        } else {
-                            if (bodyChunks === null) {
-                                bodyChunks = [bodyBuffer, chunk];
-                                bodyBuffer = null;
-                            } else {
-                                bodyChunks.push(chunk);
-                            }
-                        }
+                        bodyChunks.push(chunk);
                     });
                     req.on("end", () => {
                         const method = req.method ?? "GET";
-                        const body: Uint8Array | null = bodyChunks ? Buffer.concat(bodyChunks) : bodyBuffer;
+                        const body: Uint8Array | null = bodyChunks.length > 0 ? Buffer.concat(bodyChunks) : null;
                         const bodyText = body ? Buffer.from(body).toString("utf-8") : "";
 
                         // Build full URL for standard Request

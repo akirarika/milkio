@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import type { CookbookOptions } from "../../utils/cookbook-dto-types";
+import type { CookbookOptions } from "../../utils/cookbook-dto-types.ts";
 
 export async function bunHandler(project: CookbookOptions["projects"]["key"], milkioDirPath: string) {
     await Bun.write(
