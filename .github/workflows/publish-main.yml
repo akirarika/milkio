@@ -37,7 +37,7 @@ jobs:
       - name: build .milkio
         run: bun run co generate
         env:
-            COOKBOOK_MODE: "test"
+            VITE_MODE: "test"
 
       - name: publish packages
         run: bun run .publ-ci.ts
