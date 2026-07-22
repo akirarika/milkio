@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { cwd, env } from "node:process";
 import { existsSync, readdirSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { version as viteVersion } from "vite";
 import type { PluginOption } from "vite";
 import { readFile, writeFile } from "node:fs/promises";
 import { adapters } from "./adapters/index.ts";
@@ -167,6 +168,9 @@ export function useVitePluginMilkio(options?: {
         },
 
         async config(config, { command }) {
+            // Disable Vite's built-in CORS, milkio handles CORS itself
+            config.server!.cors = false;
+
             if (command !== "build") return;
             const project = await getCookbookTomlProject();
 
@@ -175,12 +179,13 @@ export function useVitePluginMilkio(options?: {
             config.build.ssr = true;
             config.build.sourcemap = "inline";
             config.build.target = "es2024";
-            // config.build.rollupOptions
-            if (!config.build.rollupOptions) config.build.rollupOptions = {};
-            // config.build.rollupOptions.output
-            if (!config.build.rollupOptions.output) config.build.rollupOptions.output = {};
-            // config.build.rollupOptions.input
-            config.build.rollupOptions.input = {
+            // config.build.rolldownOptions (Vite 8+) / config.build.rollupOptions (Vite <=7, deprecated alias in Vite 8)
+            const bundlerOptionsKey = Number(viteVersion.split(".")[0]) >= 8 ? "rolldownOptions" : "rollupOptions";
+            const bundlerOptions: any = ((config.build as any)[bundlerOptionsKey] ??= {});
+            // bundlerOptions.output
+            if (!bundlerOptions.output) bundlerOptions.output = {};
+            // bundlerOptions.input
+            bundlerOptions.input = {
                 index: ".milkio/run.ts",
             };
 
@@ -195,7 +200,7 @@ export function useVitePluginMilkio(options?: {
                     format = options?.outputFormat ?? "esm";
                     mode = "chunk";
                 } else throw new Error("runtime not supported");
-                for (const output of Array.isArray(config.build.rollupOptions.output) ? config.build.rollupOptions.output : [config.build.rollupOptions.output]) {
+                for (const output of Array.isArray(bundlerOptions.output) ? bundlerOptions.output : [bundlerOptions.output]) {
                     output.format = format;
                     output.preserveModules = false;
                 }
@@ -209,8 +214,8 @@ export function useVitePluginMilkio(options?: {
                             command,
                             config,
                         });
-                        config.build.rollupOptions.input = result.input;
-                        config.build.rollupOptions.output = result.output;
+                        bundlerOptions.input = result.input;
+                        bundlerOptions.output = result.output;
                         break;
                     }
                 }

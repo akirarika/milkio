@@ -26,8 +26,8 @@
         "hono": "^4.7.5",
         "milkid": "^3.0.0",
         "typia": ">=13.1.1",
-        "vite-node": "^3.0.8",
-        "vitest": "^3.2.4"
+        "vite-node": "^6.0.0",
+        "vitest": "^4.1.0"
     },
     "devDependencies": {
         "oxlint": "^1.13.0",

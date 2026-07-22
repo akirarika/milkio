@@ -229,14 +229,16 @@ export default await defineCookbookCommand(async (utils) => {
         consola.warn(`Failed to update package manager in cookbook.toml: ${error?.message ?? error}`);
     }
 
-    if (selectedMirror !== "https://registry.npmjs.org/" && selectedPackageManager) {
-        if (selectedPackageManager === "npm") {
-            const npmrcContent = `registry=${selectedMirror}\n`;
-            await writeFile(join(currentWriteDir, ".npmrc"), npmrcContent, 'utf8');
-        } else if (selectedPackageManager === "bun") {
-            const bunfigContent = `[install]\nregistry = "${selectedMirror}"\n`;
-            await writeFile(join(currentWriteDir, "bunfig.toml"), bunfigContent, 'utf8');
+    if (selectedPackageManager === "npm") {
+        let npmrcContent = "";
+        if (selectedMirror !== "https://registry.npmjs.org/") {
+            npmrcContent += `registry=${selectedMirror}\n`;
         }
+        npmrcContent += `legacy-peer-deps=true\n`;
+        await writeFile(join(currentWriteDir, ".npmrc"), npmrcContent, 'utf8');
+    } else if (selectedPackageManager === "bun" && selectedMirror !== "https://registry.npmjs.org/") {
+        const bunfigContent = `[install]\nregistry = "${selectedMirror}"\n`;
+        await writeFile(join(currentWriteDir, "bunfig.toml"), bunfigContent, 'utf8');
     }
 
     consola.success("✨ Initialized successfully! Now, let's create your first Milkio project.");

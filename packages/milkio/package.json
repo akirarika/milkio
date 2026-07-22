@@ -1,7 +1,7 @@
 {
   "name": "milkio",
   "type": "module",
-  "version": "1.3.35",
+  "version": "1.3.36",
   "exports": "./index.ts",
   "repository": {
     "type": "git",
@@ -18,8 +18,8 @@
     "typia": ">=13.1.1"
   },
   "devDependencies": {
-    "@vitest/ui": "^3.0.5",
+    "@vitest/ui": "^4.1.0",
     "typescript": "^7.0.2",
-    "vitest": "^3.0.5"
+    "vitest": "^4.1.0"
   }
 }
