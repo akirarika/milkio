@@ -36,7 +36,6 @@ export default await defineCookbookCommand(async (utils) => {
             cwd: join(cwd(), "projects", key),
             env: {
                 VITE_MODE: mode,
-                NODE_ENV: mode,
             },
         });
     }
