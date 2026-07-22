@@ -10,6 +10,7 @@ import { execScriptOrFail } from "./utils/exec-script";
 import { createCommandUtils } from "./commands/__utils__";
 import { handleNonCookbookPkgMgr } from "./utils/handle-non-cookbook-pkg-mgr";
 import { createPromptAbortController, handlePromptAbort } from "./utils/prompt-timeout";
+import { ensureNodeModulesExportsPatched } from "./utils/patch-node-modules-exports.ts";
 
 export type Params = {
   command: string;
@@ -198,6 +199,13 @@ export async function cookbook() {
   }
 
   const built = __router__.find((command) => command.commands.includes(params.command));
+
+  // 在会启动/构建项目的命令执行前，无条件修正 node_modules 中上游包有缺陷的
+  // exports（typia、estree-walker），保证任何代码路径解析到的都是已修复状态
+  const EXPORT_PATCH_COMMANDS = new Set(["dev", "start", "test", "build", "generate", "install", "i", "add", "upgrade"]);
+  if (built && EXPORT_PATCH_COMMANDS.has(params.command)) {
+    await ensureNodeModulesExportsPatched(cwd());
+  }
 
   if (built) {
     if (params.command === "dev") {
