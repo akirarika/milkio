@@ -58,6 +58,49 @@ export default await defineCookbookCommand(async (utils) => {
         const { initWorkers } = await import("../workers");
         await initWorkers(options, mode, cookbookServerBaseUrl);
 
+        // co test spawns each project's dev server via initWorkers but does not
+        // wait for their HTTP endpoints to become ready before running vitest.
+        // For unit/integration tests that call into the backend in-process
+        // (createMirrorWorld) this is fine, but e2e tests that drive a real
+        // browser against a dev server URL need the server listening first.
+        // Reuse the same readiness check that "co start" relies on.
+        const { waitForProjectsReady } = await import("../utils/background");
+        const targets = Object.entries(options.projects ?? {})
+            .filter(([, project]) => project.autoStart !== false)
+            .map(([name, project]) => ({
+                name,
+                port: project.port,
+                url: project.connectTestUrl ?? (project.type !== "milkio" ? `http://localhost:${project.port}/` : `http://localhost:${project.port}/generate_204`),
+            }));
+        if (targets.length > 0) {
+            const workersStatusPath = join(getCookbookDir(), "workers-status.json");
+            const getWorkerFailure = async (): Promise<string | undefined> => {
+                let status: Record<string, { state?: string; exitCode?: number | null }>;
+                try {
+                    status = JSON.parse(await readFile(workersStatusPath, "utf-8"));
+                } catch {
+                    return undefined;
+                }
+                for (const target of targets) {
+                    const worker = status?.[target.name];
+                    if (worker?.state === "stopped" && typeof worker.exitCode === "number") {
+                        return `The dev server process of project "${target.name}" exited with code ${worker.exitCode} before becoming ready.`;
+                    }
+                }
+                return undefined;
+            };
+            const ready = await waitForProjectsReady(targets, {
+                intervalMs: 1000,
+                requestTimeoutMs: 5000,
+                overallTimeoutMs: 600_000,
+                getFailure: getWorkerFailure,
+            });
+            if (!ready.success) {
+                consola.error(`Failed to start project dev servers: ${ready.error}`);
+                exit(1);
+            }
+        }
+
         const endTime = new Date();
         const time = Math.max(endTime.getTime() - startTime.getTime(), 0);
         await progress.close(chalk.gray("cookbook is ready."));
