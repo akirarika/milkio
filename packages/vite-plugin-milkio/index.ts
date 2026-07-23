@@ -39,6 +39,25 @@ export function useVitePluginMilkio(options?: {
             let lastPathArray: string[] = [];
 
             server.middlewares.use(async (req, res, next) => {
+                // CORS: milkio handles CORS itself (vite built-in CORS is disabled in config())
+                const origin = req.headers.origin;
+                if (origin) {
+                    res.setHeader("Access-Control-Allow-Origin", origin);
+                    res.setHeader("Vary", "Origin");
+                }
+                res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS,HEAD");
+                const requestHeaders = req.headers["access-control-request-headers"];
+                if (typeof requestHeaders === "string") {
+                    res.setHeader("Access-Control-Allow-Headers", requestHeaders);
+                } else if (Array.isArray(requestHeaders)) {
+                    res.setHeader("Access-Control-Allow-Headers", requestHeaders.join(", "));
+                }
+                res.setHeader("Access-Control-Allow-Credentials", "true");
+                if (req.method === "OPTIONS") {
+                    res.writeHead(204);
+                    res.end();
+                    return;
+                }
                 try {
                     const milkio = await getMilkio();
                     // Read body chunks. Accumulate every chunk unconditionally:

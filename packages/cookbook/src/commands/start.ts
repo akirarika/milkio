@@ -69,7 +69,7 @@ export default await defineCookbookCommand(async (utils) => {
         // descendants simply inherit that console: no new windows, fully
         // detached from the user's terminal.
         const cookbookDir = ensureCookbookDir();
-        const pidPath = join(cookbookDir, "dev-pid");
+        const pidPath = join(cookbookDir, "dev-pid.md");
         await rm(pidPath, { force: true });
         // drop stale worker statuses from a previous run so the failure
         // detection below never acts on outdated information
@@ -84,7 +84,7 @@ export default await defineCookbookCommand(async (utils) => {
         const launcher = spawn("wscript.exe", [launcherPath], { stdio: "ignore", cwd: cwd() });
         launcher.unref();
 
-        // The dev server writes its own pid to "<cwd>/node_modules/.cookbook/dev-pid"
+        // The dev server writes its own pid to "<cwd>/node_modules/.cookbook/dev-pid.md"
         // on startup (see dev.ts), because the real pid is not directly
         // observable through the WScript wrapper.
         const startedAt = Date.now();

@@ -282,8 +282,17 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
     for (const failure of failures) {
       const label = failure.kind === "lint" ? "Lint" : "Type check";
       consola.error(`${label} failed for project "${failure.projectName}" (exit code ${failure.exitCode}):`);
-      if (failure.stdout.trim()) console.log(failure.stdout.trim());
-      if (failure.stderr.trim()) console.log(failure.stderr.trim());
+      const stdoutOut = failure.stdout.trim();
+      const stderrOut = failure.stderr.trim();
+      if (stdoutOut) console.log(stdoutOut);
+      if (stderrOut) console.log(stderrOut);
+      if (!stdoutOut && !stderrOut) {
+        consola.error(
+          `  The ${failure.kind} process exited with code ${failure.exitCode} but produced no output on stdout or stderr.\n` +
+            `  This usually means the compiler/runner could not start (e.g. missing plugin, invalid config, or out of memory).\n` +
+            `  Try running the check manually to see the raw error output.`,
+        );
+      }
       console.log("");
     }
     consola.error(
