@@ -175,7 +175,14 @@ async function generateDeclares(root: string, mode: string, options: CookbookOpt
     content += types;
     content += "\n};";
 
-    await Bun.write(join(root, ".milkio", "declares.ts"), `${header}\n${content}\n`);
+    const newDeclaresContent = `${header}\n${content}\n`;
+    // 比较内容，相同则跳过写入，避免触发 vite page reload
+    const declaresPath = join(root, ".milkio", "declares.ts");
+    let oldDeclaresContent: string | null = null;
+    try { oldDeclaresContent = await Bun.file(declaresPath).text(); } catch {}
+    if (oldDeclaresContent !== newDeclaresContent) {
+        await Bun.write(declaresPath, newDeclaresContent);
+    }
 }
 
 function setupWatcher(mode: string, root: string, appRoot: string, validDirs: string[], options: CookbookOptions, project: CookbookWatcherExtensionProject) {

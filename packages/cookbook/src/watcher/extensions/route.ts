@@ -43,6 +43,12 @@ export const routeWatcherExtension = defineWatcherExtension({
 
         const writePath = join(root, ".milkio", "route-schema.ts");
 
-        await Bun.write(writePath, `${routeSchemaFileImports}\n\n${routeSchemaFileExports}\n`);
+        const newRouteSchemaContent = `${routeSchemaFileImports}\n\n${routeSchemaFileExports}\n`;
+        // 比较内容，相同则跳过写入，避免触发 vite page reload
+        let oldRouteSchemaContent: string | null = null;
+        try { oldRouteSchemaContent = await Bun.file(writePath).text(); } catch {}
+        if (oldRouteSchemaContent !== newRouteSchemaContent) {
+            await Bun.write(writePath, newRouteSchemaContent);
+        }
     },
 });

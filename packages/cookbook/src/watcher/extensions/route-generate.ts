@@ -57,7 +57,13 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
                 prelimRouteExports += `\n  "/${routePath}": { types: { "\u{1F95B}": ${discriminator}, params: undefined as any, result: undefined as any } },`;
             }
             prelimRouteExports += "\n} as const;\nexport default routeSchema;\n";
-            await Bun.write(join(root, ".milkio", "route-schema.ts"), prelimRouteExports);
+            const prelimPath = join(root, ".milkio", "route-schema.ts");
+            // 比较内容，相同则跳过写入，避免触发 vite page reload
+            let oldPrelimContent: string | null = null;
+            try { oldPrelimContent = await Bun.file(prelimPath).text(); } catch {}
+            if (oldPrelimContent !== prelimRouteExports) {
+                await Bun.write(prelimPath, prelimRouteExports);
+            }
         }
 
         const queue = new DynamicConcurrencyQueue();
@@ -122,7 +128,13 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
 
                 const oldFiles = await readdir(generatedDirPath);
 
-                await Bun.write(generatedHashFilePath, `${routeFileImports}\n\n${routeFileExports}\n`);
+                const newGeneratedContent = `${routeFileImports}\n\n${routeFileExports}\n`;
+                // 比较内容，相同则跳过写入，避免 mtime 更新触发 typia 重新 transpile + vite reload
+                let oldGeneratedContent: string | null = null;
+                try { oldGeneratedContent = await Bun.file(generatedHashFilePath).text(); } catch {}
+                if (oldGeneratedContent !== newGeneratedContent) {
+                    await Bun.write(generatedHashFilePath, newGeneratedContent);
+                }
 
                 const deleteQueue = new DynamicConcurrencyQueue();
                 for (const oldFile of oldFiles) {
