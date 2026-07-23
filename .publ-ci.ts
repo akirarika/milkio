@@ -122,6 +122,7 @@ function writeDistPackageJson(pkgDir: string, outDir: string) {
     if (deps["vite-plugin-node"]) out.dependencies["vite-plugin-node"] = deps["vite-plugin-node"];
     if (deps["@mjackson/node-fetch-server"])
       out.dependencies["@mjackson/node-fetch-server"] = deps["@mjackson/node-fetch-server"];
+    out.peerDependencies = { vite: ">=5" };
   }
 
   const outPath = join(outDir, "package.json");
@@ -140,7 +141,7 @@ async function buildDist(pkgName: string) {
 
   const external: string[] = [];
   if (pkgName === "vite-plugin-milkio")
-    external.push("vite-plugin-node", "@mjackson/node-fetch-server");
+    external.push("vite", "vite-plugin-node", "@mjackson/node-fetch-server");
 
   const result = await Bun.build({
     entrypoints: [join(pkgDir, "index.ts")],
