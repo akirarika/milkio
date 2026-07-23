@@ -46,12 +46,7 @@ export function useVitePluginMilkio(options?: {
                     res.setHeader("Vary", "Origin");
                 }
                 res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS,HEAD");
-                const requestHeaders = req.headers["access-control-request-headers"];
-                if (typeof requestHeaders === "string") {
-                    res.setHeader("Access-Control-Allow-Headers", requestHeaders);
-                } else if (Array.isArray(requestHeaders)) {
-                    res.setHeader("Access-Control-Allow-Headers", requestHeaders.join(", "));
-                }
+                res.setHeader("Access-Control-Allow-Headers", "Content-Type,Accept,Authorization,Milkio-Timestamp,Milkio-Signature,Milkio-Execute-Id");
                 res.setHeader("Access-Control-Allow-Credentials", "true");
                 if (req.method === "OPTIONS") {
                     res.writeHead(204);
