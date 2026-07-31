@@ -8,7 +8,7 @@ import { cwd, exit } from "node:process";
 import { calcHash } from "../utils/calc-hash";
 import { getRandomPort } from "../utils/get-random-port";
 import { exists, readFile, writeFile } from "node:fs/promises";
-import { getCookbookDir } from "../utils/background";
+import { clearState, getCookbookDir, isRunning, readState, stopBackground } from "../utils/background";
 import { installBackgroundLogger } from "../utils/background-logger";
 import { execScript } from "../utils/exec-script";
 
@@ -121,6 +121,16 @@ export default await defineCookbookCommand(async (utils) => {
             await Promise.allSettled([...workers.values()].map((worker) => worker.kill()));
         } catch {}
     };
+
+    // 与 "co start" 对齐：若已有后台 dev server 在运行，先停止它，避免项目端口冲突
+    const existing = await readState();
+    if (existing) {
+        if (isRunning(existing)) {
+            consola.info(`A background cookbook dev server (pid ${existing.pid}) is already running. Stopping it first..`);
+            await stopBackground(existing);
+        }
+        await clearState();
+    }
 
     // start() 内部无法直接 exit（会导致 workers 残留），改为记录错误后返回，由调用方统一清理
     let startError: string | undefined;
