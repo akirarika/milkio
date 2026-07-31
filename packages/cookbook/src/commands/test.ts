@@ -37,7 +37,6 @@ export default await defineCookbookCommand(async (utils) => {
 
     const start = async (mode: string) => {
         (globalThis as any).__COOKBOOK_OPTIONS__ = options;
-
         progress.open("cookbook is starting..");
         const startTime = new Date();
         const { initWatcher } = await import("../watcher");
@@ -96,8 +95,8 @@ export default await defineCookbookCommand(async (utils) => {
                 getFailure: getWorkerFailure,
             });
             if (!ready.success) {
-                consola.error(`Failed to start project dev servers: ${ready.error}`);
-                exit(1);
+                startError = `Failed to start project dev servers: ${ready.error}`;
+                return;
             }
         }
 
@@ -115,10 +114,32 @@ export default await defineCookbookCommand(async (utils) => {
 
     const params = utils.getParams();
 
+    const stopWorkers = async () => {
+        // 停止由本命令启动的所有 dev server（workers），避免测试结束后进程残留占用端口
+        try {
+            const { workers } = await import("../workers");
+            await Promise.allSettled([...workers.values()].map((worker) => worker.kill()));
+        } catch {}
+    };
+
+    // start() 内部无法直接 exit（会导致 workers 残留），改为记录错误后返回，由调用方统一清理
+    let startError: string | undefined;
     await start("test");
 
-    const scriptParts = [`${options.general.packageManager} run test`, ...params.raw.map((arg) => `"${arg}"`)];
-    const exitcode = await execScript(scriptParts.join(" "), { cwd: cwd() });
+    if (startError) {
+        await progress.close("");
+        await stopWorkers();
+        consola.error(startError);
+        exit(1);
+    }
+
+    let exitcode: number;
+    try {
+        const scriptParts = [`${options.general.packageManager} run test`, ...params.raw.map((arg) => `"${arg}"`)];
+        exitcode = await execScript(scriptParts.join(" "), { cwd: cwd() });
+    } finally {
+        await stopWorkers();
+    }
 
     if (exitcode !== 0) {
         consola.error(`Test command failed with exit code ${exitcode}.`);

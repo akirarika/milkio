@@ -193,18 +193,68 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             const corsHeaders = getCorsHeaders(origin);
             const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" };
 
-            // 自动注入 context — event 数据中约定俗成的 context 参数无法由外部传参，由服务端补全
+            // 自动注入 context — event 数据中约定俗成的 context 参数无法由外部传参，由服务端补全。
+            // 与 action 执行保持一致：构建完整的 context（logger/config/typia/call 等），并触发
+            // milkio:executeBefore / milkio:httpResponse 事件，使 bootstrap 可以注入 db/redis 等能力。
             if (eventData && typeof eventData === "object" && !Array.isArray(eventData) && !("context" in eventData)) {
-                eventData.context = { reject, raise, develop: runtime.develop, executeId, path: pathString, emit: runtime.emit, emitAnyApproved: runtime.emitAnyApproved, emitAllApproved: runtime.emitAllApproved, _: runtime };
-            }
+                const context: any = {};
+                context.reject = reject;
+                context.raise = raise;
+                context.develop = runtime.develop;
+                context.executeId = executeId;
+                context.path = pathString;
+                context.emit = runtime.emit;
+                context.emitAnyApproved = runtime.emitAnyApproved;
+                context.emitAllApproved = runtime.emitAllApproved;
+                context._ = runtime;
+                context.config = runtime.runtime.config;
+                context.typia = generated.typiaSchema;
+                context.call = (module: any, params: any) => executer.__call(context, module, params);
+                context.onFinally = () => {};
+                const logger = createLogger(runtime, pathString, executeId);
+                context.logger = logger;
+                context.http = {
+                    ip,
+                    params: { string: rawBody ?? "", parsed: eventData },
+                    request: options.request,
+                };
+                eventData.context = context;
 
-            try {
-                await runtime.emit(eventName, eventData);
-            } catch (emitError) {
-                const errResult = exceptionHandler(executeId, noopLogger, emitError);
-                const errBody = JSON.stringify(errResult);
-                if (options.rawResponse) return { __rawResponse: true, body: errBody, status: 200, headers: jsonHeaders } as any;
-                return new Response(errBody, { status: 200, headers: jsonHeaders });
+                const emitHttpResponse = (success: boolean) => {
+                    if (runtime._hasEmitHandlers?.("milkio:httpResponse") ?? true) {
+                        return runtime.emit("milkio:httpResponse", { executeId, logger, path: pathString, http: context.http, headers: options.request.headers, context, success, reject, raise });
+                    }
+                };
+
+                try {
+                    // 先触发 executeBefore（bootstrap 注入 db/redis），事件处理完成后再触发
+                    // httpResponse（释放连接），与 action 的生命周期保持一致。
+                    if (runtime._hasEmitHandlers?.("milkio:executeBefore") ?? true) {
+                        await runtime.emit("milkio:executeBefore", { executeId, logger, path: pathString, meta: {}, context, reject, raise });
+                    }
+                    await runtime.emit(eventName, eventData);
+                } catch (emitError) {
+                    const errResult = exceptionHandler(executeId, logger, emitError);
+                    const errBody = JSON.stringify(errResult);
+                    try {
+                        await emitHttpResponse(false);
+                    } catch {}
+                    if (options.rawResponse) return { __rawResponse: true, body: errBody, status: 200, headers: jsonHeaders } as any;
+                    return new Response(errBody, { status: 200, headers: jsonHeaders });
+                }
+
+                try {
+                    await emitHttpResponse(true);
+                } catch {}
+            } else {
+                try {
+                    await runtime.emit(eventName, eventData);
+                } catch (emitError) {
+                    const errResult = exceptionHandler(executeId, noopLogger, emitError);
+                    const errBody = JSON.stringify(errResult);
+                    if (options.rawResponse) return { __rawResponse: true, body: errBody, status: 200, headers: jsonHeaders } as any;
+                    return new Response(errBody, { status: 200, headers: jsonHeaders });
+                }
             }
 
             const body = `{"data":${JSON.stringify(eventData ?? {}, (key, value) => key === "context" ? undefined : value)},"executeId":"${executeId}","success":true}`;

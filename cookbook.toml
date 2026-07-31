@@ -39,7 +39,7 @@ drizzle = [
 port = 9002
 type = "milkio"
 runtime = "deno"
-autoStart = true
+autoStart = false
 drizzle = [
     { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
     { mode = "production", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
