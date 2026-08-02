@@ -97,6 +97,7 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         const ctx = options.context;
         ctx.develop = runtime.develop;
         ctx.path = options.path;
+        ctx.routeType = type;
         ctx.logger = options.createdLogger;
         ctx.emit = runtime.emit;
         ctx.emitAnyApproved = runtime.emitAnyApproved;

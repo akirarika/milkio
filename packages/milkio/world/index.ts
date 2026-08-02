@@ -91,7 +91,9 @@ export async function createWorld<MilkioOptions extends MilkioInit>(generated: G
     await Promise.all(generated.handlerSchema.loadHandlers(world));
 
     const routeKeys = Object.keys(generated.routeSchema as Record<string, any>);
-    console.log(`\n△ Routes:\n    ${routeKeys.join("\n    ")}\n  A total of ${routeKeys.length} routes.`);
+    const rawPaths: Array<string> = generated.rawSchema?.rawPaths ? Array.from(generated.rawSchema.rawPaths as Set<string>) : [];
+    const allRoutes = [...routeKeys, ...rawPaths];
+    console.log(`\n△ Routes:\n    ${allRoutes.join("\n    ")}\n  A total of ${allRoutes.length} routes.`);
     console.log(`\n△ Server: http://localhost:${options.port}`);
 
     return world as MilkioWorld<GeneratedInit, MilkioOptions>;

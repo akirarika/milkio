@@ -344,6 +344,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                                 // Build minimal context using prototype for shared properties
                                 const context: any = Object.create(baseContextProto);
                                 context.path = pathString;
+                                context.routeType = "action";
                                 context.executeId = executeId;
                                 context.http = {
                                     url: pathname,
@@ -393,12 +394,18 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             headers: { ...baseHeaders },
         };
 
+        // Check if this is a raw route — raw routes bypass action/stream logic
+        // and let the handler own the full Request/Response lifecycle.
+        const isRawPath = generated.rawSchema?.rawPaths?.has(pathString) ?? false;
+
         const http: ContextHttp = {
             url: pathname as any,
             ip,
             path: { string: pathString as keyof $types["generated"]["routeSchema"], array: pathArray },
             params: {
-                string: bodyText !== undefined ? bodyText : await options.request.text(),
+                // For raw routes, don't consume the request body — the handler
+                // needs it intact. The body will be passed via the Request object.
+                string: isRawPath ? "" : (bodyText !== undefined ? bodyText : await options.request.text()),
                 parsed: undefined,
             },
             request: options.request,
@@ -416,6 +423,94 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             if (options.envMode !== "test" && (http.path.string as string).includes("$")) {
                 await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject, raise });
                 throw reject("NOT_FOUND", { path: http.path.string as string });
+            }
+
+            // ===== RAW PATH =====
+            // Raw routes receive a native Request and return a native Response.
+            // They bypass typia validation, JSON serialization, and stargate.
+            // Use case: SSE passthrough (e.g. OpenAI proxy), webhooks, binary.
+            if (isRawPath) {
+                const rawRoute = generated.rawSchema.routes[pathString];
+                if (!rawRoute) {
+                    await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject, raise });
+                    throw reject("NOT_FOUND", { path: http.path.string as string });
+                }
+                // Lazy-load module on first access, then cache
+                let module: any = rawRoute.module;
+                if (typeof module === "function") {
+                    module = await module();
+                    rawRoute.module = module;
+                }
+                const meta = module?.meta ?? {};
+
+                // Construct full context (raw doesn't go through __execute,
+                // so we set all fields manually here)
+                context.http = http;
+                context.headers = http.request.headers;
+                context.develop = runtime.develop;
+                context.path = pathString;
+                context.routeType = "raw";
+                context.logger = logger;
+                context.emit = runtime.emit;
+                context.emitAnyApproved = runtime.emitAnyApproved;
+                context.emitAllApproved = runtime.emitAllApproved;
+                context.executeId = executeId;
+                context.config = runtime.runtime.config;
+                context.typia = generated.typiaSchema;
+                context.call = (mod: any, params: any) => executer.__call(context, mod, params);
+                context.onFinally = (handler: any) => finales.unshift(handler);
+                context._ = runtime;
+
+                // If adapter pre-read the body (bodyText set), reconstruct a
+                // Request with the body re-injected so the handler can read it.
+                // Otherwise, the original request body is still intact (we skipped
+                // reading it above for raw paths).
+                const handlerRequest: Request = bodyText !== undefined
+                    ? new Request(options.request.url, {
+                        method: options.request.method,
+                        headers: options.request.headers,
+                        body: bodyText || null,
+                        signal: options.request.signal,
+                    })
+                    : options.request;
+
+                const results: Results<any> = { value: undefined };
+
+                if (runtime._hasEmitHandlers?.("milkio:executeBefore") ?? true) {
+                    await runtime.emit("milkio:executeBefore", { executeId, logger, path: pathString, meta, context, reject, raise });
+                }
+
+                const rawResponse: Response = await module.handler(context, handlerRequest);
+                results.value = rawResponse;
+
+                if (runtime._hasEmitHandlers?.("milkio:executeAfter") ?? true) {
+                    await runtime.emit("milkio:executeAfter", { executeId, logger, path: pathString, meta, context, results, reject, raise });
+                }
+
+                // Apply CORS headers to the raw response
+                const finalHeaders = new Headers(rawResponse.headers);
+                for (const [k, v] of Object.entries(corsHeaders)) {
+                    if (!finalHeaders.has(k)) finalHeaders.set(k, v);
+                }
+
+                const hasHttpResponseHandlers = runtime._hasEmitHandlers?.("milkio:httpResponse") ?? true;
+                if (hasHttpResponseHandlers) await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context, success: true, reject, raise });
+
+                // Run onFinally handlers (after httpResponse, matching action path ordering)
+                if (finales.length > 0) {
+                    for (const handler of finales) {
+                        try { await handler(); } catch (error) { logger.error("An error occurred inside onFinally.", error); }
+                    }
+                }
+
+                if (hasOnLoggerSubmitting) await logger._.submit(context as any);
+                if (anyEmitHandlers) runtime.runtime.request.delete(executeId);
+
+                return new Response(rawResponse.body, {
+                    status: rawResponse.status,
+                    statusText: rawResponse.statusText,
+                    headers: finalHeaders,
+                });
             }
 
             if (!options.request.headers.get("Accept")?.startsWith("text/event-stream")) {
@@ -459,6 +554,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
                 context.http = http;
                 context.headers = http.request.headers;
+                context.routeType = "action";
 
                 const executed = await executer.__execute(routeSchema, {
                     createdExecuteId: executeId,
@@ -531,6 +627,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
                 context.http = http;
                 context.headers = http.request.headers;
+                context.routeType = "stream";
 
                 const executed = await executer.__execute(routeSchema, {
                     createdExecuteId: executeId,
@@ -636,6 +733,13 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             // Error path: create new headers to avoid polluting shared object
             response.headers = { ...response.headers, ...corsHeaders };
             await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context, success: false, reject, raise });
+            // Run onFinally handlers even on error (important for raw routes where
+            // the handler may have registered cleanup via context.onFinally before throwing)
+            if (finales.length > 0) {
+                for (const handler of finales) {
+                    try { await handler(); } catch (e) { logger.error("An error occurred inside onFinally.", e); }
+                }
+            }
             if (hasOnLoggerSubmitting) await logger._.submit(context as any);
             if (anyEmitHandlers) runtime.runtime.request.delete(executeId);
             if (options.rawResponse) {
@@ -713,7 +817,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             runtime.runtime.request.delete(options.executeId);
         };
 
-        const context = { http: http, headers, reject, raise };
+        const context = { http: http, headers, routeType: routeSchema.type, reject, raise };
 
         try {
             if (routeSchema.type === "action") {

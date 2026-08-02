@@ -4,14 +4,16 @@ import type { MilkioContext } from "../../../.milkio/declares.ts";
 
 type Params = {};
 
-type Result = { success: string };
+type Result = { success: string; routeType: string };
 
 export async function handler(context: MilkioContext, params: Params): Promise<Result> {
     if (!context.executeId) throw context.reject("REQUEST_FAIL", "Context is not 'executeId'");
     if (!context.http) throw context.reject("REQUEST_FAIL", "Context is not 'http'");
     if (!context.logger) throw context.reject("REQUEST_FAIL", "Context is not 'logger'");
     if (!context.path) throw context.reject("REQUEST_FAIL", "Context is not 'path'");
+    if (!context.routeType) throw context.reject("REQUEST_FAIL", "Context is not 'routeType'");
     return {
         success: "success",
+        routeType: context.routeType,
     };
 }

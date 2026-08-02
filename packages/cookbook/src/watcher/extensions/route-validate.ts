@@ -21,7 +21,7 @@ export const routeValidateWatcherExtension = defineWatcherExtension({
   async: false,
 
   filter: (file) => {
-    return file.path.startsWith("modules/") && (file.type === "action" || file.type === "stream");
+    return file.path.startsWith("modules/") && (file.type === "action" || file.type === "stream" || file.type === "raw");
   },
 
   setup: async (root, mode, options, project, changeFiles, allFiles) => {
@@ -29,6 +29,18 @@ export const routeValidateWatcherExtension = defineWatcherExtension({
       const filePath = join(file.projectFsPath, file.path);
       const raw = await readFile(filePath, "utf-8");
       const content = raw.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+      // raw 文件使用不同的签名约定：(context, request: Request) => Promise<Response>
+      // 不需要 type Params / type Result，只需校验 handler 导出
+      if (file.type === "raw") {
+        const handlerTag = "\nexport async function handler(context: MilkioContext, request: Request): Promise<Response> {";
+        const p = content.indexOf(handlerTag);
+        if (p === -1) {
+          consola.error(`[route-validate] "${file.path}" 缺少 handler 函数定义。raw 文件必须导出: export async function handler(context: MilkioContext, request: Request): Promise<Response> {`);
+          exit(1);
+        }
+        continue;
+      }
 
       const isStream = file.type === "stream";
 

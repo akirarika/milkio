@@ -3,6 +3,7 @@ import { configWatcherExtension } from "./config";
 import { routeGenerateWatcherExtension } from "./route-generate";
 import { routeTypiaWatcherExtension } from "./route-typia";
 import { routeWatcherExtension } from "./route";
+import { rawWatcherExtension } from "./raw";
 import { handlerWatcherExtension } from "./handler";
 import { metaWatcherExtension } from "./meta";
 import { contextWatcherExtension } from "./context";
@@ -15,9 +16,9 @@ import { seedWatcherExtension } from "./seed";
 
 export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
     // extensions
-    // route-validate must run FIRST: validates that every action/stream file
-    // has Params, Result types and handler in the correct order. This runs
-    // before any other extension so issues are caught immediately.
+    // route-validate must run FIRST: validates that every action/stream/raw file
+    // has the correct structure. This runs before any other extension so issues
+    // are caught immediately.
     routeValidateWatcherExtension,
     // drizzle must run BEFORE route: action files import drizzle-schema,
     // so drizzle-schema.ts must be generated before typia runs
@@ -29,6 +30,9 @@ export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
     routeTypiaWatcherExtension,
     // route: generate final route-schema.ts from typia output
     routeWatcherExtension,
+    // raw: generate raw-schema.ts (separate from route-schema.ts — raw routes
+    // bypass stargate, so they don't need typia or route-schema entries)
+    rawWatcherExtension,
     handlerWatcherExtension,
     configWatcherExtension,
     metaWatcherExtension,
@@ -43,6 +47,7 @@ export const indexTs = `// index
 import type { MilkioMeta, MilkioContext, MilkioRejectCode, MilkioEvents } from "./declares.ts";
 import typiaSchema from "./typia-schema.ts";
 import routeSchema from "./route-schema.ts";
+import rawSchema from "./raw-schema.ts";
 import handlerSchema from "./handler-schema.ts";
 
 
@@ -53,6 +58,7 @@ export const generated = {
   events: undefined as unknown as MilkioEvents,
   typiaSchema,
   routeSchema,
+  rawSchema,
   handlerSchema,
 };
 `;

@@ -5,6 +5,7 @@ export interface $context {
     develop: boolean;
     executeId: string;
     path: string;
+    routeType: "action" | "stream" | "raw";
     logger: Logger;
     http: ContextHttp<Record<any, any>>;
     headers: Headers;
