@@ -81,7 +81,7 @@ export default await defineCookbookCommand(async (utils) => {
         const launcherSource = ['var shell = new ActiveXObject("WScript.Shell");', `shell.CurrentDirectory = ${JSON.stringify(cwd())};`, `shell.Run(${JSON.stringify(cmdLine)}, 0, false);`, ""].join("\r\n");
         await writeFile(launcherPath, launcherSource, "utf-8");
 
-        const launcher = spawn("wscript.exe", [launcherPath], { stdio: "ignore", cwd: cwd() });
+        const launcher = spawn("wscript.exe", [launcherPath], { detached: true, stdio: "ignore", cwd: cwd() });
         launcher.unref();
 
         // The dev server writes its own pid to "<cwd>/node_modules/.cookbook/dev-pid.md"
