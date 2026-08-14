@@ -5,6 +5,7 @@ import { __createId } from "../utils/create-id.ts";
 import { Trie } from "../utils/trie.ts";
 import { buildCorsHeaders } from "../utils/build-cors-headers.ts";
 import { reviveJSONParse } from "../utils/revive-json-parse.ts";
+import { sanitizeExecuteId } from "../utils/sanitize-execute-id.ts";
 
 export type MilkioHttpRequest = Request;
 
@@ -23,10 +24,12 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
     // Pre-compute default CORS config and cache headers per origin
     const cors: CorsConfig = { corsAllowMethods: ["POST", "OPTIONS"], corsAllowHeaders: ["Content-Type", "Authorization"], corsMaxAge: 0, ...runtime.http?.cors };
     const corsHeadersCache = new Map<string, Record<string, string>>();
+    const MAX_CORS_HEADERS_CACHE_SIZE = 1024;
     const getCorsHeaders = (origin: string | null): Record<string, string> => {
         const key = origin ?? "";
         let cached = corsHeadersCache.get(key);
         if (cached !== undefined) return cached;
+        if (corsHeadersCache.size >= MAX_CORS_HEADERS_CACHE_SIZE) corsHeadersCache.clear();
         cached = buildCorsHeaders(cors, origin);
         corsHeadersCache.set(key, cached);
         return cached;
@@ -108,6 +111,37 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         routeSchema?: any;
         rawResponse?: boolean;
     }): Promise<Response> => {
+        const MAX_BODY_SIZE = 10 * 1024 * 1024;
+        const tooLarge = () => reject("REQUEST_TOO_LARGE", { maxBodySize: MAX_BODY_SIZE });
+        const readBodyText = async (): Promise<string> => {
+            const preRead = (options.request as any).__bodyText;
+            if (preRead !== undefined) {
+                if (typeof preRead === "string" && preRead.length > MAX_BODY_SIZE) throw tooLarge();
+                return preRead;
+            }
+            const contentLength = Number(options.request.headers.get("content-length") ?? "0");
+            if (Number.isFinite(contentLength) && contentLength > MAX_BODY_SIZE) throw tooLarge();
+            if (!options.request.body) return "";
+            const reader = options.request.body.getReader();
+            const decoder = new TextDecoder();
+            let text = "";
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    text += decoder.decode(value, { stream: true });
+                    if (text.length > MAX_BODY_SIZE) {
+                        await reader.cancel().catch(() => {});
+                        throw tooLarge();
+                    }
+                }
+                text += decoder.decode();
+            } finally {
+                reader.releaseLock();
+            }
+            return text;
+        };
+
         // Use pre-passed origin from adapter to avoid headers.get() call
         const origin = (options.request as any).__origin ?? options.request.headers.get("Origin");
 
@@ -177,7 +211,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             }
 
             let eventData: any = undefined;
-            const rawBody = bodyText !== undefined ? bodyText : await options.request.text();
+            const rawBody = await readBodyText();
             if (rawBody && rawBody !== "" && rawBody !== "{}") {
                 try {
                     eventData = reviveJSONParse(JSON.parse(rawBody));
@@ -312,7 +346,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     }
 
                     const executeId = __createId();
-                    const body = bodyText !== undefined ? bodyText : await options.request.text();
+                    const body = await readBodyText();
 
                     // Parse params
                     let params: any;
@@ -378,7 +412,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
         // ===== SLOW PATH =====
         const corsHeaders = getCorsHeaders(origin);
-        const executeId = runtime?.executeId ? await runtime.executeId(options.request.headers) : __createId();
+        const rawExecuteId = runtime?.executeId ? await runtime.executeId(options.request.headers) : __createId();
+        const executeId = sanitizeExecuteId(rawExecuteId) || __createId();
         const anyEmitHandlers = !checkNoEmitHandlers();
 
         const logger = createLogger(runtime, pathString, executeId);
@@ -405,7 +440,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             params: {
                 // For raw routes, don't consume the request body — the handler
                 // needs it intact. The body will be passed via the Request object.
-                string: isRawPath ? "" : (bodyText !== undefined ? bodyText : await options.request.text()),
+                string: isRawPath ? "" : (await readBodyText()),
                 parsed: undefined,
             },
             request: options.request,
@@ -613,7 +648,10 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     if (routeSchema.type !== "stream") throw reject("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "application/json". If you are using the "@milkio/stargate" package, please remove \`type: "stream"\` to the execute options.` });
                 }
 
+                let streamClosed = false;
                 const handleClose = async () => {
+                    if (streamClosed) return;
+                    streamClosed = true;
                     for (const handler of finales) {
                         try {
                             await handler();

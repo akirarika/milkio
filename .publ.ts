@@ -131,7 +131,7 @@ async function main() {
         }
     }
     for (const childPackage of [mainPackage, ...childPackages]) {
-        if (childPackage === "create-cookbook" || childPackage === "milkio-elecrton") {
+        if (childPackage === "create-cookbook" || childPackage === "milkio-electron") {
             await writeFile(
                 join(cwd, "packages", childPackage, "__VERSION__.mjs"),
                 `export const __VERSION__ = '${newVersion}'`,

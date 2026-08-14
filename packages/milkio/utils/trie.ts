@@ -39,13 +39,12 @@ export class Trie<T> {
         let currentNode = this.root;
         for (const part of parts) {
             if (!currentNode.children.has(part)) {
-                this.cache.set(path, null);
                 return null;
             }
             currentNode = currentNode.children.get(part)!;
         }
         const result = currentNode.value;
-        this.cache.set(path, result);
+        if (result !== null) this.cache.set(path, result);
         return result;
     }
 

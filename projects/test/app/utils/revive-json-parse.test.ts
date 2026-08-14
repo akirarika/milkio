@@ -1,50 +1,5 @@
 import { expect, test } from "vitest";
-
-// Copy of reviveJSONParse for testing (same implementation as milkio-stargate and milkio/utils)
-const isoDatePattern = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)(Z|[+-]\d{2}:?\d{2})?$/;
-
-function reviveJSONParse<T>(json: T): T {
-    if (json === null || json === undefined) return json;
-    const type = typeof json;
-    if (type === 'object') {
-        if (json instanceof Date) return json;
-        if (Array.isArray(json)) {
-            const len = json.length;
-            for (let i = 0; i < len; i++) {
-                const result = reviveJSONParse(json[i]);
-                if (result !== json[i]) json[i] = result;
-            }
-            return json;
-        }
-        const keys = Object.keys(json as object);
-        const obj = json as Record<string, unknown>;
-        for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
-            const value = obj[key];
-            const result = reviveJSONParse(value);
-            if (result !== value) obj[key] = result;
-        }
-        return json;
-    }
-    if (type === 'string') {
-        const str = json as unknown as string;
-        const len = str.length;
-        if (len >= 20 && len <= 32 && str.charCodeAt(0) >= 0x30 && str.charCodeAt(0) <= 0x39 && str.indexOf('T') !== -1) {
-            const match = str.match(isoDatePattern);
-            if (match !== null) {
-                if (match[2]) {
-                    const colonPos = match[2].charCodeAt(3) === 58 ? match[1].length + 3 : -1;
-                    if (colonPos >= 0) {
-                        return new Date(str.substring(0, colonPos) + str.substring(colonPos + 1)) as any;
-                    }
-                    return new Date(str) as any;
-                }
-                return new Date(match[1] + 'Z') as any;
-            }
-        }
-    }
-    return json;
-}
+import { reviveJSONParse } from "../../../../packages/milkio/utils/revive-json-parse.ts";
 
 test.sequential("shallow date string is converted to Date", () => {
     const result = reviveJSONParse({ date: "2024-01-15T10:30:00.000Z" });
@@ -78,6 +33,12 @@ test.sequential("date in array is converted to Date", () => {
 
 test.sequential("date with timezone offset is converted", () => {
     const result = reviveJSONParse({ date: "2024-01-15T10:30:00.000+08:00" });
+    expect(result.date).toBeInstanceOf(Date);
+    expect((result.date as unknown as Date).toISOString()).toBe("2024-01-15T02:30:00.000Z");
+});
+
+test.sequential("date with compact timezone offset is normalized and converted", () => {
+    const result = reviveJSONParse({ date: "2024-01-15T10:30:00.000+0800" });
     expect(result.date).toBeInstanceOf(Date);
     expect((result.date as unknown as Date).toISOString()).toBe("2024-01-15T02:30:00.000Z");
 });

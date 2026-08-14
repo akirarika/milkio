@@ -59,7 +59,7 @@ export async function onRequest(context) {
   return await (await world).listener.fetch({
     request: context.request,
     env: context.env,
-    envMode: "${env.MODE ?? "development"}",
+    envMode: "${env.MODE ?? "production"}",
     routeSchema,
   });
 }`,

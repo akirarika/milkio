@@ -360,8 +360,9 @@ export function reviveJSONParse<T>(json: T): T {
   if (typeof json === 'string') {
     const match = json.match(isoDatePattern);
     if (match) {
-      const normalizedDateString = match[2] ? `${match[1]}${match[2].replace(':', '')}` : `${match[1]}Z`;
-      return new Date(normalizedDateString) as any;
+      const tz = match[2];
+      const normalizedTz = tz === undefined ? 'Z' : (tz.length === 5 && tz.charAt(3) !== ':' ? `${tz.slice(0, 3)}:${tz.slice(3)}` : tz);
+      return new Date(`${match[1]}${normalizedTz}`) as any;
     }
   }
   return json;

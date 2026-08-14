@@ -9,11 +9,8 @@ function tryParseDate(str: string): Date | null {
             const tzPart = match[2];
             if (datePart === undefined) return null;
             if (tzPart !== undefined) {
-                const colonPos = tzPart.charCodeAt(3) === 58 ? datePart.length + 3 : -1;
-                if (colonPos >= 0) {
-                    return new Date(str.substring(0, colonPos) + str.substring(colonPos + 1));
-                }
-                return new Date(str);
+                const normalizedTz = tzPart.length === 5 && tzPart.charAt(3) !== ":" ? `${tzPart.slice(0, 3)}:${tzPart.slice(3)}` : tzPart;
+                return new Date(datePart + normalizedTz);
             }
             return new Date(datePart + 'Z');
         }

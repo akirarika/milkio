@@ -59,11 +59,24 @@ export function useVitePluginMilkio(options?: {
                     // Node emits ~64KB per "data" event, and any smarter
                     // buffering scheme here previously dropped the third chunk
                     // of large request bodies (>128KB), corrupting JSON params.
+                    const MAX_BODY_SIZE = 10 * 1024 * 1024;
                     const bodyChunks: Buffer[] = [];
+                    let bodySize = 0;
+                    let bodyTooLarge = false;
                     req.on("data", (chunk: Buffer) => {
+                        if (bodyTooLarge) return;
+                        bodySize += chunk.length;
+                        if (bodySize > MAX_BODY_SIZE) {
+                            bodyTooLarge = true;
+                            res.statusCode = 413;
+                            res.setHeader("Content-Type", "application/json");
+                            res.end(JSON.stringify({ success: false, code: "REQUEST_TOO_LARGE", reject: { maxBodySize: MAX_BODY_SIZE }, executeId: "" }));
+                            return;
+                        }
                         bodyChunks.push(chunk);
                     });
                     req.on("end", () => {
+                        if (bodyTooLarge) return;
                         const method = req.method ?? "GET";
                         const body: Uint8Array | null = bodyChunks.length > 0 ? Buffer.concat(bodyChunks) : null;
                         const bodyText = body ? Buffer.from(body).toString("utf-8") : "";

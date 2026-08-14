@@ -2,14 +2,17 @@ import type { MilkioMeta, MilkioContext } from "../../../.milkio/declares.ts";
 
 export const meta: MilkioMeta = {};
 
-export let cancelState: { done: boolean; yieldCount: number } = { done: true, yieldCount: 0 };
+export let cancelState: { done: boolean; yieldCount: number; finallyCount: number } = { done: true, yieldCount: 0, finallyCount: 0 };
 
 type Params = {};
 
 type Result = AsyncGenerator<{ value: number }>;
 
 export async function* handler(context: MilkioContext, params: Params): Result {
-	cancelState = { done: false, yieldCount: 0 };
+	cancelState = { done: false, yieldCount: 0, finallyCount: 0 };
+	context.onFinally(() => {
+		cancelState.finallyCount++;
+	});
 	try {
 		for (let i = 0; i < 50; i++) {
 			await new Promise((resolve) => setTimeout(resolve, 50));

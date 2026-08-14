@@ -15,6 +15,7 @@ export const contextWatcherExtension = defineWatcherExtension({
     develop: boolean;
     executeId: string;
     path: string;
+    routeType: "action" | "stream" | "raw";
     logger: Logger;
     http: ContextHttp<Record<any, any>>;
     headers: Headers;

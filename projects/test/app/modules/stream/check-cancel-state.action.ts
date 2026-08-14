@@ -5,7 +5,7 @@ export const meta: MilkioMeta = {};
 
 type Params = {};
 
-type Result = { done: boolean; yieldCount: number };
+type Result = { done: boolean; yieldCount: number; finallyCount: number };
 
 export async function handler(context: MilkioContext, params: Params): Promise<Result> {
 	return { ...cancelState };
