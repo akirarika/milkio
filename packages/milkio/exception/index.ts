@@ -43,11 +43,18 @@ export function exceptionHandler(executeId: string, logger: Logger, error: Milki
     }
     const name = error?.code ?? error?.name ?? error?.constructor?.name ?? "Unnamed Exception";
 
-    if (error?.$milkioReject === true && error?.code === "NOT_FOUND") {
-        logger.info(name, error?.data?.path ?? "Unknown path");
+    if (error?.$milkioReject === true) {
+        // 预期内的业务拒绝（签名无效、参数错误、NOT_FOUND 等）用 warn/info 记录，
+        // 不产生 error 日志，避免外部无效请求（爬虫扫描等）污染错误告警。
+        if (error.code === "NOT_FOUND") {
+            logger.info(name, error?.data?.path ?? "Unknown path");
+        } else {
+            const stack = (error?.stack ?? "").split("\n").slice(2).join("\n");
+            logger.warn(name, `\n${JSON.stringify(error?.data)}`, `\n${stack}\n`);
+        }
     } else {
         try {
-            const stack = error?.$milkioReject ? (error?.stack ?? "").split("\n").slice(2).join("\n") : (error?.stack ?? "");
+            const stack = error?.stack ?? "";
             logger.error(name, `\n${JSON.stringify(error?.data)}`, `\n${stack}\n`);
         } catch (_) {
             logger.error(name, `\n${error?.toString()}`, `\n${error?.stack}\n`);
