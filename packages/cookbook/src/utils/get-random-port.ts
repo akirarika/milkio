@@ -24,16 +24,29 @@ async function isPortAvailable(port: number): Promise<boolean> {
   const tcpServer = net.createServer();
   tcpServer.unref();
 
+  let tcpBound = false;
   try {
     tcpServer.listen(port);
     await once(tcpServer, "listening");
-    return await checkUDP(port);
+    tcpBound = true;
   } catch (err: any) {
     if (err.code === "EADDRINUSE") return false;
-    return await checkUDP(port);
-  } finally {
-    tcpServer.close();
   }
+
+  const udpOk = await checkUDP(port);
+  if (!udpOk) return false;
+
+  // tcpServer.close() 是异步的，若未等其完成就返回端口，调用方立即
+  // bind 同一端口会因端口尚未释放而 EADDRINUSE（Bun.serve 直接抛错）。
+  // 必须等 close 完成、端口真正从内核释放后再返回。
+  if (tcpBound) {
+    await new Promise<void>((resolve) => {
+      tcpServer.close(() => resolve());
+      // listen 成功但 close 前连接未建立时 close 回调必然触发；防御性兜底
+      tcpServer.on("error", () => resolve());
+    });
+  }
+  return true;
 }
 
 async function checkUDP(port: number): Promise<boolean> {

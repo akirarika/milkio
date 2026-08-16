@@ -85,7 +85,10 @@ export default await defineCookbookCommand(async (utils) => {
     };
 
     const params = utils.getParams();
-    void start(await selectMode(options, params));
+    void start(await selectMode(options, params)).catch((error) => {
+        consola.error("Failed to start cookbook dev server:", error);
+        exit(1);
+    });
 
     const resolvers = Promise.withResolvers();
     await resolvers.promise; // let the never exit

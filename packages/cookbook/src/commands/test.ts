@@ -134,7 +134,11 @@ export default await defineCookbookCommand(async (utils) => {
 
     // start() 内部无法直接 exit（会导致 workers 残留），改为记录错误后返回，由调用方统一清理
     let startError: string | undefined;
-    await start("test");
+    try {
+        await start("test");
+    } catch (error) {
+        startError = "Failed to start cookbook test server: " + String(error);
+    }
 
     if (startError) {
         await progress.close("");
