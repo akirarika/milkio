@@ -134,6 +134,10 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                     extends: projectTsconfigPath.replace(/\\/g, "/"),
                     compilerOptions: {
                         // Override composite/declaration settings from the base project.
+                        // 移除 rootDir：temp tsconfig 的 include 只有 schema.ts，但 schema.ts
+                        // 的 import 引用了 app 下的文件，rootDir 指向 schema.ts 所在目录会导致
+                        // "not under rootDir" 错误。ttsc transform 不产生 emit 输出，无需 rootDir。
+                        rootDir: undefined,
                         //
                         // Some embed projects (e.g. kecream-app-embed) use `composite: true`
                         // with `declaration: true` and `emitDeclarationOnly: true` so they can
