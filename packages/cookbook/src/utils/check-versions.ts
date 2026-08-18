@@ -15,7 +15,7 @@ import { exit } from "node:process";
 const REQUIRED_VERSIONS: Record<string, string> = {
   typia: "14.0.0",
   ttsc: "0.27.0",
-  milkio: "1.3.51",
+  milkio: "1.3.52",
 };
 
 // 显式禁用检查：co --no-check-versions，或环境变量 CO_NO_CHECK_VERSIONS=1
