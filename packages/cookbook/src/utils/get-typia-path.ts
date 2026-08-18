@@ -3,24 +3,22 @@ import { join } from "node:path";
 import { cwd } from "node:process";
 import { exists } from "node:fs/promises";
 import { exit } from "node:process";
-import { ensureTypiaExportsPatched } from "./patch-typia-exports";
 
-let typiaPath: Promise<string> | null = null;
+let ttscPath: Promise<string> | null = null;
 
+// typia 14.0.0 移除了 CLI（lib/executable/typia.js），改用 ttsc 插件机制。
+// ttsc 在 transform 时自动通过 ttsc.plugin 发现并构建 typia 的 Go transformer。
+// 这里返回 ttsc CLI 路径（用于 route-typia 的 transform 命令）。
 export function getTypiaPath(): Promise<string> {
-  if (typiaPath) return typiaPath;
-  typiaPath = (async () => {
-    let typiaPath = join(cwd(), "./node_modules/typia/lib/executable/typia.js");
-    // check if typia is installed in the project, if not, try to find it in the global node_modules
-    if (!(await exists(typiaPath))) typiaPath = join(cwd(), "../../node_modules/typia/lib/executable/typia.js");
-    if (!(await exists(typiaPath))) {
-      consola.error(`Typia is not installed, so it cannot be found in the following path: ${typiaPath}`);
+  if (ttscPath) return ttscPath;
+  ttscPath = (async () => {
+    let ttscPath = join(cwd(), "./node_modules/ttsc/lib/launcher/ttsc.js");
+    if (!(await exists(ttscPath))) ttscPath = join(cwd(), "../../node_modules/ttsc/lib/launcher/ttsc.js");
+    if (!(await exists(ttscPath))) {
+      consola.error(`ttsc is not installed, so it cannot be found in the following path: ${ttscPath}`);
       exit(1);
     }
-    // typia is resolved through this function by every dev/start/test run, so
-    // this is a reliable choke point to keep its exports patch applied
-    await ensureTypiaExportsPatched(join(typiaPath, "..", "..", "..", "package.json"));
-    return typiaPath;
+    return ttscPath;
   })();
-  return typiaPath;
+  return ttscPath;
 }

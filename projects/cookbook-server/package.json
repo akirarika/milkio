@@ -20,7 +20,7 @@
     "yaml": "^2.6.0"
   },
   "devDependencies": {
-    "typia": "^13.1.1",
+    "typia": "14.0.0",
     "vite": "^8.1.0",
     "vite-plugin-node": "^8.0.0"
   }

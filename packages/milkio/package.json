@@ -1,7 +1,7 @@
 {
   "name": "milkio",
   "type": "module",
-  "version": "1.3.51",
+  "version": "1.3.52",
   "exports": "./index.ts",
   "repository": {
     "type": "git",
@@ -15,7 +15,7 @@
     "@poech/camel-hump-under": "^1.1.0",
     "chalk": "^5.3.0",
     "date-fns": "^4.1.0",
-    "typia": ">=13.1.1"
+    "typia": "14.0.0"
   },
   "devDependencies": {
     "@vitest/ui": "^4.1.0",

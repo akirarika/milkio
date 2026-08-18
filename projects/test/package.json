@@ -1,37 +1,37 @@
 {
-    "name": "test",
-    "type": "module",
-    "private": true,
-    "module": "index.ts",
-    "scripts": {
-        "dev": "vite dev",
-        "build": "vite build",
-        "drizzle": "drizzle-kit"
-    },
-    "trustedDependencies": [],
-    "dependencies": {
-        "@koa/bodyparser": "^6.1.0",
-        "@koa/router": "^15.6.0",
-        "@milkio/astra": "workspace:*",
-        "@milkio/stargate": "workspace:*",
-        "@milkio/vite-plugin-milkio": "workspace:*",
-        "@mjackson/node-fetch-server": "^0.6.1",
-        "@nestjs/common": "^11.1.26",
-        "@nestjs/core": "^11.1.26",
-        "@nestjs/platform-express": "^11.1.26",
-        "elysia": "^1.4.28",
-        "koa": "^3.2.1",
-        "milkid": "^3.0.0",
-        "milkio": "workspace:*",
-        "reflect-metadata": "^0.2.2",
-        "rolldown": "^1.0.0-beta.1",
-        "rxjs": "^7.8.2",
-        "tsx": "^4.19.3",
-        "yaml": "^2.6.0"
-    },
-    "devDependencies": {
-        "typia": "^13.1.1",
+  "name": "test",
+  "type": "module",
+  "private": true,
+  "module": "index.ts",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "drizzle": "drizzle-kit"
+  },
+  "trustedDependencies": [],
+  "dependencies": {
+    "@koa/bodyparser": "^6.1.0",
+    "@koa/router": "^15.6.0",
+    "@milkio/astra": "workspace:*",
+    "@milkio/stargate": "workspace:*",
+    "@milkio/vite-plugin-milkio": "workspace:*",
+    "@mjackson/node-fetch-server": "^0.6.1",
+    "@nestjs/common": "^11.1.26",
+    "@nestjs/core": "^11.1.26",
+    "@nestjs/platform-express": "^11.1.26",
+    "elysia": "^1.4.28",
+    "koa": "^3.2.1",
+    "milkid": "^3.0.0",
+    "milkio": "workspace:*",
+    "reflect-metadata": "^0.2.2",
+    "rolldown": "^1.0.0-beta.1",
+    "rxjs": "^7.8.2",
+    "tsx": "^4.19.3",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "typia": "14.0.0",
     "vite": "^8.1.0",
     "vite-plugin-node": "^8.0.0"
-    }
+  }
 }

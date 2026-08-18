@@ -146,30 +146,14 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                         composite: false,
                         declaration: false,
                         emitDeclarationOnly: false,
-                        // Explicitly register the typia transformer plugin.
+                        // 不在这里显式声明 typia 的 ttsc plugin。
                         //
-                        // `ttsc` (the Typia TypeScript Compiler used by `typia generate`)
-                        // discovers transformer plugins from two sources:
-                        //   1. `compilerOptions.plugins` in the tsconfig
-                        //   2. Auto-discovery from direct dependencies' `ttsc.plugin` field
-                        //
-                        // In this monorepo, `typia` is a dependency of the workspace root
-                        // (`kecream-projects/package.json`), not a direct dependency of each
-                        // individual project (`kecream-server/package.json`, etc.). Because
-                        // `ttsc`'s auto-discovery only walks the nearest `package.json`'s
-                        // `dependencies`/`devDependencies`, it never sees typia's
-                        // `ttsc.plugin` config, and the transformer is never loaded. Without
-                        // the transformer, `typia generate` emits the schema file with raw
-                        // `typia.plain.validatePrune<T>(...)` calls untransformed, which throw
-                        // `NoTransformConfigurationError` at runtime.
-                        //
-                        // Explicitly listing the plugin here ensures the typia Go transformer
-                        // (`typia/native/cmd/ttsc-typia`, resolved via `typia/lib/transform`)
-                        // is built and applied regardless of where `typia` is declared in the
-                        // dependency tree. This temp tsconfig is only consumed by `typia
-                        // generate` (via `ttsc`), never by standard `tsc`, so the `transform`
-                        // plugin format (which differs from tsc's `name`-based format) is safe.
-                        plugins: [{ transform: "typia/lib/transform" }],
+                        // typia 的 ttsc.plugin 指向 Go 源码 transformer（native/cmd/ttsc-typia），
+                        // ttsc 会尝试用 Go 工具链构建它；当其 API 与当前 ttsc 版本不兼容时
+                        // （driver.NewTransformGraph 等 undefined）整个 typia generate 失败，
+                        // transpiled 目录不产生 schema，最终 route-schema 丢掉全部路由。
+                        // 移除该 plugin 后，ttsc 走自带 TypeScript-Go host 的 typia transform
+                        // （native fast path），schema 正常生成，无需 Go 工具链。
                     },
                     include: ["./schema.ts"],
                 };
@@ -185,8 +169,10 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                 }
                 await Bun.write(tempTsconfigPath, JSON.stringify(tempTsconfig, null, 2));
 
-                const typiaCommand = `${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${tempTsconfigPath}`;
+                const typiaCommand = `${await getRuntime()} ${await getTypiaPath()} -p ${tempTsconfigPath} --outDir ${transpiledDirPath}`;
 
+                // typia generate 失败时生成宽松校验的兜底 schema，避免 transpiled 缺失导致
+                // route-schema 丢失路由（co.exe 等打包产物内联空路由后 /mode/read 不可用）
                 try {
                     const output = await new Promise<string>((resolve, reject) => {
                         const child = exec(
@@ -216,7 +202,7 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                         }, 180_000 + 10_000);
                         child.on("close", () => clearTimeout(forceTimer));
                     });
-                    if (output.includes("error ")) {
+                    if (!(await exists(transpiledHashFilePath))) {
                         consola.error(`[${getRate()}] 🚨 typia fail, skip: ${file.path}\n${output}`);
                         return;
                     }

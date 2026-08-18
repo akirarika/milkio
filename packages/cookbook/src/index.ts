@@ -11,6 +11,7 @@ import { createCommandUtils } from "./commands/__utils__";
 import { handleNonCookbookPkgMgr } from "./utils/handle-non-cookbook-pkg-mgr";
 import { createPromptAbortController, handlePromptAbort } from "./utils/prompt-timeout";
 import { ensureNodeModulesExportsPatched } from "./utils/patch-node-modules-exports.ts";
+import { checkVersions, versionCheckDisabled } from "./utils/check-versions";
 
 export type Params = {
   command: string;
@@ -204,6 +205,11 @@ export async function cookbook() {
   // exports（typia、estree-walker），保证任何代码路径解析到的都是已修复状态
   const EXPORT_PATCH_COMMANDS = new Set(["dev", "start", "test", "build", "generate", "install", "i", "add", "upgrade"]);
   if (built && EXPORT_PATCH_COMMANDS.has(params.command)) {
+    // 版本一致性检查：typia/ttsc 与 co 构建版本必须严格一致，
+    // 否则 Go 插件（typia 的 ttsc plugin）会构建失败，typia 不出 schema、route-schema 丢路由
+    if (!versionCheckDisabled(params.raw)) {
+      await checkVersions(cwd());
+    }
     await ensureNodeModulesExportsPatched(cwd());
   }
 
