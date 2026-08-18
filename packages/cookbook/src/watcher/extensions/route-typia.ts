@@ -1,12 +1,10 @@
 import consola from "consola";
 import { join, relative } from "node:path";
 import os from "node:os";
-import { exec } from "node:child_process";
 import { getRate } from "../../progress";
 import { defineWatcherExtension } from "../extensions";
 import { exists, readdir, rm } from "node:fs/promises";
-import { getRuntime } from "../../utils/get-runtime";
-import { getTypiaPath } from "../../utils/get-typia-path";
+import { runTypiaTransform } from "../../utils/run-typia-transform";
 import { getLatestSchemaFolder } from "../../utils/get-latest-schema-folder";
 import chalk from "chalk";
 
@@ -134,10 +132,6 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                     extends: projectTsconfigPath.replace(/\\/g, "/"),
                     compilerOptions: {
                         // Override composite/declaration settings from the base project.
-                        // 移除 rootDir：temp tsconfig 的 include 只有 schema.ts，但 schema.ts
-                        // 的 import 引用了 app 下的文件，rootDir 指向 schema.ts 所在目录会导致
-                        // "not under rootDir" 错误。ttsc transform 不产生 emit 输出，无需 rootDir。
-                        rootDir: undefined,
                         //
                         // Some embed projects (e.g. kecream-app-embed) use `composite: true`
                         // with `declaration: true` and `emitDeclarationOnly: true` so they can
@@ -150,14 +144,13 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                         composite: false,
                         declaration: false,
                         emitDeclarationOnly: false,
-                        // 不在这里显式声明 typia 的 ttsc plugin。
+                        // 显式注册 typia 的 ttsc transform plugin。
                         //
-                        // typia 的 ttsc.plugin 指向 Go 源码 transformer（native/cmd/ttsc-typia），
-                        // ttsc 会尝试用 Go 工具链构建它；当其 API 与当前 ttsc 版本不兼容时
-                        // （driver.NewTransformGraph 等 undefined）整个 typia generate 失败，
-                        // transpiled 目录不产生 schema，最终 route-schema 丢掉全部路由。
-                        // 移除该 plugin 后，ttsc 走自带 TypeScript-Go host 的 typia transform
-                        // （native fast path），schema 正常生成，无需 Go 工具链。
+                        // ttsc 的插件自动发现只读取“最近的 package.json”的 dependencies，
+                        // 而 typia 通常声明在工作区根而非子项目里，自动发现找不到。
+                        // typia 14 的 plugin 是 Go 源码（native/cmd/ttsc-typia），ttsc 会
+                        // 用 Go 工具链构建并缓存到 node_modules/.cache/ttsc。
+                        plugins: [{ transform: "typia/lib/transform" }],
                     },
                     include: ["./schema.ts"],
                 };
@@ -173,41 +166,17 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                 }
                 await Bun.write(tempTsconfigPath, JSON.stringify(tempTsconfig, null, 2));
 
-                const typiaCommand = `${await getRuntime()} ${await getTypiaPath()} -p ${tempTsconfigPath} --outDir ${transpiledDirPath}`;
-
-                // typia generate 失败时生成宽松校验的兜底 schema，避免 transpiled 缺失导致
-                // route-schema 丢失路由（co.exe 等打包产物内联空路由后 /mode/read 不可用）
+                // typia 14 无 CLI，使用 ttsc 的 TtscCompiler.transform() 在进程内完成。
+                // transform 不产生 emit（rootDir/TS6059 不会出现），输出为 TS 文本。
                 try {
-                    const output = await new Promise<string>((resolve, reject) => {
-                        const child = exec(
-                            typiaCommand,
-                            {
-                                cwd: root,
-                                // no windowsHide: inherit the parent console (the
-                                // background dev server already runs with a hidden
-                                // console), otherwise each spawned console app
-                                // creates its own visible console window.
-                                maxBuffer: 64 * 1024 * 1024,
-                                timeout: 180_000, // 3 min per file — prevent hanging forever
-                            },
-                            (error, stdout, stderr) => {
-                                const fullOutput = stdout + stderr;
-                                if (error) {
-                                    reject(new Error(fullOutput));
-                                } else {
-                                    resolve(fullOutput);
-                                }
-                            },
-                        );
-                        // If the child doesn't finish in time (exec's `timeout` fires SIGTERM),
-                        // forcefully kill it to avoid orphan processes.
-                        const forceTimer = setTimeout(() => {
-                            child.kill("SIGKILL");
-                        }, 180_000 + 10_000);
-                        child.on("close", () => clearTimeout(forceTimer));
+                    const result = await runTypiaTransform({
+                        root,
+                        tsconfigPath: tempTsconfigPath,
+                        schemaFilePath: generatedHashFilePath,
+                        outPath: transpiledHashFilePath,
                     });
-                    if (!(await exists(transpiledHashFilePath))) {
-                        consola.error(`[${getRate()}] 🚨 typia fail, skip: ${file.path}\n${output}`);
+                    if (!result.ok) {
+                        consola.error(`[${getRate()}] 🚨 typia fail, skip: ${file.path}\n${result.error}`);
                         return;
                     }
                     consola.info(chalk.gray(`[${getRate()}] ✨ typia done: ${file.path}`));

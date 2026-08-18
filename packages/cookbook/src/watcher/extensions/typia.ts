@@ -1,11 +1,9 @@
-import { $ } from "bun";
 import consola from "consola";
 import { join, dirname } from "node:path";
 import { defineWatcherExtension } from "../extensions";
 import { exists, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { calcHash } from "../../utils/calc-hash";
-import { getRuntime } from "../../utils/get-runtime";
-import { getTypiaPath } from "../../utils/get-typia-path";
+import { runTypiaTransform } from "../../utils/run-typia-transform";
 import { getLatestSchemaFolder } from "../../utils/get-latest-schema-folder.ts";
 
 async function processFileImports(filePath: string, projectFsPath: string, root: string) {
@@ -99,18 +97,42 @@ export const typiaWatcherExtension = defineWatcherExtension({
 
           await Promise.all(deleteTasks);
 
-          // 直接 await typia generate 命令（此前是 push 到 buildTasks，
-          // 但 Promise.all 已经对数组做了快照，导致该命令成为 fire-and-forget，
-          // transpiled 输出来不及生成）。
-          // 使用 .quiet() 抑制成功时的输出；失败时捕获并打印错误日志。
+          // typia 14 无 CLI，使用 ttsc 的 TtscCompiler.transform() 在进程内完成。
+          // 项目级 temp tsconfig 带 typia plugin（自动发现只读最近 package.json，
+          // 工作区子项目的 package.json 里没有 typia，必须显式声明）。
           try {
-            await $`${await getRuntime()} ${await getTypiaPath()} generate --input ${join(milkioGeneratedTypiaDirPath, file.importName, hash)} --output ${transpiledDirPath} --project ${join(root, "tsconfig.json")}`.quiet().cwd(root);
+            const projectTypiaTsconfigPath = join(milkioDirPath, "tsconfig.typia.json");
+            if (!(await exists(projectTypiaTsconfigPath))) {
+              await writeFile(
+                projectTypiaTsconfigPath,
+                JSON.stringify(
+                  {
+                    extends: "../tsconfig.json",
+                    compilerOptions: {
+                      composite: false,
+                      declaration: false,
+                      emitDeclarationOnly: false,
+                      plugins: [{ transform: "typia/lib/transform" }],
+                    },
+                  },
+                  null,
+                  2,
+                ),
+                "utf-8",
+              );
+            }
+            const result = await runTypiaTransform({
+              root,
+              tsconfigPath: projectTypiaTsconfigPath,
+              schemaFilePath: generatedFilePath,
+              outPath: join(transpiledDirPath, "schema.ts"),
+            });
+            if (!result.ok) {
+              consola.error(`typia transform failed for "${file.path}"\n${result.error}`);
+              return;
+            }
           } catch (e: any) {
-            consola.error(`typia generate failed for "${file.path}" (exit code ${e?.exitCode ?? "?"})`);
-            const stdout = e?.stdout?.toString().trim();
-            const stderr = e?.stderr?.toString().trim();
-            if (stdout) console.log(stdout);
-            if (stderr) console.log(stderr);
+            consola.error(`typia transform failed for "${file.path}"\n${e?.message ?? e}`);
           }
         })(),
       );

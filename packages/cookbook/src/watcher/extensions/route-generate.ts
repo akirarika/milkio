@@ -7,8 +7,6 @@ import { exists, mkdir, readdir, readFile, rm } from "node:fs/promises";
 import { generateRunTs } from "../generate-run-ts/__IMPORTS__";
 import { calcHash } from "../../utils/calc-hash";
 import { unlinkIfTooLong } from "../../utils/unlink-if-too-long";
-import { getRuntime } from "../../utils/get-runtime";
-import { getTypiaPath } from "../../utils/get-typia-path";
 import chalk from "chalk";
 
 export const routeGenerateWatcherExtension = defineWatcherExtension({
@@ -94,8 +92,8 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
 
                 let routeFileImports = "// route-schema";
                 routeFileImports += `\nimport typia, { type IValidation, type Resolved } from "typia";`;
-                const typiaCommand = `${await getRuntime()} ${await getTypiaPath()} generate --input ${join(generatedDirPath, hashFile)} --output ${join(transpiledDirPath, hashFile)} --project ${join(root, "tsconfig.json")}`;
-                let routeFileExports = `// typia command: ${typiaCommand}`;
+                // typia 14 无 CLI，transform 由 route-typia 通过 ttsc TtscCompiler.transform() 进程内完成
+                let routeFileExports = `// typia transform: ttsc TtscCompiler.transform() (typia/lib/transform plugin)`;
                 routeFileExports += "\nexport default { ";
                 routeFileExports += `\ntype: "${file.type}", `;
                 routeFileExports += "\ntypes: undefined as any as { ";
