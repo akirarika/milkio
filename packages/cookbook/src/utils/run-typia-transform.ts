@@ -48,8 +48,12 @@ try {
     process.stderr.write(text || (result && result.error && result.error.message) || ("no transformed output for " + schema));
     process.exit(1);
   }
+  // transpiled 产物是 typia 生成的校验器代码，不参与项目类型检查：
+  // 1. typia 的 __prune 是 (input: T): void => { ...; return input; }（void 函数返回值，TS2322）
+  // 2. typia 14 部分 lib/internal/*.d.ts 声明为空（如 _jsonStringifyArray），TS2339
+  // 这些都是上游生成代码的固有形态，对使用者不可操作，统一 @ts-nocheck 跳过。
   fs.mkdirSync(dirname(out), { recursive: true });
-  fs.writeFileSync(out, content, "utf8");
+  fs.writeFileSync(out, "// @ts-nocheck\\n" + content, "utf8");
 } catch (e) {
   process.stderr.write((e && e.message) || String(e));
   process.exit(1);
