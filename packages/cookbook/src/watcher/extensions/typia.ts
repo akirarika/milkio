@@ -3,7 +3,7 @@ import { join, dirname } from "node:path";
 import { defineWatcherExtension } from "../extensions";
 import { exists, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { calcHash } from "../../utils/calc-hash";
-import { runTypiaTransform } from "../../utils/run-typia-transform";
+import { runTypiaTransform, typiaTransformFailures } from "../../utils/run-typia-transform";
 import { getLatestSchemaFolder } from "../../utils/get-latest-schema-folder.ts";
 
 async function processFileImports(filePath: string, projectFsPath: string, root: string) {
@@ -128,6 +128,7 @@ export const typiaWatcherExtension = defineWatcherExtension({
               outPath: join(transpiledDirPath, "schema.ts"),
             });
             if (!result.ok) {
+              typiaTransformFailures.push({ root, file: file.path, error: result.error });
               consola.error(`typia transform failed for "${file.path}"\n${result.error}`);
               return;
             }

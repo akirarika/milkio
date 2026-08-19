@@ -4,7 +4,7 @@ import os from "node:os";
 import { getRate } from "../../progress";
 import { defineWatcherExtension } from "../extensions";
 import { exists, readdir, rm } from "node:fs/promises";
-import { runTypiaTransform } from "../../utils/run-typia-transform";
+import { runTypiaTransform, typiaTransformFailures } from "../../utils/run-typia-transform";
 import { getLatestSchemaFolder } from "../../utils/get-latest-schema-folder";
 import chalk from "chalk";
 
@@ -176,11 +176,13 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                         outPath: transpiledHashFilePath,
                     });
                     if (!result.ok) {
+                        typiaTransformFailures.push({ root, file: file.path, error: result.error });
                         consola.error(`[${getRate()}] 🚨 typia fail, skip: ${file.path}\n${result.error}`);
                         return;
                     }
                     consola.info(chalk.gray(`[${getRate()}] ✨ typia done: ${file.path}`));
                 } catch (error) {
+                    typiaTransformFailures.push({ root, file: file.path, error: String(error) });
                     consola.error(`[${getRate()}] 🚨 typia fail, skip: ${file.path}\n${error}`);
                     return;
                 } finally {

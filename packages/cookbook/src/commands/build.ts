@@ -28,6 +28,18 @@ export default await defineCookbookCommand(async (utils) => {
     await initWatcher(options, mode, false);
     progress.close("");
 
+    // 与 generate 一致：typia transform 失败时以非零码退出，避免产出缺路由的构建。
+    const { typiaTransformFailures } = await import("../utils/run-typia-transform");
+    if (typiaTransformFailures.length > 0) {
+        consola.error(
+            `typia transform failed for ${typiaTransformFailures.length} file(s):`,
+        );
+        for (const failure of typiaTransformFailures) {
+            consola.error(`  - ${failure.file} (${failure.root})\n    ${failure.error.split("\n")[0]}`);
+        }
+        exit(1);
+    }
+
     for (const key in options.projects ?? []) {
         const project = options.projects[key];
         if (params.commands.length > 0 && !params.commands.includes(key)) continue;

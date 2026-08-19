@@ -71,6 +71,11 @@ async function ensureHelper(root: string): Promise<string> {
 
 export type TypiaTransformResult = { ok: true } | { ok: false; error: string };
 
+// 记录所有 typia transform 失败（项目名/文件/原因）。
+// generate/build 命令在结束后检查此数组，非空则以非零码退出，
+// 防止 CI 静默打包出缺失路由的产物（参见 1.3.54/1.3.55 的 0-routes 事故）。
+export const typiaTransformFailures: Array<{ root: string; file: string; error: string }> = [];
+
 // 对单个生成的 schema.ts 执行 typia transform，结果直接写入 outPath。
 // 等同于 typia 13 的 `typia generate --input <dir> --output <dir>`。
 export async function runTypiaTransform(params: {
@@ -88,13 +93,16 @@ export async function runTypiaTransform(params: {
       const child = execFile(
         "node",
         [helperPath, "--root", root, "--tsconfig", tsconfigPath, "--schema", schemaFilePath, "--out", outPath],
-        { cwd: root, maxBuffer: 64 * 1024 * 1024, timeout: 180_000, windowsHide: true },
+        // 冷启动时首次 transform 包含 ttsc 构建 typia Go 插件（下载模块+编译），
+        // 可能耗时数分钟；超时给 10 分钟。插件缓存于 node_modules/.cache/ttsc，
+        // 之后的 transform 只需几秒。
+        { cwd: root, maxBuffer: 64 * 1024 * 1024, timeout: 600_000, windowsHide: true },
         (error, _stdout, stderr) => {
           if (error) reject(new Error(stderr || error.message));
           else resolve();
         },
       );
-      const forceTimer = setTimeout(() => child.kill("SIGKILL"), 180_000 + 10_000);
+      const forceTimer = setTimeout(() => child.kill("SIGKILL"), 600_000 + 10_000);
       child.on("close", () => clearTimeout(forceTimer));
     });
 

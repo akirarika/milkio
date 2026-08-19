@@ -28,5 +28,18 @@ export default await defineCookbookCommand(async (utils) => {
   await initWatcher(options, mode, false);
   progress.close("");
 
+  // typia transform 全部成功才算构建成功——否则 route-schema 会缺路由，
+  // 打包出的 co.exe 内置 mode 服务器没有 /mode/read，下游 astra 全部不可用。
+  const { typiaTransformFailures } = await import("../utils/run-typia-transform");
+  if (typiaTransformFailures.length > 0) {
+    consola.error(
+      `typia transform failed for ${typiaTransformFailures.length} file(s):`,
+    );
+    for (const failure of typiaTransformFailures) {
+      consola.error(`  - ${failure.file} (${failure.root})\n    ${failure.error.split("\n")[0]}`);
+    }
+    exit(1);
+  }
+
   consola.success("Cookbook builded!");
 });
