@@ -1,7 +1,7 @@
 import consola from "consola";
 import { join, relative } from "node:path";
 import os from "node:os";
-import { getRate } from "../../progress";
+import { getRate, progress } from "../../progress";
 import { defineWatcherExtension } from "../extensions";
 import { exists, readdir, rm } from "node:fs/promises";
 import { runTypiaTransform, typiaTransformFailures } from "../../utils/run-typia-transform";
@@ -20,13 +20,17 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
         const projectTsconfigPath = join(root, "tsconfig.json");
 
         const queue = new DynamicConcurrencyQueue();
+        progress.setTotal(root, allFiles.length);
 
         for (const file of allFiles) {
             queue.add(async () => {
                 const generatedDirPath = join(milkioGeneratedRouteDirPath, file.importName);
                 const transpiledDirPath = join(milkioTranspiledRouteDirPath, file.importName);
 
-                if (!(await exists(generatedDirPath))) return;
+                if (!(await exists(generatedDirPath))) {
+                    progress.tick(root);
+                    return;
+                }
 
                 // Select the latest hash folder by birthtime, consistent with
                 // route.ts (which uses getLatestSchemaFolder). Previously this
@@ -40,20 +44,27 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                 try {
                     hashFile = await getLatestSchemaFolder(generatedDirPath);
                 } catch {
+                    progress.tick(root);
                     return;
                 }
                 const hashFileName = `${hashFile}/schema.ts`;
                 const generatedHashFilePath = join(generatedDirPath, hashFileName);
                 const transpiledHashFilePath = join(transpiledDirPath, hashFileName);
 
-                if (!(await exists(generatedHashFilePath))) return;
+                if (!(await exists(generatedHashFilePath))) {
+                    progress.tick(root);
+                    return;
+                }
 
                 // Skip if typia result already exists and up to date
                 const generatedStat = await Bun.file(generatedHashFilePath).stat();
                 const transpiledStat = await (async () => {
                     try { return await Bun.file(transpiledHashFilePath).stat(); } catch { return null; }
                 })();
-                if (transpiledStat && transpiledStat.mtime >= generatedStat.mtime) return;
+                if (transpiledStat && transpiledStat.mtime >= generatedStat.mtime) {
+                    progress.tick(root);
+                    return;
+                }
 
                 // Create a temporary tsconfig that only includes the generated schema file.
                 //
@@ -189,6 +200,7 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                     // Clean up the temporary tsconfig and node-env.d.ts to avoid leaving stale files
                     await rm(tempTsconfigPath, { force: true }).catch(() => {});
                     await rm(nodeEnvDtsPath, { force: true }).catch(() => {});
+                    progress.tick(root);
                 }
             });
         }

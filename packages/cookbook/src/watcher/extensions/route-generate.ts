@@ -1,7 +1,7 @@
 import consola from "consola";
 import { join } from "node:path";
 import os from "node:os";
-import { getRate } from "../../progress";
+import { getRate, progress } from "../../progress";
 import { defineWatcherExtension } from "../extensions";
 import { exists, mkdir, readdir, readFile, rm } from "node:fs/promises";
 import { generateRunTs } from "../generate-run-ts/__IMPORTS__";
@@ -65,6 +65,7 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
         }
 
         const queue = new DynamicConcurrencyQueue();
+        progress.setTotal(root, changeFiles.length);
 
         for (const file of changeFiles) {
             queue.add(async () => {
@@ -88,7 +89,10 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
 
                 if (!isGenerate && !(await exists(generatedHashFilePath))) isGenerate = true;
 
-                if (isGenerate === false) return;
+                if (isGenerate === false) {
+                    progress.tick(root);
+                    return;
+                }
 
                 let routeFileImports = "// route-schema";
                 routeFileImports += `\nimport typia, { type IValidation, type Resolved } from "typia";`;
@@ -146,6 +150,7 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
                 await deleteQueue.waitAll();
 
                 consola.info(chalk.gray(`[${getRate()}] ✨ route schema generated: ${file.path}`));
+                progress.tick(root);
             });
         }
 

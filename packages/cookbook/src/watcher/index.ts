@@ -12,7 +12,28 @@ import { Readable } from "node:stream";
 import { imports, indexTs } from "./extensions/__IMPORTS__.ts";
 import { __VERSION__ } from "../../__VERSION__.ts";
 import chalk from "chalk";
-import { getRate } from "../progress/index.ts";
+import { getRate, progress } from "../progress/index.ts";
+
+const SCAN_WEIGHT = 3;
+const DECLARES_WEIGHT = 4;
+const ASYNC_GROUP_WEIGHT = 20;
+const STAGE_WEIGHTS: Array<number> = [
+    2, // route-validate
+    4, // drizzle
+    10, // route-generate
+    40, // route-typia (the heaviest phase)
+    6, // route
+    5, // raw
+    4, // handler
+    0, // config (async, grouped below)
+    0, // meta (async, grouped below)
+    0, // context (async, grouped below)
+    0, // code (async, grouped below)
+    0, // event (async, grouped below)
+    0, // typia (async, grouped below)
+    2, // seed
+];
+const TOTAL_STAGE_WEIGHT = SCAN_WEIGHT + DECLARES_WEIGHT + ASYNC_GROUP_WEIGHT + STAGE_WEIGHTS.reduce((a, b) => a + b, 0);
 
 const allFiles: Map<string, Map<string, CookbookWatcherFile>> = new Map();
 const dependencyCache = new Map<string, Set<string>>();
@@ -22,6 +43,16 @@ export async function initWatcher(options: CookbookOptions, mode: string, watch:
     const dispose = () => {
         for (const watcher of watchers) watcher.close();
     };
+
+    let processedProjectCount = 0;
+    for (const projectName in options.projects ?? []) {
+        const project = options.projects[projectName];
+        if (project.type !== "milkio") continue;
+        const root = join(cwd(), "projects", projectName);
+        if (!(await exists(join(root, "app")))) continue;
+        processedProjectCount++;
+    }
+    progress.configure({ totalUnits: processedProjectCount * TOTAL_STAGE_WEIGHT });
 
     try {
         const tasks: Array<Promise<void>> = [];
@@ -109,6 +140,7 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
     const extensionChangeFiles: Array<Array<CookbookWatcherFile>> = [];
     for (let i = 0; i < imports.length; i++) extensionChangeFiles.push([]);
 
+    progress.stage(root, "scan", SCAN_WEIGHT);
     for await (const filePathRaw of filesAsyncGenerator) {
         if (filePathRaw.endsWith(".test.ts") || filePathRaw.endsWith(".spec.ts") || filePathRaw.includes(" copy")) continue;
         const filePath = filePathRaw.replaceAll("\\", "/");
@@ -126,28 +158,35 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
 
         await parseAndCacheDependencies(resolve(appRoot, filePath), appRoot);
     }
+    progress.completeStage(root);
 
     const asyncTasks = [];
     for (let i = 0; i < imports.length; i++) {
         if (imports[i].async) {
             asyncTasks.push(imports[i]?.setup?.(root, mode, options, project, filterChangeFiles(extensionChangeFiles[i]), filterAllFiles(root, imports[i])));
-        } else {
-            try {
-                await imports[i]?.setup?.(root, mode, options, project, filterChangeFiles(extensionChangeFiles[i]), filterAllFiles(root, imports[i]));
-            } catch (error) {
-                consola.error(error);
-            }
+            continue;
         }
+        if ((STAGE_WEIGHTS[i] ?? 0) > 0) progress.stage(root, `extension:${i}`, STAGE_WEIGHTS[i]);
+        try {
+            await imports[i]?.setup?.(root, mode, options, project, filterChangeFiles(extensionChangeFiles[i]), filterAllFiles(root, imports[i]));
+        } catch (error) {
+            consola.error(error);
+        }
+        progress.completeStage(root);
     }
     if (asyncTasks.length > 0) {
+        progress.stage(root, "async-others", ASYNC_GROUP_WEIGHT);
         try {
             await Promise.all(asyncTasks);
         } catch (error) {
             consola.error(error);
         }
+        progress.completeStage(root);
     }
 
+    progress.stage(root, "declares", DECLARES_WEIGHT);
     await generateDeclares(root, mode, options, project, extensionChangeFiles);
+    progress.completeStage(root);
 }
 
 async function generateDeclares(root: string, mode: string, options: CookbookOptions, project: CookbookWatcherExtensionProject, extensionChangeFiles: Array<Array<CookbookWatcherFile>>) {
