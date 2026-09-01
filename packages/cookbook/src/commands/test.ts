@@ -114,6 +114,10 @@ export default await defineCookbookCommand(async (utils) => {
 
     const params = utils.getParams();
 
+    // 默认在测试结束后保持 dev server 运行，方便继续调试；
+    // 只有显式传入 --stop 时才会在测试结束后停止由本命令启动的所有服务器
+    const shouldStopWorkers = params.options.stop === "1" || params.options.stop === "true";
+
     const stopWorkers = async () => {
         // 停止由本命令启动的所有 dev server（workers），避免测试结束后进程残留占用端口
         try {
@@ -149,20 +153,27 @@ export default await defineCookbookCommand(async (utils) => {
 
     let exitcode: number;
     try {
-        const scriptParts = [`${options.general.packageManager} run test`, ...params.raw.map((arg) => `"${arg}"`)];
+        const rawArgs = params.raw.filter((arg) => arg !== "--stop" && !arg.startsWith("--stop="));
+        const scriptParts = [`${options.general.packageManager} run test`, ...rawArgs.map((arg) => `"${arg}"`)];
         exitcode = await execScript(scriptParts.join(" "), { cwd: cwd() });
     } finally {
-        await stopWorkers();
+        if (shouldStopWorkers) await stopWorkers();
     }
 
     if (exitcode !== 0) {
         consola.error(`Test command failed with exit code ${exitcode}.`);
-        exit(exitcode);
+        if (shouldStopWorkers) exit(exitcode);
+    } else {
+        await writeFile(join(cwd(), "node_modules", ".cookbook__success-time-of-test-run"), `${Date.now()}`);
+
+        consola.info("The timestamp of the completed test run has been written to \"/node_modules/.cookbook__success-time-of-test-run\". If you need to avoid re-running the tests in the CI step, you can refer to the time in this file.\n");
+
+        consola.success("Test command completed!");
     }
 
-    await writeFile(join(cwd(), "node_modules", ".cookbook__success-time-of-test-run"), `${Date.now()}`);
-
-    consola.info("The timestamp of the completed test run has been written to \"/node_modules/.cookbook__success-time-of-test-run\". If you need to avoid re-running the tests in the CI step, you can refer to the time in this file.\n");
-
-    consola.success("Test command completed!");
+    if (!shouldStopWorkers) {
+        consola.info("The dev servers are still running. Press Ctrl+C to stop them. (Run \"co test --stop\" to stop the servers automatically after the tests.)");
+        const resolvers = Promise.withResolvers();
+        await resolvers.promise; // let the never exit
+    }
 });
