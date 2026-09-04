@@ -7,6 +7,7 @@ import { fetchEventSource } from "../utils/fetch-event-source";
 import { getCookbookToml } from "../utils/get-cookbook-toml";
 import { selectProject } from "../utils/select-project";
 import { withPromptTimeout } from "../utils/prompt-timeout";
+import { prompt as promptInquirer, type PromptOptions } from "../utils/prompt";
 
 const INVALID_HYPHEN_MSG = (str: string) => `Invalid hyphen string: ${str}. Only lowercase letters, numbers and hyphens allowed, and must be in hyphen-case format`;
 const HYPHEN_STRING_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -23,8 +24,8 @@ export async function createCommandUtils(params: Params, options: { path?: strin
     const trace = consola.trace;
     const start = consola.start;
     const box = consola.box;
-    const prompt = <T = any>(message: string, opts: Parameters<typeof consola.prompt>[1], hint: string) =>
-        withPromptTimeout<T>(consola.prompt<T>(message, opts as any) as Promise<T>, message, hint);
+    const prompt = <T = any>(message: string, opts: PromptOptions, hint: string) =>
+        withPromptTimeout<T>(promptInquirer<T>(message, opts) as Promise<T>, message, hint);
 
     // Path retrieval methods
     const getScriptPath = () => options.path!;
@@ -41,7 +42,7 @@ export async function createCommandUtils(params: Params, options: { path?: strin
             return params.options[config.env] === "1";
         }
         return withPromptTimeout(
-            consola.prompt(config.message, {
+            promptInquirer<boolean>(config.message, {
                 type: "confirm",
                 placeholder: config.placeholder,
             }) as Promise<boolean>,
@@ -59,7 +60,7 @@ export async function createCommandUtils(params: Params, options: { path?: strin
             return params.options[config.env];
         }
         return withPromptTimeout(
-            consola.prompt(config.message, {
+            promptInquirer<string>(config.message, {
                 type: "text",
                 placeholder: config.placeholder,
             }) as Promise<string>,

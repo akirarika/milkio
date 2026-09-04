@@ -1,5 +1,12 @@
 import type { consola } from "consola";
 
+export type CookbookPromptOption =
+    | { type: "confirm"; initial?: boolean; placeholder?: string }
+    | { type: "text"; placeholder?: string; default?: string }
+    | { type: "select"; options: Array<{ label: string; value: string; description?: string; disabled?: boolean | string }>; default?: string; loop?: boolean };
+
+export type CookbookPrompt = <T = any>(message: string, options: CookbookPromptOption) => Promise<T>;
+
 export async function defineCookbookCommand<Handler extends CookbookCommandHandler>(handler: Handler): Promise<Handler> {
     return handler;
 }
@@ -15,7 +22,7 @@ export type CookbookCommandHandler = (utils: {
     trace: (typeof consola)["trace"];
     start: (typeof consola)["start"];
     box: (typeof consola)["box"];
-    prompt: (typeof consola)["prompt"];
+    prompt: CookbookPrompt;
     getScriptPath: () => string;
     getWorkspacePath: () => string;
     getParams: () => {

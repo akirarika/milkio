@@ -28,7 +28,7 @@
     },
     "packages/cookbook": {
       "name": "@milkio/cookbook",
-      "version": "1.3.52",
+      "version": "1.3.58",
       "bin": {
         "cookbook": "./cookbook.ts",
       },
@@ -53,7 +53,7 @@
     },
     "packages/cookbook-command": {
       "name": "@milkio/cookbook-command",
-      "version": "1.3.52",
+      "version": "1.3.58",
       "dependencies": {
         "consola": "^3.4.2",
         "openai": "^4.87.3",
@@ -61,7 +61,7 @@
     },
     "packages/create-cookbook": {
       "name": "create-cookbook",
-      "version": "1.3.52",
+      "version": "1.3.58",
       "bin": {
         "create-cookbook": "./index.mjs",
       },
@@ -74,7 +74,7 @@
     },
     "packages/milkio": {
       "name": "milkio",
-      "version": "1.3.52",
+      "version": "1.3.58",
       "dependencies": {
         "@poech/camel-hump-under": "^1.1.0",
         "chalk": "^5.3.0",
@@ -92,7 +92,7 @@
     },
     "packages/milkio-astra": {
       "name": "@milkio/astra",
-      "version": "1.3.52",
+      "version": "1.3.58",
       "dependencies": {
         "date-fns": "^4.1.0",
         "js-toml": "^1.0.0",
@@ -100,7 +100,7 @@
     },
     "packages/milkio-electron": {
       "name": "milkio-electron",
-      "version": "1.3.52",
+      "version": "1.3.58",
       "bin": {
         "milkio-electron": "index.mjs",
       },
@@ -114,27 +114,27 @@
     },
     "packages/milkio-redis": {
       "name": "@milkio/redis",
-      "version": "1.3.52",
+      "version": "1.3.58",
     },
     "packages/milkio-stargate": {
       "name": "@milkio/stargate",
-      "version": "1.3.52",
+      "version": "1.3.58",
     },
     "packages/milkio-stargate-worker": {
       "name": "@milkio/stargate-worker",
-      "version": "1.3.52",
+      "version": "1.3.58",
     },
     "packages/template-cookbook": {
       "name": "@milkio/template-cookbook",
-      "version": "1.3.52",
+      "version": "1.3.58",
     },
     "packages/template-milkio": {
       "name": "@milkio/template-milkio",
-      "version": "1.3.52",
+      "version": "1.3.58",
     },
     "packages/vite-plugin-milkio": {
       "name": "@milkio/vite-plugin-milkio",
-      "version": "1.3.52",
+      "version": "1.3.58",
       "dependencies": {
         "@iarna/toml": "^2.2.5",
         "@mjackson/node-fetch-server": "0.6.1",

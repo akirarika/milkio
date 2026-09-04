@@ -8,6 +8,7 @@ import { killPort } from "../utils/kill-port";
 import type { CookbookOptions } from "./cookbook-dto-types";
 import { calcHash } from "./calc-hash";
 import { withPromptTimeout } from "./prompt-timeout";
+import { prompt } from "./prompt";
 
 export async function getCookbookToml(cookbookToml?: string, p?: typeof progress): Promise<CookbookOptions> {
     let options: any;
@@ -76,7 +77,7 @@ export async function getCookbookToml(cookbookToml?: string, p?: typeof progress
         if (p) p.close("");
         consola.info(`Port number ${options.general.cookbookPort} is already occupied. Another process (possibly a previously started cookbook) is using it.`);
         const confirm = await withPromptTimeout(
-            consola.prompt("Do you want to try to kill the process that is using the port number?", {
+            prompt<boolean>("Do you want to try to kill the process that is using the port number?", {
                 type: "confirm",
             }) as Promise<boolean>,
             "kill port process",

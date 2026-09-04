@@ -9,6 +9,7 @@ import { Readable } from "node:stream";
 import compressing from "compressing";
 import { exists, readdir as readdirAsync, stat as statAsync, readFile, writeFile } from "node:fs/promises";
 import { withPromptTimeout } from "../utils/prompt-timeout";
+import { prompt } from "../utils/prompt";
 
 export default await defineCookbookCommand(async (utils) => {
     const packageName = `@milkio/template-cookbook`;
@@ -53,7 +54,7 @@ export default await defineCookbookCommand(async (utils) => {
 
     while (!selectedPackageManager || !packageManagers.find((item) => item.value === selectedPackageManager)) {
         selectedPackageManager = await withPromptTimeout(
-            consola.prompt("Please select a package manager:", {
+            prompt<string>("Please select a package manager:", {
                 type: "select",
                 options: packageManagers
             }) as Promise<string>,
@@ -78,7 +79,7 @@ export default await defineCookbookCommand(async (utils) => {
             console.log("> we will remove this warning and look forward to          ");
             console.log("> supporting it.                                           ");
             const confirm = await withPromptTimeout(
-                consola.prompt(`🚨 Are you sure you want to continue with ${selectedPackageManager}?`, {
+                prompt<boolean>(`🚨 Are you sure you want to continue with ${selectedPackageManager}?`, {
                     type: "confirm",
                     initial: false
                 }) as Promise<boolean>,

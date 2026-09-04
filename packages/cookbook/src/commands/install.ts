@@ -5,6 +5,7 @@ import { selectProject } from "../utils/select-project";
 import consola from "consola";
 import { handleNonCookbookPkgMgr } from "../utils/handle-non-cookbook-pkg-mgr";
 import { withPromptTimeout } from "../utils/prompt-timeout";
+import { prompt } from "../utils/prompt";
 
 export default await defineCookbookCommand(async (utils) => {
   const params = utils.getParams();
@@ -35,7 +36,7 @@ export default await defineCookbookCommand(async (utils) => {
           "You seem to be installing milkio-related packages or some common public packages. We recommend that you install these packages in the root directory so that you can upgrade all monorepo packages uniformly. Otherwise, it may be painful for you to upgrade these public package versions for each monorepo in the future.",
         );
         if (!(await withPromptTimeout(
-            consola.prompt(`🐱 Now, do you still want to install these packages in ${project.value} instead of the root directory?`, { type: "confirm" }) as Promise<boolean>,
+            prompt<boolean>(`🐱 Now, do you still want to install these packages in ${project.value} instead of the root directory?`, { type: "confirm" }) as Promise<boolean>,
             "confirm install location",
             "This prompt cannot be bypassed with flags. Run \"co install <packages>\" in a terminal and confirm manually.",
         ))) {

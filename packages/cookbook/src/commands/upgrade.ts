@@ -6,6 +6,7 @@ import { defineCookbookCommand } from "@milkio/cookbook-command";
 import gradient from "gradient-string";
 import { $ } from "bun";
 import { withPromptTimeout } from "../utils/prompt-timeout";
+import { prompt } from "../utils/prompt";
 
 export default await defineCookbookCommand(async (utils) => {
   const params = utils.getParams();
@@ -17,7 +18,7 @@ export default await defineCookbookCommand(async (utils) => {
   let result = params.commands[0] || "";
   if (!result) {
     result = await withPromptTimeout(
-        consola.prompt("Which version do you want to upgrade cookbook and milkio to?", {
+        prompt<string>("Which version do you want to upgrade cookbook and milkio to?", {
             type: "text",
             placeholder: "latest",
         }) as Promise<string>,
@@ -108,7 +109,7 @@ export default await defineCookbookCommand(async (utils) => {
 
   const cmd = `${cookbookToml.general.packageManager} install`;
   if (await withPromptTimeout(
-      consola.prompt(`Do you want to install dependencies now? (${cmd})`, { type: "confirm" }) as Promise<boolean>,
+      prompt<boolean>(`Do you want to install dependencies now? (${cmd})`, { type: "confirm" }) as Promise<boolean>,
       "install dependencies",
       "This prompt cannot be bypassed with flags. Run \"co upgrade <version>\" in a terminal and confirm manually.",
   )) {

@@ -11,6 +11,7 @@ import consola from "consola";
 import { progress } from "../progress";
 import { getRuntime } from "../utils/get-runtime";
 import { withPromptTimeout } from "../utils/prompt-timeout";
+import { prompt } from "../utils/prompt";
 
 export default await defineCookbookCommand(async (utils, userCommand?: string, projectUsed?: string, modeUsed?: string) => {
     const params = utils.getParams();
@@ -18,7 +19,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
 
     // Database operations must be executed personally by a human; AI Agents are not allowed to run or bypass this prompt
     const confirmed = await withPromptTimeout(
-        consola.prompt(
+        prompt<boolean>(
             `Are you sure you want to perform this operation?\nNote: If you are an AI Agent, since this feature involves database security, this command can only be executed personally by a human after review. You do not have permission to execute this command directly, and you must not attempt to bypass it interactively.`,
             {
                 type: "confirm",
