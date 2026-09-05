@@ -7,9 +7,9 @@ import consola from "consola";
 /**
  * 校验每个 action / stream 文件是否遵循导出约定：
  *
- *   1. `type Params = {`（不可导出）— 请求参数类型
+ *   1. `type Params = ...`（不可导出）— 请求参数类型
  *   2. 空行
- *   3. `type Result = {`（action）或 `type Result = AsyncGenerator<{`（stream），不可导出
+ *   3. `type Result = ...`（action）或 `type Result = AsyncGenerator<...>`（stream），不可导出。类型体可为任意合法 TS 类型表达式（内联对象字面量、引用其它类型、或基于它们用 & / | 组合）
  *   4. 空行
  *   5. handler 函数（单行声明）
  *
@@ -36,7 +36,7 @@ export const routeValidateWatcherExtension = defineWatcherExtension({
         const handlerTag = "\nexport async function handler(context: MilkioContext, request: Request): Promise<Response> {";
         const p = content.indexOf(handlerTag);
         if (p === -1) {
-          consola.error(`[route-validate] "${file.path}" 缺少 handler 函数定义。raw 文件必须导出: export async function handler(context: MilkioContext, request: Request): Promise<Response> {`);
+          consola.error(`[route-validate] "${file.path}" is missing the handler function. A raw file must export: export async function handler(context: MilkioContext, request: Request): Promise<Response> {`);
           exit(1);
         }
         continue;
@@ -44,37 +44,38 @@ export const routeValidateWatcherExtension = defineWatcherExtension({
 
       const isStream = file.type === "stream";
 
-      const paramsStr = "\ntype Params = {";
-      const resultTag = isStream ? "\ntype Result = AsyncGenerator<{" : "\ntype Result = {";
+      // type Params / type Result 的类型体可为任意 TS 类型表达式（别名、& / | 组合等），故仅匹配声明行首而非 `{`
+      const paramsStr = "\ntype Params =";
+      const resultTag = isStream ? "\ntype Result = AsyncGenerator<" : "\ntype Result =";
       const handlerTag = isStream
         ? "\nexport async function* handler(context: MilkioContext, params: Params): Result {"
         : "\nexport async function handler(context: MilkioContext, params: Params): Promise<Result> {";
 
       const p1 = content.indexOf(paramsStr);
       if (p1 === -1) {
-        consola.error(`[route-validate] "${file.path}" 缺少 type Params = { 定义`);
+        consola.error(`[route-validate] "${file.path}" is missing a type Params = declaration`);
         exit(1);
       }
 
       // 找到 Result（单 \n 匹配），再验证与 Params 之间有空行
       const p2 = content.indexOf(resultTag, p1 + 1);
       if (p2 === -1) {
-        consola.error(`[route-validate] "${file.path}" 缺少 type Result = 定义（必须在 Params 之后）`);
+        consola.error(`[route-validate] "${file.path}" is missing a type Result = declaration (must appear after type Params =)`);
         exit(1);
       }
       if (!content.substring(p1, p2 + 1).includes("\n\n")) {
-        consola.error(`[route-validate] "${file.path}" type Params 与 type Result 之间需要空行分隔`);
+        consola.error(`[route-validate] "${file.path}" a blank line is required between type Params and type Result`);
         exit(1);
       }
 
       // 找到 handler（单 \n 匹配），再验证与 Result 之间有空行
       const p3 = content.indexOf(handlerTag, p2 + 1);
       if (p3 === -1) {
-        consola.error(`[route-validate] "${file.path}" 缺少 handler 函数定义（必须在 Result 之后）`);
+        consola.error(`[route-validate] "${file.path}" is missing the handler function (must appear after type Result)`);
         exit(1);
       }
       if (!content.substring(p2, p3 + 1).includes("\n\n")) {
-        consola.error(`[route-validate] "${file.path}" type Result 与 handler 之间需要空行分隔`);
+        consola.error(`[route-validate] "${file.path}" a blank line is required between type Result and the handler function`);
         exit(1);
       }
 
