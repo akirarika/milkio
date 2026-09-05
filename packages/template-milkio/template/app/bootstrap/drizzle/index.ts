@@ -9,6 +9,11 @@ import type { generated } from '../../../.milkio/index.ts';
 // 这是样板代码，你可以按项目需要自由修改（换 pg/sqlite、加 SQL 日志、调连接数等）。
 const pools = new Map<string, mysql.Pool | mysql.Connection>();
 
+// 测试模式下每个 cleanDatabase 都会切到一个全新的随机库，旧库连接不再使用。
+// 连接只增不减会撞 MySQL max_connections（Too many connections），
+// 因此给缓存的连接数加上限，超出时按插入顺序淘汰最旧的（LRU）。
+const MAX_CACHED_CLIENTS = 32;
+
 export function loadDrizzle(world: MilkioWorld<typeof generated>) {
   world.on('milkio:executeBefore', async (event) => {
     const baseUrl = world.config.drizzle.url;
@@ -30,6 +35,14 @@ export function loadDrizzle(world: MilkioWorld<typeof generated>) {
         pool = mysql.createPool({ uri: url, connectionLimit: 8 });
       }
       pools.set(url, pool);
+
+      while (pools.size > MAX_CACHED_CLIENTS) {
+        const oldestKey = pools.keys().next().value as string;
+        if (oldestKey === url) break;
+        const oldest = pools.get(oldestKey);
+        pools.delete(oldestKey);
+        await oldest?.end?.().catch(() => {});
+      }
     }
 
     // 只挂 context.db（不挂全局 tx）。事务请在业务代码里用 db.transaction 显式管理。

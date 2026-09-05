@@ -53,7 +53,9 @@ try {
   // 2. typia 14 部分 lib/internal/*.d.ts 声明为空（如 _jsonStringifyArray），TS2339
   // 这些都是上游生成代码的固有形态，对使用者不可操作，统一 @ts-nocheck 跳过。
   fs.mkdirSync(dirname(out), { recursive: true });
-  fs.writeFileSync(out, "// @ts-nocheck\\n" + content, "utf8");
+  const tmpOut = out + ".tmp-" + process.pid + "-" + Math.random().toString(36).slice(2, 10);
+  fs.writeFileSync(tmpOut, "// @ts-nocheck\\n" + content, "utf8");
+  fs.renameSync(tmpOut, out);
 } catch (e) {
   process.stderr.write((e && e.message) || String(e));
   process.exit(1);

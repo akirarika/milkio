@@ -6,6 +6,7 @@ import { defineWatcherExtension } from "../extensions";
 import { exists, mkdir, readdir, readFile, rm } from "node:fs/promises";
 import { generateRunTs } from "../generate-run-ts/__IMPORTS__";
 import { calcHash } from "../../utils/calc-hash";
+import { writeFileAtomic } from "../../utils/write-file-atomic";
 import { unlinkIfTooLong } from "../../utils/unlink-if-too-long";
 import chalk from "chalk";
 
@@ -60,7 +61,7 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
             let oldPrelimContent: string | null = null;
             try { oldPrelimContent = await Bun.file(prelimPath).text(); } catch {}
             if (oldPrelimContent !== prelimRouteExports) {
-                await Bun.write(prelimPath, prelimRouteExports);
+                await writeFileAtomic(prelimPath, prelimRouteExports);
             }
         }
 
@@ -135,7 +136,7 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
                 let oldGeneratedContent: string | null = null;
                 try { oldGeneratedContent = await Bun.file(generatedHashFilePath).text(); } catch {}
                 if (oldGeneratedContent !== newGeneratedContent) {
-                    await Bun.write(generatedHashFilePath, newGeneratedContent);
+                    await writeFileAtomic(generatedHashFilePath, newGeneratedContent);
                 }
 
                 const deleteQueue = new DynamicConcurrencyQueue();

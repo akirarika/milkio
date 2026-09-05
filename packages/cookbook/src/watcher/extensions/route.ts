@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { defineWatcherExtension } from "../extensions";
 import { exists } from "node:fs/promises";
 import { getLatestSchemaFolder } from "../../utils/get-latest-schema-folder";
+import { writeFileAtomic } from "../../utils/write-file-atomic";
 
 export const routeWatcherExtension = defineWatcherExtension({
     async: false,
@@ -48,7 +49,7 @@ export const routeWatcherExtension = defineWatcherExtension({
         let oldRouteSchemaContent: string | null = null;
         try { oldRouteSchemaContent = await Bun.file(writePath).text(); } catch {}
         if (oldRouteSchemaContent !== newRouteSchemaContent) {
-            await Bun.write(writePath, newRouteSchemaContent);
+            await writeFileAtomic(writePath, newRouteSchemaContent);
         }
     },
 });

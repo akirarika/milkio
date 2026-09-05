@@ -1,8 +1,9 @@
 import consola from "consola";
 import { join, dirname } from "node:path";
 import { defineWatcherExtension } from "../extensions";
-import { exists, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { exists, mkdir, readdir, readFile, rm } from "node:fs/promises";
 import { calcHash } from "../../utils/calc-hash";
+import { writeFileAtomic } from "../../utils/write-file-atomic";
 import { runTypiaTransform, typiaTransformFailures } from "../../utils/run-typia-transform";
 import { getLatestSchemaFolder } from "../../utils/get-latest-schema-folder.ts";
 
@@ -80,7 +81,7 @@ export const typiaWatcherExtension = defineWatcherExtension({
 
           await Promise.all([mkdir(dirname(generatedFilePath), { recursive: true }), mkdir(transpiledDirPath, { recursive: true })]);
 
-          await writeFile(generatedFilePath, processedContent, "utf-8");
+          await writeFileAtomic(generatedFilePath, processedContent);
 
           const deleteTasks: Array<Promise<void>> = [];
           const paths = [join(milkioGeneratedTypiaDirPath, file.importName), join(milkioTranspiledTypiaDirPath, file.importName)];
@@ -102,24 +103,23 @@ export const typiaWatcherExtension = defineWatcherExtension({
           // 工作区子项目的 package.json 里没有 typia，必须显式声明）。
           try {
             const projectTypiaTsconfigPath = join(milkioDirPath, "tsconfig.typia.json");
-            if (!(await exists(projectTypiaTsconfigPath))) {
-              await writeFile(
-                projectTypiaTsconfigPath,
-                JSON.stringify(
-                  {
-                    extends: "../tsconfig.json",
-                    compilerOptions: {
-                      composite: false,
-                      declaration: false,
-                      emitDeclarationOnly: false,
-                      plugins: [{ transform: "typia/lib/transform" }],
-                    },
-                  },
-                  null,
-                  2,
-                ),
-                "utf-8",
-              );
+            const projectTypiaTsconfigContent = JSON.stringify(
+              {
+                extends: "../tsconfig.json",
+                compilerOptions: {
+                  composite: false,
+                  declaration: false,
+                  emitDeclarationOnly: false,
+                  plugins: [{ transform: "typia/lib/transform" }],
+                },
+              },
+              null,
+              2,
+            );
+            let oldProjectTypiaTsconfigContent: string | null = null;
+            try { oldProjectTypiaTsconfigContent = await readFile(projectTypiaTsconfigPath, "utf-8"); } catch {}
+            if (oldProjectTypiaTsconfigContent !== projectTypiaTsconfigContent) {
+              await writeFileAtomic(projectTypiaTsconfigPath, projectTypiaTsconfigContent);
             }
             const result = await runTypiaTransform({
               root,

@@ -27,17 +27,17 @@
 
 ```ts
 // app/utils/astra.ts
+import { fileURLToPath } from 'node:url';
 import { createAstra } from '@milkio/astra';
-import { drizzleCleanHook, dropAllTestDatabases } from './drizzle-test.ts';
+import { drizzleCleanHook } from './drizzle-test.ts';
 import { redisCleanHook } from './redis-test.ts';
 
 export const astra = await createAstra({
   stargate,
   bootstrap: async (hooks) => {
-    await dropAllTestDatabases(testConfig.drizzle.url);      // 删上次遗留
     hooks.onCleanDatabase(drizzleCleanHook({                  // 建库+迁移+seed
       baseUrl: () => testConfig.drizzle.url,
-      migrationsFolder: './drizzle',
+      migrationsFolder: fileURLToPath(new URL('../../drizzle', import.meta.url)),
     }));
     hooks.onCleanDatabase(redisCleanHook({ url: () => testConfig.redis.url }));
     return {};
@@ -45,14 +45,43 @@ export const astra = await createAstra({
 });
 ```
 
+**每次运行测试前**删除上一次遗留的 `milkio_test_*` 库，必须放在 vitest `globalSetup`（每次运行只执行一次），**不能放在每个测试文件的 astra bootstrap 里**——并行运行时后启动的文件会把先启动文件正在使用的库删掉：
+
+```ts
+// app/utils/astra-global-setup.ts（在 vitest.config.ts 的 globalSetup 注册）
+import { dropAllTestDatabases } from './drizzle-test.ts';
+import { flushTestRedis } from './redis-test.ts';
+
+export default async function setup() {
+  await dropAllTestDatabases(testConfig.drizzle.url);
+  await flushTestRedis(testConfig.redis.url);
+}
+```
+
 测试代码里照常使用，无需改动：
 
 ```ts
 const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
-await world.cleanDatabase();   // 新建随机库 + 完整迁移 + seed + 清 redis
+await world.cleanDatabase();   // 新建随机库 + 完整迁移 + seed + 清当前库 redis 命名空间
 ```
 
 由于每个测试用各自独立的随机库，文件之间互不干扰，可以安全地并行运行（在 `vitest.config.ts` 中放开 `fileParallelism` / `maxWorkers`）。
+
+**测试文件里直连数据库 / redis 时**（绕过 HTTP 直接断言行数据），也必须跟随当前随机库，不能连默认库。样板在 `drizzle-test.ts` 提供跟随当前库的 `db` 代理、`getCurrentTestDbUrl()`，在 `redis-test.ts` 提供 `testRedisKey(key)`（服务端测试模式下所有业务 key 带 `${databaseId}:` 前缀，redis 清理只按前缀删，绝不能 `flushDb`）：
+
+```ts
+import { db } from '../../utils/drizzle-test.ts';
+import { testRedisKey } from '../../utils/redis-test.ts';
+
+await world.cleanDatabase();
+await db.execute(sql`INSERT INTO ocItem ...`);           // 写入当前随机库
+await redis.incrBy(testRedisKey(quotaKey), 999900);       // 写入当前库的 redis 命名空间
+```
+
+另外两点并行注意事项（样板已内置，改样板时不要回退）：
+
+- **MySQL 连接数**：`world.cleanDatabase()` 每次都切到新库，服务端按 URL 懒建的连接只增不减会撞 `max_connections`（Too many connections）。样板在 bootstrap/drizzle 里给缓存连接加了 LRU 上限，并在 hook 切库时关闭上一个测试库连接。
+- **migrationsFolder**：`migrate()` 的迁移目录按进程 cwd 解析，从 monorepo 根跑 vitest 时 `./drizzle` 会指错位置，必须用 `import.meta.url` 解析为绝对路径。
 
 完整的样板代码（含 `drizzleCleanHook` / `dropAllTestDatabases` / `truncateAll` 的可改实现）见 `template-milkio` 模板的 `app/utils/drizzle-test.ts`。
 

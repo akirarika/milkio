@@ -85,7 +85,8 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                 // and explicit return type annotations on all functions, which are not
                 // subject to TS2883 (it only applies to inferred types).
                 const tempTsconfigDir = join(generatedDirPath, hashFile);
-                const tempTsconfigPath = join(tempTsconfigDir, "tsconfig.typia.json");
+                const uniqueSuffix = `${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2, 10)}`;
+                const tempTsconfigPath = join(tempTsconfigDir, `tsconfig.typia.${uniqueSuffix}.json`);
 
                 // Locate the nearest node_modules/@types directory by walking up from the
                 // project root. The temp tsconfig lives deep inside
@@ -126,7 +127,7 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                 // directive bypasses `typeRoots` resolution and loads the Node.js type
                 // declarations (Buffer, Error.captureStackTrace, NodeJS.Timeout, etc.)
                 // directly. This mirrors how `vite-env.d.ts` pulls in `vite/client` types.
-                const nodeEnvDtsPath = join(tempTsconfigDir, "node-env.d.ts");
+                const nodeEnvDtsPath = join(tempTsconfigDir, `node-env.${uniqueSuffix}.d.ts`);
                 let nodeTypesIndexPath: string | null = null;
                 if (typeRootsPath) {
                     const candidateIndex = join(typeRootsPath, "node", "index.d.ts");

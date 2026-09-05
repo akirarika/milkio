@@ -203,11 +203,14 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
         }
     >;
 
-    const cleanHooks: CleanDatabaseHook[] = [];
-
     return {
         options: astraOptions,
         async createMirrorWorld(importMetaUrl: string): Promise<[Context, Reject, MirrorWorld]> {
+            // hooks 必须是每个 mirror world 独立的：bootstrap 每次创建 world 都会
+            // 重新执行并注册同一批 hook，若共享数组会线性累积——第 N 个 world 的
+            // cleanDatabase 会对同一个新库并发跑 N 次建库/迁移（ER_TABLE_EXISTS_ERROR）。
+            const cleanHooks: CleanDatabaseHook[] = [];
+
             const thisFilePath = join(fileURLToPath(importMetaUrl));
             const thisFileDirPath = join(dirname(thisFilePath)).replaceAll("\\", "/");
             const thisFileDirPathArr = thisFileDirPath.split("/");

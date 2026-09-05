@@ -1,11 +1,13 @@
 import { drizzle } from 'drizzle-orm/mysql2';
 import { migrate } from 'drizzle-orm/mysql2/migrator';
+import type { MySql2Database } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
 import { sql } from 'drizzle-orm';
 import { TEST_DATABASE_PREFIX, withTestDatabase } from '@milkio/drizzle';
 import type { CleanDatabaseHook } from '@milkio/astra';
 import * as schema from '../../.milkio/drizzle-schema.ts';
 import { executeSeed } from '../../.milkio/seed.ts';
+import { testDbState } from './test-state.ts';
 
 // 本文件是「测试数据库基建」样板代码：建库、完整迁移、seed、清库、删库都在这里，
 // 全部由你掌控，可按项目实际方言（mysql/pg/sqlite）自由修改。
@@ -53,9 +55,29 @@ async function truncateAll(db: any) {
   await db.execute(sql`SET FOREIGN_KEY_CHECKS = 1;`);
 }
 
+/** 当前随机测试库的完整连接 URL（cleanDatabase 之后可用）。 */
+export function getCurrentTestDbUrl(baseUrl: string): string {
+  if (!testDbState.databaseId) throw new Error('No active test database. Call world.cleanDatabase() first.');
+  return withTestDatabase(baseUrl, testDbState.databaseId);
+}
+
+/**
+ * 跟随当前随机测试库的直连 db。cleanDatabase 每次切库都会重建底层连接，
+ * 测试文件直接 import 这个 db 使用即可，无需关心当前库名。
+ */
+export const db = new Proxy({} as Record<PropertyKey, unknown>, {
+  get: (_, prop) => {
+    const target = testDbState.db;
+    if (!target) throw new Error('No active test database. Call world.cleanDatabase() before using db.');
+    const value = Reflect.get(target, prop);
+    return typeof value === 'function' ? value.bind(target) : value;
+  },
+}) as unknown as MySql2Database<typeof schema>;
+
 /**
  * astra 的 cleanDatabase 钩子：每次显式调用 world.cleanDatabase() 都会
- * 生成一个全新随机库并切换到这里。该钩子负责建库、完整迁移、seed。
+ * 生成一个全新随机库并切换到这里。该钩子负责建库、完整迁移、seed，
+ * 并把当前库状态写入 testDbState 供测试文件直连。
  * 这是样板实现，你可以按需修改（换方言、跳过 seed、控制迁移目录等）。
  */
 export function drizzleCleanHook(options: {
@@ -75,6 +97,11 @@ export function drizzleCleanHook(options: {
     await truncateAll(db);
     await db.transaction(async (tx) => executeSeed({ db: tx }));
 
-    await connection.end();
+    // 切换到新库：关闭上一个测试库的连接，避免连接数随 cleanDatabase 次数膨胀
+    const previous = testDbState.connection;
+    testDbState.databaseId = databaseId;
+    testDbState.db = db;
+    testDbState.connection = connection;
+    if (previous) await previous.end().catch(() => {});
   };
 }
