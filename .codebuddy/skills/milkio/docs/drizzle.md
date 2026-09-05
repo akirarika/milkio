@@ -1,5 +1,61 @@
 # Drizzle
 
+## @milkio/drizzle 工具集
+
+`@milkio/drizzle` 是一个**极简工具集**（不包装 drizzle-orm、不隐藏实现细节），只提供测试随机数据库相关的基础设施。连接、迁移、seed、删库、挂载 `context.db` 的代码都在你自己工程的样板里，可自由修改。
+
+**导出的纯函数 / 常量：**
+
+| 导出 | 说明 |
+|------|------|
+| `TEST_DATABASE_PREFIX` | 测试库名前缀 `milkio_test`（启动清理时按此前缀 DROP） |
+| `TEST_DATABASE_HEADER` | 请求头名 `x-milkio-test-db`，astra 与 server 共享同一约定 |
+| `TEST_DATABASE_MAX_LENGTH` | 数据库名最大长度（64） |
+| `generateTestDatabaseId(filePath?)` | 生成 `milkio_test_<文件片段>_<随机>`，≤64 字符 |
+| `sanitizeDatabasePart(input)` | 清洗标识符为合法库名片段 |
+| `withTestDatabase(url, databaseId)` | 替换 URL 的数据库名；`databaseId` 为空时原样返回 |
+| `extractDatabaseName(url)` | 从 URL 提取数据库名 |
+| `getTestDatabaseId(headers)` | 从请求头读取随机库名，无则返回 `null`（走默认库） |
+
+**随机库名带测试文件路径**，例如 `app/modules/oc/__TEST__.test.ts` → `milkio_test_oc_test_a1b2c3d4`，便于追溯是哪个测试文件创建了该库。
+
+### 测试基建：cleanDatabase 钩子
+
+`@milkio/astra` 的 `world.cleanDatabase()` 被标准化为**钩子调度器**：每次显式调用都会**新建一个随机库并切换**，然后并行执行所有通过 `hooks.onCleanDatabase(...)` 注册的钩子（建库/迁移/seed、清 Redis 等）。**每次运行测试前**，样板代码会先把上一次遗留的 `milkio_test_*` 库全部删掉。
+
+`@milkio/drizzle` 与 `@milkio/redis` **都不在包内提供 hook 默认实现**；hook 是样板代码，写在你项目的 `app/utils/drizzle-test.ts` / `redis-test.ts` 中，可自由修改。
+
+```ts
+// app/utils/astra.ts
+import { createAstra } from '@milkio/astra';
+import { drizzleCleanHook, dropAllTestDatabases } from './drizzle-test.ts';
+import { redisCleanHook } from './redis-test.ts';
+
+export const astra = await createAstra({
+  stargate,
+  bootstrap: async (hooks) => {
+    await dropAllTestDatabases(testConfig.drizzle.url);      // 删上次遗留
+    hooks.onCleanDatabase(drizzleCleanHook({                  // 建库+迁移+seed
+      baseUrl: () => testConfig.drizzle.url,
+      migrationsFolder: './drizzle',
+    }));
+    hooks.onCleanDatabase(redisCleanHook({ url: () => testConfig.redis.url }));
+    return {};
+  },
+});
+```
+
+测试代码里照常使用，无需改动：
+
+```ts
+const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+await world.cleanDatabase();   // 新建随机库 + 完整迁移 + seed + 清 redis
+```
+
+由于每个测试用各自独立的随机库，文件之间互不干扰，可以安全地并行运行（在 `vitest.config.ts` 中放开 `fileParallelism` / `maxWorkers`）。
+
+完整的样板代码（含 `drizzleCleanHook` / `dropAllTestDatabases` / `truncateAll` 的可改实现）见 `template-milkio` 模板的 `app/utils/drizzle-test.ts`。
+
 ## 示例
 
 ```ts

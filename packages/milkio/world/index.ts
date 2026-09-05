@@ -78,6 +78,7 @@ export async function createWorld<MilkioOptions extends MilkioInit>(generated: G
         listener,
         // function
         config,
+        isTestMode: (config as Record<any, any>)?.mode === "test",
     };
 
     runtime.app = world;
@@ -111,4 +112,5 @@ export interface MilkioWorld<Generated extends GeneratedInit, MilkioOptions exte
     // listener
     listener: Awaited<ReturnType<typeof __initListener>>;
     config: Readonly<Awaited<ReturnType<$types["configSchema"]["get"]>>>;
+    isTestMode: boolean;
 }

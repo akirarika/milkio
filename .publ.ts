@@ -12,6 +12,7 @@ const childPackages = [
     "milkio-electron",
     "cookbook-command",
     "milkio-astra",
+    "milkio-drizzle",
     "milkio-redis",
     "milkio-stargate",
     "milkio-stargate-worker",

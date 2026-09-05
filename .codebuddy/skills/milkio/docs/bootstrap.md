@@ -35,19 +35,39 @@ export async function create(options: MilkioInit) {
 
 #### 数据库连接（Drizzle）
 
+推荐使用 `@milkio/drizzle` 工具集来支持「测试随机数据库」：测试模式下 astra 会在请求头携带随机库名，服务端据此路由到对应库；无请求头时走默认库（本地调试/生产不受影响）。
+
 ```ts
 // /app/bootstrap/drizzle/index.ts
 import { drizzle } from 'drizzle-orm/mysql2';
+import mysql from 'mysql2/promise';
+import { getTestDatabaseId, withTestDatabase } from '@milkio/drizzle';
+import * as schema from '../../../.milkio/drizzle-schema.ts';
 
-export const loadDrizzle = async (world: MilkioWorld<typeof generated>) => {
-  const connection = await mysql.createConnection(world.config.drizzle.url);
-  const db = drizzle(connection, { schema, mode: 'default' });
+const pools = new Map<string, mysql.Pool | mysql.Connection>();
 
+export function loadDrizzle(world: MilkioWorld<typeof generated>) {
   world.on('milkio:executeBefore', async (event) => {
-    event.context.db = db;
+    const databaseId = getTestDatabaseId(event.context.headers);
+    const url = withTestDatabase(world.config.drizzle.url, databaseId);
+
+    let pool = pools.get(url);
+    if (!pool) {
+      pool = world.isTestMode
+        ? await mysql.createConnection({ uri: url, timezone: '+00:00' })
+        : mysql.createPool({ uri: url, connectionLimit: 8 });
+      pools.set(url, pool);
+    }
+
+    // 只挂 context.db；事务用 context.db.transaction(async (tx) => ...) 显式管理
+    event.context.db = drizzle(pool, { schema, mode: 'default' });
   });
-};
+}
 ```
+
+**`world.isTestMode`**：`MilkioWorld` 内置的布尔值（等价于 `world.config.mode === 'test'`），用于区分测试与其他环境，替代过去手写的 `world.config.mode === 'test'`。
+
+**注意**：不要再在 context 上挂全局 `tx`（启动时统一提交事务的写法容易出问题）。事务由调用方通过 `context.db.transaction(async (tx) => { ... })` 显式获取并传递 `tx` 对象；跨事件传递事务时，由事件创建者把 `tx` 放进事件 data 中。
 
 #### Redis 连接
 

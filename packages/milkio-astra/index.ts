@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { cwd } from "node:process";
 import { load } from "js-toml";
+import { TEST_DATABASE_HEADER, generateTestDatabaseId } from "@milkio/drizzle";
 import type { CookbookOptions } from "./utils/cookbook-dto-types.ts";
 
 function formatTimestamp(): string {
@@ -34,9 +35,28 @@ async function findCookbookBaseUrl(): Promise<string> {
     throw new Error("・[astra] Could not find \".cookbook/control-url.md\" file in any parent directory");
 }
 
+export type CleanDatabaseHook = (args: { world: any; databaseId: string }) => void | Promise<void>;
+
+export type AstraHooks = {
+    onCleanDatabase: (hook: CleanDatabaseHook) => void;
+};
+
+/**
+ * 创建 cleanDatabase 的钩子调度器。每次调用 returned.cleanDatabase() 都会：
+ * 生成一个全新随机库名、切换 world.__databaseId、并并行执行所有已注册 hook。
+ * 单独导出以便在不启动真实服务的前提下对核心语义做单元测试。
+ */
+export function createCleanDatabaseScheduler(cleanHooks: CleanDatabaseHook[], importMetaUrl: string) {
+    return async function cleanDatabase(this: { __databaseId: string | null }): Promise<string> {
+        this.__databaseId = generateTestDatabaseId(importMetaUrl);
+        await Promise.all(cleanHooks.map((hook) => hook({ world: this, databaseId: this.__databaseId as string })));
+        return this.__databaseId as string;
+    };
+}
+
 export type AstraOptionsInit = {
     stargate: { $types: any; execute: any; ping: any; __cookbook: any; __astraEmitEvent: any };
-    bootstrap: () => Promise<Record<string, any>>;
+    bootstrap: (hooks: AstraHooks) => Promise<Record<string, any>>;
 };
 
 type GeneratorGeneric<T> = T extends AsyncGenerator<infer I> ? I : never;
@@ -177,8 +197,13 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
             paths: { cwd: string; milkio: string; generated: string };
             execute: Execute;
             emit: Emit;
+            __databaseId: string | null;
+            cleanDatabase: () => Promise<string>;
+            onCleanDatabase: (hook: CleanDatabaseHook) => void;
         }
     >;
+
+    const cleanHooks: CleanDatabaseHook[] = [];
 
     return {
         options: astraOptions,
@@ -222,6 +247,9 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
                     if (!options?.params) options.params = {};
                     options.params.$milkioGenerateParams = "enable";
                 }
+                if (world.__databaseId) {
+                    options.headers = { ...(options.headers ?? {}), [TEST_DATABASE_HEADER]: world.__databaseId };
+                }
 
                 const results = await this.options.stargate.__cookbook.subscribe(`http://localhost:${cookbookOptions.general.cookbookPort}`);
                 void (async () => {
@@ -241,6 +269,9 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
 
             const emit = async (key: Parameters<MirrorWorld["emit"]>[0], optionsInit?: Parameters<MirrorWorld["emit"]>[1]) => {
                 const options = (optionsInit as any) ?? {};
+                if (world.__databaseId) {
+                    options.headers = { ...(options.headers ?? {}), [TEST_DATABASE_HEADER]: world.__databaseId };
+                }
 
                 const results = await this.options.stargate.__cookbook.subscribe(`http://localhost:${cookbookOptions.general.cookbookPort}`);
                 void (async () => {
@@ -301,11 +332,18 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
                 },
             } as Context;
 
+            const hooks: AstraHooks = {
+                onCleanDatabase: (hook) => cleanHooks.push(hook),
+            };
+
             const world = {
-                ...(await astraOptions.bootstrap()),
+                ...(await astraOptions.bootstrap(hooks)),
                 paths,
                 execute,
                 emit,
+                __databaseId: null as string | null,
+                onCleanDatabase: hooks.onCleanDatabase,
+                cleanDatabase: createCleanDatabaseScheduler(cleanHooks, importMetaUrl),
             } as any;
 
             const reject = (...params: Array<unknown>): Error => {
