@@ -8,7 +8,7 @@
     "url": "https://github.com/akirarika/milkio"
   },
   "dependencies": {
-    "@milkio/drizzle": "1.3.61",
+    "@milkio/drizzle": "workspace:*",
     "date-fns": "^4.1.0",
     "js-toml": "^1.0.0"
   },

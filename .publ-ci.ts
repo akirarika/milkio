@@ -126,6 +126,14 @@ function writeDistPackageJson(pkgDir: string, outDir: string) {
     out.peerDependencies = { vite: ">=5" };
   }
 
+  // 保留对其它 @milkio/* 包的依赖（如 @milkio/astra 依赖 @milkio/drizzle），
+  // 并把 workspace:* 解析为当前发布版本号，保证安装时能拉到对应版本。
+  const srcDeps = src.dependencies ?? {};
+  for (const depName in srcDeps) {
+    if (!depName.startsWith("@milkio/")) continue;
+    out.dependencies[depName] = src.version;
+  }
+
   const outPath = join(outDir, "package.json");
   writeJson(outPath, out);
   const raw = readFileSync(outPath, "utf-8");
