@@ -8,6 +8,7 @@ import { argv, cwd, env, execPath, exit } from "node:process";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { readFile, writeFile, rm } from "node:fs/promises";
+import { writeFileSync } from "node:fs";
 import { calcHash } from "../utils/calc-hash";
 import { getRandomPort } from "../utils/get-random-port";
 import { clearState, ensureCookbookDir, getCookbookDir, isPidAlive, isRunning, readState, stopBackground, writeState } from "../utils/background";
@@ -61,6 +62,15 @@ export default await defineCookbookCommand(async (utils) => {
 
         await writeFile(join(ensureCookbookDir(), "dev-pid.md"), `${process.pid}`, "utf-8");
         await rm(join(ensureCookbookDir(), "workers-status.json"), { force: true }).catch(() => {});
+
+        // 兜底：任何路径（如 typecheckProjects 内部 exit(1)）导致进程退出时，
+        // 若还没写过 test-result.json，就以前进程的退出码补写一份——否则前台只能报
+        // "exited before writing a test result"，丢失真实的失败退出码。
+        process.on("exit", (code) => {
+            try {
+                writeFileSync(getTestResultPath(), JSON.stringify({ exitCode: code ?? 1, finishedAt: new Date().toISOString() }), { encoding: "utf-8", flag: "wx" });
+            } catch {}
+        });
 
         installBackgroundLogger();
         await runTestsAndKeepServer(params, options);
