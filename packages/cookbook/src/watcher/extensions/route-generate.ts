@@ -53,14 +53,19 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
                 // 🥛 discriminator: false (literal) for actions → `false extends boolean` = true → action branch
                 //                    0   (literal) for streams → `0 extends boolean` = false → stream branch
                 const discriminator = file.type === "stream" ? "0" : "false";
-                prelimRouteExports += `\n  "/${routePath}": { types: { "\u{1F95B}": ${discriminator}, params: undefined as any, result: undefined as any } },`;
+                // type 字段让 dev server 的流式内容协商（Accept 校验）不会因缺失而误判
+                prelimRouteExports += `\n  "/${routePath}": { type: "${file.type}", types: { "\u{1F95B}": ${discriminator}, params: undefined as any, result: undefined as any } },`;
             }
             prelimRouteExports += "\n} as const;\nexport default routeSchema;\n";
             const prelimPath = join(root, ".milkio", "route-schema.ts");
             // 比较内容，相同则跳过写入，避免触发 vite page reload
             let oldPrelimContent: string | null = null;
             try { oldPrelimContent = await Bun.file(prelimPath).text(); } catch {}
-            if (oldPrelimContent !== prelimRouteExports) {
+            // 如果当前 route-schema.ts 已是最终版（含 transpiled 引用），绝不能再用
+            // preliminary 覆盖：dev server 正在用它做流式内容协商（routeSchema.type 判
+            // 断），被覆写后所有路由都会因 Accept 校验误判而 UNACCEPTABLE。
+            const isFinalSchema = oldPrelimContent !== null && !oldPrelimContent.startsWith("// route-schema (preliminary)");
+            if (!isFinalSchema && oldPrelimContent !== prelimRouteExports) {
                 await writeFileAtomic(prelimPath, prelimRouteExports);
             }
         }

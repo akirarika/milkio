@@ -41,7 +41,9 @@ export function loadDrizzle(world: MilkioWorld<typeof generated>) {
         if (oldestKey === url) break;
         const oldest = pools.get(oldestKey);
         pools.delete(oldestKey);
-        await oldest?.end?.().catch(() => {});
+        // 不能 await：被淘汰的连接可能仍有请求在途（例如测试超时后请求还在服务端跑），
+        // await end() 会一直等到它空闲，导致当前请求被挂起
+        void oldest?.end?.().catch(() => {});
       }
     }
 

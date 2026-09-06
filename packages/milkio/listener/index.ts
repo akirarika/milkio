@@ -252,6 +252,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     params: { string: rawBody ?? "", parsed: eventData },
                     request: options.request,
                 };
+                context.headers = options.request.headers;
                 eventData.context = context;
 
                 const emitHttpResponse = (success: boolean) => {

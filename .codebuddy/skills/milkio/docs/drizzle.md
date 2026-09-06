@@ -21,7 +21,7 @@
 
 ### 测试基建：cleanDatabase 钩子
 
-`@milkio/astra` 的 `world.cleanDatabase()` 被标准化为**钩子调度器**：每次显式调用都会**新建一个随机库并切换**，然后并行执行所有通过 `hooks.onCleanDatabase(...)` 注册的钩子（建库/迁移/seed、清 Redis 等）。**每次运行测试前**，样板代码会先把上一次遗留的 `milkio_test_*` 库全部删掉。
+`@milkio/astra` 的 `world.cleanDatabase()` 被标准化为**钩子调度器**：每次显式调用都会**新建一个随机库并切换**，然后并行执行所有通过 `hooks.onCleanDatabase(...)` 注册的钩子（从黄金库克隆 DDL + seed、清 Redis 命名空间等）。**每次运行测试前**，globalSetup 会先把上一次遗留的 `milkio_test_*` 库全部删掉。
 
 `@milkio/drizzle` 与 `@milkio/redis` **都不在包内提供 hook 默认实现**；hook 是样板代码，写在你项目的 `app/utils/drizzle-test.ts` / `redis-test.ts` 中，可自由修改。
 
@@ -45,16 +45,22 @@ export const astra = await createAstra({
 });
 ```
 
-**每次运行测试前**删除上一次遗留的 `milkio_test_*` 库，必须放在 vitest `globalSetup`（每次运行只执行一次），**不能放在每个测试文件的 astra bootstrap 里**——并行运行时后启动的文件会把先启动文件正在使用的库删掉：
+**每次运行测试前**删除上一次遗留的 `milkio_test_*` 库，必须放在 vitest `globalSetup`（每次运行只执行一次），**不能放在每个测试文件的 astra bootstrap 里**——并行运行时后启动的文件会把先启动文件正在使用的库删掉。`globalSetup` 还负责准备「黄金库」：完整迁移在这里只跑一次，之后每个测试库直接克隆黄金库的 DDL（`CREATE TABLE ... LIKE`），几秒内即可建好一个全新随机库，避免每个测试都重放几十个迁移文件（本机实测单次完整迁移约 40s）：
 
 ```ts
 // app/utils/astra-global-setup.ts（在 vitest.config.ts 的 globalSetup 注册）
-import { dropAllTestDatabases } from './drizzle-test.ts';
+import { fileURLToPath } from 'node:url';
+import { dropAllTestDatabases, ensureGoldenDatabase } from './drizzle-test.ts';
 import { flushTestRedis } from './redis-test.ts';
 
 export default async function setup() {
   await dropAllTestDatabases(testConfig.drizzle.url);
   await flushTestRedis(testConfig.redis.url);
+  await ensureGoldenDatabase({
+    baseUrl: testConfig.drizzle.url,
+    migrationsFolder: fileURLToPath(new URL('../../drizzle', import.meta.url)),
+    force: true,
+  });
 }
 ```
 
@@ -78,9 +84,11 @@ await db.execute(sql`INSERT INTO ocItem ...`);           // 写入当前随机�
 await redis.incrBy(testRedisKey(quotaKey), 999900);       // 写入当前库的 redis 命名空间
 ```
 
-另外两点并行注意事项（样板已内置，改样板时不要回退）：
+另外几点并行注意事项（样板已内置，改样板时不要回退）：
 
-- **MySQL 连接数**：`world.cleanDatabase()` 每次都切到新库，服务端按 URL 懒建的连接只增不减会撞 `max_connections`（Too many connections）。样板在 bootstrap/drizzle 里给缓存连接加了 LRU 上限，并在 hook 切库时关闭上一个测试库连接。
+- **完整迁移很慢**：几十个迁移文件单次重放可达数十秒（BaiduSync 等慢盘更甚），超过 vitest 默认 testTimeout 会让每个测试都超时。因此样板采用「黄金库」：globalSetup 里 `ensureGoldenDatabase({ force: true })` 完整迁移一次，`drizzleCleanHook` 里 `cloneGoldenDatabase()` 用 `CREATE TABLE ... LIKE` 克隆 DDL（几秒）再 seed。若你的迁移足够快，可改回每次完整迁移。
+- **MySQL 连接数**：`world.cleanDatabase()` 每次都切到新库，服务端按 URL 懒建的连接只增不减会撞 `max_connections`（Too many connections）。样板在 bootstrap/drizzle 里给缓存连接加了 LRU 上限；淘汰时**不能 `await end()`**——被淘汰的连接可能仍有请求在途（测试超时后请求还在服务端跑），`await` 会把当前请求挂起。
+- **磁盘占用**：分区表克隆每库可达 100MB+（每分区独立 .ibd），一轮 co test 约 200 个库 ≈ 20GB，小磁盘直接撑爆。样板采用**切库即删**：`drizzleCleanHook` 每次切换新库时删除上一个测试库，同时存在的测试库数量 = 并行测试文件数（个位数）；globalSetup teardown 再兜底清理文件结束后的最后一个库与黄金库。
 - **migrationsFolder**：`migrate()` 的迁移目录按进程 cwd 解析，从 monorepo 根跑 vitest 时 `./drizzle` 会指错位置，必须用 `import.meta.url` 解析为绝对路径。
 
 完整的样板代码（含 `drizzleCleanHook` / `dropAllTestDatabases` / `truncateAll` 的可改实现）见 `template-milkio` 模板的 `app/utils/drizzle-test.ts`。
