@@ -47,10 +47,10 @@ export type AstraHooks = {
  * 单独导出以便在不启动真实服务的前提下对核心语义做单元测试。
  */
 export function createCleanDatabaseScheduler(cleanHooks: CleanDatabaseHook[], importMetaUrl: string) {
-    return async function cleanDatabase(this: { __databaseId: string | null }): Promise<string> {
+    return async function cleanDatabase(this: { __databaseId: string }): Promise<string> {
         this.__databaseId = generateTestDatabaseId(importMetaUrl);
-        await Promise.all(cleanHooks.map((hook) => hook({ world: this, databaseId: this.__databaseId as string })));
-        return this.__databaseId as string;
+        await Promise.all(cleanHooks.map((hook) => hook({ world: this, databaseId: this.__databaseId })));
+        return this.__databaseId;
     };
 }
 
@@ -197,7 +197,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
             paths: { cwd: string; milkio: string; generated: string };
             execute: Execute;
             emit: Emit;
-            __databaseId: string | null;
+            __databaseId: string;
             cleanDatabase: () => Promise<string>;
             onCleanDatabase: (hook: CleanDatabaseHook) => void;
         }
@@ -250,9 +250,10 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
                     if (!options?.params) options.params = {};
                     options.params.$milkioGenerateParams = "enable";
                 }
-                if (world.__databaseId) {
-                    options.headers = { ...(options.headers ?? {}), [TEST_DATABASE_HEADER]: world.__databaseId };
-                }
+                // mirror world 在创建时即分配了随机测试库名（见下方 world 初始化），
+                // 所有请求一律携带 x-milkio-test-db：即使测试从未调用 cleanDatabase，
+                // 也不会把数据写进默认库。
+                options.headers = { ...(options.headers ?? {}), [TEST_DATABASE_HEADER]: world.__databaseId };
 
                 const results = await this.options.stargate.__cookbook.subscribe(`http://localhost:${cookbookOptions.general.cookbookPort}`);
                 void (async () => {
@@ -272,9 +273,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
 
             const emit = async (key: Parameters<MirrorWorld["emit"]>[0], optionsInit?: Parameters<MirrorWorld["emit"]>[1]) => {
                 const options = (optionsInit as any) ?? {};
-                if (world.__databaseId) {
-                    options.headers = { ...(options.headers ?? {}), [TEST_DATABASE_HEADER]: world.__databaseId };
-                }
+                options.headers = { ...(options.headers ?? {}), [TEST_DATABASE_HEADER]: world.__databaseId };
 
                 const results = await this.options.stargate.__cookbook.subscribe(`http://localhost:${cookbookOptions.general.cookbookPort}`);
                 void (async () => {
@@ -344,7 +343,10 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
                 paths,
                 execute,
                 emit,
-                __databaseId: null as string | null,
+                // 创建 mirror world 时立即分配随机测试库名：即使测试从未调用
+                // cleanDatabase，所有 execute/emit 请求也只会落到隔离的随机库。
+                // cleanDatabase() 被调用时由调度器换一个新的随机库名。
+                __databaseId: generateTestDatabaseId(importMetaUrl),
                 onCleanDatabase: hooks.onCleanDatabase,
                 cleanDatabase: createCleanDatabaseScheduler(cleanHooks, importMetaUrl),
             } as any;

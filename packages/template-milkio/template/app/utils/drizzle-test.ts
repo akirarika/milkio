@@ -143,6 +143,25 @@ export function getCurrentTestDbUrl(baseUrl: string): string {
 }
 
 /**
+ * 确保随机测试库已就绪：从黄金库克隆 DDL + 迁移记录，再执行 seed。
+ * 测试进程的 cleanDatabase 钩子和服务端懒初始化（bootstrap/drizzle）都复用这里，
+ * 保证「没调 cleanDatabase 的测试请求」落在隔离随机库时同样能正常执行。
+ */
+export async function prepareTestDatabase(baseUrl: string, databaseId: string, migrationsFolder: string): Promise<void> {
+  await ensureGoldenDatabase({ baseUrl, migrationsFolder });
+  await cloneGoldenDatabase(baseUrl, databaseId);
+
+  const connection = await mysql.createConnection({ uri: withTestDatabase(baseUrl, databaseId), timezone: '+00:00' });
+  try {
+    await connection.query("SET time_zone = '+00:00'");
+    const db = drizzle(connection, { schema, mode: 'default' });
+    await db.transaction(async (tx) => executeSeed({ db: tx }));
+  } finally {
+    await connection.end();
+  }
+}
+
+/**
  * 跟随当前随机测试库的直连 db。cleanDatabase 每次切库都会重建底层连接，
  * 测试文件直接 import 这个 db 使用即可，无需关心当前库名。
  */
@@ -167,15 +186,12 @@ export function drizzleCleanHook(options: {
 }): CleanDatabaseHook {
   return async ({ databaseId }) => {
     const baseUrl = (await options.baseUrl()).replace(/\/$/, '');
-    await ensureGoldenDatabase({ baseUrl, migrationsFolder: options.migrationsFolder });
-    await cloneGoldenDatabase(baseUrl, databaseId);
+    await prepareTestDatabase(baseUrl, databaseId, options.migrationsFolder);
 
     const url = withTestDatabase(baseUrl, databaseId);
     const connection = await mysql.createConnection({ uri: url, timezone: '+00:00' });
     await connection.query("SET time_zone = '+00:00'");
     const db = drizzle(connection, { schema, mode: 'default' });
-
-    await db.transaction(async (tx) => executeSeed({ db: tx }));
 
     // 切换到新库：关闭上一个测试库的连接并删除该库。
     // 分区表克隆每库可达 100MB+，只增不减会撑爆磁盘；切库即删让同时存在的

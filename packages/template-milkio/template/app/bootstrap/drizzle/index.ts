@@ -1,7 +1,9 @@
+import { fileURLToPath } from 'node:url';
 import mysql from 'mysql2/promise';
 import { drizzle } from 'drizzle-orm/mysql2';
 import { getTestDatabaseId, withTestDatabase } from '@milkio/drizzle';
 import * as schema from '../../../.milkio/drizzle-schema.ts';
+import { prepareTestDatabase } from '../../utils/drizzle-test.ts';
 import type { MilkioWorld } from 'milkio';
 import type { generated } from '../../../.milkio/index.ts';
 
@@ -14,6 +16,36 @@ const pools = new Map<string, mysql.Pool | mysql.Connection>();
 // 因此给缓存的连接数加上限，超出时按插入顺序淘汰最旧的（LRU）。
 const MAX_CACHED_CLIENTS = 32;
 
+// ---- 测试库懒初始化 ----
+// astra 的 mirror world 在创建时就携带随机测试库名，即使测试从未调用
+// cleanDatabase()，请求也会带上 x-milkio-test-db。这里保证该随机库真实存在：
+// 首次遇到时检查库是否存在，不存在则从黄金库克隆 DDL + seed（与 cleanDatabase
+// 同一套逻辑）。已处理过的库名缓存起来，避免每次请求都做存在性检查。
+const MIGRATIONS_FOLDER = fileURLToPath(new URL('../../../drizzle', import.meta.url));
+const handledTestDatabaseIds = new Set<string>();
+
+async function ensureTestDatabaseReady(baseUrl: string, databaseId: string): Promise<void> {
+  if (handledTestDatabaseIds.has(databaseId)) return;
+  const adminUrl = new URL(baseUrl);
+  adminUrl.pathname = '/';
+  const admin = await mysql.createConnection({ uri: adminUrl.toString(), timezone: '+00:00' });
+  let exists = false;
+  try {
+    const [rows] = await admin.query(`SHOW DATABASES LIKE '${databaseId}'`);
+    exists = (rows as Array<any>).length > 0;
+  } finally {
+    await admin.end();
+  }
+  if (exists) {
+    // 测试进程的 cleanDatabase 已建好并 seed 过，直接复用
+    handledTestDatabaseIds.add(databaseId);
+    return;
+  }
+  console.log(`[MySQL] Lazy preparing test database ${databaseId}...`);
+  await prepareTestDatabase(baseUrl, databaseId, MIGRATIONS_FOLDER);
+  handledTestDatabaseIds.add(databaseId);
+}
+
 export function loadDrizzle(world: MilkioWorld<typeof generated>) {
   world.on('milkio:executeBefore', async (event) => {
     const baseUrl = world.config.drizzle.url;
@@ -21,6 +53,10 @@ export function loadDrizzle(world: MilkioWorld<typeof generated>) {
     // 测试模式下，astra 会携带 x-milkio-test-db 请求头指明本次请求的随机数据库；
     // 没有携带时（本地网页调试 / 生产环境）走默认库，行为与旧版完全一致。
     const databaseId = getTestDatabaseId(event.context.headers);
+    // 测试模式下确保随机测试库已就绪；无头请求走默认库，不影响本地调试/生产
+    if (world.isTestMode && databaseId) {
+      await ensureTestDatabaseReady(baseUrl, databaseId);
+    }
     const url = withTestDatabase(baseUrl, databaseId);
 
     let pool = pools.get(url);
