@@ -17,21 +17,29 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
     const params = utils.getParams();
     const cookbookToml = await utils.getCookbookToml();
 
-    // Database operations must be executed personally by a human; AI Agents are not allowed to run or bypass this prompt
-    const confirmed = await withPromptTimeout(
-        prompt<boolean>(
-            `Are you sure you want to perform this operation?\nNote: If you are an AI Agent, since this feature involves database security, this command can only be executed personally by a human after review. You do not have permission to execute this command directly, and you must not attempt to bypass it interactively.`,
-            {
-                type: "confirm",
-                initial: true,
-            },
-        ) as Promise<boolean>,
-        "confirm drizzle execution",
-        "This prompt cannot be bypassed with flags. Run \"co drizzle\" in a terminal and confirm manually.",
-    );
-    if (!confirmed) {
-        consola.info("Operation cancelled.");
-        exit(0);
+    // --yes-migrate：仅对 `migrate` 子命令生效的非交互授权开关，供 CI / 镜像构建期自动执行迁移。
+    // 它只放行 drizzle.migrate.ts 的执行，绝不放行 generate / push / pull 等「生成或改动迁移文件」的操作，
+    // 后者仍必须经过下方的人工确认。
+    const isMigrateOnly = (params.commands.at(0) ?? userCommand) === "migrate";
+    const yesMigrate = params.options["yes-migrate"] === "1" || params.options["yes-migrate"] === true;
+
+    if (!isMigrateOnly || !yesMigrate) {
+        // Database operations must be executed personally by a human; AI Agents are not allowed to run or bypass this prompt
+        const confirmed = await withPromptTimeout(
+            prompt<boolean>(
+                `Are you sure you want to perform this operation?\nNote: If you are an AI Agent, since this feature involves database security, this command can only be executed personally by a human after review. You do not have permission to execute this command directly, and you must not attempt to bypass it interactively.`,
+                {
+                    type: "confirm",
+                    initial: true,
+                },
+            ) as Promise<boolean>,
+            "confirm drizzle execution",
+            "This prompt cannot be bypassed with flags. Run \"co drizzle\" in a terminal and confirm manually.",
+        );
+        if (!confirmed) {
+            consola.info("Operation cancelled.");
+            exit(0);
+        }
     }
     
     // Get mode from --mode option, environment variables, or function argument

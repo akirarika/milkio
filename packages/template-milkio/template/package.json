@@ -9,10 +9,10 @@
   },
   "trustedDependencies": [],
   "dependencies": {
-    "@milkio/astra": "1.3.67",
-    "@milkio/drizzle": "1.3.67",
-    "@milkio/redis": "1.3.67",
-    "@milkio/stargate": "1.3.67",
+    "@milkio/astra": "1.3.68",
+    "@milkio/drizzle": "1.3.68",
+    "@milkio/redis": "1.3.68",
+    "@milkio/stargate": "1.3.68",
     "drizzle-orm": "^0.43.1",
     "mysql2": "^3.11.0",
     "redis": "^4.7.0"
