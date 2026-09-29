@@ -10,15 +10,8 @@ import { adapters } from "./adapters/index.ts";
 
 export function useVitePluginMilkio(options?: {
     outputFormat?: "esm" | "cjs";
-    cors?: {
-        allowMethods?: string[];
-        allowHeaders?: string[];
-    };
 }): PluginOption {
     let outDir = "dist";
-
-    const corsAllowMethods = options?.cors?.allowMethods ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"];
-    const corsAllowHeaders = options?.cors?.allowHeaders ?? ["Content-Type", "Accept", "Authorization", "Milkio-Timestamp", "Milkio-Signature", "Milkio-Execute-Id"];
 
     return {
         name: "vite-plugin-milkio",
@@ -46,20 +39,6 @@ export function useVitePluginMilkio(options?: {
             let lastPathArray: string[] = [];
 
             server.middlewares.use(async (req, res, next) => {
-                // CORS: milkio handles CORS itself (vite built-in CORS is disabled in config())
-                const origin = req.headers.origin;
-                if (origin) {
-                    res.setHeader("Access-Control-Allow-Origin", origin);
-                    res.setHeader("Vary", "Origin");
-                }
-                res.setHeader("Access-Control-Allow-Methods", corsAllowMethods.join(","));
-                res.setHeader("Access-Control-Allow-Headers", corsAllowHeaders.join(","));
-                res.setHeader("Access-Control-Allow-Credentials", "true");
-                if (req.method === "OPTIONS") {
-                    res.writeHead(204);
-                    res.end();
-                    return;
-                }
                 try {
                     const milkio = await getMilkio();
                     // Read body chunks. Accumulate every chunk unconditionally:
