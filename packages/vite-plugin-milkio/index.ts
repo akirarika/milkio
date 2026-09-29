@@ -10,8 +10,15 @@ import { adapters } from "./adapters/index.ts";
 
 export function useVitePluginMilkio(options?: {
     outputFormat?: "esm" | "cjs";
+    cors?: {
+        allowMethods?: string[];
+        allowHeaders?: string[];
+    };
 }): PluginOption {
     let outDir = "dist";
+
+    const corsAllowMethods = options?.cors?.allowMethods ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"];
+    const corsAllowHeaders = options?.cors?.allowHeaders ?? ["Content-Type", "Accept", "Authorization", "Milkio-Timestamp", "Milkio-Signature", "Milkio-Execute-Id"];
 
     return {
         name: "vite-plugin-milkio",
@@ -45,8 +52,8 @@ export function useVitePluginMilkio(options?: {
                     res.setHeader("Access-Control-Allow-Origin", origin);
                     res.setHeader("Vary", "Origin");
                 }
-                res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS,HEAD");
-                res.setHeader("Access-Control-Allow-Headers", "Content-Type,Accept,Authorization,Milkio-Timestamp,Milkio-Signature,Milkio-Execute-Id");
+                res.setHeader("Access-Control-Allow-Methods", corsAllowMethods.join(","));
+                res.setHeader("Access-Control-Allow-Headers", corsAllowHeaders.join(","));
                 res.setHeader("Access-Control-Allow-Credentials", "true");
                 if (req.method === "OPTIONS") {
                     res.writeHead(204);
