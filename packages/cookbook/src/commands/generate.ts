@@ -21,7 +21,8 @@ export default await defineCookbookCommand(async (utils) => {
   const options = await getCookbookToml(cookbookTomlText, progress);
   options.hash = cookbookTomlHash;
 
-  const mode = await selectMode(options);
+  const params = utils.getParams();
+  const mode = await selectMode(options, params);
 
   progress.open("cookbook building..");
   const { initWatcher } = await import("../watcher");

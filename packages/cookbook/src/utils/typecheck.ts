@@ -252,6 +252,12 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
             shell: false,
           });
 
+          // 与上面的 ttsc 检查一致：lint 也可能卡住，超时后强杀，
+          // 否则 co test 会永久停在检查阶段，调用方只能手动终止
+          const timeout = setTimeout(() => {
+            child.kill("SIGKILL");
+          }, 600_000);
+
           let stdout = "";
           let stderr = "";
 
@@ -263,10 +269,12 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
           });
 
           child.on("error", (err: Error) => {
+            clearTimeout(timeout);
             resolve({ projectName, exitCode: 1, stdout, stderr: stderr + `\n${err.message}`, kind: "lint" });
           });
 
           child.on("close", (code: number | null) => {
+            clearTimeout(timeout);
             resolve({ projectName, exitCode: code ?? 1, stdout, stderr, kind: "lint" });
           });
         });
