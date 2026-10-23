@@ -5,6 +5,7 @@ import { exists, rm } from "node:fs/promises";
 import consola from "consola";
 import type { CookbookOptions } from "./cookbook-dto-types";
 import { getRuntime } from "./get-runtime";
+import { getLogCollector } from "../logs/collector";
 
 type TypecheckResult = {
   projectName: string;
@@ -16,6 +17,27 @@ type TypecheckResult = {
 type CheckResult = TypecheckResult & {
   kind: "typecheck" | "lint";
 };
+
+/**
+ * Record the outcome of one project's check as a structured log event (only
+ * when a log collector is installed). The human-readable failure report below
+ * is kept unchanged.
+ */
+function emitTypecheckResult(result: CheckResult): void {
+  const collector = getLogCollector();
+  if (!collector) return;
+  try {
+    const label = result.kind === "lint" ? "Lint" : "Type check";
+    collector.event(
+      `typecheck:${result.projectName}`,
+      result.exitCode === 0 ? "info" : "error",
+      `${label} "${result.projectName}" ${result.exitCode === 0 ? "passed" : "failed"} (exit code ${result.exitCode})`,
+      { kind: "typecheck-result", meta: { project: result.projectName, exitCode: result.exitCode, kind: result.kind } },
+    );
+  } catch {
+    // logging must never break the check itself
+  }
+}
 
 /**
  * Concurrently runs type/lint checks for every project listed in cookbook.toml.
@@ -177,6 +199,8 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
           await Bun.write(tempTsconfigPath, JSON.stringify(tempTsconfig, null, 2));
 
           consola.info(`  Type checking "${projectName}"..`);
+          const collector = getLogCollector();
+          const logSource = `typecheck:${projectName}`;
           try {
             return await new Promise<CheckResult>((resolve) => {
               const child = spawn(runtimePath, [ttscPath, "check", "-p", tempTsconfigName], {
@@ -197,9 +221,15 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
 
               child.stdout.on("data", (data: Buffer) => {
                 stdout += data.toString();
+                try {
+                  collector?.record(logSource, "stdout", data);
+                } catch {}
               });
               child.stderr.on("data", (data: Buffer) => {
                 stderr += data.toString();
+                try {
+                  collector?.record(logSource, "stderr", data);
+                } catch {}
               });
 
               child.on("error", (err: Error) => {
@@ -218,6 +248,7 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
         }),
       );
       results.push(...ttscResults);
+      ttscResults.forEach(emitTypecheckResult);
     }
   }
 
@@ -245,6 +276,8 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
 
         const script = `${options.general.packageManager} run lint`;
 
+        const collector = getLogCollector();
+        const logSource = `typecheck:${projectName}`;
         return await new Promise<CheckResult>((resolve) => {
           const child = spawn(shell, [shellFlag, script], {
             cwd: projectPath,
@@ -263,9 +296,15 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
 
           child.stdout.on("data", (data: Buffer) => {
             stdout += data.toString();
+            try {
+              collector?.record(logSource, "stdout", data);
+            } catch {}
           });
           child.stderr.on("data", (data: Buffer) => {
             stderr += data.toString();
+            try {
+              collector?.record(logSource, "stderr", data);
+            } catch {}
           });
 
           child.on("error", (err: Error) => {
@@ -281,6 +320,7 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
       }),
     );
     results.push(...lintResults);
+    lintResults.forEach(emitTypecheckResult);
   }
 
   const failures = results.filter((r) => r.exitCode !== 0);

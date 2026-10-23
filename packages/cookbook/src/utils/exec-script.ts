@@ -2,11 +2,23 @@ import { consola } from "consola";
 import { platform } from "node:process";
 import { spawn, type SpawnOptionsWithoutStdio } from "node:child_process";
 import * as readline from "node:readline";
+import { getLogCollector } from "../logs/collector";
+
+export type ExecScriptOptions = SpawnOptionsWithoutStdio & {
+    /**
+     * When set and a log collector is installed, the child's stdout/stderr are
+     * recorded under this source and mirrored through the collector instead of
+     * being piped into the (patched) parent console — this avoids double
+     * capture.
+     */
+    logSource?: string;
+};
 
 /**
  * 执行脚本并返回退出码。调用方应检查返回值并决定如何处理失败。
  */
-export async function execScript(script: string, options: SpawnOptionsWithoutStdio): Promise<number> {
+export async function execScript(script: string, options: ExecScriptOptions): Promise<number> {
+    const { logSource, ...spawnOptions } = options;
     const shell = platform === "win32" ? "powershell.exe" : "bash";
     const shellOptions = platform === "win32" ? "-Command" : "-c";
 
@@ -26,19 +38,18 @@ export async function execScript(script: string, options: SpawnOptionsWithoutStd
     scriptRaw = `"${scriptRaw.replaceAll('"', '\\"')}"`.trim();
 
     const child = spawn(shell, [shellOptions, scriptRaw], {
-        ...options,
+        ...spawnOptions,
         shell: true,
         stdio: "pipe",
         env: {
             ...process.env,
-            ...options.env,
+            ...spawnOptions.env,
             ...(process.stdout.isTTY
                 ? {
                     TERM: process.env.TERM || "xterm-256color",
                     COLORTERM: process.env.COLORTERM || "1",
                 }
                 : {}),
-            ...options.env,
         },
     });
 
@@ -59,8 +70,30 @@ export async function execScript(script: string, options: SpawnOptionsWithoutStd
     };
     process.stdin.on("data", stdinDataHandler);
 
-    child.stdout.pipe(process.stdout);
-    child.stderr.pipe(process.stderr);
+    const collector = logSource !== undefined ? getLogCollector() : undefined;
+    if (collector && logSource !== undefined) {
+        // record + mirror through the collector; do NOT pipe (the console is
+        // patched in background processes, piping would capture twice)
+        child.stdout?.on("data", (chunk: Buffer) => {
+            try {
+                collector.record(logSource, "stdout", chunk);
+                collector.writeTerminal("stdout", chunk.toString("utf-8"));
+            } catch {
+                // logging must never break the child command
+            }
+        });
+        child.stderr?.on("data", (chunk: Buffer) => {
+            try {
+                collector.record(logSource, "stderr", chunk);
+                collector.writeTerminal("stderr", chunk.toString("utf-8"));
+            } catch {
+                // logging must never break the child command
+            }
+        });
+    } else {
+        child.stdout?.pipe(process.stdout);
+        child.stderr?.pipe(process.stderr);
+    }
 
     const handleSignal = (signal: NodeJS.Signals) => {
         if (!child.killed) {

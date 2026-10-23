@@ -21,6 +21,38 @@ export type Params = {
   subCommand?: string; // 新增子命令字段
 };
 
+/** Detailed usage for `co logs --help` (the generic help only lists the command). */
+function printLogsHelp() {
+  console.log("co logs - view cookbook logs (newest first)");
+  console.log("");
+  console.log("Usage:");
+  console.log("  co logs [options]");
+  console.log("");
+  console.log("Options:");
+  console.log("  --sessions                List retained sessions and total disk usage");
+  console.log("  --session <n|id|all>      Session to read (default: current or most recent)");
+  console.log("  --cursor <token>          Continue from a previous page (copy it from a MORE LOGS block)");
+  console.log("  -e, --errors              Only show error lines");
+  console.log("  --ready                   Only show worker readiness events (takes priority over -e)");
+  console.log("  --project <name>          Only show lines from one project");
+  console.log("  -s, --search <text>       Only show lines containing text (repeatable, all must match)");
+  console.log('  --from <time>             Start time, e.g. "2026-10-21" or "2026-10-21 10:30"');
+  console.log("  --to <time>               End time (inclusive)");
+  console.log("  --page-size <size>        Bytes per page, e.g. 64kb (default 64kb)");
+  console.log("  --count                   Scan everything and show the total match count");
+  console.log("  --no-color                Disable colors");
+  console.log("  -f, --follow              Live view (TTY only, current running session)");
+  console.log("  -h, --help                Show this help");
+  console.log("");
+  console.log("Examples:");
+  console.log("  co logs");
+  console.log("  co logs --errors");
+  console.log('  co logs -s "timeout" --from "2026-10-21 10:00"');
+  console.log("  co logs --session all --ready");
+  console.log("  co logs --cursor=<token from the MORE LOGS block>");
+  console.log("  co logs -f");
+}
+
 export async function cookbook() {
   const params: Params = {
     command: "index",
@@ -63,6 +95,10 @@ export async function cookbook() {
     if (params.command !== "help" && params.command !== "h" && params.command !== "index") {
       const cmd = __router__.find((c) => c.commands.includes(params.command));
       if (cmd) {
+        if (cmd.commands.includes("logs")) {
+          printLogsHelp();
+          exit(0);
+        }
         console.log(`co ${params.command}`);
         console.log("");
         console.log(`Aliases: ${cmd.commands.join(", ")}`);

@@ -5,16 +5,18 @@ import { getCookbookToml } from "../utils/get-cookbook-toml";
 import { join } from "node:path";
 import consola from "consola";
 import { argv, cwd, env, execPath, exit } from "node:process";
-import { existsSync } from "node:fs";
+import { closeSync, existsSync, openSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { readFile, writeFile, rm } from "node:fs/promises";
 import { writeFileSync } from "node:fs";
 import { calcHash } from "../utils/calc-hash";
 import { getRandomPort } from "../utils/get-random-port";
 import { clearState, ensureCookbookDir, getCookbookDir, isPidAlive, isRunning, readState, stopBackground, writeState } from "../utils/background";
-import { startLogTail } from "../utils/log-tail";
-import { installBackgroundLogger } from "../utils/background-logger";
 import { execScript } from "../utils/exec-script";
+import { createSession, finalizeSession, getSessionDir, readCurrentSession, updateSessionMeta, writeCurrentSession } from "../logs/session";
+import { installLogCollector, writeSessionEvent } from "../logs/collector";
+import { readBootstrapTail } from "../logs/bootstrap";
+import { startSessionLogTail } from "../logs/tail";
 
 const isBackground = env.COOKBOOK_TEST_BACKGROUND === "1";
 
@@ -52,6 +54,13 @@ export default await defineCookbookCommand(async (utils) => {
     // 本地网页，直到手动 "co stop"）。
     // ============================================================
     if (isBackground) {
+        const requestedSessionId = env.COOKBOOK_LOG_SESSION;
+        const sessionId =
+            typeof requestedSessionId === "string" && requestedSessionId.length > 0 ? requestedSessionId : createSession({ mode: "test" }).sessionId;
+        // The background test process reuses the session created by the
+        // foreground launcher; it never stops/finalizes an existing run.
+        installLogCollector({ source: "cookbook", sessionId, mirror: false });
+
         // 与前台 "co" 入口的 --preload 对齐（约定为 cwd/co-preload.ts）：
         // 预热 cookbook-server 的 .milkio，否则 createAstra 动态加载 cookbook-server
         // 会得到空 routeSchema（0 routes），/mode/read 返回 NOT_FOUND，
@@ -72,7 +81,6 @@ export default await defineCookbookCommand(async (utils) => {
             } catch {}
         });
 
-        installBackgroundLogger();
         await runTestsAndKeepServer(params, options);
         return;
     }
@@ -92,6 +100,13 @@ export default await defineCookbookCommand(async (utils) => {
         await clearState();
     }
 
+    // take over the session pointer: the previous run is replaced by this one
+    const previous = readCurrentSession();
+    if (previous) {
+        writeSessionEvent(previous.sessionId, { source: "co:test", stream: "system", text: "stopped by a new run", kind: "session-replaced" });
+        finalizeSession(previous.sessionId, "replaced", "stopped by a new run");
+    }
+
     await rm(getTestResultPath(), { force: true }).catch(() => {});
     await rm(join(getCookbookDir(), "dev-pid.md"), { force: true }).catch(() => {});
 
@@ -101,14 +116,48 @@ export default await defineCookbookCommand(async (utils) => {
     const isVirtualEmbeddedEntry = typeof entry === "string" && entry.includes("/~BUN/");
     const command = entry && !isVirtualEmbeddedEntry && existsSync(entry) ? [execPath, entry, "test", ...params.raw] : [execPath, "test", ...params.raw];
 
+    const cookbookDir = ensureCookbookDir();
+    const meta = createSession({ mode: "test" });
+    const sessionId = meta.sessionId;
+    const bootstrapPath = join(getSessionDir(sessionId), `bootstrap-${sessionId}.log`);
+    await rm(bootstrapPath, { force: true }).catch(() => {});
+
+    const collector = installLogCollector({
+        source: "co:test",
+        sessionId,
+        captureConsole: true,
+        mirror: true,
+        bootstrapLogPath: bootstrapPath,
+        finalizeOnExit: true,
+    });
+
+    const recordStartupFailure = (reason: string): void => {
+        const bootLines = readBootstrapTail(bootstrapPath, { maxBytes: 1024 * 1024, maxLines: 100 });
+        if (bootLines.length > 0) {
+            try {
+                collector.record("cookbook:boot", "stderr", `${bootLines.join("\n")}\n`, { kind: "boot-error" });
+                collector.flushSync();
+                collector.writeTerminal("stderr", `${bootLines.join("\n")}\n`);
+            } catch {}
+        }
+        try {
+            collector.event("cookbook", "error", reason, { kind: "session-failed", meta: { error: reason } });
+        } catch {}
+        collector.detachOwnership();
+        try {
+            finalizeSession(sessionId, "failed", reason, 1);
+        } catch {}
+    };
+
     let pid: number | undefined;
+    let isChildAlive: () => boolean;
+
     if (process.platform === "win32") {
         // 与 co start 相同：通过 WScript.Shell 隐藏控制台启动，整个进程树共享一个隐藏 console
-        const cookbookDir = ensureCookbookDir();
         const pidPath = join(cookbookDir, "dev-pid.md");
         const launcherPath = join(cookbookDir, "test-launcher.js");
         const innerCommand = command.map((arg) => `"${arg}"`).join(" ");
-        const cmdLine = `cmd.exe /c set "COOKBOOK_TEST_BACKGROUND=1"&& ${innerCommand}`;
+        const cmdLine = `cmd.exe /c set "COOKBOOK_TEST_BACKGROUND=1"&& set "COOKBOOK_LOG_SESSION=${sessionId}"&& set "COOKBOOK_BOOTSTRAP_LOG=${bootstrapPath}"&& ${innerCommand} 1>>"${bootstrapPath}" 2>&1`;
         const launcherSource = ['var shell = new ActiveXObject("WScript.Shell");', `shell.CurrentDirectory = ${JSON.stringify(cwd())};`, `shell.Run(${JSON.stringify(cmdLine)}, 0, false);`, ""].join("\r\n");
         await writeFile(launcherPath, launcherSource, "utf-8");
         const launcher = spawn("wscript.exe", [launcherPath], { detached: true, stdio: "ignore", cwd: cwd() });
@@ -128,46 +177,64 @@ export default await defineCookbookCommand(async (utils) => {
             await Bun.sleep(100);
         }
         if (!pid) {
+            recordStartupFailure("Failed to start the background test process.");
             consola.error("Failed to start the background test process.");
             consola.info(`Run "co test" in the foreground (COOKBOOK_TEST_BACKGROUND=0) to see the error directly.`);
             exit(1);
         }
+        const childPid = pid;
+        isChildAlive = () => isPidAlive(childPid);
     } else {
-        const child = spawn(command[0], command.slice(1), {
-            cwd: cwd(),
-            env: { ...env, COOKBOOK_TEST_BACKGROUND: "1" },
-            detached: true,
-            stdio: "ignore",
-        });
+        const logFd = openSync(bootstrapPath, "a");
+        let child;
+        try {
+            child = spawn(command[0], command.slice(1), {
+                cwd: cwd(),
+                env: { ...env, COOKBOOK_TEST_BACKGROUND: "1", COOKBOOK_LOG_SESSION: sessionId, COOKBOOK_BOOTSTRAP_LOG: bootstrapPath },
+                detached: true,
+                stdio: ["ignore", logFd, logFd],
+            });
+        } finally {
+            closeSync(logFd);
+        }
         child.unref();
+        let childExited = false;
+        child.on("exit", () => {
+            childExited = true;
+        });
+        if (!child.pid) {
+            recordStartupFailure("Failed to start the background test process.");
+            consola.error("Failed to start the background test process.");
+            consola.info(`Run "co test" in the foreground (COOKBOOK_TEST_BACKGROUND=0) to see the error directly.`);
+            exit(1);
+        }
         pid = child.pid;
+        isChildAlive = () => !childExited;
     }
+
+    const childPid = pid;
+    if (typeof childPid !== "number") {
+        exit(1);
+    }
+    updateSessionMeta(sessionId, { pid: childPid });
+    writeCurrentSession({ sessionId, startedAt: meta.startedAt, pid: childPid, mode: "test" });
+    collector.detachOwnership();
+    collector.event("co:test", "info", `handed the session over to the background test process (pid ${childPid})`, { kind: "session-handoff", meta: { pid: childPid } });
 
     // 记录后台状态：测试结束后 dev server 仍在运行，可用 "co stop" 停止
     const targets = Object.entries(options.projects ?? {})
         .filter(([, project]) => project.autoStart !== false)
         .map(([name, project]) => ({ name, port: (project as any).port }));
-    await writeState({ pid, mode: "test", ports: targets.map((target) => target.port), startedAt: new Date().toISOString() });
+    await writeState({ pid: childPid, mode: "test", ports: targets.map((target) => target.port), startedAt: new Date().toISOString() });
 
     // 镜像后台日志到终端（watcher / typecheck / 测试进度）
-    const stopLogTail = startLogTail();
+    const stopLogTail = startSessionLogTail({ sessionId });
     try {
         const timeoutOption = Number(params.options.timeout);
         const overallTimeoutMs = Number.isFinite(timeoutOption) && timeoutOption > 0 ? timeoutOption * 1000 : 7_200_000;
         const deadline = Date.now() + overallTimeoutMs;
         let result: { exitCode: number } | undefined;
         while (Date.now() < deadline) {
-            if (pid && !isPidAlive(pid) && !result) {
-                try {
-                    const candidate = JSON.parse(await readFile(getTestResultPath(), "utf-8"));
-                    if (typeof candidate?.exitCode === "number") result = candidate;
-                } catch {}
-                if (!result) {
-                    consola.error("The background test process exited before writing a test result.");
-                    exit(1);
-                }
-                break;
-            }
             try {
                 const candidate = JSON.parse(await readFile(getTestResultPath(), "utf-8"));
                 if (typeof candidate?.exitCode === "number") {
@@ -175,21 +242,29 @@ export default await defineCookbookCommand(async (utils) => {
                     break;
                 }
             } catch {}
+            if (!isChildAlive()) {
+                recordStartupFailure("The background test process exited before writing a test result.");
+                consola.error("The background test process exited before writing a test result.");
+                exit(1);
+            }
             await Bun.sleep(500);
         }
         if (!result) {
-            consola.error(`Timed out waiting for the test result (${overallTimeoutMs / 1000}s). The background dev server (pid ${pid}) is still running; run "co stop" to stop it.`);
+            consola.error(`Timed out waiting for the test result (${overallTimeoutMs / 1000}s). The background dev server (pid ${childPid}) is still running; run "co stop" to stop it.`);
             exit(1);
         }
         consola.success(`Test command completed with exit code ${result.exitCode}.`);
-        consola.info(`The dev servers are still running in the background (pid ${pid}, mode: test). Run "co stop" to stop them.`);
+        consola.info(`The dev servers are still running in the background (pid ${childPid}, mode: test). Run "co stop" to stop them.`);
         exit(result.exitCode);
     } finally {
         stopLogTail();
     }
 });
 
-async function runTestsAndKeepServer(params: { raw: string[]; options: Record<string, string> }, options: any) {
+async function runTestsAndKeepServer(params: { raw: Array<string>; options: Record<string, string | true> }, options: any) {
+    // start() 内部无法直接 exit（会导致 workers 残留），改为记录错误后返回，由调用方统一清理
+    let startError: string | undefined;
+
     const start = async (mode: string) => {
         (globalThis as any).__COOKBOOK_OPTIONS__ = options;
         progress.open("cookbook is starting..");
@@ -217,42 +292,12 @@ async function runTestsAndKeepServer(params: { raw: string[]; options: Record<st
         // For unit/integration tests that call into the backend in-process
         // (createMirrorWorld) this is fine, but e2e tests that drive a real
         // browser against a dev server URL need the server listening first.
-        // Reuse the same readiness check that "co start" relies on.
-        const { waitForProjectsReady } = await import("../utils/background");
-        const targets = Object.entries(options.projects ?? {})
-            .filter(([, project]) => project.autoStart !== false)
-            .map(([name, project]) => ({
-                name,
-                port: (project as any).port,
-                url: (project as any).connectTestUrl ?? ((project as any).type !== "milkio" ? `http://localhost:${(project as any).port}/` : `http://localhost:${(project as any).port}/generate_204`),
-            }));
-        if (targets.length > 0) {
-            const workersStatusPath = join(getCookbookDir(), "workers-status.json");
-            const getWorkerFailure = async (): Promise<string | undefined> => {
-                let status: Record<string, { state?: string; exitCode?: number | null }>;
-                try {
-                    status = JSON.parse(await readFile(workersStatusPath, "utf-8"));
-                } catch {
-                    return undefined;
-                }
-                for (const target of targets) {
-                    const worker = status?.[target.name];
-                    if (worker?.state === "stopped" && typeof worker.exitCode === "number") {
-                        return `The dev server process of project "${target.name}" exited with code ${worker.exitCode} before becoming ready.`;
-                    }
-                }
-                return undefined;
-            };
-            const ready = await waitForProjectsReady(targets, {
-                intervalMs: 1000,
-                requestTimeoutMs: 5000,
-                overallTimeoutMs: 600_000,
-                getFailure: getWorkerFailure,
-            });
-            if (!ready.success) {
-                startError = `Failed to start project dev servers: ${ready.error}`;
-                return;
-            }
+        // The readiness probe is owned by this process (single authority).
+        const { waitForWorkersReady } = await import("../workers");
+        const ready = await waitForWorkersReady(600_000);
+        if (!ready.success) {
+            startError = `Failed to start project dev servers: ${ready.error}`;
+            return;
         }
 
         const endTime = new Date();
@@ -276,7 +321,6 @@ async function runTestsAndKeepServer(params: { raw: string[]; options: Record<st
     };
 
     // start() 内部无法直接 exit（会导致 workers 残留），改为记录错误后返回，由调用方统一清理
-    let startError: string | undefined;
     try {
         await start("test");
     } catch (error) {
@@ -299,7 +343,7 @@ async function runTestsAndKeepServer(params: { raw: string[]; options: Record<st
     try {
         const rawArgs = params.raw.filter((arg) => arg !== "--stop" && !arg.startsWith("--stop="));
         const scriptParts = [`${options.general.packageManager} run test`, ...rawArgs.map((arg) => `"${arg}"`)];
-        exitcode = await execScript(scriptParts.join(" "), { cwd: cwd() });
+        exitcode = await execScript(scriptParts.join(" "), { cwd: cwd(), logSource: "test-runner" });
     } finally {
         if (shouldStopWorkers) await stopWorkers();
     }

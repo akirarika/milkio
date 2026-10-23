@@ -37,6 +37,28 @@ export function raise(obj: Record<string, any>): MilkioRejectError<any, any> {
 
 export type MilkioRejectError<Code extends keyof $rejectCode = keyof $rejectCode, RejectData extends $rejectCode[Code] = $rejectCode[Code]> = { code: Code; data: RejectData; stack: string; $milkioReject: true };
 
+// 错误的 cause 链往往才是根因：drizzle 把 MySQL 错误放在 cause 上，fetch 把底层网络错误放在 cause 上，
+// 而默认日志只打印外层错误的 message 与 stack，根因不会出现在日志里，线上无法定位失败原因。
+// 这里把 cause 链的关键字段序列化，附在外层错误日志之后（不打印 cause 的 stack，避免日志膨胀）。
+function serializeCause(error: any): string {
+    const seen = new Set<any>();
+    const causes: Array<Record<string, unknown>> = [];
+    let current = error?.cause;
+    while (current !== null && current !== undefined && typeof current === "object" && !seen.has(current)) {
+        seen.add(current);
+        const cause: Record<string, unknown> = {};
+        if (current.name !== undefined) cause.name = current.name;
+        if (current.message !== undefined) cause.message = current.message;
+        if (current.code !== undefined) cause.code = current.code;
+        if (current.errno !== undefined) cause.errno = current.errno;
+        if (current.sqlState !== undefined) cause.sqlState = current.sqlState;
+        if (current.sqlMessage !== undefined) cause.sqlMessage = current.sqlMessage;
+        causes.push(cause);
+        current = current.cause;
+    }
+    return causes.length > 0 ? JSON.stringify(causes) : "";
+}
+
 export function exceptionHandler(executeId: string, logger: Logger, error: MilkioRejectError<any, any> | any): MilkioResponseReject {
     if (error instanceof Error && "viteServer" in globalThis) {
         try { (globalThis as any).viteServer.ssrFixStacktrace(error); } catch {}
@@ -55,7 +77,11 @@ export function exceptionHandler(executeId: string, logger: Logger, error: Milki
     } else {
         try {
             const stack = error?.stack ?? "";
-            logger.error(name, `\n${JSON.stringify(error?.data)}`, `\n${stack}\n`);
+            const params: Array<unknown> = [`\n${JSON.stringify(error?.data)}`];
+            const causes = serializeCause(error);
+            if (causes !== "") params.push(`\ncauses: ${causes}`);
+            params.push(`\n${stack}\n`);
+            logger.error(name, ...params);
         } catch (_) {
             logger.error(name, `\n${error?.toString()}`, `\n${error?.stack}\n`);
         }

@@ -10,19 +10,17 @@ import { calcHash } from "../utils/calc-hash";
 import { getRandomPort } from "../utils/get-random-port";
 import { writeFile, rm } from "node:fs/promises";
 import { getCookbookDir } from "../utils/background";
-import { installBackgroundLogger } from "../utils/background-logger";
+import { createSession, finalizeSession, readCurrentSession } from "../logs/session";
+import { installLogCollector, writeSessionEvent } from "../logs/collector";
 
 export default await defineCookbookCommand(async (utils) => {
-    installBackgroundLogger();
-    const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
-    if (!(await cookbookToml.exists())) {
-        consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`);
-        consola.info(`Hint: run "co init" in an empty directory to create a new cookbook project.`);
-        exit(1);
-    }
+    // The background child of "co start" reuses the session created by the
+    // foreground launcher and never stops/finalizes an existing run.
+    const isBackground = env.COOKBOOK_BACKGROUND === "1";
+
     // if a background dev server started by "co start" is still running, stop it first
     // (skipped when this process itself is the background child spawned by "co start")
-    if (env.COOKBOOK_BACKGROUND !== "1") {
+    if (!isBackground) {
         const { readState, isRunning, stopBackground, clearState } = await import("../utils/background");
         const backgroundState = await readState();
         if (backgroundState) {
@@ -34,8 +32,8 @@ export default await defineCookbookCommand(async (utils) => {
         }
     } else {
         // When running as the background child of "co start", publish our pid
-        // so the parent can track liveness. On Windows the real pid is not
-        // directly observable because the process is launched through a
+        // first so the parent can track liveness. On Windows the real pid is
+        // not directly observable because the process is launched through a
         // hidden-console WScript wrapper.
         const { ensureCookbookDir } = await import("../utils/background");
         await writeFile(join(ensureCookbookDir(), "dev-pid.md"), `${process.pid}`, "utf-8");
@@ -44,10 +42,37 @@ export default await defineCookbookCommand(async (utils) => {
         await rm(join(ensureCookbookDir(), "workers-status.json"), { force: true }).catch(() => {});
     }
 
+    const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
+    if (!(await cookbookToml.exists())) {
+        consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`);
+        consola.info(`Hint: run "co init" in an empty directory to create a new cookbook project.`);
+        exit(1);
+    }
+
     const cookbookTomlText = await cookbookToml.text();
     const cookbookTomlHash = calcHash(cookbookTomlText);
     const options = await getCookbookToml(cookbookTomlText, progress);
     options.hash = cookbookTomlHash;
+
+    const params = utils.getParams();
+    const mode = await selectMode(options, params);
+
+    if (isBackground) {
+        const requestedSessionId = env.COOKBOOK_LOG_SESSION;
+        const sessionId =
+            typeof requestedSessionId === "string" && requestedSessionId.length > 0 ? requestedSessionId : createSession({ mode }).sessionId;
+        installLogCollector({ source: "cookbook", sessionId, mirror: false });
+    } else {
+        // "co dev" in the foreground owns its session: it finalizes it when the
+        // process exits (Ctrl+C / crash).
+        const previous = readCurrentSession();
+        if (previous) {
+            writeSessionEvent(previous.sessionId, { source: "cookbook", stream: "system", text: "stopped by a new run", kind: "session-replaced" });
+            finalizeSession(previous.sessionId, "replaced", "stopped by a new run");
+        }
+        const meta = createSession({ mode });
+        installLogCollector({ source: "cookbook", sessionId: meta.sessionId, captureConsole: true, mirror: true, finalizeOnExit: true });
+    }
 
     const start = async (mode: string) => {
         (globalThis as any).__COOKBOOK_OPTIONS__ = options;
@@ -84,8 +109,7 @@ export default await defineCookbookCommand(async (utils) => {
         console.log("");
     };
 
-    const params = utils.getParams();
-    void start(await selectMode(options, params)).catch((error) => {
+    void start(mode).catch((error) => {
         consola.error("Failed to start cookbook dev server:", error);
         exit(1);
     });

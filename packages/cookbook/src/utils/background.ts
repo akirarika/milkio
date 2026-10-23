@@ -12,21 +12,16 @@ export type BackgroundState = {
     startedAt: string;
 };
 
-export type ReadyTarget = {
-    name: string;
-    url: string;
-    port: number;
-};
-
 /**
  * Per-project runtime directory: "<cwd>/node_modules/.cookbook".
  *
  * Everything the background dev server owns lives under this directory so that
  * multiple projects started from different directories never interfere with
  * each other:
- *   - control-url.md the cookbook server base URL (read by milkio-astra)
- *   - up-state.json the background "co start" state (pid / ports / ...)
- *   - logs/         rotating background log files (followed by "co logs")
+ *   - control-url.md   the cookbook server base URL (read by milkio-astra)
+ *   - up-state.json    the background "co start" state (pid / ports / ...)
+ *   - workers-status.json  per-worker readiness/state (read by "co start")
+ *   - logs/            session log directories (see src/logs, read by "co logs")
  */
 export function getCookbookDir() {
     return join(cwd(), "node_modules", ".cookbook");
@@ -123,49 +118,114 @@ export async function stopBackground(state: BackgroundState): Promise<void> {
     }
 }
 
-export async function waitForProjectsReady(
-    targets: Array<ReadyTarget>,
-    options: {
-        intervalMs?: number;
-        requestTimeoutMs?: number;
-        overallTimeoutMs?: number;
-        isAborted?: () => boolean;
-        /**
-         * Checked on every poll iteration. Return a human-readable failure
-         * message to abort the wait immediately (fail fast), or undefined to
-         * keep waiting. Used by "co start" to surface worker processes that
-         * died before their URL ever responded.
-         */
-        getFailure?: () => Promise<string | undefined>;
-    } = {},
-): Promise<{ success: boolean; error?: string }> {
-    if (targets.length === 0) return { success: true };
-    const intervalMs = options.intervalMs ?? 1000;
-    const requestTimeoutMs = options.requestTimeoutMs ?? 5000;
-    const deadline = Date.now() + (options.overallTimeoutMs ?? 600_000);
-    const pending = new Map(targets.map((target) => [target.name, target]));
+export interface WorkersReadyTarget {
+    name: string;
+    /** used only to fill the `url` field of the returned readiness summary */
+    url?: string;
+}
 
-    while (Date.now() < deadline) {
-        if (options.isAborted?.()) {
-            return { success: false, error: "The background dev server process exited before becoming ready." };
-        }
-        const failure = await options.getFailure?.();
-        if (failure) {
-            return { success: false, error: failure };
-        }
-        await Promise.all(
-            [...pending.values()].map(async (target) => {
-                try {
-                    const response = await fetch(target.url, { signal: AbortSignal.timeout(requestTimeoutMs) });
-                    if (response.status >= 200 && response.status < 500) pending.delete(target.name);
-                } catch {
-                    // not ready yet
-                }
-            }),
-        );
-        if (pending.size === 0) return { success: true };
-        await Bun.sleep(intervalMs);
+export interface WorkersReadyEntry {
+    readyMs?: number;
+    attempts: number;
+    url?: string;
+}
+
+export interface WaitForWorkersReadyOptions {
+    /** default: "<cwd>/node_modules/.cookbook/workers-status.json" */
+    statusPath?: string;
+    intervalMs?: number;
+    overallTimeoutMs?: number;
+    isAborted?: () => boolean;
+}
+
+export interface WorkersReadyResult {
+    success: boolean;
+    error?: string;
+    ready?: Record<string, WorkersReadyEntry>;
+}
+
+interface WorkersStatusEntry {
+    state?: string;
+    exitCode?: number | null;
+    project?: string;
+    ready?: boolean;
+    readyAt?: string;
+    readyMs?: number;
+    attempts?: number;
+    readyError?: string;
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function readWorkersStatus(path: string): Promise<Record<string, WorkersStatusEntry> | undefined> {
+    try {
+        const parsed = JSON.parse(await readFile(path, "utf-8"));
+        if (!parsed || typeof parsed !== "object") return undefined;
+        return parsed as Record<string, WorkersStatusEntry>;
+    } catch {
+        return undefined;
     }
+}
 
-    return { success: false, error: `Timed out waiting for projects: ${[...pending.keys()].join(", ")}` };
+/**
+ * Wait for every worker of the background process to become ready by polling
+ * the atomic `workers-status.json` file written by `src/workers`.
+ *
+ * This replaces the old HTTP poll: readiness probing is owned by exactly one
+ * place (the background process) and the foreground launcher only observes the
+ * result. Fails fast when a worker died (`state === "stopped"` with a numeric
+ * exit code) or reported a `readyError`, and on the overall timeout.
+ */
+export async function waitForWorkersReadyByStatus(
+    targets: Array<WorkersReadyTarget>,
+    options: WaitForWorkersReadyOptions = {},
+): Promise<WorkersReadyResult> {
+    const ready: Record<string, WorkersReadyEntry> = {};
+    if (targets.length === 0) return { success: true, ready };
+
+    const intervalMs = options.intervalMs ?? 500;
+    const overallTimeoutMs = options.overallTimeoutMs ?? 600_000;
+    const statusPath = options.statusPath ?? join(getCookbookDir(), "workers-status.json");
+    const deadline = Date.now() + overallTimeoutMs;
+    const pending = new Set(targets.map((target) => target.name));
+
+    while (true) {
+        if (options.isAborted?.()) {
+            return { success: false, error: "The background dev server process exited before becoming ready.", ready };
+        }
+
+        const status = await readWorkersStatus(statusPath);
+        for (const target of targets) {
+            if (!pending.has(target.name)) continue;
+            const worker = status?.[target.name];
+            if (!worker) continue;
+
+            if (worker.readyError) {
+                const error =
+                    worker.readyError === "timeout"
+                        ? `Project "${target.name}" did not become ready before the readiness timeout.`
+                        : `The dev server process of project "${target.name}" failed to become ready: ${worker.readyError}`;
+                return { success: false, error, ready };
+            }
+            if (worker.state === "stopped" && typeof worker.exitCode === "number") {
+                return {
+                    success: false,
+                    error: `The dev server process of project "${target.name}" exited with code ${worker.exitCode} before becoming ready.`,
+                    ready,
+                };
+            }
+            if (worker.ready === true) {
+                ready[target.name] = { readyMs: worker.readyMs, attempts: worker.attempts ?? 0, url: target.url };
+                pending.delete(target.name);
+            }
+        }
+
+        if (pending.size === 0) return { success: true, ready };
+        if (Date.now() >= deadline) {
+            return { success: false, error: `Timed out waiting for projects: ${[...pending].join(", ")}`, ready };
+        }
+        await sleep(intervalMs);
+    }
 }
