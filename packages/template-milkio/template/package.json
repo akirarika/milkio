@@ -8,10 +8,10 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@milkio/astra": "1.3.72",
-    "@milkio/drizzle": "1.3.72",
-    "@milkio/redis": "1.3.72",
-    "@milkio/stargate": "1.3.72",
+    "@milkio/astra": "1.3.73",
+    "@milkio/drizzle": "1.3.73",
+    "@milkio/redis": "1.3.73",
+    "@milkio/stargate": "1.3.73",
     "drizzle-orm": "^0.43.1",
     "mysql2": "^3.11.0",
     "redis": "^4.7.0"
