@@ -1,5 +1,6 @@
 export type MilkioStargateOptions = {
     baseUrl: string | (() => string) | (() => Promise<string>);
+    /** 默认请求超时（毫秒）；可被单次 execute 的 options.timeout 覆盖。action / stream / ping 均生效，默认 6000。 */
     timeout?: number;
     fetch?: typeof fetch;
     abort?: typeof AbortController;
@@ -21,6 +22,7 @@ export interface CacheStorage {
 export type ExecuteOptions<T extends any> = {
     params?: Record<any, any>;
     headers?: Record<string, string>;
+    /** 单次请求超时（毫秒），优先于 MilkioStargateOptions.timeout；默认 6000。 */
     timeout?: number;
     baseUrl?: string | (() => string) | (() => Promise<string>);
     cacheStrategy?: CacheStrategy;
@@ -66,9 +68,17 @@ export interface MilkioClientFailure {
     readonly data?: unknown;
 }
 
+/** transport faults carry the root-cause details locally (never sent to the server) */
+export interface MilkioTransportFailureData {
+    name?: string;
+    message?: string;
+    /** node/undici error code, e.g. ECONNREFUSED / ENOTFOUND */
+    code?: string;
+}
+
 /** faults synthesized by the client itself; they are not server fault-codes */
 export type MilkioClientTransportFailure =
-    | (MilkioClientFailure & { readonly kind: "fault"; readonly code: "NETWORK_ERROR" })
+    | (MilkioClientFailure & { readonly kind: "fault"; readonly code: "NETWORK_ERROR"; readonly data?: MilkioTransportFailureData })
     | (MilkioClientFailure & { readonly kind: "fault"; readonly code: "REQUEST_TIMEOUT"; readonly data: { timeout: number; message: string } });
 
 /**
@@ -86,8 +96,17 @@ function createFault(code: string, data?: unknown): MilkioClientFailure {
     return { $milkioFailure: true, kind: "fault", code, data };
 }
 
-function createNetworkFailure(): MilkioClientTransportFailure {
-    return { $milkioFailure: true, kind: "fault", code: "NETWORK_ERROR" };
+function createNetworkFailure(error?: unknown): MilkioClientFailure & { readonly kind: "fault"; readonly code: "NETWORK_ERROR"; readonly data?: MilkioTransportFailureData } {
+    const data: MilkioTransportFailureData = {};
+    if (error instanceof Error) {
+        data.name = error.name;
+        if (error.message) data.message = error.message;
+    } else if (typeof error === "string" && error !== "") {
+        data.message = error;
+    }
+    const code = (error as any)?.code;
+    if (typeof code === "string" && code !== "") data.code = code;
+    return { $milkioFailure: true, kind: "fault", code: "NETWORK_ERROR", data: Object.keys(data).length > 0 ? data : undefined };
 }
 
 function createTimeoutFailure(timeout: number): MilkioClientTransportFailure {
@@ -253,13 +272,18 @@ export async function createStargate<Generated extends { routeSchema: any; failu
                     retryCount = options.retryStrategy;
                 }
 
+                // Action-level timeout: per-call option wins over the instance default (6000ms).
+                const timeout = options.timeout ?? stargateOptions.timeout ?? 6000;
+
                 // Fast path: no cache, no retry
                 if (cacheStrategy === 'off' && retryCount === 0) {
+                    const controller = new $abort();
+                    const timer = setTimeout(() => controller.abort(), timeout);
                     try {
                         await eventManager.emit('milkio:executeBefore', { path: path as string, options: options as any });
                         const body = JSON.stringify(options.params) ?? '';
                         await eventManager.emit('milkio:fetchBefore', { path: path as string, options: options as any, body });
-                        const response = await $fetch(url, { method: 'POST', body, headers: options.headers });
+                        const response = await $fetch(url, { method: 'POST', body, headers: options.headers, signal: controller.signal });
                         const text = await response.text();
                         const parsed = reviveJSONParse(JSON.parse(text));
                         if (parsed.success !== true) {
@@ -268,11 +292,13 @@ export async function createStargate<Generated extends { routeSchema: any; failu
                             return [failure, null, { executeId: parsed.executeId ?? '' }] as any;
                         }
                         return [null, parsed.data, { executeId: parsed.executeId }] as any;
-                    } catch {
+                    } catch (error) {
                         // transport-level failure (server failure is a JSON envelope with HTTP 200)
-                        const failure = createNetworkFailure();
+                        const failure = controller.signal.aborted ? createTimeoutFailure(timeout) : createNetworkFailure(error);
                         await eventManager.emit('milkio:executeError', { handleError, path: path as string, options: options as any, failure });
                         return [failure, null, { executeId: 'unknown' }] as any;
+                    } finally {
+                        clearTimeout(timer);
                     }
                 }
 
@@ -306,29 +332,38 @@ export async function createStargate<Generated extends { routeSchema: any; failu
                 const body = JSON.stringify(options.params) ?? '';
                 await eventManager.emit('milkio:fetchBefore', { path: path as string, options: options as any, body });
 
-                const executeRequest = async (): Promise<{ failure: PublicFailure | null; data: any; executeId: string }> => {
+                const executeRequest = async (): Promise<{ failure: PublicFailure | null; data: any; executeId: string; timedOut: boolean }> => {
+                    const controller = new $abort();
+                    const timer = setTimeout(() => controller.abort(), timeout);
                     try {
-                        const response = await $fetch(url, { method: 'POST', body, headers: options.headers });
+                        const response = await $fetch(url, { method: 'POST', body, headers: options.headers, signal: controller.signal });
                         const text = await response.text();
                         const parsed = reviveJSONParse(JSON.parse(text));
                         if (parsed.success !== true) {
-                            return { failure: reviveFailure(parsed.error), data: undefined, executeId: parsed.executeId ?? '' };
+                            return { failure: reviveFailure(parsed.error), data: undefined, executeId: parsed.executeId ?? '', timedOut: false };
                         }
-                        return { failure: null, data: parsed.data, executeId: parsed.executeId };
-                    } catch {
+                        return { failure: null, data: parsed.data, executeId: parsed.executeId, timedOut: false };
+                    } catch (error) {
                         // transport-level failure only: HTTP status does not matter (all milkio envelopes are 200)
-                        return { failure: createNetworkFailure(), data: undefined, executeId: 'unknown' };
+                        if (controller.signal.aborted) {
+                            return { failure: createTimeoutFailure(timeout) as PublicFailure, data: undefined, executeId: 'unknown', timedOut: true };
+                        }
+                        return { failure: createNetworkFailure(error) as PublicFailure, data: undefined, executeId: 'unknown', timedOut: false };
+                    } finally {
+                        clearTimeout(timer);
                     }
                 };
 
-                let { failure, data, executeId } = await executeRequest();
+                let requestResult = await executeRequest();
+                let { failure, data, executeId } = requestResult;
 
-                // only transport-level faults are retried; fail and server faults are never retried
-                for (let retryIndex = 0; retryIndex < retryCount && failure !== null && isTransportFailure(failure); retryIndex++) {
+                // only transport-level faults are retried; timeouts, fail and server faults are never retried
+                for (let retryIndex = 0; retryIndex < retryCount && failure !== null && !requestResult.timedOut && isTransportFailure(failure); retryIndex++) {
                     if (retryIndex > 0) {
                         await new Promise((resolve) => setTimeout(resolve, 500));
                     }
-                    ({ failure, data, executeId } = await executeRequest());
+                    requestResult = await executeRequest();
+                    ({ failure, data, executeId } = requestResult);
                 }
 
                 if (failure) {
@@ -372,7 +407,7 @@ export async function createStargate<Generated extends { routeSchema: any; failu
                 let streamResult: any;
                 const streamResultFetched = withResolvers<undefined>();
 
-                const timeout = stargateOptions?.timeout ?? options?.timeout ?? 6000;
+                const timeout = options?.timeout ?? stargateOptions?.timeout ?? 6000;
                 const timer = setTimeout(() => {
                     void failStream(createTimeoutFailure(timeout), 'unknown');
                 }, timeout);
@@ -657,7 +692,7 @@ export async function createStargate<Generated extends { routeSchema: any; failu
             // oxlint-disable-next-line no-async-promise-executor
             return await new Promise<Ping>(async (resolve) => {
                 const url = `${await baseUrlPromise}/generate_204`;
-                const timeout = stargateOptions?.timeout ?? options?.timeout ?? 6000;
+                const timeout = options?.timeout ?? stargateOptions?.timeout ?? 6000;
                 const startsTime = Date.now();
                 const timer = setTimeout(() => {
                     const endsTime = Date.now();

@@ -90,19 +90,22 @@ stargate.on('milkio:fetchBefore', async (event) => {
 ```ts
 stargate.on('milkio:executeError', async (event) => {
   // event.path: 请求路径
-  // event.error: 错误对象
+  // event.failure: failure 对象（{ $milkioFailure, kind: 'fail' | 'fault', code, data }）
   // event.handleError: 错误处理辅助函数
 
-  if ('INVALID_TOKEN' in event.error || 'LOGIN_REQUIRED' in event.error) {
+  // fault 是意料外错误，只有通用 code，不要用业务码匹配它
+  if (event.failure.kind !== 'fail') return;
+
+  if (event.failure.code === 'INVALID_TOKEN' || event.failure.code === 'LOGIN_REQUIRED') {
     // 处理登录过期...
     await logout();
     return;
   }
 
-  // 使用 handleError 处理特定错误码
-  await event.handleError(event.error, 'SPECIFIC_ERROR', (err) => {
-    // 返回 true 表示已处理，错误会从 error 对象中移除
-    handleSpecificError(err);
+  // 使用 handleError 处理特定失败码：只匹配 kind === 'fail' 且 code 相等的 failure
+  await event.handleError(event.failure, 'SPECIFIC_ERROR', (data) => {
+    // data 是该 fail-code 的类型化 data
+    handleSpecificError(data);
     return true;
   });
 });
@@ -155,7 +158,26 @@ const [error, result, details] = await stargate.execute('/user/read-my', {
 });
 ```
 
-仅在**网络错误**时重试，业务错误（如 `DATA_NOT_FOUND`）不会触发重试。
+仅在**网络错误**时重试，业务错误（如 `DATA_NOT_FOUND`）不会触发重试；超时（`REQUEST_TIMEOUT`）同样不重试。
+
+## 超时
+
+`timeout` 对 action、stream、ping 都生效，默认 `6000` 毫秒。单次调用可覆盖实例默认值：
+
+```ts
+const stargate = await createStargate<typeof generated>({
+  baseUrl: 'http://localhost:9000',
+  timeout: 6000,
+});
+
+// 单次请求放宽到 30 秒
+const [failure, result] = await stargate.execute('/long-running/action', {
+  params: {},
+  timeout: 30_000,
+});
+```
+
+超时后 `execute` 返回 `{ $milkioFailure: true, kind: 'fault', code: 'REQUEST_TIMEOUT', data: { timeout, message } }`，并会 abort 底层请求。
 
 ## Ping 方法
 
