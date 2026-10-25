@@ -74,8 +74,10 @@ function run(
         const output = execFileSync(file, useShell ? [] : args, {
             cwd: options?.cwd ?? cwd,
             encoding: "utf-8",
-            // 非交互：凭据缺失时直接失败，而不是等待终端输入或弹窗
-            env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GCM_INTERACTIVE: "never" },
+            // 非交互：凭据缺失时直接失败，而不是等待终端输入。
+            // 注意：不要设置 GCM_INTERACTIVE=never —— Git Credential Manager 在该模式下
+            // 连已保存的凭据都不会返回，会导致 push 直接 401/无法读取用户名。
+            env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
             stdio: options?.capture ? "pipe" : "inherit",
             shell: useShell,
         });
