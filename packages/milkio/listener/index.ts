@@ -9,6 +9,9 @@ import { sanitizeExecuteId } from "../utils/sanitize-execute-id.ts";
 
 export type MilkioHttpRequest = Request;
 
+/** HTTP request body size limit used when the runtime does not configure one: 10KB. */
+export const DEFAULT_BODY_LIMIT = 10 * 1024;
+
 export type MilkioHttpResponse = Mixin<
     ResponseInit,
     {
@@ -21,6 +24,10 @@ export type MilkioHttpResponse = Mixin<
 export function __initListener(generated: GeneratedInit, runtime: any, executer: ReturnType<typeof __initExecuter>) {
     const port = runtime.port;
     const trie = new Trie<any>();
+    // HTTP only: the message/worker path never has a raw request body to limit.
+    const configuredBodyLimit = runtime.http?.bodyLimit ?? runtime.http?.maxBodySize;
+    const bodyLimit = Number.isFinite(configuredBodyLimit) && configuredBodyLimit > 0 ? configuredBodyLimit : DEFAULT_BODY_LIMIT;
+    const textEncoder = new TextEncoder();
     // Pre-compute default CORS config and cache headers per origin
     const cors: CorsConfig = { corsAllowMethods: ["POST", "OPTIONS"], corsAllowHeaders: ["Content-Type", "Authorization"], corsMaxAge: 0, ...runtime.http?.cors };
     const corsHeadersCache = new Map<string, Record<string, string>>();
@@ -104,11 +111,6 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
     let cachedValidateParams: any = null;
     let cachedHandler: any = null;
     let cachedSkipValidation: boolean = false;
-    // The fast path executes the handler before the full context/logger exists. When
-    // the handler throws (or returns a non-object), we must NOT fall through and run
-    // it again in the slow path: remember the failure and let the slow path only
-    // handle the error response (single execution, single log).
-    let fastPathError: unknown;
 
     const fetch = async (options: {
         request: MilkioHttpRequest;
@@ -117,29 +119,38 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         routeSchema?: any;
         rawResponse?: boolean;
     }): Promise<Response> => {
-        const MAX_BODY_SIZE = 10 * 1024 * 1024;
-        const tooLarge = () => fail("REQUEST_TOO_LARGE", { maxBodySize: MAX_BODY_SIZE });
+        // The fast path executes the handler before the full context/logger exists. When
+        // the handler throws (or returns a non-object), we must NOT fall through and run
+        // it again in the slow path: remember the failure and let the slow path only
+        // handle the error response (single execution, single log). Per request, so a
+        // concurrent request can never observe another request's failure.
+        let fastPathError: unknown;
+        const tooLarge = () => fail("REQUEST_TOO_LARGE", { maxBodySize: bodyLimit });
         const readBodyText = async (): Promise<string> => {
+            const contentLength = Number(options.request.headers.get("content-length") ?? "0");
+            if (Number.isFinite(contentLength) && contentLength > bodyLimit) throw tooLarge();
             const preRead = (options.request as any).__bodyText;
             if (preRead !== undefined) {
-                if (typeof preRead === "string" && preRead.length > MAX_BODY_SIZE) throw tooLarge();
+                // UTF-8 byte length is never smaller than the UTF-16 length, so this
+                // cheap check avoids encoding bodies a third-party adapter pre-read uncapped.
+                if (typeof preRead === "string" && (preRead.length > bodyLimit || textEncoder.encode(preRead).byteLength > bodyLimit)) throw tooLarge();
                 return preRead;
             }
-            const contentLength = Number(options.request.headers.get("content-length") ?? "0");
-            if (Number.isFinite(contentLength) && contentLength > MAX_BODY_SIZE) throw tooLarge();
             if (!options.request.body) return "";
             const reader = options.request.body.getReader();
             const decoder = new TextDecoder();
+            let byteLength = 0;
             let text = "";
             try {
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
-                    text += decoder.decode(value, { stream: true });
-                    if (text.length > MAX_BODY_SIZE) {
+                    byteLength += value.byteLength;
+                    if (byteLength > bodyLimit) {
                         await reader.cancel().catch(() => {});
                         throw tooLarge();
                     }
+                    text += decoder.decode(value, { stream: true });
                 }
                 text += decoder.decode();
             } finally {
@@ -218,7 +229,15 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             }
 
             let eventData: any = undefined;
-            const rawBody = await readBodyText();
+            let rawBody: string;
+            try {
+                rawBody = await readBodyText();
+            } catch (error) {
+                const corsHeaders = getCorsHeaders(origin);
+                const body = JSON.stringify(failureHandler(executeId, noopLogger, error, { path: pathString, routeType: "event" }).response);
+                if (options.rawResponse) return { __rawResponse: true, body, status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } } as any;
+                return new Response(body, { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
             if (rawBody && rawBody !== "" && rawBody !== "{}") {
                 try {
                     eventData = reviveJSONParse(JSON.parse(rawBody));
@@ -338,11 +357,14 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 }
 
                 if (routeSchema && routeSchema.type === "action") {
-                    // Use cached function references when hitting the same route
+                    // Use cached function references when hitting the same route. The
+                    // route-schema cache is also filled by the slow path (and by the
+                    // hot-path assignment above), so re-initialize when the references
+                    // have never been captured.
                     let validateParams = cachedValidateParams;
                     let handler = cachedHandler;
                     let skipValidation = cachedSkipValidation;
-                    if (routeSchema !== cachedRouteSchema) {
+                    if (routeSchema !== cachedRouteSchema || cachedHandler === null) {
                         validateParams = routeSchema.validateParams;
                         handler = routeSchema.module.handler;
                         const meta = routeSchema.module?.meta;
@@ -353,14 +375,20 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     }
 
                     const executeId = __createId();
-                    const body = await readBodyText();
-
+                    let body = "";
                     // Parse params
                     let params: any;
                     let paramsOk = true;
-                    if (!body || body === "" || body === "{}") {
+                    try {
+                        body = await readBodyText();
+                    } catch (error) {
+                        // Let the slow path turn the limit failure into a failure envelope.
+                        fastPathError = error;
+                        paramsOk = false;
+                    }
+                    if (paramsOk && (!body || body === "" || body === "{}")) {
                         params = {};
-                    } else {
+                    } else if (paramsOk) {
                         try {
                             params = reviveJSONParse(JSON.parse(body));
                             if (typeof params === "undefined") params = {};
@@ -442,6 +470,18 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         // and let the handler own the full Request/Response lifecycle.
         const isRawPath = generated.rawSchema?.rawPaths?.has(pathString) ?? false;
 
+        // Read the body before the try block, then rethrow the limit failure inside
+        // it so REQUEST_TOO_LARGE gets the regular failure envelope + httpResponse event.
+        let bodyString = "";
+        let bodyReadError: unknown;
+        if (!isRawPath && fastPathError === undefined) {
+            try {
+                bodyString = await readBodyText();
+            } catch (error) {
+                bodyReadError = error;
+            }
+        }
+
         const http: ContextHttp = {
             url: pathname as any,
             ip,
@@ -450,7 +490,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 // For raw routes, don't consume the request body — the handler
                 // needs it intact. The body will be passed via the Request object.
                 // On a fast-path error the body was already consumed by the fast path.
-                string: isRawPath || fastPathError !== undefined ? "" : (await readBodyText()),
+                string: bodyString,
                 parsed: undefined,
             },
             request: options.request,
@@ -462,6 +502,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         try {
             // Fast path already executed the handler; only produce the error response here.
             if (fastPathError !== undefined) throw fastPathError;
+            if (bodyReadError !== undefined) throw bodyReadError;
 
             // Check if emit has handlers before awaiting
             const hasHttpRequestHandlers = runtime._hasEmitHandlers?.("milkio:httpRequest") ?? true;
@@ -935,6 +976,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
     return {
         port,
+        bodyLimit,
         fetch,
         handleMessage,
     };

@@ -8,6 +8,14 @@ export interface MilkioInit {
     accessKey?: string;
     http?: {
         cors?: CorsConfig;
+        /**
+         * HTTP request body size limit in bytes. Only applies to HTTP requests;
+         * the message/worker path has no raw body and is never limited.
+         * @default 10240 (10KB)
+         */
+        bodyLimit?: number;
+        /** Alias of `bodyLimit`. */
+        maxBodySize?: number;
     };
     ignorePathLevel?: number;
     realIp?: (headers: Headers) => string;

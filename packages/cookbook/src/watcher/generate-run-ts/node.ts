@@ -18,16 +18,30 @@ async function bootstrap() {
     develop: Boolean(env.COOKBOOK_BASE_URL),
     fetchEnv: (key: string) => env[key] ?? undefined,
   });
+  const maxBodySize = world.listener.bodyLimit;
 
   const server = http.createServer((req: IncomingMessage, res: ServerResponse) => {
     // Accumulate every chunk unconditionally: Node emits ~64KB per "data"
     // event, and any smarter buffering scheme here previously dropped the
     // third chunk of large request bodies (>128KB), corrupting JSON params.
+    // Stop buffering once the request body exceeds maxBodySize.
     const bodyChunks: Buffer[] = [];
+    let bodySize = 0;
+    let bodyTooLarge = false;
     req.on("data", (chunk: Buffer) => {
+      if (bodyTooLarge) return;
+      bodySize += chunk.length;
+      if (bodySize > maxBodySize) {
+        bodyTooLarge = true;
+        res.statusCode = 413;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ success: false, executeId: "", error: { kind: "fail", code: "REQUEST_TOO_LARGE", data: { maxBodySize } } }));
+        return;
+      }
       bodyChunks.push(chunk);
     });
     req.on("end", () => {
+      if (bodyTooLarge) return;
       const method = req.method ?? "GET";
       const body: Uint8Array | null = bodyChunks.length > 0 ? Buffer.concat(bodyChunks) : null;
       const bodyText = body ? Buffer.from(body).toString("utf-8") : "";

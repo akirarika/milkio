@@ -21,6 +21,7 @@ async function bootstrap() {
   });
   Bun.serve({
     port: world.listener.port,
+    maxRequestBodySize: world.listener.bodyLimit,
     async fetch(request) {
       return world.listener.fetch({
         request,

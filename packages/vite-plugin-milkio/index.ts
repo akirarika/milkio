@@ -45,7 +45,10 @@ export function useVitePluginMilkio(options?: {
                     // Node emits ~64KB per "data" event, and any smarter
                     // buffering scheme here previously dropped the third chunk
                     // of large request bodies (>128KB), corrupting JSON params.
-                    const MAX_BODY_SIZE = 10 * 1024 * 1024;
+                    // Early rejection at the socket so oversized bodies are not
+                    // buffered; the limit matches the one the milkio listener uses.
+                    // Older milkio versions have no listener limit (they cap at 10MB).
+                    const MAX_BODY_SIZE = typeof milkio.listener.bodyLimit === "number" ? milkio.listener.bodyLimit : 10 * 1024 * 1024;
                     const bodyChunks: Buffer[] = [];
                     let bodySize = 0;
                     let bodyTooLarge = false;
