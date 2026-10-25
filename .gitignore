@@ -3,14 +3,13 @@
 /projects/test-bun/app
 /projects/test-bun/drizzle
 /projects/test-bun/public
-/projects/test-deno/app
-/projects/test-deno/drizzle
-/projects/test-deno/public
 
 /packages/cookbook/src/ui/www
+/packages/cookbook/build
 node_modules
 .DS_Store
 *.old
+*.tsbuildinfo
 dist
 
 .tmp/*

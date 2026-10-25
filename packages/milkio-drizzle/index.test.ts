@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vite-plus/test";
 import {
   TEST_DATABASE_HEADER,
   TEST_DATABASE_MAX_LENGTH,

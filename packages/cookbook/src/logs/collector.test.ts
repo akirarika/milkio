@@ -2,7 +2,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import { getLogCollector, installLogCollector, writeSessionEvent, type InstallLogCollectorOptions, type LogCollector } from "./collector";
 import { createSession, getCurrentPointerPath, getSessionDir, getLogsRoot, readCurrentSession, readSessionMeta, setLogsRoot } from "./session";
 import type { LogRecord } from "./types";

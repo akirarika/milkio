@@ -1,17 +1,17 @@
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { astra } from "../../../test.ts";
 
 /**
  * 普通 emit 测试
  * 验证事件广播机制：多个 handler 都能收到事件并处理
  */
-it.sequential("emit broadcast", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("emit broadcast", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, results] = await world.execute("/event/trigger", {
     params: { mode: 'emit' },
     generateParams: false,
   });
-  if (error) throw reject("Milkio did not execute successfully", error);
+  if (error) throw fail("Milkio did not execute successfully", error);
 
   expect(results.received).toContain('handler-a');
   expect(results.received).toContain('handler-b');
@@ -23,13 +23,13 @@ it.sequential("emit broadcast", async () => {
  * emitAllApproved 测试
  * 验证全员审批机制：所有 handler 通过则返回 true
  */
-it.sequential("emitAllApproved success", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("emitAllApproved success", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, results] = await world.execute("/event/trigger", {
     params: { mode: 'emitAllApproved' },
     generateParams: false,
   });
-  if (error) throw reject("Milkio did not execute successfully", error);
+  if (error) throw fail("Milkio did not execute successfully", error);
 
   expect(results.approved).toBe(true);
   expect(results.received).toContain('handler-a');
@@ -40,13 +40,13 @@ it.sequential("emitAllApproved success", async () => {
  * emitAnyApproved 测试
  * 验证任意审批机制：至少一个 handler 通过则返回 true
  */
-it.sequential("emitAnyApproved success", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("emitAnyApproved success", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, results] = await world.execute("/event/trigger", {
     params: { mode: 'emitAnyApproved' },
     generateParams: false,
   });
-  if (error) throw reject("Milkio did not execute successfully", error);
+  if (error) throw fail("Milkio did not execute successfully", error);
 
   expect(results.approved).toBe(true);
   expect(results.received).toContain('handler-a');
@@ -57,7 +57,7 @@ it.sequential("emitAnyApproved success", async () => {
  * $event 端点测试：通过直接 fetch 触发事件
  * 验证测试环境下的 $event 端点能正确触发事件
  */
-it.sequential("direct fetch to $event endpoint", async () => {
+it("direct fetch to $event endpoint", async () => {
   const eventName = "event:notify";
   const base64Name = btoa(eventName);
   const url = `http://localhost:9000/$event/${encodeURIComponent(base64Name)}`;
@@ -81,12 +81,12 @@ it.sequential("direct fetch to $event endpoint", async () => {
  * 通过 world.emit 触发事件
  * 验证返回的 data 包含 handler 的修改
  */
-it.sequential("world.emit triggers event and returns modified data", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("world.emit triggers event and returns modified data", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const eventData = { message: 'hello', received: [] as string[] };
   const [error, result, meta] = await world.emit("event:notify", { params: eventData });
 
-  if (error) throw reject("Milkio did not execute successfully", error);
+  if (error) throw fail("Milkio did not execute successfully", error);
 
   expect(meta.executeId).toBeDefined();
   expect(result).toBeDefined();
@@ -98,12 +98,12 @@ it.sequential("world.emit triggers event and returns modified data", async () =>
 /**
  * handler 抛异常测试：验证 world.emit 返回 INTERNAL_SERVER_ERROR
  */
-it.sequential("handler throws error returns INTERNAL_SERVER_ERROR", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("handler throws error returns INTERNAL_SERVER_ERROR", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, result, meta] = await world.emit("event:fail", { params: { message: 'boom' } });
 
   expect(error).toBeDefined();
-  expect(error).toHaveProperty("INTERNAL_SERVER_ERROR");
+  expect(error).toMatchObject({ kind: "fault", code: "INTERNAL_SERVER_ERROR" });
   expect(result).toBeNull();
   expect(meta.executeId).toBeDefined();
 });
@@ -111,14 +111,14 @@ it.sequential("handler throws error returns INTERNAL_SERVER_ERROR", async () => 
 /**
  * context 自动注入测试：验证 world.emit 自动注入 context 到事件数据
  */
-it.sequential("world.emit auto-injects context into event data", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("world.emit auto-injects context into event data", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const eventData = { received: [] as string[] };
   const [error, result] = await world.emit("event:context-check", { params: eventData });
 
-  if (error) throw reject("Milkio did not execute successfully", error);
+  if (error) throw fail("Milkio did not execute successfully", error);
 
-  // handler 检测到 context.reject 和 context.emit 存在时 push 'context-ok'
+  // handler 检测到 context.fail 和 context.emit 存在时 push 'context-ok'
   expect(result).toBeDefined();
   expect(result!.received).toContain('context-ok');
 });
@@ -126,7 +126,7 @@ it.sequential("world.emit auto-injects context into event data", async () => {
 /**
  * 非法 base64 路径测试
  */
-it.sequential("invalid base64 returns error", async () => {
+it("invalid base64 returns error", async () => {
   const url = `http://localhost:9000/$event/!!!not-valid-base64!!!`;
   const response = await fetch(url, {
     method: "POST",
@@ -138,5 +138,5 @@ it.sequential("invalid base64 returns error", async () => {
 
   expect(response.status).toBe(200);
   expect(data.success).toBe(false);
-  expect(data.code).toBe("PARAMS_TYPE_NOT_SUPPORTED");
+  expect(data.error.code).toBe("PARAMS_TYPE_NOT_SUPPORTED");
 });

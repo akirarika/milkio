@@ -141,7 +141,7 @@ co test
 
 当然，作为了解原理的你，你现在一定知道：如果你只想生成声明文件，而不运行测试，可以使用 `co test --help` 即可，它会重新生成声明文件，但不会运行任何实际的测试。
 
-千万不能使用 `npx vitest` 来运行测试，所有的测试都会发生真实的 HTTP 请求，而使用 `vitest` 或 `jest` 会因为服务器未启动而失败。使用 `co test` 来运行测试，它会自动启动所有 milkio app 并运行测试。
+千万不能直接使用 `vp test` / `npx vitest` / `jest` 来运行测试：所有的测试都会发生真实的 HTTP 请求，而这些命令不会启动 dev server，测试会因服务器未启动而失败。使用 `co test` 来运行测试，它会自动启动所有 milkio app 并运行测试。
 
 当你运行后，它会先启动所有的 milkio app，然后再运行测试。所以不用担心多个服务之间是否启动的问题。
 
@@ -186,17 +186,23 @@ const result = await context.call(import('../point/$exports/add.action.ts'), {
 
 - `./docs/point-server.md`：内部动作的详细写法和 `context.call` 的用法在本文档的"$exports"章节中。
 
-### 错误码（*.codes.ts）
+### 错误码（*.code.ts）
+
+错误码分为两类，**定义在同一个 `*.code.ts` 里**，每个文件必须同时导出 `Fail` 与 `Fault`（可以为空）：
+
+- `Fail`：业务侧预期内的拒绝（warn 级、无堆栈、data 返回客户端）；
+- `Fault`：意料外/内部错误（error 级、带堆栈、对客户端完全隐藏，仅本工程内部使用）。
 
 **公共错误码**定义在 `/app/codes/` 目录下（如 `common.code.ts`），所有模块共享。**模块专属错误码**定义在模块的 `$codes` 目录下。
 
 ```ts
 // 使用错误码
-throw context.reject('DATA_NOT_FOUND', undefined);           // 公共错误码
-throw context.reject('POINT_INSUFFICIENT', { required: 100, available: 50 }); // 模块错误码
+throw context.fail('DATA_NOT_FOUND', undefined);           // fail-code（公共）
+throw context.fail('POINT_INSUFFICIENT', { required: 100, available: 50 }); // fail-code（模块）
+throw context.fault('POINT_LEDGER_INVARIANT_BROKEN', { ledgerId });         // fault-code（内部）
 ```
 
-- `./docs/point-server.md`：错误码的定义和使用规范在本文档的"错误处理"章节中。
+- `./docs/point-server.md`：错误码的定义、fail/fault 判定和使用规范在本文档的"错误处理"章节中。
 
 ### 启动引导、中间件（bootstrap）
 

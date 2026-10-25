@@ -1,4 +1,4 @@
-import { createFlow, reject } from "milkio";
+import { createFlow, fail } from "milkio";
 import type { MilkioContext } from "../../../.milkio/declares.ts";
 
 type Params = {};
@@ -18,7 +18,7 @@ export async function* handler(context: MilkioContext, params: Params): Result {
         flow.emit({ counter: 1500 });
     }, 1500);
     setTimeout(() => {
-        flow.throw(reject("REQUEST_FAIL", "FAIL"));
+        flow.throw(fail("REQUEST_FAIL", "FAIL"));
     }, 2000);
 
     context.emit("say", () => "123");

@@ -1,17 +1,17 @@
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { astra } from "../../../test.ts";
 
 /**
  * milkio:executeBefore 生命周期钩子测试
  * 验证在请求执行前，bootstrap 能够通过钩子注入 context 属性
  */
-it.sequential("executeBefore hook injects context data", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("executeBefore hook injects context data", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, results] = await world.execute("/lifecycle/hook-test", {
     params: {},
     generateParams: false,
   });
-  if (error) throw reject("Milkio did not execute successfully", error);
+  if (error) throw fail("Milkio did not execute successfully", error);
 
   expect(results.beforeHook).toBe('before-executed');
   expect(results.executeId).toBeTruthy();
@@ -22,13 +22,13 @@ it.sequential("executeBefore hook injects context data", async () => {
  * milkio:executeAfter 生命周期钩子测试
  * 验证在请求执行后，bootstrap 能够通过钩子修改返回值
  */
-it.sequential("executeAfter hook modifies response", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("executeAfter hook modifies response", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, results] = await world.execute("/lifecycle/hook-test", {
     params: {},
     generateParams: false,
   });
-  if (error) throw reject("Milkio did not execute successfully", error);
+  if (error) throw fail("Milkio did not execute successfully", error);
 
   expect((results as any).afterHook).toBe('after-executed');
 });
@@ -37,13 +37,13 @@ it.sequential("executeAfter hook modifies response", async () => {
  * 生命周期钩子执行顺序测试
  * 验证 executeBefore 和 executeAfter 按正确顺序执行
  */
-it.sequential("lifecycle hooks execute in correct order", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("lifecycle hooks execute in correct order", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, results] = await world.execute("/lifecycle/hook-test", {
     params: {},
     generateParams: false,
   });
-  if (error) throw reject("Milkio did not execute successfully", error);
+  if (error) throw fail("Milkio did not execute successfully", error);
 
   expect(results.beforeHook).toBe('before-executed');
   expect((results as any).afterHook).toBe('after-executed');

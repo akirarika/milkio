@@ -1,15 +1,31 @@
-# vite-plugin-milkio
+# @milkio/vite-plugin-milkio
 
-To install dependencies:
+Part of the [milkio](https://github.com/akirarika/milkio) monorepo.
 
-```bash
-bun install
+Vite plugin for milkio projects. Add `useVitePluginMilkio()` to `vite.config.ts`:
+
+```ts
+import { defineConfig } from "vite";
+import { useVitePluginMilkio } from "@milkio/vite-plugin-milkio";
+
+export default defineConfig({
+  plugins: [useVitePluginMilkio()],
+});
 ```
 
-To run:
+## Install
 
 ```bash
-bun run index.ts
+pnpm add -D @milkio/vite-plugin-milkio
 ```
 
-This project was created using `bun init` in bun v1.1.29. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+## Development
+
+This package lives in `packages/vite-plugin-milkio` of the milkio workspace. Install the workspace dependencies from the repository root, then use the root scripts:
+
+```bash
+pnpm install
+pnpm test
+```
+
+Documentation: [milkio.fun](https://milkio.fun)

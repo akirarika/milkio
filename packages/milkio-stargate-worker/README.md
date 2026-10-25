@@ -1,15 +1,20 @@
-# milkio-stargate-worker
+# @milkio/stargate-worker
 
-To install dependencies:
+Part of the [milkio](https://github.com/akirarika/milkio) monorepo.
 
-```bash
-bun install
-```
-
-To run:
+## Install
 
 ```bash
-bun run index.ts
+pnpm add @milkio/stargate-worker
 ```
 
-This project was created using `bun init` in bun v1.1.29. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+## Development
+
+This package lives in `packages/milkio-stargate-worker` of the milkio workspace. Install the workspace dependencies from the repository root, then use the root scripts:
+
+```bash
+pnpm install
+pnpm test
+```
+
+Documentation: [milkio.fun](https://milkio.fun)

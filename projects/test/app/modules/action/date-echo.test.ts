@@ -1,15 +1,15 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { astra, stargate } from "../../../test.ts";
 
-test.sequential("Date param roundtrip via world.execute", async () => {
-	const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+test("Date param roundtrip via world.execute", async () => {
+	const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
 	const testDate = new Date("2025-06-15T10:30:00.000Z");
 
 	const [error, result] = await world.execute("/action/date-echo", {
 		params: { date: testDate },
 		generateParams: false,
 	});
-	if (error) throw reject("execution failed", error);
+	if (error) throw fail("execution failed", error);
 
 	expect(result.isDate).toBe(true);
 	expect(result.timestamp).toBe(testDate.getTime());
@@ -18,7 +18,7 @@ test.sequential("Date param roundtrip via world.execute", async () => {
 	expect((result.iso as unknown as Date).getTime()).toBe(testDate.getTime());
 });
 
-test.sequential("Date param roundtrip via stargate.execute", async () => {
+test("Date param roundtrip via stargate.execute", async () => {
 	const testDate = new Date("2025-06-15T10:30:00.000Z");
 
 	const [error, result] = await stargate.execute("/action/date-echo", {

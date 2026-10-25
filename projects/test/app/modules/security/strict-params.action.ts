@@ -16,11 +16,11 @@ type Result = {
 
 export async function handler(context: MilkioContext, params: Params): Promise<Result> {
   if (params.age < 0 || params.age > 150) {
-    throw context.reject('REQUEST_FAIL', 'Invalid age');
+    throw context.fail('REQUEST_FAIL', 'Invalid age');
   }
 
   if (!['admin', 'user', 'guest'].includes(params.role)) {
-    throw context.reject('REQUEST_FAIL', 'Invalid role');
+    throw context.fail('REQUEST_FAIL', 'Invalid role');
   }
 
   return {

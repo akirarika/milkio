@@ -1,15 +1,20 @@
-# milkio-redis
+# @milkio/redis
 
-To install dependencies:
+Part of the [milkio](https://github.com/akirarika/milkio) monorepo.
 
-```bash
-bun install
-```
-
-To run:
+## Install
 
 ```bash
-bun run index.ts
+pnpm add @milkio/redis
 ```
 
-This project was created using `bun init` in bun v1.1.30. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+## Development
+
+This package lives in `packages/milkio-redis` of the milkio workspace. Install the workspace dependencies from the repository root, then use the root scripts:
+
+```bash
+pnpm install
+pnpm test
+```
+
+Documentation: [milkio.fun](https://milkio.fun)

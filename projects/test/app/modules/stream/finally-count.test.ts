@@ -1,8 +1,8 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 
 const BASE_URL = "http://localhost:9000";
 
-test.sequential("stream onFinally runs exactly once on client abort", async () => {
+test("stream onFinally runs exactly once on client abort", async () => {
   const ac = new AbortController();
   const res = await fetch(`${BASE_URL}/stream/stream-cancel~`, {
     method: "POST",

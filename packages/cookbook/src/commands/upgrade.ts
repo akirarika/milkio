@@ -4,7 +4,7 @@ import { cwd, exit } from "node:process";
 import { readFile, writeFile } from "node:fs/promises";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import gradient from "gradient-string";
-import { $ } from "bun";
+import { execScriptOrFail } from "../utils/exec-script";
 import { withPromptTimeout } from "../utils/prompt-timeout";
 import { prompt } from "../utils/prompt";
 
@@ -114,7 +114,7 @@ export default await defineCookbookCommand(async (utils) => {
       "This prompt cannot be bypassed with flags. Run \"co upgrade <version>\" in a terminal and confirm manually.",
   )) {
     try {
-      await $`${{ raw: cmd }}`;
+      await execScriptOrFail(cmd, { cwd: cwd() });
     } catch (error) {
       consola.warn("Failed to install dependencies, please run it manually.");
     }

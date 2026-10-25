@@ -1,3 +1,4 @@
+import { readText, pathExists, sleep, isStandaloneBinary } from "../utils/node-compat";
 import chalk from "chalk";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import { progress } from "../progress";
@@ -26,12 +27,12 @@ function getTestResultPath() {
 
 export default await defineCookbookCommand(async (utils) => {
     const params = utils.getParams();
-    const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
-    if (!(await cookbookToml.exists())) {
+    const cookbookToml = join(cwd(), "cookbook.toml");
+    if (!(await pathExists(cookbookToml))) {
         consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`);
         exit(0);
     }
-    const cookbookTomlText = await cookbookToml.text();
+    const cookbookTomlText = await readText(cookbookToml);
     const cookbookTomlHash = calcHash(cookbookTomlText);
     const options = await getCookbookToml(cookbookTomlText, progress);
     options.hash = cookbookTomlHash;
@@ -42,8 +43,17 @@ export default await defineCookbookCommand(async (utils) => {
         exit(1);
     }
 
-    if (!packageJson?.devDependencies?.vitest && !packageJson?.dependencies?.vitest) {
-        consola.error(`The "vitest" package is not defined in the "package.json" file, try run:\n${options.general.packageManager} i vitest`);
+    // The test runner is provided by Vite+ (`vite-plus`, which bundles Vitest
+    // and exposes it via `vite-plus/test`). Projects that have not migrated to
+    // Vite+ yet may still declare the standalone `vitest` package.
+    const hasTestRunner = Boolean(
+        packageJson?.devDependencies?.vitest ||
+        packageJson?.dependencies?.vitest ||
+        packageJson?.devDependencies?.["vite-plus"] ||
+        packageJson?.dependencies?.["vite-plus"],
+    );
+    if (!hasTestRunner) {
+        consola.error(`No test runner is defined in the "package.json" file. Add "vite-plus" (recommended) or "vitest" to dependencies.`);
         exit(1);
     }
 
@@ -111,10 +121,12 @@ export default await defineCookbookCommand(async (utils) => {
     await rm(join(getCookbookDir(), "dev-pid.md"), { force: true }).catch(() => {});
 
     const entry = argv[1];
-    // Bun-compiled binaries expose their embedded entry point as a virtual
-    // path like "B:/~BUN/root/co" — only forward real on-disk entry scripts.
-    const isVirtualEmbeddedEntry = typeof entry === "string" && entry.includes("/~BUN/");
-    const command = entry && !isVirtualEmbeddedEntry && existsSync(entry) ? [execPath, entry, "test", ...params.raw] : [execPath, "test", ...params.raw];
+    // A self-contained binary (Node SEA for co.exe, or a Bun compiled binary)
+    // has no real script path at argv[1]; source runs forward it together with
+    // the parent's loader args (tsx) so the child can import TypeScript.
+    const command = !isStandaloneBinary() && entry && existsSync(entry)
+        ? [execPath, ...process.execArgv, entry, "test", ...params.raw]
+        : [execPath, "test", ...params.raw];
 
     const cookbookDir = ensureCookbookDir();
     const meta = createSession({ mode: "test" });
@@ -174,7 +186,7 @@ export default await defineCookbookCommand(async (utils) => {
                     break;
                 }
             } catch {}
-            await Bun.sleep(100);
+            await sleep(100);
         }
         if (!pid) {
             recordStartupFailure("Failed to start the background test process.");
@@ -247,7 +259,7 @@ export default await defineCookbookCommand(async (utils) => {
                 consola.error("The background test process exited before writing a test result.");
                 exit(1);
             }
-            await Bun.sleep(500);
+            await sleep(500);
         }
         if (!result) {
             consola.error(`Timed out waiting for the test result (${overallTimeoutMs / 1000}s). The background dev server (pid ${childPid}) is still running; run "co stop" to stop it.`);

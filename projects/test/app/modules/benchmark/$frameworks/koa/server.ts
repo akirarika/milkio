@@ -1,4 +1,4 @@
-// @ts-nocheck  standalone script, runs via `bun run` outside monorepo TS context
+// @ts-nocheck  standalone script, executed by the benchmark harness outside monorepo TS context
 import Koa from "koa";
 import Router from "@koa/router";
 import { bodyParser } from "@koa/bodyparser";

@@ -21,11 +21,13 @@ benchmark/
 ## 运行
 
 ```bash
-# 在 projects/test 目录执行
-npx vitest run app/modules/benchmark/__TEST__.test.ts
+# 在仓库根目录执行
+pnpm exec vp test app/modules/benchmark/__TEST__.test.ts
 ```
 
 `co test` 会跳过本文件（`describe.skip`），避免基准测试在常规 CI 中启动外部服务器。
+
+> **注意**：这是一个手动运行的基准测试，其服务器进程由 Bun 运行时启动（milkio 生产模式入口 `milkio-prod.ts` 使用 Bun 的 HTTP 服务器）。它不属于 pnpm/Node 的工具链、构建或 CI 路径；只有在手动运行本文件时才需要安装 Bun 运行时。
 
 测试会自动：
 1. 安装框架依赖（首次运行）

@@ -1,6 +1,6 @@
 [general]
-start = "bun run dev"
-packageManager = "bun"
+start = "pnpm run dev"
+packageManager = "pnpm"
 modes = ["test", "development", "production"]
 cookbookPort = 8000
 
@@ -8,7 +8,7 @@ cookbookPort = 8000
 [projects.cookbook-server]
 port = 52593
 type = "milkio"
-runtime = "bun"
+runtime = "node"
 autoStart = false
 
 
@@ -28,17 +28,6 @@ drizzle = [
 port = 9001
 type = "milkio"
 runtime = "bun"
-autoStart = true
-drizzle = [
-    { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
-    { mode = "production", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },
-]
-
-
-[projects.test-deno]
-port = 9002
-type = "milkio"
-runtime = "deno"
 autoStart = false
 drizzle = [
     { mode = "development", migrateMode = "migrate", migrateDatabaseUrl = "memory://" },

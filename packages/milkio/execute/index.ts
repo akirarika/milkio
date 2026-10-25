@@ -1,5 +1,5 @@
 import type { IValidation } from "typia";
-import { reject, raise } from "../index.ts";
+import { fail, fault } from "../index.ts";
 import type { $context, $meta, Logger, Results, GeneratedInit } from "../index.ts";
 import { headersToJSON } from "../utils/headers-to-json.ts";
 import { mergeDeep } from "../utils/merge-deep.ts";
@@ -59,8 +59,8 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             } else if (headers.get("content-type")?.startsWith("application/json")) {
                 try {
                     params = reviveJSONParse(JSON.parse(options.params));
-                } catch (error) {
-                    throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json", contentType: headers.get("content-type") ?? null, params: options.params.slice(0, 4096) });
+                } catch {
+                    throw fail("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json", contentType: headers.get("content-type") ?? null, params: options.params.slice(0, 4096) });
                 }
                 if (typeof params === "undefined") params = {};
             } else if (headers.get("content-type")?.startsWith("application/x-www-form-urlencoded")) {
@@ -68,23 +68,23 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
                     const formData = new URLSearchParams(options.params);
                     params = {};
                     formData.forEach((value, key) => params[key] = value);
-                } catch (error) {
-                    throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "form-urlencoded", contentType: headers.get("content-type") ?? null, params: options.params.slice(0, 4096) });
+                } catch {
+                    throw fail("PARAMS_TYPE_NOT_SUPPORTED", { expected: "form-urlencoded", contentType: headers.get("content-type") ?? null, params: options.params.slice(0, 4096) });
                 }
             } else if (options.params.startsWith("{")) {
                 try {
                     params = reviveJSONParse(JSON.parse(options.params));
-                } catch (error) {
-                    throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json", contentType: headers.get("content-type") ?? null, params: options.params.slice(0, 4096) });
+                } catch {
+                    throw fail("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json", contentType: headers.get("content-type") ?? null, params: options.params.slice(0, 4096) });
                 }
             }
             else {
-                throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json", contentType: headers.get("content-type") ?? null, params: options.params.slice(0, 4096) });
+                throw fail("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json", contentType: headers.get("content-type") ?? null, params: options.params.slice(0, 4096) });
             }
         }
-        if (typeof params !== "object" || Array.isArray(params)) throw reject("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json", contentType: headers.get("content-type") ?? null, params: (typeof options.params === "string" ? options.params : JSON.stringify(options.params)).slice(0, 4096) });
+        if (typeof params !== "object" || Array.isArray(params)) throw fail("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json", contentType: headers.get("content-type") ?? null, params: (typeof options.params === "string" ? options.params : JSON.stringify(options.params)).slice(0, 4096) });
         if ("$milkioGenerateParams" in params && params.$milkioGenerateParams === "enable") {
-            if (!runtime.develop) throw reject("NOT_DEVELOP_MODE", "This feature must be in cookbook to use.");
+            if (!runtime.develop) throw fail("NOT_DEVELOP_MODE", "This feature must be in cookbook to use.");
             delete params.$milkioGenerateParams;
             let paramsRand = routeSchema.randomParams();
             if (paramsRand === undefined || paramsRand === null) paramsRand = {};
@@ -108,8 +108,8 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
         ctx.call = (module: any, params: any) => __call(ctx, module, params);
         ctx.onFinally = onFinally;
         ctx._ = runtime;
-        ctx.reject = reject;
-        ctx.raise = raise;
+        ctx.fail = fail;
+        ctx.fault = fault;
 
         const results: Results<any> = { value: undefined };
 
@@ -118,16 +118,16 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
 
         if (options.context.http?.request?.method !== undefined) {
             const allowMethods = meta?.methods ?? ["POST"];
-            if (!allowMethods.includes(options.context.http.request.method)) throw reject("METHOD_NOT_ALLOWED", undefined);
+            if (!allowMethods.includes(options.context.http.request.method)) throw fail("METHOD_NOT_ALLOWED", undefined);
         }
 
         if (meta?.typeSafety === undefined || meta.typeSafety === true || (Array.isArray(meta.typeSafety) && meta.typeSafety.includes("params"))) {
             const validation = routeSchema.validateParams(params) as IValidation<any>;
-            if (!validation.success) throw reject("PARAMS_TYPE_INCORRECT", { ...(validation as any).errors[0], message: `The value '${(validation as any).errors[0].path}' is '${(validation as any).errors[0].value}', which does not meet '${(validation as any).errors[0].expected}' requirements.` });
+            if (!validation.success) throw fail("PARAMS_TYPE_INCORRECT", { ...(validation as any).errors[0], message: `The value '${(validation as any).errors[0].path}' is '${(validation as any).errors[0].value}', which does not meet '${(validation as any).errors[0].expected}' requirements.` });
         }
 
         if (runtime._hasEmitHandlers?.("milkio:executeBefore") ?? true) {
-            await runtime.emit("milkio:executeBefore", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, reject, raise });
+            await runtime.emit("milkio:executeBefore", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, fail, fault });
         }
 
         results.value = await module.handler(options.context, params);
@@ -137,11 +137,11 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
             emptyResult = true;
             results.value = {};
         } else if (Array.isArray(results.value) || typeof results.value !== "object") {
-            throw reject("REQUEST_FAIL", "The return type of the handler must be an 'object', which is currently an '${typeof typeof results.value}'.");
+            throw fault("FRAMEWORK_ERROR", { message: `The return type of the handler must be an 'object', which is currently an '${typeof results.value}'.` });
         }
 
         if (runtime._hasEmitHandlers?.("milkio:executeAfter") ?? true) {
-            await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results, reject, raise });
+            await runtime.emit("milkio:executeAfter", { executeId: options.createdExecuteId, logger: options.createdLogger, path: options.path, meta, context: options.context, results, fail, fault });
         }
 
         return { executeId, headers, params, results, context: options.context, meta, type, emptyResult, finales };

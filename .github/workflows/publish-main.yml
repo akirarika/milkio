@@ -9,6 +9,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  # npm provenance (trusted publishing) needs id-token: write
   id-token: write
   contents: read
 
@@ -20,32 +21,38 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "26.12.1"
           registry-url: "https://registry.npmjs.org"
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "1.4.1"
+          cache: "pnpm"
 
       - name: Setup Go
+        # typia's ttsc plugin is Go source and is built by ttsc during codegen.
         uses: actions/setup-go@v5
         with:
           go-version: "1.26"
 
       - name: Install dependencies
-        run: bun install
-        
+        run: pnpm install --frozen-lockfile
+
       - name: build .milkio
-        run: bun run co generate
+        run: |
+          node .prepare.ts
+          pnpm exec tsx packages/cookbook/cookbook.ts generate
         env:
-            VITE_MODE: "test"
+          VITE_MODE: "test"
 
+      # ---------------------------------------------------------------
+      # Publish step — publication tooling (the .publ-ci.ts script) is
+      # owned separately by the Lead and is intentionally kept isolated
+      # here so the pnpm/Node/Vite+ setup above can be validated without it.
+      # ---------------------------------------------------------------
       - name: publish packages
-        run: bun run .publ-ci.ts
-
-
-  
+        run: node .publ-ci.ts

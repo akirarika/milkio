@@ -67,7 +67,7 @@ export default (world: MilkioWorld<typeof generated>) => {
 
     // 校验金额、币种等...
     if (data.amount !== 399) {
-      throw context.reject('PAYMENT_ADD_FAILED', undefined);
+      throw context.fail('PAYMENT_ADD_FAILED', undefined);
     }
 
     // ✅ 审批通过：显式设置 allow 为 true
@@ -141,7 +141,7 @@ const emitData = {
 await context.emit('payment:validate', emitData);
 
 if (!emitData.data.allow) {
-  throw context.reject('PAYMENT_ADD_FAILED', undefined);
+  throw context.fail('PAYMENT_ADD_FAILED', undefined);
 }
 ```
 
@@ -162,7 +162,7 @@ if (!emitData.data.allow) {
 const allow = await context.emitAnyApproved('sync:akira-storage:download-validate', emitData);
 if (!allow) {
   context.logger.error('鉴权未被通过', emitData);
-  throw context.reject('REQUEST_FAIL', undefined);
+  throw context.fail('PAYMENT_ADD_FAILED', undefined);
 }
 ```
 
@@ -251,7 +251,7 @@ export default (world: MilkioWorld<typeof generated>) => {
     const result = await client.DescribeCaptchaResult({ ... });
     // 验证失败直接抛异常，阻止整个流程
     if (result.CaptchaCode !== 1 || (result.EvilLevel ?? 0) >= 80) {
-      throw event.context.reject('CAPTCHA_INVALID', undefined);
+      throw event.context.fail('CAPTCHA_INVALID', undefined);
     }
     return true;  // 验证通过
   });
@@ -283,7 +283,7 @@ export interface _ {
 const allow = await context.emitAnyApproved('sync:akira-storage:download-validate', emitData);
 if (!allow) {
   context.logger.error('鉴权未被通过', emitData);
-  throw context.reject('REQUEST_FAIL', undefined);
+  throw context.fail('PAYMENT_ADD_FAILED', undefined);
 }
 ```
 
@@ -316,7 +316,7 @@ await context.emit('payment:validate', emitData);
 
 // 事件处理完成后，检查是否有模块审批通过
 if (!emitData.data.allow) {
-  throw context.reject('PAYMENT_ADD_FAILED', undefined);
+  throw context.fail('PAYMENT_ADD_FAILED', undefined);
 }
 // 审批通过，继续创建支付订单...
 ```
@@ -328,7 +328,7 @@ world.on('payment:validate', async ({ data, tx, context, fromModule }) => {
   if (fromModule !== 'product') return;
 
   // 校验金额、币种等...
-  if (!validatePaymentData(data)) throw context.reject('PAYMENT_ADD_FAILED', undefined);
+  if (!validatePaymentData(data)) throw context.fail('PAYMENT_ADD_FAILED', undefined);
 
   // 审批通过
   data.allow = true;
@@ -389,12 +389,12 @@ world.on('space:delete', async ({ data, db, context }) => {
 ### 基本用法
 
 ```ts
-const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
 const [error, result, meta] = await world.emit("event:notify", {
   params: { message: 'hello', received: [] },
 });
 
-if (error) throw reject("事件触发失败", error);
+if (error) throw fail("事件触发失败", error);
 // result 是 handler 修改后的事件数据
 expect(result.received).toContain('handler-a');
 expect(meta.executeId).toBeDefined();
@@ -405,11 +405,11 @@ expect(meta.executeId).toBeDefined();
 事件数据通过引用传递，handler 的修改反映在 `result` 中：
 
 ```ts
-const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
 const [error, result] = await world.emit("event:notify", {
   params: { message: 'hello', received: [] },
 });
-if (error) throw reject("事件触发失败", error);
+if (error) throw fail("事件触发失败", error);
 // handler 内部 push 了 'handler-a'，返回的 result.received 包含该项
 expect(result.received).toEqual(['handler-a']);
 ```
@@ -417,7 +417,7 @@ expect(result.received).toEqual(['handler-a']);
 ### 测试 handler 异常
 
 ```ts
-const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
 const [error, result] = await world.emit("event:fail", {
   params: { message: 'boom' },
 });
@@ -433,7 +433,7 @@ expect(result).toBeNull();
 2. **`emitAllApproved` 用于安全关键路径**：如验证码校验、支付校验等，确保所有校验都通过才继续。
 3. **`emitAnyApproved` 用于多源授权**：如下载鉴权，多个模块可能都有权放行。
 4. **审批通过时显式设置 `data.allow = true`**：不要依赖隐式逻辑，`allow` 默认为 `false`，handler 必须显式同意。
-5. **审批失败时抛异常而非返回 false**：`emitAllApproved` 的 handler 如果校验失败，应 `throw context.reject(...)` 抛出异常，而非默默返回 `false`。
+5. **审批失败时抛异常而非返回 false**：`emitAllApproved` 的 handler 如果校验失败，应 `throw context.fail(...)` 抛出异常，而非默默返回 `false`。
 6. **非 `app:` 前缀的事件不会推送前端**：服务端内部事件不要使用 `app:` 前缀，避免不必要的推流。
 7. **事件数据传引用**：事件数据对象是引用传递，handler 可以修改 `data.allow` 等字段，触发方可以在 `emit` 返回后读取修改后的值。
 8. **事务中使用 `tx` 而非 `db`**：如果触发方在事务中，事件数据应传递 `tx`，让 handler 的操作也在同一事务中。

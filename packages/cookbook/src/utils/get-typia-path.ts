@@ -1,7 +1,8 @@
+import { pathExists } from "./node-compat";
 import consola from "consola";
 import { join } from "node:path";
 import { cwd } from "node:process";
-import { exists } from "node:fs/promises";
+
 import { exit } from "node:process";
 
 let ttscPath: Promise<string> | null = null;
@@ -13,8 +14,8 @@ export function getTypiaPath(): Promise<string> {
   if (ttscPath) return ttscPath;
   ttscPath = (async () => {
     let ttscPath = join(cwd(), "./node_modules/ttsc/lib/launcher/ttsc.js");
-    if (!(await exists(ttscPath))) ttscPath = join(cwd(), "../../node_modules/ttsc/lib/launcher/ttsc.js");
-    if (!(await exists(ttscPath))) {
+    if (!(await pathExists(ttscPath))) ttscPath = join(cwd(), "../../node_modules/ttsc/lib/launcher/ttsc.js");
+    if (!(await pathExists(ttscPath))) {
       consola.error(`ttsc is not installed, so it cannot be found in the following path: ${ttscPath}`);
       exit(1);
     }

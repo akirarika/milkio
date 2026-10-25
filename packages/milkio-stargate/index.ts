@@ -48,9 +48,80 @@ export type Ping =
             serverTimestamp: number;
         },
     ];
-export async function createStargate<Generated extends { routeSchema: any; rejectCode: any; events: any }>(stargateOptions: MilkioStargateOptions) {
+// ---------------------------------------------------------------------------
+// Failure protocol v2: `fail` (business rejection, code + data kept) and
+// `fault` (unexpected/internal, only the generic INTERNAL_SERVER_ERROR code).
+// The wire shapes are defined locally on purpose: stargate does not depend on milkio.
+// ---------------------------------------------------------------------------
+
+export type MilkioFailureWire =
+    | { kind: "fail"; code: string; data: unknown }
+    | { kind: "fault"; code: "INTERNAL_SERVER_ERROR" };
+
+/** structural shape of a failure restored from the wire (fail keeps code/data; fault stays generic) */
+export interface MilkioClientFailure {
+    readonly $milkioFailure: true;
+    readonly kind: "fail" | "fault";
+    readonly code: string;
+    readonly data?: unknown;
+}
+
+/** faults synthesized by the client itself; they are not server fault-codes */
+export type MilkioClientTransportFailure =
+    | (MilkioClientFailure & { readonly kind: "fault"; readonly code: "NETWORK_ERROR" })
+    | (MilkioClientFailure & { readonly kind: "fault"; readonly code: "REQUEST_TIMEOUT"; readonly data: { timeout: number; message: string } });
+
+/**
+ * Everything a stargate call can fail with: the generated client-visible failure union
+ * (all fail-codes with typed data + the generic server fault) plus the client transport faults.
+ * The transport members carry literal codes so `failure.code` narrowing still works for fail-codes.
+ */
+export type MilkioPublicFailure<Generated extends { failure: any } = { failure: any }> = Generated["failure"] | MilkioClientTransportFailure;
+
+function createFail(code: string, data?: unknown): MilkioClientFailure {
+    return { $milkioFailure: true, kind: "fail", code, data };
+}
+
+function createFault(code: string, data?: unknown): MilkioClientFailure {
+    return { $milkioFailure: true, kind: "fault", code, data };
+}
+
+function createNetworkFailure(): MilkioClientTransportFailure {
+    return { $milkioFailure: true, kind: "fault", code: "NETWORK_ERROR" };
+}
+
+function createTimeoutFailure(timeout: number): MilkioClientTransportFailure {
+    return { $milkioFailure: true, kind: "fault", code: "REQUEST_TIMEOUT", data: { timeout, message: `Execute timeout after ${timeout}ms.` } };
+}
+
+/** only transport-level faults are retried; fail and server faults are never retried */
+function isTransportFailure(failure: { readonly kind: string; readonly code: string }): boolean {
+    return failure.kind === "fault" && (failure.code === "NETWORK_ERROR" || failure.code === "REQUEST_TIMEOUT");
+}
+
+/** restore a wire failure: fail keeps code/data, fault is always reduced to the generic code by the server */
+function reviveFailureWire(wire: unknown): MilkioClientFailure {
+    if (typeof wire === "object" && wire !== null) {
+        const parsed = wire as { kind?: unknown; code?: unknown; data?: unknown };
+        if (parsed.kind === "fail" && typeof parsed.code === "string") return createFail(parsed.code, parsed.data);
+        if (parsed.kind === "fault") return createFault("INTERNAL_SERVER_ERROR");
+    }
+    return createFault("INTERNAL_SERVER_ERROR");
+}
+
+export async function createStargate<Generated extends { routeSchema: any; failure: MilkioClientFailure; events: any }>(stargateOptions: MilkioStargateOptions) {
     const $fetch = stargateOptions.fetch ?? fetch;
     const $abort = stargateOptions.abort ?? AbortController;
+
+    type PublicFailure = MilkioPublicFailure<Generated>;
+    type FailureData<Code extends string> = Extract<Generated["failure"], { kind: "fail"; code: Code }> extends { data: infer Data } ? Data : unknown;
+    type HandleError = <Code extends string>(failure: PublicFailure, code: Code, handler: (data: FailureData<Code>) => boolean | Promise<boolean>) => Promise<boolean>;
+
+    /**
+     * Restored wire failures are cast to the generated failure union: the server contract guarantees the
+     * fail-code string is one of the generated codes, only the runtime value is unknown statically.
+     */
+    const reviveFailure = (wire: unknown): PublicFailure => reviveFailureWire(wire) as unknown as PublicFailure;
 
     type StargateEvents = {
         'milkio:executeBefore': { path: string; options: Mixin<ExecuteOptions<any>, { headers: Record<string, string>; baseUrl: string }> };
@@ -58,16 +129,17 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
         'milkio:executeError': {
             path: string;
             options: Mixin<ExecuteOptions<any>, { headers: Record<string, string>; baseUrl: string }>;
-            error: Partial<Generated['rejectCode']>;
-            handleError: <K extends keyof Partial<Generated['rejectCode']>>(error: any, key: K, handler: (error: Partial<Generated['rejectCode'][K]>) => boolean | Promise<boolean>) => Promise<void>;
+            failure: PublicFailure;
+            handleError: HandleError;
         };
     };
 
-    const handleError: any = async (error: any, key: string, handler: (error: any) => boolean | Promise<boolean>) => {
-        if (key in error) {
-            const handled = await handler(error[key]);
-            if (handled) delete error[key];
-        }
+    /** only `fail` failures have a public business code; fault can never be matched by code */
+    const handleError = async <Code extends string>(failure: PublicFailure, code: Code, handler: (data: FailureData<Code>) => boolean | Promise<boolean>): Promise<boolean> => {
+        if (failure === null || failure === undefined) return false;
+        if (failure.kind !== "fail") return false;
+        if ((failure as { readonly code: string }).code !== code) return false;
+        return (await handler((failure as { readonly data?: unknown }).data as FailureData<Code>)) === true;
     };
 
     const __initEventManager = () => {
@@ -139,12 +211,12 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
         ): Promise<
             Generated['routeSchema'][Path]['types']['🥛'] extends boolean
             ? // action
-            [Partial<Generated['rejectCode']>, null, ExecuteResultsOption] | [null, Generated['routeSchema'][Path]['types']['result'], ExecuteResultsOption]
+            [PublicFailure, null, ExecuteResultsOption] | [null, Generated['routeSchema'][Path]['types']['result'], ExecuteResultsOption]
             : // stream
             // Stream schemas store the yield type directly in `result` (route-generate.ts
             // uses `Awaited<ReturnType<handler>> extends AsyncGenerator<infer I> ? I : never`),
             // so no `GeneratorGeneric` wrapper is needed here.
-            [Partial<Generated['rejectCode']>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated['rejectCode']>, null] | [null, Generated['routeSchema'][Path]['types']['result']], undefined>, ExecuteResultsOption]
+            [PublicFailure, null, ExecuteResultsOption] | [null, AsyncGenerator<[PublicFailure, null] | [null, Generated['routeSchema'][Path]['types']['result']], undefined>, ExecuteResultsOption]
         > {
             if (options.headers === undefined) options.headers = {};
 
@@ -187,22 +259,20 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                         await eventManager.emit('milkio:executeBefore', { path: path as string, options: options as any });
                         const body = JSON.stringify(options.params) ?? '';
                         await eventManager.emit('milkio:fetchBefore', { path: path as string, options: options as any, body });
-                        let text: string;
                         const response = await $fetch(url, { method: 'POST', body, headers: options.headers });
-                        text = await response.text();
+                        const text = await response.text();
                         const parsed = reviveJSONParse(JSON.parse(text));
                         if (parsed.success !== true) {
-                            const err: any = {};
-                            err[parsed.code] = parsed.reject ?? null;
-                            return [err, null, { executeId: parsed.executeId }];
+                            const failure = reviveFailure(parsed.error);
+                            await eventManager.emit('milkio:executeError', { handleError, path: path as string, options: options as any, failure });
+                            return [failure, null, { executeId: parsed.executeId ?? '' }] as any;
                         }
-                        return [null, parsed.data, { executeId: parsed.executeId }];
-                    } catch (error: any) {
-                        if (error?.[0]?.REQUEST_TIMEOUT) {
-                            return [error, null, { executeId: '' }];
-                        }
-                        const errorPined = { REQUEST_FAIL: error };
-                        return [errorPined, null, { executeId: 'unknown' }];
+                        return [null, parsed.data, { executeId: parsed.executeId }] as any;
+                    } catch {
+                        // transport-level failure (server failure is a JSON envelope with HTTP 200)
+                        const failure = createNetworkFailure();
+                        await eventManager.emit('milkio:executeError', { handleError, path: path as string, options: options as any, failure });
+                        return [failure, null, { executeId: 'unknown' }] as any;
                     }
                 }
 
@@ -236,60 +306,49 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                 const body = JSON.stringify(options.params) ?? '';
                 await eventManager.emit('milkio:fetchBefore', { path: path as string, options: options as any, body });
 
-                const executeRequest = async (isRetry: boolean): Promise<{ result: { value: Record<any, any> } | null; error: any; isNetworkError: boolean }> => {
+                const executeRequest = async (): Promise<{ failure: PublicFailure | null; data: any; executeId: string }> => {
                     try {
                         const response = await $fetch(url, { method: 'POST', body, headers: options.headers });
                         const text = await response.text();
-                        const parsed = JSON.parse(text);
-                        return { result: { value: parsed }, error: null, isNetworkError: false };
-                    } catch (error: any) {
-                        const isNetworkError = !error?.[0]?.REQUEST_TIMEOUT;
-                        return { result: null, error, isNetworkError };
+                        const parsed = reviveJSONParse(JSON.parse(text));
+                        if (parsed.success !== true) {
+                            return { failure: reviveFailure(parsed.error), data: undefined, executeId: parsed.executeId ?? '' };
+                        }
+                        return { failure: null, data: parsed.data, executeId: parsed.executeId };
+                    } catch {
+                        // transport-level failure only: HTTP status does not matter (all milkio envelopes are 200)
+                        return { failure: createNetworkFailure(), data: undefined, executeId: 'unknown' };
                     }
                 };
 
-                let { result, error, isNetworkError } = await executeRequest(false);
+                let { failure, data, executeId } = await executeRequest();
 
-                for (let retryIndex = 0; retryIndex < retryCount && error && isNetworkError; retryIndex++) {
+                // only transport-level faults are retried; fail and server faults are never retried
+                for (let retryIndex = 0; retryIndex < retryCount && failure !== null && isTransportFailure(failure); retryIndex++) {
                     if (retryIndex > 0) {
                         await new Promise((resolve) => setTimeout(resolve, 500));
                     }
-                    const retryResult = await executeRequest(true);
-                    result = retryResult.result;
-                    error = retryResult.error;
-                    isNetworkError = retryResult.isNetworkError;
+                    ({ failure, data, executeId } = await executeRequest());
                 }
 
-                if (error) {
-                    if (error?.[0]?.REQUEST_TIMEOUT) {
-                        await eventManager.emit('milkio:executeError', { handleError, path: path as string, options: options as any, error });
-                        return error;
-                    }
-
-                    if (cacheStrategy !== 'off' && cacheStorage && isNetworkError) {
+                if (failure) {
+                    // fail is a real business result and never falls back to cache; faults may fall back
+                    if (cacheStrategy !== 'off' && cacheStorage && failure.kind !== 'fail') {
                         const cached = await cacheStorage.get(cacheKey);
                         if (cached) {
                             return [null, cached.data, { executeId: 'cached' }] as any;
                         }
                     }
 
-                    const errorPined = { REQUEST_FAIL: error };
-                    await eventManager.emit('milkio:executeError', { handleError, path: path as string, options: options as any, error: errorPined });
-                    return [errorPined, null, { executeId: 'unknown' }];
-                }
-
-                if (result!.value.success !== true) {
-                    const err: any = {};
-                    err[result!.value.code] = result!.value.reject ?? null;
-                    await eventManager.emit('milkio:executeError', { handleError, path: path as string, options: options as any, error: err });
-                    return [err, null, { executeId: result!.value.executeId }];
+                    await eventManager.emit('milkio:executeError', { handleError, path: path as string, options: options as any, failure });
+                    return [failure, null, { executeId }] as any;
                 }
 
                 if (cacheStrategy !== 'off' && cacheStorage) {
-                    await cacheStorage.set(cacheKey, result!.value.data);
+                    await cacheStorage.set(cacheKey, data);
                 }
 
-                return [null, result!.value.data, { executeId: result!.value.executeId }] as any;
+                return [null, data, { executeId }] as any;
             } else {
                 // stream
                 options.cacheStrategy = 'off';
@@ -315,34 +374,55 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
 
                 const timeout = stargateOptions?.timeout ?? options?.timeout ?? 6000;
                 const timer = setTimeout(() => {
-                    streamResultFetched.reject([{ REQUEST_TIMEOUT: { timeout, message: `Execute timeout after ${timeout}ms.` } }, null, { executeId: 'unknown' }]);
+                    void failStream(createTimeoutFailure(timeout), 'unknown');
                 }, timeout);
+
+                /** SSE error frames are `data:[wireFailure, null]`, success frames are `data:[null, value]` */
+                const reviveStreamFrame = (frame: any): any => {
+                    if (Array.isArray(frame) && frame.length === 2 && frame[0] !== null && frame[0] !== undefined) {
+                        return [reviveFailure(frame[0]), null];
+                    }
+                    return frame;
+                };
+
+                let curRequestController: AbortController;
+
+                const failStream = async (failure: PublicFailure, executeId: string) => {
+                    clearTimeout(timer);
+                    if (!curRequestController.signal.aborted) curRequestController.abort();
+                    await eventManager.emit('milkio:executeError', { handleError, path: path as string, options: options as any, failure });
+                    await iterator.throw();
+                    streamResultFetched.reject([failure, null, { executeId }]);
+                };
 
                 const onmessage = (event: EventSourceMessage) => {
                     if (event.data.startsWith('@')) {
+                        clearTimeout(timer);
                         try {
-                            streamResult = reviveJSONParse(JSON.parse(event.data.slice(1)));
+                            const parsed = reviveJSONParse(JSON.parse(event.data.slice(1)));
+                            if (parsed.success !== true) {
+                                // the stream rejected before producing any data (protocol v2 envelope in the first frame)
+                                void failStream(reviveFailure(parsed.error), typeof parsed.executeId === 'string' ? parsed.executeId : '');
+                                return;
+                            }
+                            streamResult = parsed;
                             streamResultFetched.resolve(undefined);
-                            clearTimeout(timer);
-                        } catch (error) {
-                            streamResultFetched.reject([{ REQUEST_FAIL: error }, null, { executeId: 'unknown' }]);
-                            clearTimeout(timer);
+                        } catch {
+                            void failStream(createNetworkFailure(), 'unknown');
                         }
                     } else {
                         const index = ++stacksIndex;
                         if (stacks.has(index)) {
                             const stack = stacks.get(index);
                             stack!.done = true;
-                            stack!.resolve({ done: false, value: reviveJSONParse(JSON.parse(event.data)) });
+                            stack!.resolve({ done: false, value: reviveStreamFrame(reviveJSONParse(JSON.parse(event.data))) });
                         } else {
                             const stack = withResolvers<IteratorResult<any>>();
-                            stack.resolve({ done: false, value: reviveJSONParse(JSON.parse(event.data)) });
+                            stack.resolve({ done: false, value: reviveStreamFrame(reviveJSONParse(JSON.parse(event.data))) });
                             stacks.set(index, { ...stack, done: false });
                         }
                     }
                 };
-
-                let curRequestController: AbortController;
 
                 async function create() {
                     curRequestController = new $abort();
@@ -364,18 +444,29 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
 
                         const contentType = response.headers.get('Content-Type');
                         if (!contentType?.startsWith('text/event-stream')) {
-                            throw new Error(`Expected content-type to be ${'text/event-stream'}, Actual: ${contentType}`);
+                            // the server answered with a JSON envelope instead of a stream (failure before streaming started)
+                            let envelope: any = null;
+                            try {
+                                envelope = reviveJSONParse(JSON.parse(await response.text()));
+                            } catch {
+                                envelope = null;
+                            }
+
+                            if (envelope !== null && typeof envelope === 'object' && envelope.success === false) {
+                                await failStream(reviveFailure(envelope.error), typeof envelope.executeId === 'string' ? envelope.executeId : '');
+                                return;
+                            }
+
+                            await failStream(createNetworkFailure(), 'unknown');
+                            return;
                         }
 
                         await getBytes(response.body!, getLines(getMessages(onmessage)));
 
                         await iterator.return();
-                    } catch (err) {
-                        if (!curRequestController.signal.aborted) curRequestController.abort();
-                        const error = { REQUEST_FAIL: err };
-                        await eventManager.emit('milkio:executeError', { handleError, path: path as string, options: options as any, error });
-                        await iterator.throw(err);
-                        streamResultFetched.reject([error, null, { executeId: 'unknown' }]);
+                    } catch {
+                        if (curRequestController.signal.aborted) return;
+                        await failStream(createNetworkFailure(), 'unknown');
                     }
                 }
 
@@ -403,24 +494,13 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                             for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined });
                             return { done: true, value: undefined };
                         },
-                        async throw(err: any): Promise<IteratorResult<void>> {
-                            streamResult = {
-                                success: false,
-                                executeId: streamResult?.executeId ?? '',
-                                fail: {
-                                    code: 'NETWORK_ERROR',
-                                    message: 'Network Error',
-                                    fromClient: true,
-                                    data: err,
-                                },
-                            };
+                        async throw(): Promise<IteratorResult<void>> {
+                            if (!curRequestController.signal.aborted) curRequestController.abort();
                             for (const [_index, stack] of stacks) {
                                 if (stack.done) continue;
                                 stack.done = true;
                                 stack.resolve({ done: true, value: undefined });
                             }
-                            if (!curRequestController.signal.aborted) curRequestController.abort();
-                            for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined });
                             return { done: true, value: undefined };
                         },
                     } satisfies AsyncIterator<unknown>),
@@ -431,7 +511,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
 
                 try {
                     await streamResultFetched.promise;
-                    return [null, iterator, { executeId: streamResult.executeId }] as any;
+                    return [null, iterator, { executeId: streamResult.executeId ?? '' }] as any;
                 } catch (error) {
                     return error as any;
                 }
@@ -523,7 +603,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                             for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined });
                             return { done: true, value: undefined };
                         },
-                        async throw(err: any): Promise<IteratorResult<void>> {
+                        async throw(_err: any): Promise<IteratorResult<void>> {
                             if (!curRequestController.signal.aborted) curRequestController.abort();
                             for (const [_, iterator] of stacks) iterator.resolve({ done: true, value: undefined });
                             return { done: true, value: undefined };
@@ -565,14 +645,11 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                 const text = await response.text();
                 const parsed = reviveJSONParse(JSON.parse(text));
                 if (parsed.success !== true) {
-                    const err: any = {};
-                    err[parsed.code] = parsed.reject ?? null;
-                    return [err, null, { executeId: parsed.executeId }];
+                    return [reviveFailure(parsed.error), null, { executeId: parsed.executeId ?? '' }] as any;
                 }
-                return [null, parsed.data, { executeId: parsed.executeId }];
-            } catch (error: any) {
-                const errorPined = { REQUEST_FAIL: error };
-                return [errorPined, null, { executeId: 'unknown' }];
+                return [null, parsed.data, { executeId: parsed.executeId }] as any;
+            } catch {
+                return [createNetworkFailure(), null, { executeId: 'unknown' }] as any;
             }
         },
 
@@ -604,7 +681,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
         },
         $types: undefined as unknown as {
             generated: Generated;
-            error: Generated['rejectCode'];
+            failure: PublicFailure;
             params: {
                 [Path in keyof Generated['routeSchema']]: Generated['routeSchema'][Path]['types']['params'];
             };
@@ -614,7 +691,7 @@ export async function createStargate<Generated extends { routeSchema: any; rejec
                 Generated['routeSchema'][Path]['types']['result']
                 : // stream
                 // Result is already the yield type (see route-generate.ts comment).
-                AsyncGenerator<[Partial<Generated['rejectCode']>, null] | [null, Generated['routeSchema'][Path]['types']['result']], undefined>;
+                AsyncGenerator<[PublicFailure, null] | [null, Generated['routeSchema'][Path]['types']['result']], undefined>;
             };
         },
     };
@@ -869,9 +946,16 @@ function newMessage(): EventSourceMessage {
     };
 }
 
-export function withResolvers<T = any>(): PromiseWithResolvers<T> {
-    let resolve: PromiseWithResolvers<T>['resolve'];
-    let reject: PromiseWithResolvers<T>['reject'];
+/** locally declared so the package does not require the `ESNext.Promise` lib (PromiseWithResolvers) */
+export interface MilkioPromiseWithResolvers<T> {
+    promise: Promise<T>;
+    resolve: (value: T | PromiseLike<T>) => void;
+    reject: (reason?: any) => void;
+}
+
+export function withResolvers<T = any>(): MilkioPromiseWithResolvers<T> {
+    let resolve: MilkioPromiseWithResolvers<T>['resolve'];
+    let reject: MilkioPromiseWithResolvers<T>['reject'];
     const promise = new Promise<T>((res, rej) => {
         resolve = res;
         reject = rej;

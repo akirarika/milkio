@@ -1,9 +1,10 @@
+import { readText, pathExists } from "../../utils/node-compat";
 import consola from "consola";
 import { join } from "node:path";
 import os from "node:os";
 import { getRate, progress } from "../../progress";
 import { defineWatcherExtension } from "../extensions";
-import { exists, mkdir, readdir, readFile, rm } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm } from "node:fs/promises";
 import { generateRunTs } from "../generate-run-ts/__IMPORTS__";
 import { calcHash } from "../../utils/calc-hash";
 import { writeFileAtomic } from "../../utils/write-file-atomic";
@@ -21,10 +22,10 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
         const milkioTranspiledDirPath = join(milkioDirPath, "transpiled");
         const milkioGeneratedRouteDirPath = join(milkioDirPath, "generated", "routes");
         const milkioTranspiledRouteDirPath = join(milkioDirPath, "transpiled", "routes");
-        if (!(await exists(milkioGeneratedDirPath))) await mkdir(milkioGeneratedDirPath, { recursive: true });
-        if (!(await exists(milkioTranspiledDirPath))) await mkdir(milkioTranspiledDirPath, { recursive: true });
-        if (!(await exists(milkioGeneratedRouteDirPath))) await mkdir(milkioGeneratedRouteDirPath, { recursive: true });
-        if (!(await exists(milkioTranspiledRouteDirPath))) await mkdir(milkioTranspiledRouteDirPath, { recursive: true });
+        if (!(await pathExists(milkioGeneratedDirPath))) await mkdir(milkioGeneratedDirPath, { recursive: true });
+        if (!(await pathExists(milkioTranspiledDirPath))) await mkdir(milkioTranspiledDirPath, { recursive: true });
+        if (!(await pathExists(milkioGeneratedRouteDirPath))) await mkdir(milkioGeneratedRouteDirPath, { recursive: true });
+        if (!(await pathExists(milkioTranspiledRouteDirPath))) await mkdir(milkioTranspiledRouteDirPath, { recursive: true });
 
         await generateRunTs(project, milkioDirPath);
 
@@ -60,7 +61,7 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
             const prelimPath = join(root, ".milkio", "route-schema.ts");
             // 比较内容，相同则跳过写入，避免触发 vite page reload
             let oldPrelimContent: string | null = null;
-            try { oldPrelimContent = await Bun.file(prelimPath).text(); } catch {}
+            try { oldPrelimContent = await readText(prelimPath); } catch {}
             // 如果当前 route-schema.ts 已是最终版（含 transpiled 引用），绝不能再用
             // preliminary 覆盖：dev server 正在用它做流式内容协商（routeSchema.type 判
             // 断），被覆写后所有路由都会因 Accept 校验误判而 UNACCEPTABLE。
@@ -82,18 +83,18 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
                 const transpiledDirPath = join(milkioTranspiledRouteDirPath, file.importName);
                 const generatedHashFilePath = join(generatedDirPath, hashFileName);
 
-                if (!(await exists(generatedDirPath))) {
+                if (!(await pathExists(generatedDirPath))) {
                     isGenerate = true;
                     await mkdir(generatedDirPath, { recursive: true });
                 }
-                if (!(await exists(transpiledDirPath))) {
+                if (!(await pathExists(transpiledDirPath))) {
                     isGenerate = true;
                     await mkdir(transpiledDirPath, { recursive: true });
                 }
 
                 if (!isGenerate && file.dependencyChanged) isGenerate = true;
 
-                if (!isGenerate && !(await exists(generatedHashFilePath))) isGenerate = true;
+                if (!isGenerate && !(await pathExists(generatedHashFilePath))) isGenerate = true;
 
                 if (isGenerate === false) {
                     progress.tick(root);
@@ -139,7 +140,7 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
                 const newGeneratedContent = `${routeFileImports}\n\n${routeFileExports}\n`;
                 // 比较内容，相同则跳过写入，避免 mtime 更新触发 typia 重新 transpile + vite reload
                 let oldGeneratedContent: string | null = null;
-                try { oldGeneratedContent = await Bun.file(generatedHashFilePath).text(); } catch {}
+                try { oldGeneratedContent = await readText(generatedHashFilePath); } catch {}
                 if (oldGeneratedContent !== newGeneratedContent) {
                     await writeFileAtomic(generatedHashFilePath, newGeneratedContent);
                 }
@@ -149,8 +150,8 @@ export const routeGenerateWatcherExtension = defineWatcherExtension({
                     deleteQueue.add(async () => {
                         const oldFileGeneratedPath = join(generatedDirPath, oldFile);
                         const oldFileTranspiledPath = join(transpiledDirPath, oldFile);
-                        if (await exists(oldFileGeneratedPath)) await unlinkIfTooLong(oldFileGeneratedPath);
-                        if (await exists(oldFileTranspiledPath)) await unlinkIfTooLong(oldFileTranspiledPath);
+                        if (await pathExists(oldFileGeneratedPath)) await unlinkIfTooLong(oldFileGeneratedPath);
+                        if (await pathExists(oldFileTranspiledPath)) await unlinkIfTooLong(oldFileTranspiledPath);
                     });
                 }
                 await deleteQueue.waitAll();

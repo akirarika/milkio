@@ -362,7 +362,7 @@ export async function handler(
   });
   if (error) {
     context.logger.error('远程调用失败 (browse.action.ts)', JSON.stringify(error));
-    throw context.reject(error);
+    throw error;
   }
 
   const data = {
@@ -401,7 +401,7 @@ export async function handler(
   });
   if (error) {
     context.logger.error('远程调用失败 (read.action.ts)', JSON.stringify(error));
-    throw context.reject(error);
+    throw error;
   }
 
   const data = {
@@ -477,25 +477,25 @@ expect(resultInit.voice!.volume).toBe(50);
 
 ### 错误处理
 
-在测试代码中，使用以下方式检查错误类型：
+在测试代码中，使用以下方式检查错误类型（`kind` + `code` 收窄）：
 
 ```typescript
-// 正确：检查错误对象中是否存在特定的错误码属性
-if ("VERIFICATION_CODE_INVALID" in error) {
+// 正确：先确认是 fail，再按 code 收窄
+if (error?.kind === "fail" && error.code === "VERIFICATION_CODE_INVALID") {
     // 处理验证码无效的错误
 }
 
-if (!("VERIFICATION_CODE_INVALID" in error)) {
+if (!(error?.kind === "fail" && error.code === "VERIFICATION_CODE_INVALID")) {
     // 处理其他类型的错误
 }
 ```
 
-**禁止**使用以下方式判断错误类型，尽管它们可能在某些情况下运行正常，但会导致 TypeScript 类型推断不准确：
+**禁止**使用 keyed-map 写法，尽管它们可能在某些情况下运行正常，但会导致 TypeScript 类型推断不准确：
 
 ```typescript
 // 错误！禁止使用
-expect(error?.code).toBe("VERIFICATION_CODE_INVALID");
-expect(error?.VERIFICATION_CODE_INVALID).toBeDefined();
+expect(error?.code).toBe("VERIFICATION_CODE_INVALID");     // 缺少 kind 收窄
+expect(error?.VERIFICATION_CODE_INVALID).toBeDefined();    // 旧 keyed-map 写法
 ```
 
 ### 测试用例注释
@@ -513,14 +513,14 @@ expect(error?.VERIFICATION_CODE_INVALID).toBeDefined();
  * 5. 浏览文件夹 A（应含子文件夹 B，无笔记）
  */
 test('nestedDirectory', async () => {
-  const [_context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [_context, fail, world] = await astra.createMirrorWorld(import.meta.url);
 
   // 创建文件夹 A
   const [errorAddA, resultAddA] = await world.execute('/note/add-directory', {
     generateParams: false,
     params: { spaceId, parentId: '', name: '文件夹A' },
   });
-  if (errorAddA) throw reject('创建文件夹A失败', errorAddA);
+  if (errorAddA) throw fail('创建文件夹A失败', errorAddA);
   const dirAId = resultAddA.data!.id;
 
   // 在文件夹 A 内创建子文件夹 B
@@ -528,7 +528,7 @@ test('nestedDirectory', async () => {
     generateParams: false,
     params: { spaceId, parentId: dirAId, name: '子文件夹B' },
   });
-  if (errorAddB) throw reject('创建子文件夹B失败', errorAddB);
+  if (errorAddB) throw fail('创建子文件夹B失败', errorAddB);
   const dirBId = resultAddB.data!.id;
 
   // 在子文件夹 B 内创建笔记
@@ -536,14 +536,14 @@ test('nestedDirectory', async () => {
     generateParams: false,
     params: { spaceId, parentId: dirBId, title: '子笔记' },
   });
-  if (errorAddNote) throw reject('创建子笔记失败', errorAddNote);
+  if (errorAddNote) throw fail('创建子笔记失败', errorAddNote);
 
   // 浏览子文件夹 B（应含笔记）
   const [errorBrowseB, resultBrowseB] = await world.execute('/note/browse-directory', {
     generateParams: false,
     params: { spaceId, directoryId: dirBId },
   });
-  if (errorBrowseB) throw reject('浏览子文件夹B失败', errorBrowseB);
+  if (errorBrowseB) throw fail('浏览子文件夹B失败', errorBrowseB);
   expect(resultBrowseB.notes.length).toBe(1);
   expect(resultBrowseB.notes[0].title).toBe('子笔记');
 
@@ -552,7 +552,7 @@ test('nestedDirectory', async () => {
     generateParams: false,
     params: { spaceId, directoryId: dirAId },
   });
-  if (errorBrowseA) throw reject('浏览文件夹A失败', errorBrowseA);
+  if (errorBrowseA) throw fail('浏览文件夹A失败', errorBrowseA);
   expect(resultBrowseA.directories.length).toBe(1);
   expect(resultBrowseA.directories[0].id).toBe(dirBId);
   expect(resultBrowseA.notes.length).toBe(0);
@@ -573,11 +573,11 @@ test('nestedDirectory', async () => {
 调试测试用于在开发过程中快速验证接口是否可正常调用，不做断言，仅用于调试和观察返回值。
 
 ```ts
-import { expect, test } from 'vitest';
+import { expect, test } from 'vite-plus/test';
 import { astra } from '../../utils/test.ts';
 
 test('adjust', async () => {
-  const [_context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [_context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   // 调试：执行动作，generateParams 会自动生成符合接口定义的随机参数
   await world.execute('/note/add-directory', { generateParams: true });
 });
@@ -586,7 +586,7 @@ test('adjust', async () => {
 **基础 CRUD 测试 (`basic`)**：
 
 ```ts
-import { expect, test } from 'vitest';
+import { expect, test } from 'vite-plus/test';
 import { astra } from '../../utils/test.ts';
 
 /**
@@ -602,14 +602,14 @@ import { astra } from '../../utils/test.ts';
  */
 test('basic', async () => {
   const spaceId = 'spc-test';
-  const [_context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [_context, fail, world] = await astra.createMirrorWorld(import.meta.url);
 
   // 1. 创建文件夹 A
   const [errorAddDir, resultAddDir] = await world.execute('/note/add-directory', {
     generateParams: false,
     params: { spaceId, parentId: '', name: '文件夹A' },
   });
-  if (errorAddDir) throw reject('创建文件夹失败', errorAddDir);
+  if (errorAddDir) throw fail('创建文件夹失败', errorAddDir);
   expect(resultAddDir.data).not.toBeUndefined();
   const dirAId = resultAddDir.data!.id;
 
@@ -618,7 +618,7 @@ test('basic', async () => {
     generateParams: false,
     params: { spaceId, directoryId: '' },
   });
-  if (errorBrowse1) throw reject('浏览根目录失败', errorBrowse1);
+  if (errorBrowse1) throw fail('浏览根目录失败', errorBrowse1);
   expect(resultBrowse1.directories.length).toBe(1);
   expect(resultBrowse1.directories[0].id).toBe(dirAId);
 
@@ -627,7 +627,7 @@ test('basic', async () => {
     generateParams: false,
     params: { spaceId, parentId: dirAId, title: '笔记1' },
   });
-  if (errorAddNote) throw reject('创建笔记失败', errorAddNote);
+  if (errorAddNote) throw fail('创建笔记失败', errorAddNote);
   expect(resultAddNote.data).not.toBeUndefined();
   const noteId = resultAddNote.data!.id;
 
@@ -636,7 +636,7 @@ test('basic', async () => {
     generateParams: false,
     params: { spaceId, directoryId: dirAId },
   });
-  if (errorBrowseA) throw reject('浏览文件夹A失败', errorBrowseA);
+  if (errorBrowseA) throw fail('浏览文件夹A失败', errorBrowseA);
   expect(resultBrowseA.notes.length).toBe(1);
   expect(resultBrowseA.notes[0].id).toBe(noteId);
 
@@ -645,21 +645,21 @@ test('basic', async () => {
     generateParams: false,
     params: { spaceId, id: noteId },
   });
-  if (errorDeleteNote) throw reject('删除笔记失败', errorDeleteNote);
+  if (errorDeleteNote) throw fail('删除笔记失败', errorDeleteNote);
 
   // 6. 删除文件夹
   const [errorDeleteDir, resultDeleteDir] = await world.execute('/note/delete-directory', {
     generateParams: false,
     params: { spaceId, id: dirAId },
   });
-  if (errorDeleteDir) throw reject('删除文件夹失败', errorDeleteDir);
+  if (errorDeleteDir) throw fail('删除文件夹失败', errorDeleteDir);
 
   // 7. 浏览根目录（应为空）
   const [errorBrowseEnd, resultBrowseEnd] = await world.execute('/note/browse-directory', {
     generateParams: false,
     params: { spaceId, directoryId: '' },
   });
-  if (errorBrowseEnd) throw reject('浏览根目录失败', errorBrowseEnd);
+  if (errorBrowseEnd) throw fail('浏览根目录失败', errorBrowseEnd);
   expect(resultBrowseEnd.directories.length).toBe(0);
   expect(resultBrowseEnd.notes.length).toBe(0);
 });
@@ -675,10 +675,10 @@ test('basic', async () => {
  * 验证 init 后各通道的默认值
  */
 test('initDefaults', async () => {
-  const [_context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [_context, fail, world] = await astra.createMirrorWorld(import.meta.url);
 
   const [errorInit, resultInit] = await world.execute('/audio/init', { generateParams: false });
-  if (errorInit) throw reject('音频初始化失败', errorInit);
+  if (errorInit) throw fail('音频初始化失败', errorInit);
 
   // voice 通道：默认音量 50，playMode 'stop'，current 为 null
   expect(resultInit.voice).not.toBeNull();
@@ -710,14 +710,14 @@ test('initDefaults', async () => {
  */
 test('moveNote', async () => {
   const spaceId = 'spc-test';
-  const [_context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [_context, fail, world] = await astra.createMirrorWorld(import.meta.url);
 
   // 创建文件夹 A
   const [errorAddA, resultAddA] = await world.execute('/note/add-directory', {
     generateParams: false,
     params: { spaceId, parentId: '', name: '文件夹A' },
   });
-  if (errorAddA) throw reject('创建文件夹A失败', errorAddA);
+  if (errorAddA) throw fail('创建文件夹A失败', errorAddA);
   const dirAId = resultAddA.data!.id;
 
   // 创建文件夹 B
@@ -725,7 +725,7 @@ test('moveNote', async () => {
     generateParams: false,
     params: { spaceId, parentId: '', name: '文件夹B' },
   });
-  if (errorAddB) throw reject('创建文件夹B失败', errorAddB);
+  if (errorAddB) throw fail('创建文件夹B失败', errorAddB);
   const dirBId = resultAddB.data!.id;
 
   // 在文件夹 A 中创建笔记
@@ -733,7 +733,7 @@ test('moveNote', async () => {
     generateParams: false,
     params: { spaceId, parentId: dirAId, title: '待移动笔记' },
   });
-  if (errorAddNote) throw reject('创建笔记失败', errorAddNote);
+  if (errorAddNote) throw fail('创建笔记失败', errorAddNote);
   const noteId = resultAddNote.data!.id;
 
   // 将笔记从文件夹 A 移到文件夹 B 内
@@ -748,14 +748,14 @@ test('moveNote', async () => {
       position: 'inside',
     },
   });
-  if (errorMove) throw reject('移动笔记失败', errorMove);
+  if (errorMove) throw fail('移动笔记失败', errorMove);
 
   // 浏览文件夹 A（应无笔记）
   const [errorBrowseA, resultBrowseA] = await world.execute('/note/browse-directory', {
     generateParams: false,
     params: { spaceId, directoryId: dirAId },
   });
-  if (errorBrowseA) throw reject('浏览文件夹A失败', errorBrowseA);
+  if (errorBrowseA) throw fail('浏览文件夹A失败', errorBrowseA);
   expect(resultBrowseA.notes.length).toBe(0);
 
   // 浏览文件夹 B（应含该笔记）
@@ -763,7 +763,7 @@ test('moveNote', async () => {
     generateParams: false,
     params: { spaceId, directoryId: dirBId },
   });
-  if (errorBrowseB) throw reject('浏览文件夹B失败', errorBrowseB);
+  if (errorBrowseB) throw fail('浏览文件夹B失败', errorBrowseB);
   expect(resultBrowseB.notes.length).toBe(1);
   expect(resultBrowseB.notes[0]!.id).toBe(noteId);
 });

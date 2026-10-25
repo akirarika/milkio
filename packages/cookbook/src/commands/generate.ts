@@ -1,3 +1,4 @@
+import { readText, pathExists } from "../utils/node-compat";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import { getCookbookToml } from "../utils/get-cookbook-toml";
 import { join } from "node:path";
@@ -8,15 +9,15 @@ import { progress } from "../progress";
 import { calcHash } from "../utils/calc-hash";
 
 export default await defineCookbookCommand(async (utils) => {
-  const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
-  if (!(await cookbookToml.exists())) {
+  const cookbookToml = join(cwd(), "cookbook.toml");
+  if (!(await pathExists(cookbookToml))) {
     consola.error(
       `The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`,
     );
     consola.info(`Hint: run "co init" in an empty directory to create a new cookbook project.`);
     exit(1);
   }
-  const cookbookTomlText = await cookbookToml.text();
+  const cookbookTomlText = await readText(cookbookToml);
   const cookbookTomlHash = calcHash(cookbookTomlText);
   const options = await getCookbookToml(cookbookTomlText, progress);
   options.hash = cookbookTomlHash;

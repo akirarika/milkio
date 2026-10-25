@@ -1,3 +1,4 @@
+import { readText, pathExists, parseToml, sleep } from "./node-compat";
 import consola from "consola";
 import { join } from "node:path";
 import { exit, cwd, env } from "node:process";
@@ -14,19 +15,19 @@ export async function getCookbookToml(cookbookToml?: string, p?: typeof progress
     let options: any;
     if (cookbookToml) {
         const cookbookTomlHash = calcHash(cookbookToml);
-        options = Bun.TOML.parse(cookbookToml);
+        options = parseToml(cookbookToml);
         options.hash = cookbookTomlHash;
     } else {
-        const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
-        if (!(await cookbookToml.exists())) {
+        const cookbookToml = join(cwd(), "cookbook.toml");
+        if (!(await pathExists(cookbookToml))) {
             consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`);
             consola.info(`Hint: run "co init" in an empty directory to create a new cookbook project.`);
             exit(1);
         }
-        const cookbookTomlText = await cookbookToml.text();
+        const cookbookTomlText = await readText(cookbookToml);
         const cookbookTomlHash = calcHash(cookbookTomlText);
         try {
-            options = Bun.TOML.parse(cookbookTomlText);
+            options = parseToml(cookbookTomlText);
         } catch (error: any) {
             consola.error(`Failed to parse "cookbook.toml": ${error?.message ?? error}`);
             consola.info(`Hint: check the TOML syntax at the line/column indicated above. See https://toml.io for the TOML specification.`);
@@ -63,8 +64,8 @@ export async function getCookbookToml(cookbookToml?: string, p?: typeof progress
         }
     }
     if (existsSync(join(env.HOME || env.USERPROFILE || "/", "cookbook.toml"))) {
-        const homeCookbookToml = Bun.file(join(env.HOME || env.USERPROFILE || "/", "cookbook.toml"));
-        const homeOptions: any = Bun.TOML.parse(await homeCookbookToml.text());
+        const homeCookbookToml = join(env.HOME || env.USERPROFILE || "/", "cookbook.toml");
+        const homeOptions: any = parseToml(await readText(homeCookbookToml));
         if (homeOptions.config) {
             if (!options.config) options.config = {};
             for (const config in homeOptions.config) {
@@ -87,7 +88,7 @@ export async function getCookbookToml(cookbookToml?: string, p?: typeof progress
         if (confirm) {
             try {
                 await killPort(options.general.cookbookPort);
-                await Bun.sleep(768);
+                await sleep(768);
             } catch (error) {
                 consola.warn(`Failed to kill the process occupying port ${options.general.cookbookPort}: ${error instanceof Error ? error.message : error}`);
             }

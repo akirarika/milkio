@@ -1,6 +1,7 @@
+import { readText, pathExists } from "./node-compat";
 import consola from "consola";
 import { join } from "node:path";
-import { exists } from "node:fs/promises";
+
 import { exit } from "node:process";
 import { __VERSION__ } from "../../__VERSION__";
 
@@ -14,7 +15,7 @@ import { __VERSION__ } from "../../__VERSION__";
 // 注意：该清单必须与 packages/cookbook/package.json 中的版本保持同步，
 // 每次升级 typia/ttsc 后需同步更新这里。
 // milkio 版本必须与当前 co 二进制自身版本一致（引用 __VERSION__，发布时自动同步，
-// 不再硬编码——硬编码会在每次 bun.publ.ts bump 版本后立即失配，导致 CI 里 co generate 自校验失败）
+// 不再硬编码——硬编码会在每次 .publ.ts bump 版本后立即失配，导致 CI 里 co generate 自校验失败）
 const REQUIRED_VERSIONS: Record<string, string> = {
   typia: "14.0.0",
   ttsc: "0.27.0",
@@ -46,11 +47,11 @@ function mismatchError(name: string, expected: string, declared: string | undefi
 // 不一致（偏高或偏低）即打印错误并退出 1。版本完全一致时静默通过。
 export async function checkVersions(cwd: string): Promise<void> {
   const pkgJsonPath = join(cwd, "package.json");
-  if (!(await exists(pkgJsonPath))) return;
+  if (!(await pathExists(pkgJsonPath))) return;
 
   let pkgJson: any;
   try {
-    pkgJson = JSON.parse(await Bun.file(pkgJsonPath).text());
+    pkgJson = JSON.parse(await readText(pkgJsonPath));
   } catch {
     return;
   }
@@ -72,9 +73,9 @@ export async function checkVersions(cwd: string): Promise<void> {
     // 安装版本：优先 node_modules/<name>/package.json 的 version 字段
     let installed: string | undefined;
     const installedPkgPath = join(cwd, "node_modules", name, "package.json");
-    if (await exists(installedPkgPath)) {
+    if (await pathExists(installedPkgPath)) {
       try {
-        installed = JSON.parse(await Bun.file(installedPkgPath).text())?.version;
+        installed = JSON.parse(await readText(installedPkgPath))?.version;
       } catch {
         installed = undefined;
       }

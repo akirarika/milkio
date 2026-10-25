@@ -56,7 +56,7 @@ export function useVitePluginMilkio(options?: {
                             bodyTooLarge = true;
                             res.statusCode = 413;
                             res.setHeader("Content-Type", "application/json");
-                            res.end(JSON.stringify({ success: false, code: "REQUEST_TOO_LARGE", reject: { maxBodySize: MAX_BODY_SIZE }, executeId: "" }));
+                            res.end(JSON.stringify({ success: false, executeId: "", error: { kind: "fail", code: "REQUEST_TOO_LARGE", data: { maxBodySize: MAX_BODY_SIZE } } }));
                             return;
                         }
                         bodyChunks.push(chunk);
@@ -209,7 +209,7 @@ export function useVitePluginMilkio(options?: {
                 if (project.runtime === "node") {
                     format = options?.outputFormat ?? "cjs";
                     mode = "chunk";
-                } else if (project.runtime === "deno" || project.runtime === "bun") {
+                } else if (project.runtime === "bun") {
                     format = options?.outputFormat ?? "esm";
                     mode = "chunk";
                 } else throw new Error("runtime not supported");

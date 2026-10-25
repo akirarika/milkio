@@ -1,3 +1,4 @@
+import { writeFileEnsured } from "../../utils/node-compat";
 import { join } from "node:path";
 import { defineWatcherExtension } from "../extensions";
 
@@ -21,7 +22,7 @@ export const configWatcherExtension = defineWatcherExtension({
     typescriptExports += "\n  }\n}}";
     const typescript = `${typescriptImports}\n\n${typescriptExports}`;
 
-    await Bun.write(writePath, typescript);
+    await writeFileEnsured(writePath, typescript);
   },
   declares: async (root, mode, options, project, changeFiles, allFiles) => {
     let header = "";

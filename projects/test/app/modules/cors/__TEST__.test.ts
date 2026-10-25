@@ -1,9 +1,9 @@
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { astra } from "../../../test.ts";
 
 const BASE_URL = "http://localhost:9000";
 
-it.sequential("OPTIONS preflight returns CORS headers with defaults", async () => {
+it("OPTIONS preflight returns CORS headers with defaults", async () => {
     const res = await fetch(`${BASE_URL}/hello-world`, { method: "OPTIONS" });
     expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
     expect(res.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");
@@ -14,14 +14,14 @@ it.sequential("OPTIONS preflight returns CORS headers with defaults", async () =
     expect(res.headers.get("Access-Control-Expose-Headers")).toBeNull();
 });
 
-it.sequential("OPTIONS preflight returns CORS headers even for unknown route", async () => {
+it("OPTIONS preflight returns CORS headers even for unknown route", async () => {
     const res = await fetch(`${BASE_URL}/non-existent-path-xyz`, { method: "OPTIONS" });
     expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
     expect(res.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");
     expect(res.headers.get("Access-Control-Allow-Headers")).toBe("Content-Type, Authorization");
 });
 
-it.sequential("normal POST response includes CORS headers", async () => {
+it("normal POST response includes CORS headers", async () => {
     const res = await fetch(`${BASE_URL}/hello-world/hello`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -35,7 +35,7 @@ it.sequential("normal POST response includes CORS headers", async () => {
     expect(res.headers.get("Content-Type")).toBe("application/json");
 });
 
-it.sequential("generate_204 includes CORS headers", async () => {
+it("generate_204 includes CORS headers", async () => {
     const res = await fetch(`${BASE_URL}/generate_204`);
     expect(res.status).toBe(204);
     expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
@@ -44,7 +44,7 @@ it.sequential("generate_204 includes CORS headers", async () => {
     expect(res.headers.get("Server")).toBe("milkio");
 });
 
-it.sequential("non-existent route still returns CORS headers", async () => {
+it("non-existent route still returns CORS headers", async () => {
     const res = await fetch(`${BASE_URL}/non-existent-route`, {
         method: "POST",
         body: "{}",
@@ -55,13 +55,13 @@ it.sequential("non-existent route still returns CORS headers", async () => {
     expect(res.headers.get("Access-Control-Allow-Headers")).toBe("Content-Type, Authorization");
 });
 
-it.sequential("mirror world: context.http.cors exists (IPC proxy returns undefined)", async () => {
-    const [_context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("mirror world: context.http.cors exists (IPC proxy returns undefined)", async () => {
+    const [_context, fail, world] = await astra.createMirrorWorld(import.meta.url);
     const [error, results] = await world.execute("/cors/ping", {
         params: {},
         generateParams: false,
     });
-    if (error) throw reject("Milkio did not execute successfully", error);
+    if (error) throw fail("Milkio did not execute successfully", error);
 
     // MirrorWorld mode now correctly exposes CORS config.
     // No explicit origin configured, but default methods/headers are present.

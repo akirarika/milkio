@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vite-plus/test";
 import { TEST_DATABASE_PREFIX } from '@milkio/drizzle';
 import { createCleanDatabaseScheduler, type CleanDatabaseHook } from './index.ts';
 

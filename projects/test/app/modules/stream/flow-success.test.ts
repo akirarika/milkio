@@ -1,17 +1,17 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { astra } from "../../../test.ts";
 
-test.sequential("basic", async () => {
-    const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+test("basic", async () => {
+    const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
     const [error, results] = await world.execute("/stream/flow-success~", {
         type: "stream",
         generateParams: false,
     });
-    if (error) throw reject("Milkio did not execute successfully", error);
+    if (error) throw fail("Milkio did not execute successfully", error);
 
     const values: Array<{ counter: number } | null> = [];
     for await (const [error, result] of results) {
-        if (error) throw reject("Milkio did not execute successfully", error);
+        if (error) throw fail("Milkio did not execute successfully", error);
         values.push(result);
     }
 

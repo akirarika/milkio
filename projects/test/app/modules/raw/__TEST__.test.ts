@@ -1,10 +1,10 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 
 const BASE_URL = "http://localhost:9000";
 
 // ============ echo.raw.ts ============
 
-test.sequential("raw echo - returns JSON with request info", async () => {
+test("raw echo - returns JSON with request info", async () => {
     const res = await fetch(`${BASE_URL}/raw/echo`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -20,7 +20,7 @@ test.sequential("raw echo - returns JSON with request info", async () => {
     expect(data.body).toEqual({ hello: "world", num: 42 });
 });
 
-test.sequential("raw echo - GET request with no body", async () => {
+test("raw echo - GET request with no body", async () => {
     const res = await fetch(`${BASE_URL}/raw/echo`, {
         method: "GET",
     });
@@ -30,7 +30,7 @@ test.sequential("raw echo - GET request with no body", async () => {
     expect(data.body).toEqual({});
 });
 
-test.sequential("raw echo - non-JSON body is preserved as raw string", async () => {
+test("raw echo - non-JSON body is preserved as raw string", async () => {
     const res = await fetch(`${BASE_URL}/raw/echo`, {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
@@ -43,7 +43,7 @@ test.sequential("raw echo - non-JSON body is preserved as raw string", async () 
 
 // ============ binary.raw.ts ============
 
-test.sequential("raw binary - returns octet-stream", async () => {
+test("raw binary - returns octet-stream", async () => {
     const res = await fetch(`${BASE_URL}/raw/binary`, {
         method: "POST",
     });
@@ -57,7 +57,7 @@ test.sequential("raw binary - returns octet-stream", async () => {
 
 // ============ custom-status.raw.ts ============
 
-test.sequential("raw custom status - 200 by default", async () => {
+test("raw custom status - 200 by default", async () => {
     const res = await fetch(`${BASE_URL}/raw/custom-status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -70,7 +70,7 @@ test.sequential("raw custom status - 200 by default", async () => {
     expect(data.status).toBe(200);
 });
 
-test.sequential("raw custom status - 404 with custom headers", async () => {
+test("raw custom status - 404 with custom headers", async () => {
     const res = await fetch(`${BASE_URL}/raw/custom-status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -82,7 +82,7 @@ test.sequential("raw custom status - 404 with custom headers", async () => {
     expect(data.status).toBe(404);
 });
 
-test.sequential("raw custom status - 500 error code", async () => {
+test("raw custom status - 500 error code", async () => {
     const res = await fetch(`${BASE_URL}/raw/custom-status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -93,7 +93,7 @@ test.sequential("raw custom status - 500 error code", async () => {
 
 // ============ sse-passthrough.raw.ts ============
 
-test.sequential("raw SSE - streams chunks as text/event-stream", async () => {
+test("raw SSE - streams chunks as text/event-stream", async () => {
     const res = await fetch(`${BASE_URL}/raw/sse-passthrough`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -119,7 +119,7 @@ test.sequential("raw SSE - streams chunks as text/event-stream", async () => {
     }
 });
 
-test.sequential("raw SSE - default 3 chunks", async () => {
+test("raw SSE - default 3 chunks", async () => {
     const res = await fetch(`${BASE_URL}/raw/sse-passthrough`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -132,7 +132,7 @@ test.sequential("raw SSE - default 3 chunks", async () => {
     expect(lines.length).toBe(4);
 });
 
-test.sequential("raw SSE - works with no body", async () => {
+test("raw SSE - works with no body", async () => {
     const res = await fetch(`${BASE_URL}/raw/sse-passthrough`, {
         method: "GET",
     });
@@ -145,7 +145,7 @@ test.sequential("raw SSE - works with no body", async () => {
 
 // ============ URL control ============
 
-test.sequential("raw route - URL has no suffix (clean path)", async () => {
+test("raw route - URL has no suffix (clean path)", async () => {
     // The URL should be exactly /raw/echo, not /raw/echo~ or /raw/echo+
     const res = await fetch(`${BASE_URL}/raw/echo`, {
         method: "POST",
@@ -161,19 +161,19 @@ test.sequential("raw route - URL has no suffix (clean path)", async () => {
 
 // ============ Non-existent raw route ============
 
-test.sequential("raw route - 404 for non-existent raw path", async () => {
+test("raw route - 404 for non-existent raw path", async () => {
     const res = await fetch(`${BASE_URL}/raw/nonexistent`, {
         method: "POST",
     });
     expect(res.status).toBe(200); // milkio returns 200 with success:false in body
     const data = await res.json() as any;
     expect(data.success).toBe(false);
-    expect(data.code).toBe("NOT_FOUND");
+    expect(data.error.code).toBe("NOT_FOUND");
 });
 
 // ============ Action routes still work alongside raw routes ============
 
-test.sequential("action routes still work alongside raw routes", async () => {
+test("action routes still work alongside raw routes", async () => {
     const res = await fetch(`${BASE_URL}/hello-world/hello`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -187,7 +187,7 @@ test.sequential("action routes still work alongside raw routes", async () => {
 
 // ============ Raw handler can use context ============
 
-test.sequential("raw handler has access to context", async () => {
+test("raw handler has access to context", async () => {
     // The echo handler reads request.headers, which includes cookies etc.
     // We verify context is properly constructed by checking the echoed headers.
     const res = await fetch(`${BASE_URL}/raw/echo`, {
@@ -205,7 +205,7 @@ test.sequential("raw handler has access to context", async () => {
 
 // ============ CORS headers on raw responses ============
 
-test.sequential("raw route - CORS headers applied when Origin present", async () => {
+test("raw route - CORS headers applied when Origin present", async () => {
     const res = await fetch(`${BASE_URL}/raw/echo`, {
         method: "POST",
         headers: {
@@ -215,9 +215,12 @@ test.sequential("raw route - CORS headers applied when Origin present", async ()
         body: JSON.stringify({}),
     });
     expect(res.ok).toBe(true);
-    // CORS header should be present
-    const accessControl = res.headers.get("Access-Control-Allow-Origin");
-    expect(accessControl).toBeTruthy();
+    // CORS allow-origin is opt-in (corsAllowOrigin in the runtime http config);
+    // this test project does not configure it, so no allow-origin header is
+    // emitted. The default allow-methods/allow-headers still apply to raw routes.
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
+    expect(res.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");
+    expect(res.headers.get("Access-Control-Allow-Headers")).toBe("Content-Type, Authorization");
 });
 
 // ============ Middleware / event compatibility ============
@@ -228,7 +231,7 @@ test.sequential("raw route - CORS headers applied when Origin present", async ()
 //   - httpRequest / httpResponse: throw if event fields are missing
 // If any event doesn't fire or is missing required fields, the request will fail.
 
-test.sequential("raw route - milkio:executeBefore fires and injects context", async () => {
+test("raw route - milkio:executeBefore fires and injects context", async () => {
     const res = await fetch(`${BASE_URL}/raw/middleware-test`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -241,7 +244,7 @@ test.sequential("raw route - milkio:executeBefore fires and injects context", as
     expect(data.sayResult).toBe("hello world");
 });
 
-test.sequential("raw route - context has path, executeId, and logger", async () => {
+test("raw route - context has path, executeId, and logger", async () => {
     const res = await fetch(`${BASE_URL}/raw/middleware-test`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -254,9 +257,9 @@ test.sequential("raw route - context has path, executeId, and logger", async () 
     expect(data.hasLogger).toBe(true);
 });
 
-test.sequential("raw route - milkio:httpRequest and milkio:httpResponse fire without error", async () => {
+test("raw route - milkio:httpRequest and milkio:httpResponse fire without error", async () => {
     // foo.handler.ts registers handlers for milkio:httpRequest and milkio:httpResponse
-    // that throw reject('REQUEST_FAIL', ...) if any required event field is missing.
+    // that throw fail('REQUEST_FAIL', ...) if any required event field is missing.
     // A successful 200 response proves both events fired with complete fields.
     const res = await fetch(`${BASE_URL}/raw/middleware-test`, {
         method: "POST",
@@ -273,7 +276,7 @@ test.sequential("raw route - milkio:httpRequest and milkio:httpResponse fire wit
 // context.routeType lets middleware distinguish action / stream / raw requests
 // and skip raw routes when they expect plain-object results (raw returns a Response).
 
-test.sequential("raw route - context.routeType is 'raw'", async () => {
+test("raw route - context.routeType is 'raw'", async () => {
     const res = await fetch(`${BASE_URL}/raw/middleware-test`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -284,7 +287,7 @@ test.sequential("raw route - context.routeType is 'raw'", async () => {
     expect(data.routeType).toBe("raw");
 });
 
-test.sequential("raw echo - context.routeType is 'raw'", async () => {
+test("raw echo - context.routeType is 'raw'", async () => {
     const res = await fetch(`${BASE_URL}/raw/echo`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -295,7 +298,7 @@ test.sequential("raw echo - context.routeType is 'raw'", async () => {
     expect(data.routeType).toBe("raw");
 });
 
-test.sequential("action route - context.routeType is 'action'", async () => {
+test("action route - context.routeType is 'action'", async () => {
     const res = await fetch(`${BASE_URL}/context/context`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -307,7 +310,7 @@ test.sequential("action route - context.routeType is 'action'", async () => {
     expect(data.data.routeType).toBe("action");
 });
 
-test.sequential("stream route - context.routeType is 'stream'", async () => {
+test("stream route - context.routeType is 'stream'", async () => {
     const res = await fetch(`${BASE_URL}/context/route-type~`, {
         method: "POST",
         headers: { "Accept": "text/event-stream", "Content-Type": "application/json" },

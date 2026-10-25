@@ -44,7 +44,7 @@ export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
 ];
 
 export const indexTs = `// index
-import type { MilkioMeta, MilkioContext, MilkioRejectCode, MilkioEvents } from "./declares.ts";
+import type { MilkioMeta, MilkioContext, MilkioPublicFailure, MilkioEvents } from "./declares.ts";
 import typiaSchema from "./typia-schema.ts";
 import routeSchema from "./route-schema.ts";
 import rawSchema from "./raw-schema.ts";
@@ -54,7 +54,7 @@ import handlerSchema from "./handler-schema.ts";
 export const generated = {
   meta: undefined as unknown as MilkioMeta,
   context: undefined as unknown as MilkioContext,
-  rejectCode: undefined as unknown as MilkioRejectCode,
+  failure: undefined as unknown as MilkioPublicFailure,
   events: undefined as unknown as MilkioEvents,
   typiaSchema,
   routeSchema,

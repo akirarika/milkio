@@ -1,8 +1,8 @@
-import { it } from "vitest";
+import { it } from "vite-plus/test";
 import { astra } from "../../../test.ts";
 
-it.sequential("performance - QPS and latency", async () => {
-    const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("performance - QPS and latency", async () => {
+    const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
 
     const totalRequests = 1000;
     const concurrency = 500;

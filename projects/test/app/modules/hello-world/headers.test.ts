@@ -1,9 +1,9 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { stargate } from "../../../test.ts";
 
 const BASE_URL = "http://localhost:9000";
 
-test.sequential("context.http.request.headers.get() reads custom request headers", async () => {
+test("context.http.request.headers.get() reads custom request headers", async () => {
     const res = await fetch(`${BASE_URL}/hello-world/headers`, {
         method: "POST",
         headers: {
@@ -22,7 +22,7 @@ test.sequential("context.http.request.headers.get() reads custom request headers
     expect(data.data.read["X-Not-Exist"]).toBeNull();
 });
 
-test.sequential("headers.get() is case-insensitive (HTTP spec)", async () => {
+test("headers.get() is case-insensitive (HTTP spec)", async () => {
     const res = await fetch(`${BASE_URL}/hello-world/headers`, {
         method: "POST",
         headers: {
@@ -40,7 +40,7 @@ test.sequential("headers.get() is case-insensitive (HTTP spec)", async () => {
     expect(data.data.read["X-Lowercase-Header"]).toBe("value-from-lowercase");
 });
 
-test.sequential("context.http.response.headers sets custom response headers", async () => {
+test("context.http.response.headers sets custom response headers", async () => {
     const res = await fetch(`${BASE_URL}/hello-world/headers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -56,7 +56,7 @@ test.sequential("context.http.response.headers sets custom response headers", as
     expect(res.headers.get("X-Response-Number")).toBe("12345");
 });
 
-test.sequential("context.http.response.headers override (set then set again)", async () => {
+test("context.http.response.headers override (set then set again)", async () => {
     const res = await fetch(`${BASE_URL}/hello-world/headers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -84,7 +84,7 @@ test.sequential("context.http.response.headers override (set then set again)", a
     expect(res2.headers.get("X-Response-Override")).toBe("second-value");
 });
 
-test.sequential("context.http.response.headers delete a previously set header", async () => {
+test("context.http.response.headers delete a previously set header", async () => {
     const res = await fetch(`${BASE_URL}/hello-world/headers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,7 +103,7 @@ test.sequential("context.http.response.headers delete a previously set header", 
     expect(res.headers.get("X-Response-Keep")).toBe("should-remain");
 });
 
-test.sequential("combined: read request headers, set response headers, and verify both", async () => {
+test("combined: read request headers, set response headers, and verify both", async () => {
     const res = await fetch(`${BASE_URL}/hello-world/headers`, {
         method: "POST",
         headers: {
@@ -127,7 +127,7 @@ test.sequential("combined: read request headers, set response headers, and verif
     expect(res.headers.get("X-Response-Id")).toBe("res-001");
 });
 
-test.sequential("delete context.http.response.headers removes headers from final response", async () => {
+test("delete context.http.response.headers removes headers from final response", async () => {
     // 先用不带 deleteHeaders 的请求确认某 header 正常存在
     const resWith = await fetch(`${BASE_URL}/hello-world/headers`, {
         method: "POST",
@@ -158,7 +158,7 @@ test.sequential("delete context.http.response.headers removes headers from final
 
 // -- stargate headers --
 
-test.sequential("stargate.execute with headers option passes custom request headers", async () => {
+test("stargate.execute with headers option passes custom request headers", async () => {
     const [error, result] = await stargate.execute("/hello-world/headers", {
         params: {
             readHeaders: ["X-Stargate-Token", "X-Stargate-User"],
@@ -174,7 +174,7 @@ test.sequential("stargate.execute with headers option passes custom request head
     expect(result!.read["X-Stargate-User"]).toBe("stargate-user-99");
 });
 
-test.sequential("stargate automatically sets Content-Type and Accept", async () => {
+test("stargate automatically sets Content-Type and Accept", async () => {
     const [error, result] = await stargate.execute("/hello-world/headers", {
         params: {
             readHeaders: ["Content-Type", "Accept"],
@@ -186,7 +186,7 @@ test.sequential("stargate automatically sets Content-Type and Accept", async () 
     expect(result!.read["Accept"]).toBe("application/json");
 });
 
-test.sequential("stargate milkio:fetchBefore can override headers", async () => {
+test("stargate milkio:fetchBefore can override headers", async () => {
     const off = stargate.on("milkio:fetchBefore", ({ options }) => {
         options.headers["X-Overridden"] = "overridden-by-event";
     });
@@ -203,7 +203,7 @@ test.sequential("stargate milkio:fetchBefore can override headers", async () => 
     expect(result!.read["X-Overridden"]).toBe("overridden-by-event");
 });
 
-test.sequential("stargate headers option + milkio:fetchBefore merge", async () => {
+test("stargate headers option + milkio:fetchBefore merge", async () => {
     const off = stargate.on("milkio:fetchBefore", ({ options }) => {
         options.headers["X-Event-Header"] = "from-event";
     });

@@ -1,7 +1,7 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { stargate } from "../../../test.ts";
 
-test.sequential("fast path emits executeBefore and fetchBefore", async () => {
+test("fast path emits executeBefore and fetchBefore", async () => {
     let executeBeforeCalled = false;
     let fetchBeforeCalled = false;
 
@@ -27,7 +27,7 @@ test.sequential("fast path emits executeBefore and fetchBefore", async () => {
     expect(fetchBeforeCalled).toBe(true);
 });
 
-test.sequential("cache/retry path emits executeBefore and fetchBefore", async () => {
+test("cache/retry path emits executeBefore and fetchBefore", async () => {
     let executeBeforeCalled = false;
     let fetchBeforeCalled = false;
 
@@ -53,7 +53,7 @@ test.sequential("cache/retry path emits executeBefore and fetchBefore", async ()
     expect(fetchBeforeCalled).toBe(true);
 });
 
-test.sequential("fetchBefore handler can modify request headers", async () => {
+test("fetchBefore handler can modify request headers", async () => {
     const headerName = "X-Test-Header";
     const headerValue = "test-value-from-event";
 

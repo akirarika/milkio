@@ -67,7 +67,7 @@ export default async function setup() {
 测试代码里照常使用，无需改动：
 
 ```ts
-const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
 await world.cleanDatabase();   // 新建随机库 + 完整迁移 + seed + 清当前库 redis 命名空间
 ```
 
@@ -147,7 +147,7 @@ const result = await context.db.update(articleTable).set({ ...params.data, updat
     eq(articleTable.updatedAt, params.data.updatedAt),
   )
 );
-if (result[0].affectedRows === 0) throw context.reject("DATA_CONFLICT", undefined);
+if (result[0].affectedRows === 0) throw context.fail("DATA_CONFLICT", undefined);
 ```
 
 不要将 `updatedAt` 包含在 `.set()` 中——MySQL 的 `ON UPDATE CURRENT_TIMESTAMP(3)` 仅在该列未出现于 SET 子句时自动生效，显式传入会导致时间戳不会更新。

@@ -1,7 +1,7 @@
-import { exists, readdir } from "fs-extra";
-import { readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import consola from "consola";
+import { pathExists } from "./node-compat";
 
 // estree-walker@3.0.3 的 package.json exports 只声明了 "import" 条件，
 // 缺少 require/default。Node 的 CJS 加载（require）按 ["node", "require", "default"]
@@ -15,9 +15,9 @@ async function listEstreeWalkerPackageJsons(root: string): Promise<Array<string>
   const results: Array<string> = [];
 
   const rootCopy = join(nodeModules, "estree-walker", "package.json");
-  if (await exists(rootCopy)) results.push(rootCopy);
+  if (await pathExists(rootCopy)) results.push(rootCopy);
 
-  if (!(await exists(nodeModules))) return results;
+  if (!(await pathExists(nodeModules))) return results;
 
   let entries: Array<string> = [];
   try {
@@ -39,12 +39,12 @@ async function listEstreeWalkerPackageJsons(root: string): Promise<Array<string>
       }
       for (const pkg of scoped) {
         const candidate = join(scopeDir, pkg, "node_modules", "estree-walker", "package.json");
-        if (await exists(candidate)) results.push(candidate);
+        if (await pathExists(candidate)) results.push(candidate);
       }
     } else {
       // 普通包：node_modules/<pkg>/node_modules/estree-walker
       const candidate = join(nodeModules, entry, "node_modules", "estree-walker", "package.json");
-      if (await exists(candidate)) results.push(candidate);
+      if (await pathExists(candidate)) results.push(candidate);
     }
   }
 

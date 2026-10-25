@@ -1,8 +1,8 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 
 const BASE_URL = "http://localhost:9000";
 
-test.sequential("binary response with Uint8Array via HTTP", async () => {
+test("binary response with Uint8Array via HTTP", async () => {
     const res = await fetch(`${BASE_URL}/hello-world/binary-response`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -15,7 +15,7 @@ test.sequential("binary response with Uint8Array via HTTP", async () => {
     expect(text).toBe("Hello, Binary World!");
 });
 
-test.sequential("binary response with ArrayBuffer via HTTP", async () => {
+test("binary response with ArrayBuffer via HTTP", async () => {
     const res = await fetch(`${BASE_URL}/hello-world/binary-response`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -28,7 +28,7 @@ test.sequential("binary response with ArrayBuffer via HTTP", async () => {
     expect(text).toBe("Hello, Binary World!");
 });
 
-test.sequential("binary response with Blob via HTTP", async () => {
+test("binary response with Blob via HTTP", async () => {
     const res = await fetch(`${BASE_URL}/hello-world/binary-response`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -41,7 +41,7 @@ test.sequential("binary response with Blob via HTTP", async () => {
     expect(text).toBe("Hello, Binary World!");
 });
 
-test.sequential("standard Request object is used (headers.get works)", async () => {
+test("standard Request object is used (headers.get works)", async () => {
     const res = await fetch(`${BASE_URL}/hello-world/hello`, {
         method: "POST",
         headers: {

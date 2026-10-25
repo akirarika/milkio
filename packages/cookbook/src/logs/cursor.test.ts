@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import { compareDesc, decodeCursor, deserializeFilters, encodeCursor, isRecordAfterCursor, serializeFilters } from "./cursor";
 import type { CursorState, LocatedLogRecord } from "./types";
 

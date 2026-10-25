@@ -1,3 +1,4 @@
+import { readText, pathExists, sleep, isStandaloneBinary } from "../utils/node-compat";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import consola from "consola";
 import { argv, cwd, env, execPath, exit } from "node:process";
@@ -28,8 +29,8 @@ import { startSessionLogTail } from "../logs/tail";
 
 export default await defineCookbookCommand(async (utils) => {
     const params = utils.getParams();
-    const cookbookToml = Bun.file(join(cwd(), "cookbook.toml"));
-    if (!(await cookbookToml.exists())) {
+    const cookbookToml = join(cwd(), "cookbook.toml");
+    if (!(await pathExists(cookbookToml))) {
         consola.error(`The "cookbook.toml" file does not exist in the current directory: ${join(cwd())}`);
         consola.info(`Hint: run "co init" in an empty directory to create a new cookbook project.`);
         exit(1);
@@ -46,7 +47,7 @@ export default await defineCookbookCommand(async (utils) => {
         await clearState();
     }
 
-    const options = await getCookbookToml(await cookbookToml.text(), progress);
+    const options = await getCookbookToml(await readText(cookbookToml), progress);
     const mode = await selectMode(options, params);
 
     const targets = Object.entries(options.projects ?? {})
@@ -59,14 +60,14 @@ export default await defineCookbookCommand(async (utils) => {
 
     const forwardedArgs = params.raw.filter((arg) => arg !== "--mode" && !arg.startsWith("--mode="));
     const entry = argv[1];
-    // Bun-compiled binaries expose their embedded entry point as a virtual
-    // path like "B:/~BUN/root/co" — and existsSync() sees it through the
-    // embedded filesystem, so it passes the existsSync check. Forwarding that
-    // virtual path as a script argument makes the child process receive it as
-    // its COMMAND name and exit immediately. Only forward real on-disk entry
-    // scripts (e.g. when running via "bun run cookbook.ts").
-    const isVirtualEmbeddedEntry = typeof entry === "string" && entry.includes("/~BUN/");
-    const command = entry && !isVirtualEmbeddedEntry && existsSync(entry) ? [execPath, entry, "dev", `--mode=${mode}`, ...forwardedArgs] : [execPath, "dev", `--mode=${mode}`, ...forwardedArgs];
+    // A self-contained binary (Node SEA for co.exe, or a Bun compiled binary)
+    // has no real script path at argv[1]; it re-executes itself and passes the
+    // command name instead. Source runs (node/tsx cookbook.ts) forward the real
+    // entry script, keeping the parent's loader args (tsx) so the child can
+    // import TypeScript as well.
+    const command = !isStandaloneBinary() && entry && existsSync(entry)
+        ? [execPath, ...process.execArgv, entry, "dev", `--mode=${mode}`, ...forwardedArgs]
+        : [execPath, "dev", `--mode=${mode}`, ...forwardedArgs];
 
     // Take over the session pointer: the previous run is replaced by this one.
     const previous = readCurrentSession();
@@ -162,7 +163,7 @@ export default await defineCookbookCommand(async (utils) => {
                     break;
                 }
             } catch {}
-            await Bun.sleep(100);
+            await sleep(100);
         }
 
         if (!pid) {

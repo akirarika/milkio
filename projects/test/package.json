@@ -8,7 +8,6 @@
     "build": "vite build",
     "drizzle": "drizzle-kit"
   },
-  "trustedDependencies": [],
   "dependencies": {
     "@koa/bodyparser": "^6.1.0",
     "@koa/router": "^15.6.0",
@@ -30,6 +29,7 @@
     "yaml": "^2.6.0"
   },
   "devDependencies": {
+    "@types/bun": "^1.4.4",
     "typia": "14.0.0",
     "vite": "^8.1.0",
     "vite-plugin-node": "^8.0.0"

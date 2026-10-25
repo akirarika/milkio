@@ -1,13 +1,13 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { reviveJSONParse } from "../../../../packages/milkio/utils/revive-json-parse.ts";
 
-test.sequential("shallow date string is converted to Date", () => {
+test("shallow date string is converted to Date", () => {
     const result = reviveJSONParse({ date: "2024-01-15T10:30:00.000Z" });
     expect(result.date).toBeInstanceOf(Date);
     expect((result.date as any as Date).toISOString()).toBe("2024-01-15T10:30:00.000Z");
 });
 
-test.sequential("deeply nested date string is converted to Date", () => {
+test("deeply nested date string is converted to Date", () => {
     const result = reviveJSONParse({
         level1: {
             level2: {
@@ -21,7 +21,7 @@ test.sequential("deeply nested date string is converted to Date", () => {
     expect((result.level1.level2.level3.date as unknown as Date).toISOString()).toBe("2024-06-01T08:00:00.000Z");
 });
 
-test.sequential("date in array is converted to Date", () => {
+test("date in array is converted to Date", () => {
     const result = reviveJSONParse({
         items: ["2024-03-20T12:00:00.000Z", "hello", 42],
     });
@@ -31,25 +31,25 @@ test.sequential("date in array is converted to Date", () => {
     expect(result.items[2]).toBe(42);
 });
 
-test.sequential("date with timezone offset is converted", () => {
+test("date with timezone offset is converted", () => {
     const result = reviveJSONParse({ date: "2024-01-15T10:30:00.000+08:00" });
     expect(result.date).toBeInstanceOf(Date);
     expect((result.date as unknown as Date).toISOString()).toBe("2024-01-15T02:30:00.000Z");
 });
 
-test.sequential("date with compact timezone offset is normalized and converted", () => {
+test("date with compact timezone offset is normalized and converted", () => {
     const result = reviveJSONParse({ date: "2024-01-15T10:30:00.000+0800" });
     expect(result.date).toBeInstanceOf(Date);
     expect((result.date as unknown as Date).toISOString()).toBe("2024-01-15T02:30:00.000Z");
 });
 
-test.sequential("date without timezone gets Z appended", () => {
+test("date without timezone gets Z appended", () => {
     const result = reviveJSONParse({ date: "2024-01-15T10:30:00.000" });
     expect(result.date).toBeInstanceOf(Date);
     expect((result.date as unknown as Date).toISOString()).toBe("2024-01-15T10:30:00.000Z");
 });
 
-test.sequential("non-date strings are not converted", () => {
+test("non-date strings are not converted", () => {
     const result = reviveJSONParse({
         name: "hello",
         number: "12345",
@@ -60,19 +60,19 @@ test.sequential("non-date strings are not converted", () => {
     expect(result.short).toBe("2024-01-15");
 });
 
-test.sequential("null and undefined are preserved", () => {
+test("null and undefined are preserved", () => {
     const result = reviveJSONParse({ a: null, b: undefined });
     expect(result.a).toBeNull();
     expect(result.b).toBeUndefined();
 });
 
-test.sequential("existing Date objects are not modified", () => {
+test("existing Date objects are not modified", () => {
     const original = new Date("2024-01-15T10:30:00.000Z");
     const result = reviveJSONParse({ date: original });
     expect(result.date).toBe(original);
 });
 
-test.sequential("mixed object with dates and non-dates", () => {
+test("mixed object with dates and non-dates", () => {
     const result = reviveJSONParse({
         createdAt: "2024-01-15T10:30:00.000Z",
         name: "test",
@@ -89,13 +89,13 @@ test.sequential("mixed object with dates and non-dates", () => {
     expect(result.nested.active).toBe(true);
 });
 
-test.sequential("array of date strings at top level", () => {
+test("array of date strings at top level", () => {
     const result = reviveJSONParse(["2024-01-15T10:30:00.000Z", "2024-06-01T08:00:00.000Z"]);
     expect(result[0]).toBeInstanceOf(Date);
     expect(result[1]).toBeInstanceOf(Date);
 });
 
-test.sequential("roundtrip: JSON.stringify then JSON.parse then reviveJSONParse", () => {
+test("roundtrip: JSON.stringify then JSON.parse then reviveJSONParse", () => {
     const original = {
         createdAt: new Date("2024-01-15T10:30:00.000Z"),
         name: "test",

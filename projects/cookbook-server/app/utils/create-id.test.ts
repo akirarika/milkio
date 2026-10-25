@@ -1,7 +1,7 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { createId } from "./create-id.ts";
 
-test.sequential("basic", async () => {
+test("basic", async () => {
   const ids = new Set<string>();
   for (let index = 0; index < 16; index++) ids.add(createId());
   console.log(ids);

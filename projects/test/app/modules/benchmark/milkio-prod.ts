@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+// Bun runtime benchmark entry: kept intentionally for the manual benchmark
+// harness in ./__TEST__.test.ts. Not used by the pnpm/Node tooling or CI.
 import { create } from "../../../index.ts";
 import { env } from "bun";
 

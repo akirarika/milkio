@@ -1,8 +1,12 @@
+import { writeFileEnsured } from "../../utils/node-compat";
 import { join } from "node:path";
 import type { CookbookOptions } from "../../utils/cookbook-dto-types.ts";
 
+// NOTE: the template below is generated code for projects whose cookbook.toml
+// declares `runtime = "bun"`. It intentionally keeps Bun APIs (Bun.serve and
+// the "bun" env import) because it runs on the Bun runtime, not on the CLI.
 export async function bunHandler(project: CookbookOptions["projects"]["key"], milkioDirPath: string) {
-    await Bun.write(
+    await writeFileEnsured(
         join(milkioDirPath, "run.ts"),
         `#!/usr/bin/env bun
 // @ts-nocheck

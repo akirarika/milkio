@@ -115,12 +115,12 @@ provider:
 ```
 milkio/                         # monorepo 根目录
 ├── packages/                   # 13 个可发布的 npm 包（库）
-├── projects/                   # 4 个不可发布的应用（测试/验证）
+├── projects/                   # 3 个不可发布的应用（测试/验证）
 ├── .codebuddy/                 # IDE 集成
 ├── .templates/                 # 工程模板
-├── package.json                # workspaces: packages/* + projects/*
-├── bunfig.toml                 # Bun 包管理器配置（hoisted 链接）
-├── vitest.workspace.json       # 全局 vitest 工作区
+├── package.json                # pnpm 工作区根（packages/* + projects/*）
+├── pnpm-workspace.yaml         # pnpm 工作区定义
+├── vite.config.ts              # Vite+ 统一配置（test / lint / pack 等）
 ├── cookbook.toml               # Cookbook 编排器配置（定义工程+端口+运行时）
 └── docker-compose.yaml
 ```
@@ -146,49 +146,48 @@ milkio/                         # monorepo 根目录
 
 | 工程 | 运行时 | 用途 |
 |---|---|---|
-| `cookbook-server` | Bun (Vite) | cookbook 编排器的管理服务器 |
+| `cookbook-server` | Node (Vite) | cookbook 编排器的管理服务器 |
 | `test` | Node (Vite) | Node.js 兼容性测试（含 Koa/NestJS/Elysia 跨框架测试） |
 | `test-bun` | Bun 原生 | Bun 运行时兼容性测试 |
-| `test-deno` | Deno | Deno 运行时兼容性测试 |
 
 可以注意到，`projects` 下面的大部分工程都是测试用例。测试是以集成测试的思维编写的，没有大量的 mock，而是直接以串行的方式发送真实的请求，来检查是否符合预期。当你完成一个更改时，必须运行测试，确保更改没有破坏任何测试。
 
 #### 运行单个测试文件
 
 ```bash
-bun run co test <文件路径>
+pnpm run co test <文件路径>
 ```
 
 例如：
 
 ```bash
-bun run co test ./projects/test/app/modules/hello-world/headers.test.ts
+pnpm run co test ./projects/test/app/modules/hello-world/headers.test.ts
 ```
 
-**为什么必须用 `bun run co test` 而不是直接跑 `vitest`？**
+**为什么必须用 `pnpm run co test` 而不是直接跑 `vitest`？**
 
 `co test` 在运行测试之前会：
 1. 启动开发服务器（vite dev server + milkio app）
-2. 运行 `/.prepare.ts`，将测试从 `projects/test` 同步复制到 `projects/test-bun` 和 `projects/test-deno`
+2. 运行 `/.prepare.ts`，将测试从 `projects/test` 同步复制到 `projects/test-bun`
 
 直接使用 `vitest` 不会启动开发服务器，测试将因缺少运行环境而失败。因此，你添加测试时，只维护 `projects/test` 内的文件即可，其余运行时目录由 prepare 脚本自动同步。
 
 #### 运行全部测试
 
 ```bash
-bun run co test
+pnpm run co test
 ```
 
 不带任何路径参数时，`co test` 会运行工作区内所有测试。
 
-### `bun run co` vs 直接 `co`
+### `pnpm run co` vs 直接 `co`
 
 | 命令 | 行为 |
 |---|---|
-| `bun run co test <文件>` | 调用**工程当前源码**中的 cookbook，反映你本地未提交的修改 |
+| `pnpm run co test <文件>` | 调用**工程当前源码**中的 cookbook，反映你本地未提交的修改 |
 | `co test <文件>` | 调用**系统全局安装**的 cookbook，可能与工程当前状态不一致 |
 
-始终使用 `bun run co` 以确保测试使用的是你正在开发的代码。
+始终使用 `pnpm run co` 以确保测试使用的是你正在开发的代码。
 
 ### 架构核心关系
 
@@ -202,11 +201,10 @@ create-cookbook（脚手架）
 milkio app（createWorld → actions / streams / events / executer）
         │ 适配
         ▼
-@milkio/vite-plugin-milkio / Bun 原生 / Deno 原生（HTTP 层）
+@milkio/vite-plugin-milkio / Bun 原生（HTTP 层）
         │
         ├── Node.js (test)
-        ├── Bun (test-bun)
-        └── Deno (test-deno)
+        └── Bun (test-bun)
                 │ RPC 通信
                 ▼
 @milkio/stargate（类型安全 RPC 客户端）
@@ -217,7 +215,7 @@ milkio app（createWorld → actions / streams / events / executer）
 
 ### 关键设计原则
 
-1. **全运行时兼容** — 同一套框架需要能够运行于：浏览器 / Node.js / Bun / Deno / Cloudflare Worker / Vercel Edge 当中。换句话说，至少 `packages/milkio` 目录内的代码，它要运行在任何兼容 WinterTC 规范的运行时中
+1. **全运行时兼容** — 同一套框架需要能够运行于：浏览器 / Node.js / Bun / Cloudflare Worker / Vercel Edge 当中。换句话说，至少 `packages/milkio` 目录内的代码，它要运行在任何兼容 WinterTC 规范的运行时中
 2. **Typia 编译时 + 运行时校验** — 生成的 `.milkio/` 目录包含路由和处理器 schema
 3. **双层客户端** — stargate（底层 RPC，缓存/重试/加密）→ astra（上层 SDK，自动发现）
 4. **Cookbook 构建系统** — 不只是 CLI，是含文件监听、并行 worker、事件发射的完整构建编排器

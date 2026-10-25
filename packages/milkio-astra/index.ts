@@ -86,7 +86,7 @@ type Logger = {
 // type Log = [string /* executeId */, "[DEBUG]" | "[INFO]" | "[WARN]" | "[ERROR]" | "[RESPONSE]", string, string, ...Array<unknown>];
 type Log = [string, "(debug)" | "(info)" | "(warn)" | "(error)" | "(response)", string, string, ...Array<unknown>];
 
-type Reject = (description: string, ...params: Array<unknown>) => Error;
+type TestFail = (description: string, ...params: Array<unknown>) => Error;
 
 type DeepPartial<T> = T extends Function ? T : T extends object ? { [P in keyof T]?: DeepPartial<T[P]> } : T;
 
@@ -174,12 +174,12 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
     ) => Promise<
         Generated["routeSchema"][Path]["types"]["🥛"] extends boolean
         ? // action
-        [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, RouteResult<Path>, ExecuteResultsOption]
+        [Generated["failure"], null, ExecuteResultsOption] | [null, RouteResult<Path>, ExecuteResultsOption]
         : // stream
         // Stream schemas store the yield type directly in `result` (route-generate.ts
         // uses `Awaited<ReturnType<handler>> extends AsyncGenerator<infer I> ? I : never`),
         // so no `GeneratorGeneric` wrapper is needed here.
-        [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, RouteResult<Path>], ExecuteResultsOption>]
+        [Generated["failure"], null, ExecuteResultsOption] | [null, AsyncGenerator<[Generated["failure"], null] | [null, RouteResult<Path>], ExecuteResultsOption>]
     >;
 
     type Emit = <Key extends keyof Generated["events"]>(
@@ -189,7 +189,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
             headers?: Record<string, string>;
             timeout?: number;
         },
-    ) => Promise<[Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, Generated["events"][Key], ExecuteResultsOption]>;
+    ) => Promise<[Generated["failure"], null, ExecuteResultsOption] | [null, Generated["events"][Key], ExecuteResultsOption]>;
 
     type MirrorWorld = Mixin<
         Awaited<ReturnType<AstraOptions["bootstrap"]>>,
@@ -205,7 +205,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
 
     return {
         options: astraOptions,
-        async createMirrorWorld(importMetaUrl: string): Promise<[Context, Reject, MirrorWorld]> {
+        async createMirrorWorld(importMetaUrl: string): Promise<[Context, TestFail, MirrorWorld]> {
             // hooks 必须是每个 mirror world 独立的：bootstrap 每次创建 world 都会
             // 重新执行并注册同一批 hook，若共享数组会线性累积——第 N 个 world 的
             // cleanDatabase 会对同一个新库并发跑 N 次建库/迁移（ER_TABLE_EXISTS_ERROR）。
@@ -351,7 +351,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
                 cleanDatabase: createCleanDatabaseScheduler(cleanHooks, importMetaUrl),
             } as any;
 
-            const reject = (...params: Array<unknown>): Error => {
+            const fail = (...params: Array<unknown>): Error => {
                 const output: Array<any> = [
                     "[astra]",
                     "(reject)",
@@ -374,7 +374,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
                 return new Error(message);
             };
 
-            return [context, reject, world];
+            return [context, fail, world];
         },
     };
 }

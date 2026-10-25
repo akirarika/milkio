@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import { decodeCursor, serializeFilters } from "./cursor";
 import { iterateDescending } from "./reader";
 import { renderPage, type RenderPageOptions, type RenderPageResult } from "./query";

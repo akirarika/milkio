@@ -12,7 +12,7 @@ export async function handler(context: MilkioContext, params: Params): Promise<R
     const results = {
         count: 2 + params.b,
     };
-    if (params.throw) throw context.reject("REQUEST_FAIL", "Reject this request");
+    if (params.throw) throw context.fail("REQUEST_FAIL", "Reject this request");
 
     return results;
 }

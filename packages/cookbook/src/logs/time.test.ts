@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import { formatTimestamp, parsePageSize, parseTimeBoundary } from "./time";
 
 function local(y: number, month: number, day: number, hour = 0, minute = 0, second = 0, ms = 0): number {

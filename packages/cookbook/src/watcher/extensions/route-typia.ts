@@ -1,9 +1,10 @@
+import { writeFileEnsured, fileStat, pathExists } from "../../utils/node-compat";
 import consola from "consola";
 import { join, relative } from "node:path";
 import os from "node:os";
 import { getRate, progress } from "../../progress";
 import { defineWatcherExtension } from "../extensions";
-import { exists, readdir, rm } from "node:fs/promises";
+import { readdir, rm } from "node:fs/promises";
 import { runTypiaTransform, typiaTransformFailures } from "../../utils/run-typia-transform";
 import { getLatestSchemaFolder } from "../../utils/get-latest-schema-folder";
 import chalk from "chalk";
@@ -27,7 +28,7 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                 const generatedDirPath = join(milkioGeneratedRouteDirPath, file.importName);
                 const transpiledDirPath = join(milkioTranspiledRouteDirPath, file.importName);
 
-                if (!(await exists(generatedDirPath))) {
+                if (!(await pathExists(generatedDirPath))) {
                     progress.tick(root);
                     return;
                 }
@@ -51,15 +52,15 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                 const generatedHashFilePath = join(generatedDirPath, hashFileName);
                 const transpiledHashFilePath = join(transpiledDirPath, hashFileName);
 
-                if (!(await exists(generatedHashFilePath))) {
+                if (!(await pathExists(generatedHashFilePath))) {
                     progress.tick(root);
                     return;
                 }
 
                 // Skip if typia result already exists and up to date
-                const generatedStat = await Bun.file(generatedHashFilePath).stat();
+                const generatedStat = await fileStat(generatedHashFilePath);
                 const transpiledStat = await (async () => {
-                    try { return await Bun.file(transpiledHashFilePath).stat(); } catch { return null; }
+                    try { return await fileStat(transpiledHashFilePath); } catch { return null; }
                 })();
                 if (transpiledStat && transpiledStat.mtime >= generatedStat.mtime) {
                     progress.tick(root);
@@ -99,7 +100,7 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                 let currentDir = root;
                 for (let i = 0; i < 10; i++) {
                     const candidate = join(currentDir, "node_modules", "@types");
-                    if (await exists(candidate)) {
+                    if (await pathExists(candidate)) {
                         typeRootsPath = candidate.replace(/\\/g, "/");
                         break;
                     }
@@ -131,13 +132,13 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                 let nodeTypesIndexPath: string | null = null;
                 if (typeRootsPath) {
                     const candidateIndex = join(typeRootsPath, "node", "index.d.ts");
-                    if (await exists(candidateIndex)) {
+                    if (await pathExists(candidateIndex)) {
                         nodeTypesIndexPath = candidateIndex.replace(/\\/g, "/");
                     }
                 }
                 if (nodeTypesIndexPath) {
                     const relativeNodeTypesPath = relative(tempTsconfigDir, nodeTypesIndexPath).replace(/\\/g, "/");
-                    await Bun.write(nodeEnvDtsPath, `/// <reference path="${relativeNodeTypesPath}" />\n`);
+                    await writeFileEnsured(nodeEnvDtsPath, `/// <reference path="${relativeNodeTypesPath}" />\n`);
                 }
 
                 const tempTsconfig: Record<string, any> = {
@@ -176,7 +177,7 @@ export const routeTypiaWatcherExtension = defineWatcherExtension({
                 if (allFiles.length > 0) {
                     tempTsconfig.files = allFiles;
                 }
-                await Bun.write(tempTsconfigPath, JSON.stringify(tempTsconfig, null, 2));
+                await writeFileEnsured(tempTsconfigPath, JSON.stringify(tempTsconfig, null, 2));
 
                 // typia 14 无 CLI，使用 ttsc 的 TtscCompiler.transform() 在进程内完成。
                 // transform 不产生 emit（rootDir/TS6059 不会出现），输出为 TS 文本。

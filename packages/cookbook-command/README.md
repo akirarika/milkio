@@ -1,15 +1,22 @@
 # @milkio/cookbook-command
 
-To install dependencies:
+Part of the [milkio](https://github.com/akirarika/milkio) monorepo.
+
+Helpers for defining cookbook CLI commands: `defineCookbookCommand()`, plus the shared `CookbookToml`, `CookbookCommandHandler` and prompt types used by the cookbook CLI.
+
+## Install
 
 ```bash
-bun install
+pnpm add @milkio/cookbook-command
 ```
 
-To run:
+## Development
+
+This package lives in `packages/cookbook-command` of the milkio workspace. Install the workspace dependencies from the repository root, then use the root scripts:
 
 ```bash
-bun run index.ts
+pnpm install
+pnpm test
 ```
 
-This project was created using `bun init` in bun v1.2.4. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+Documentation: [milkio.fun](https://milkio.fun)

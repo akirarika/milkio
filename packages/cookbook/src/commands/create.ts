@@ -1,3 +1,4 @@
+import { parseToml, pathExists } from "../utils/node-compat";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import consola from "consola";
 import chalk from "chalk";
@@ -8,7 +9,7 @@ import { cwd, exit } from "node:process";
 import { __VERSION__ } from "../../__VERSION__";
 import { Readable } from "node:stream";
 import compressing from "compressing";
-import { exists, readdir as readdirAsync, stat as statAsync, readFile, writeFile } from "node:fs/promises";
+import { readdir as readdirAsync, stat as statAsync, readFile, writeFile } from "node:fs/promises";
 import { execScript, execScriptOrFail } from "../utils/exec-script";
 import { fetchWithTimeout } from "../utils/fetch-with-timeout";
 import { progress } from "../progress";
@@ -29,8 +30,7 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
         const projectsDir = join(cwd(), "projects");
         const before = new Set(await readdirAsync(projectsDir).catch(() => [] as string[]));
 
-        if (packageManager === "deno") await execScriptOrFail(`deno init --npm ${packageName}`, { cwd: projectsDir });
-        else await execScriptOrFail(`${packageManager} create ${packageName}`, { cwd: projectsDir });
+        await execScriptOrFail(`${packageManager} create ${packageName}`, { cwd: projectsDir });
 
         const after = await readdirAsync(projectsDir);
         const newDirs = after.filter((d) => !before.has(d));
@@ -58,9 +58,9 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
         const newPort = maxPort + 1;
 
         const cookbookTomlPath = join(cwd(), "cookbook.toml");
-        if (await exists(cookbookTomlPath)) {
+        if (await pathExists(cookbookTomlPath)) {
             let cookbookContent = await readFile(cookbookTomlPath, "utf8");
-            const currentCookbookToml: any = Bun.TOML.parse(cookbookContent);
+            const currentCookbookToml: any = parseToml(cookbookContent);
             if (!currentCookbookToml?.projects?.[projectName]) {
                 const projectConfig = `\n\n[projects.${projectName}]\nport = ${newPort}\ntype = "custom"\nautoStart = true`;
                 cookbookContent += projectConfig;
@@ -70,7 +70,7 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
         }
 
         const nuxtConfigPath = join(projectDir, "nuxt.config.ts");
-        if (await exists(nuxtConfigPath)) {
+        if (await pathExists(nuxtConfigPath)) {
             let nuxtConfigContent = await readFile(nuxtConfigPath, "utf8");
             if (nuxtConfigContent.includes("devServer")) {
                 nuxtConfigContent = nuxtConfigContent.replace(/port:\s*\d+/g, `port: ${newPort}`);
@@ -135,7 +135,7 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
             }
         }
 
-        if (await exists(join(cwd(), "projects", projectName))) {
+        if (await pathExists(join(cwd(), "projects", projectName))) {
             consola.error(`Project ${projectName} already exists`);
             exit(1);
         }
@@ -146,7 +146,7 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
         if (!existsSync(tempspace)) mkdirSync(tempspace);
 
         let currentWriteDir = cwd();
-        if (await exists(join(currentWriteDir, "packages", "cookbook", "src", "commands", "init.ts"))) {
+        if (await pathExists(join(currentWriteDir, "packages", "cookbook", "src", "commands", "init.ts"))) {
             const tempDir = join(tempspace, `${Date.now()}`);
             currentWriteDir = await utils.inputString({
                 message: "The current directory seems to be a cookbook project. Please enter the directory you want to initialize the cookbook in",
@@ -155,7 +155,7 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
             });
             if (currentWriteDir === undefined) currentWriteDir = tempDir;
             consola.info(`Initializing cookbook in ${currentWriteDir}`);
-            if (!await exists(currentWriteDir)) mkdirSync(currentWriteDir);
+            if (!await pathExists(currentWriteDir)) mkdirSync(currentWriteDir);
         }
 
         consola.start("Finding the appropriate mirror..");
@@ -208,7 +208,7 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
             if (existsSync(destination)) await remove(destination);
 
             const fileStream = createWriteStream(destination);
-            await finished(Readable.fromWeb(res.body!).pipe(fileStream));
+            await finished(Readable.fromWeb(res.body as any).pipe(fileStream));
             consola.success("Package downloaded successfully");
         } catch (error: any) {
             consola.error(`Download failed: ${error?.message ?? error}`);
@@ -294,23 +294,23 @@ export default await defineCookbookCommand(async (utils, inputPackageName?: stri
 
         const newPort = maxPort + 1;
         const viteConfigPath = join(currentWriteDir, "vite.config.ts");
-        if (await exists(viteConfigPath)) {
+        if (await pathExists(viteConfigPath)) {
             let viteConfigContent = await readFile(viteConfigPath, 'utf8');
             viteConfigContent = viteConfigContent.replace(/port: 9000,/g, `port: ${newPort},`);
             await writeFile(viteConfigPath, viteConfigContent, 'utf8');
         }
 
         const astraPath = join(currentWriteDir, "app", "utils", "astra.ts");
-        if (await exists(astraPath)) {
+        if (await pathExists(astraPath)) {
             let astraContent = await readFile(astraPath, 'utf8');
             astraContent = astraContent.replace(/baseUrl: "http:\/\/localhost:9000",/g, `baseUrl: "http://localhost:${newPort}",`);
             await writeFile(astraPath, astraContent, 'utf8');
         }
 
         const cookbookTomlPath = join(currentWriteDir, "cookbook.toml");
-        if (await exists(cookbookTomlPath)) {
+        if (await pathExists(cookbookTomlPath)) {
             let cookbookContent = await readFile(cookbookTomlPath, 'utf8');
-            const currentCookbookToml: any = Bun.TOML.parse(cookbookContent);
+            const currentCookbookToml: any = parseToml(cookbookContent);
             if (!currentCookbookToml?.projects?.[projectName]) {
                 const projectConfig = `\n\n[projects.${projectName}]\nport = ${newPort}\ntype = "milkio"\nruntime = "node"\nautoStart = true`;
                 cookbookContent += projectConfig;

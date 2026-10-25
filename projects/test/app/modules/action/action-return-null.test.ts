@@ -1,16 +1,16 @@
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { astra } from "../../../test.ts";
 // import { generated } from "../../../.milkio/index.ts";
 
-it.sequential("basic", async () => {
-    const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("basic", async () => {
+    const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
     const [error, results] = await world.execute("/action/action-return-null", {
         params: {
             //
         },
         generateParams: true,
     });
-    if (error) throw reject("Milkio did not execute successfully", error);
+    if (error) throw fail("Milkio did not execute successfully", error);
 
     expect(results).toEqual({});
 });

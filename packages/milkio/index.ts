@@ -15,4 +15,4 @@ export * from "./context/index.ts";
 export * from "./meta/index.ts";
 export * from "./step/index.ts";
 export * from "./listener/index.ts";
-export * from "./exception/index.ts";
+export * from "./failure/index.ts";

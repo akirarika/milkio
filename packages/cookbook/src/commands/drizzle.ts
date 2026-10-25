@@ -1,11 +1,11 @@
+import { pathExists } from "../utils/node-compat";
 import { cwd, exit } from "node:process";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import { selectProject } from "../utils/select-project";
 import { join } from "node:path";
-import { exists, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { execScriptOrFail } from "../utils/exec-script";
 import { select } from "../utils/select";
-import { env } from "bun";
 import { existsSync } from "fs-extra";
 import consola from "consola";
 import { progress } from "../progress";
@@ -43,7 +43,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
     }
     
     // Get mode from --mode option, environment variables, or function argument
-    modeUsed = (params.options.mode as string) || modeUsed || env.VITE_MODE || env.MODE;
+    modeUsed = (params.options.mode as string) || modeUsed || process.env.VITE_MODE || process.env.MODE;
     
     // Get project name from --project option or function argument
     const projectNameArg = (params.options.project as string) || projectUsed;
@@ -71,7 +71,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
         // Use normal project selection
         project = await selectProject(cookbookToml, {
             filter: async (project) => {
-                return (await exists(join(cwd(), "projects", project.value, "drizzle"))) || (await exists(join(cwd(), "projects", project.value, "drizzle.config.ts")));
+                return (await pathExists(join(cwd(), "projects", project.value, "drizzle"))) || (await pathExists(join(cwd(), "projects", project.value, "drizzle.config.ts")));
             },
             projectUsed,
         });
@@ -92,7 +92,7 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
         await execScriptOrFail(command, {
             cwd: project.path,
             env: {
-                ...env,
+                ...process.env,
             },
         });
         exit(0);
@@ -121,15 +121,14 @@ export default await defineCookbookCommand(async (utils, userCommand?: string, p
 
     const command = `${cookbookToml.general.packageManager} run drizzle ${userCommand ?? params.commands.join(" ")}`;
 
-    if (!(await exists(join(project.path, "drizzle.config.ts")))) return;
-    if (!(await exists(join(project.path, ".milkio")))) await mkdir(join(project.path, ".milkio"));
+    if (!(await pathExists(join(project.path, "drizzle.config.ts")))) return;
+    if (!(await pathExists(join(project.path, ".milkio")))) await mkdir(join(project.path, ".milkio"));
 
     progress.open("cookbook building..");
     const { initWatcher } = await import("../watcher");
     await initWatcher(cookbookToml, mode.mode, false);
     progress.close("");
 
-    env.DATABASE_URL = mode.migrateDatabaseUrl;
     process.env.DATABASE_URL = mode.migrateDatabaseUrl;
 
     

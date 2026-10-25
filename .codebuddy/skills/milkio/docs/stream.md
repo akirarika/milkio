@@ -96,16 +96,16 @@ export const meta: MilkioMeta = {
 前端通过 `stargate.execute` 调用 stream，路径末尾加 `~`：
 
 ```ts
-const [error, iterator, details] = await stargate.execute('/event/watch~', {
+const [failure, iterator, details] = await stargate.execute('/event/watch~', {
   params: {},
 });
 
-if (error) throw context.reject(error);
+if (failure) throw failure;
 
 for await (const chunk of iterator) {
-  const [chunkError, chunkData] = chunk;
-  if (chunkError) {
-    console.error(chunkError);
+  const [chunkFailure, chunkData] = chunk;
+  if (chunkFailure) {
+    console.error(chunkFailure);
     continue;
   }
   // 处理推送数据

@@ -1,8 +1,9 @@
+import { readText, parseToml, pathExists } from "./utils/node-compat";
 import { search } from "@inquirer/prompts";
 import { argv, cwd, exit } from "node:process";
 import consola from "consola";
 import { join } from "node:path";
-import { exists } from "node:fs/promises";
+
 import { readFile } from "node:fs/promises";
 import { __router__ } from "./commands/__router__";
 import { uniqWith } from "lodash-es";
@@ -132,7 +133,7 @@ export async function cookbook() {
     exit(0);
   }
 
-  const packageJson = (await exists(join(cwd(), "package.json"))) ? JSON.parse(await readFile(join(cwd(), "package.json"), "utf-8")) : undefined;
+  const packageJson = (await pathExists(join(cwd(), "package.json"))) ? JSON.parse(await readFile(join(cwd(), "package.json"), "utf-8")) : undefined;
 
   if (params.command === "index") {
     const commands = [
@@ -147,7 +148,7 @@ export async function cookbook() {
       if (command.hidden !== true) commands.push({ name: command.commands[0], value: command.commands[0], description: "built-in" });
     }
 
-    if (await exists(join(cwd(), "package.json"))) {
+    if (await pathExists(join(cwd(), "package.json"))) {
       const packageJson = JSON.parse(await readFile(join(cwd(), "package.json"), "utf-8"));
       for (const key in packageJson?.scripts ?? {}) {
         commands.push({ name: key, value: key, path: key, description: "npm-script" });
@@ -276,7 +277,7 @@ export async function run(params: Params, options: { path?: string; script?: () 
   let packageManager: any;
   if (options.description === "npm-script") {
     if (!options.pkgMgr) {
-      const config: any = Bun.TOML.parse(await Bun.file(join(cwd(), "cookbook.toml")).text());
+      const config: any = parseToml(await readText(join(cwd(), "cookbook.toml")));
       if (!config.general.packageManager) {
         consola.error('You need to specify which package manager to use to run this command, modify your cookbook.toml file, and [general] bar to packageManager = "npm" or any custom package manager you like.');
         exit(1);

@@ -1,7 +1,8 @@
+import { readText, writeFileEnsured, whichSync, isStandaloneBinary, pathExists } from "./node-compat";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
 import { cwd, exit, platform } from "node:process";
-import { exists, rm } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import consola from "consola";
 import type { CookbookOptions } from "./cookbook-dto-types";
 import { getRuntime } from "./get-runtime";
@@ -87,25 +88,26 @@ function emitTypecheckResult(result: CheckResult): void {
  *
  * Runtime resolution: each project's `runtime` field in cookbook.toml
  * (e.g. `runtime = "node"`) determines which JavaScript runtime is used
- * to launch ttsc. This is necessary because `co.exe` is a Bun-compiled
- * binary — `process.execPath` points to `co.exe` itself, not to a real
- * JS runtime, so spawning `process.execPath ttsc.js ...` would make
- * co.exe treat `ttsc.js` as a command name. We honor the per-project
- * `runtime` config (falling back to `getRuntime`'s default) and resolve
- * it to an absolute executable path via `Bun.which`. Users with only
- * Node.js or only Bun installed are both supported.
+ * to launch ttsc. This is necessary because `co.exe` is a self-contained
+ * single executable application (Node SEA) — `process.execPath` points to
+ * `co.exe` itself, not to a real JS runtime, so spawning
+ * `process.execPath ttsc.js ...` would make co.exe treat `ttsc.js` as a
+ * command name. We honor the per-project `runtime` config (falling back to
+ * `getRuntime`'s default) and resolve it to an absolute executable path on
+ * PATH. Users with only Node.js or only Bun installed are both supported.
  */
 function resolveRuntimeExecutable(preferredRuntime: "node" | "bun"): string {
-  // Under Bun (including compiled binaries like co.exe), `Bun.which` finds
-  // an executable on PATH. Under plain Node.js, fall back to execPath.
-  if (typeof Bun !== "undefined") {
-    const resolved = Bun.which(preferredRuntime);
-    if (resolved) return resolved;
-    // Preferred runtime not on PATH — try the other one as a fallback.
-    const fallback = preferredRuntime === "node" ? Bun.which("bun") : Bun.which("node");
-    if (fallback) return fallback;
-  }
-  return process.execPath;
+  const resolved = whichSync(preferredRuntime);
+  if (resolved) return resolved;
+  // Preferred runtime not on PATH — try the other one as a fallback.
+  const fallback = preferredRuntime === "node" ? whichSync("bun") : whichSync("node");
+  if (fallback) return fallback;
+  // Not running from a standalone binary: process.execPath is a real runtime
+  // (e.g. `node cookbook.ts` or `tsx cookbook.ts` is still less reliable than
+  // PATH resolution because tsx is just a loader, so only use it as last resort).
+  if (!isStandaloneBinary()) return process.execPath;
+  consola.error(`Neither Node.js nor Bun.js was found on PATH, but one of them is required to run ttsc.`);
+  exit(1);
 }
 
 export async function typecheckProjects(options: CookbookOptions): Promise<void> {
@@ -131,8 +133,8 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
       const packageJsonPath = join(projectPath, "package.json");
       let hasLintScript = false;
       try {
-        if (await exists(packageJsonPath)) {
-          const packageJson = JSON.parse(await Bun.file(packageJsonPath).text());
+        if (await pathExists(packageJsonPath)) {
+          const packageJson = JSON.parse(await readText(packageJsonPath));
           if (packageJson?.scripts?.lint) {
             hasLintScript = true;
           }
@@ -159,7 +161,7 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
 
   // Phase 1: ttsc check for milkio projects + custom projects without lint.
   if (ttscProjectNames.length > 0) {
-    if (!(await exists(ttscPath))) {
+    if (!(await pathExists(ttscPath))) {
       consola.warn(`ttsc compiler not found at "${ttscPath}", skipping type check.`);
     } else {
       consola.info(`Type checking ${ttscProjectNames.length} project(s) with ttsc check concurrently..`);
@@ -167,7 +169,7 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
       const ttscResults = await Promise.all(
         ttscProjectNames.map(async (projectName): Promise<CheckResult> => {
           const projectPath = join(workspacePath, "projects", projectName);
-          if (!(await exists(projectPath))) {
+          if (!(await pathExists(projectPath))) {
             return {
               projectName,
               exitCode: 1,
@@ -196,7 +198,7 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
               plugins: [{ transform: "typia/lib/transform" }],
             },
           };
-          await Bun.write(tempTsconfigPath, JSON.stringify(tempTsconfig, null, 2));
+          await writeFileEnsured(tempTsconfigPath, JSON.stringify(tempTsconfig, null, 2));
 
           consola.info(`  Type checking "${projectName}"..`);
           const collector = getLogCollector();
@@ -264,7 +266,7 @@ export async function typecheckProjects(options: CookbookOptions): Promise<void>
     const lintResults = await Promise.all(
       customLintProjectNames.map(async (projectName): Promise<CheckResult> => {
         const projectPath = join(workspacePath, "projects", projectName);
-        if (!(await exists(projectPath))) {
+        if (!(await pathExists(projectPath))) {
           return {
             projectName,
             exitCode: 1,

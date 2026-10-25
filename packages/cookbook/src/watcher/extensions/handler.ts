@@ -1,3 +1,4 @@
+import { writeFileEnsured } from "../../utils/node-compat";
 import { join } from "node:path";
 import { defineWatcherExtension } from "../extensions";
 
@@ -21,6 +22,6 @@ export const handlerWatcherExtension = defineWatcherExtension({
     typescriptExports += "\n}";
     const typescript = `${typescriptImports}\n\n${typescriptExports}`;
 
-    await Bun.write(writePath, typescript);
+    await writeFileEnsured(writePath, typescript);
   },
 });

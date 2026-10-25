@@ -105,7 +105,7 @@ export async function killProcessTree(pid: number): Promise<void> {
             } catch {}
         }
     }
-    for (let i = 0; i < 100 && isPidAlive(pid); i++) await Bun.sleep(100);
+    for (let i = 0; i < 100 && isPidAlive(pid); i++) await sleep(100);
 }
 
 export async function stopBackground(state: BackgroundState): Promise<void> {

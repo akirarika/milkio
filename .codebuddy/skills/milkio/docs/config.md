@@ -84,12 +84,12 @@ export default (world: MilkioWorld<typeof generated>) => {
 
     if (data.attachmentSize > context.config.shopFileUpload.maxUploadSize) {
       context.logger.error('附件大小超出限制', JSON.stringify({ size: data.attachmentSize, max: context.config.shopFileUpload.maxUploadSize }));
-      throw context.reject('FILE_TOO_LARGE', undefined);
+      throw context.fail('FILE_TOO_LARGE', undefined);
     }
 
     if (data.attachmentType && !context.config.shopFileUpload.allowedFileTypes.includes(data.attachmentType)) {
       context.logger.error('不支持的文件类型', JSON.stringify({ type: data.attachmentType }));
-      throw context.reject('INVALID_FILE_TYPE', undefined);
+      throw context.fail('INVALID_FILE_TYPE', undefined);
     }
 
     // ... 更多代码

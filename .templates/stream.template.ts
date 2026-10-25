@@ -32,7 +32,7 @@ await createTemplate(async (tools) => {
 import { expect, test } from "vitest";
 import { astra } from "../../test.ts";
 
-test.sequential("basic", async () => {
+test("basic", async () => {
   const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, results] = await world.execute("${tools.route()}", {
     params: {

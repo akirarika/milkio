@@ -1,5 +1,6 @@
+import { pathExists } from "./node-compat";
 import { join, dirname } from "node:path";
-import { exists, mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { execFile } from "node:child_process";
 
 // typia 14 移除了 CLI（lib/executable/typia.js），transform 只能通过 ttsc 的
@@ -66,7 +67,7 @@ async function ensureHelper(root: string): Promise<string> {
   const dir = join(root, ".milkio", ".tmp");
   const helperPath = join(dir, "ttsc-transform.cjs");
   await mkdir(dir, { recursive: true });
-  const existing = await exists(helperPath) ? await readFile(helperPath, "utf-8") : null;
+  const existing = await pathExists(helperPath) ? await readFile(helperPath, "utf-8") : null;
   if (existing !== HELPER_SOURCE) await writeFile(helperPath, HELPER_SOURCE, "utf-8");
   return helperPath;
 }
@@ -108,7 +109,7 @@ export async function runTypiaTransform(params: {
       child.on("close", () => clearTimeout(forceTimer));
     });
 
-    if (!(await exists(outPath))) {
+    if (!(await pathExists(outPath))) {
       return { ok: false, error: `no transformed output for ${schemaFilePath}` };
     }
     const content = await readFile(outPath, "utf-8");

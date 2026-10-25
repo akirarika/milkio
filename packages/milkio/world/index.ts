@@ -1,4 +1,4 @@
-import { type $types, __initListener, __initExecuter, __initEventManager, type ExecuteId, type Logger, type Mixin, type GeneratedInit, type Ping, type LoggerSubmittingHandler, type LoggerInsertingHandler, type CorsConfig } from "../index.ts";
+import { type $types, __initListener, __initExecuter, __initEventManager, type ExecuteId, type Logger, type Mixin, type GeneratedInit, type Ping, type LoggerSubmittingHandler, type LoggerInsertingHandler, type CorsConfig, type MilkioFaultReport } from "../index.ts";
 import { defineDefaultExecuteIdGenerator } from "../execute/execute-id-generator.ts";
 
 export interface MilkioInit {
@@ -14,6 +14,8 @@ export interface MilkioInit {
     executeId?: (headers: Headers) => string | Promise<string>;
     onLoggerSubmitting?: LoggerSubmittingHandler;
     onLoggerInserting?: LoggerInsertingHandler;
+    /** called only for fault-level failures (unexpected/internal); never for fail (business rejections) */
+    onError?: (report: MilkioFaultReport) => void;
     bootstraps?: Array<(world: any) => Promise<void> | void>;
 }
 

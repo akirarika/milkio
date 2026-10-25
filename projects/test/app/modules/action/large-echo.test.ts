@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { createHash } from "node:crypto";
 import { stargate } from "../../../test.ts";
 
@@ -19,7 +19,7 @@ function md5(text: string): string {
 	return createHash("md5").update(text, "utf-8").digest("hex");
 }
 
-test.sequential("large body (~512KB) via stargate.execute arrives intact", async () => {
+test("large body (~512KB) via stargate.execute arrives intact", async () => {
 	const content = makeLargeContent(512 * 1024);
 	const [error, result] = await stargate.execute("/action/large-echo", {
 		params: { content },
@@ -31,7 +31,7 @@ test.sequential("large body (~512KB) via stargate.execute arrives intact", async
 	expect(result!.md5).toBe(md5(content));
 });
 
-test.sequential("large body (~2MB) via raw fetch arrives intact", async () => {
+test("large body (~2MB) via raw fetch arrives intact", async () => {
 	const content = makeLargeContent(2 * 1024 * 1024);
 	const body = JSON.stringify({ content });
 
@@ -47,7 +47,7 @@ test.sequential("large body (~2MB) via raw fetch arrives intact", async () => {
 	expect(parsed.data.md5).toBe(md5(content));
 });
 
-test.sequential("small body still works via raw fetch", async () => {
+test("small body still works via raw fetch", async () => {
 	const content = "hello-milkio";
 	const response = await fetch("http://localhost:9000/action/large-echo", {
 		method: "POST",

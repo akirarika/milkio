@@ -1,8 +1,9 @@
-import { exists, stat, unlink } from "fs-extra";
+import { stat, unlink } from "node:fs/promises";
+import { pathExists } from "./node-compat";
 
 export async function unlinkIfTooLong(filePath: string) {
   try {
-    if (!(await exists(filePath))) return;
+    if (!(await pathExists(filePath))) return;
     const stats = await stat(filePath);
     const fileMTime = stats.mtime;
     const now = Date.now();

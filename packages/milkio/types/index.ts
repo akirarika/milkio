@@ -1,4 +1,4 @@
-import type { $rejectCode } from "../index.ts";
+import type { MilkioFailureWire } from "../failure/index.ts";
 
 export interface $types {
     [key: string]: Record<any, any>;
@@ -68,11 +68,10 @@ export type ExecuteActionResults<Path extends keyof Generated["routeSchema"], Ge
 
 export type ExecuteStreamResults<Path extends keyof Generated["routeSchema"], Generated extends $types["generated"] = $types["generated"]> = GeneratorGeneric<Generated["routeSchema"][Path]["result"]>;
 
-export interface MilkioResponseReject<Code extends keyof $rejectCode = keyof $rejectCode> {
+export interface MilkioResponseFailure {
     success: false;
-    code: Code;
-    reject: $rejectCode[Code];
     executeId: string;
+    error: MilkioFailureWire;
 }
 
 export interface MilkioResponseSuccess<Path extends keyof Generated["routeSchema"], Generated extends $types["generated"] = $types["generated"]> {

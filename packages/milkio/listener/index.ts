@@ -1,5 +1,5 @@
-import { createLogger, exceptionHandler, reject, raise } from "../index.ts";
-import type { Mixin, GeneratedInit, $types, ContextHttp, MilkioResponseReject, Results, MilkioResponseSuccess, CorsConfig, Logger, Log } from "../index.ts";
+import { createLogger, failureHandler, fail, fault } from "../index.ts";
+import type { Mixin, GeneratedInit, $types, ContextHttp, MilkioResponseFailure, Results, MilkioResponseSuccess, CorsConfig, Logger, Log, MilkioFailureWire } from "../index.ts";
 import type { __initExecuter } from "../execute/index.ts";
 import { __createId } from "../utils/create-id.ts";
 import { Trie } from "../utils/trie.ts";
@@ -83,7 +83,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
     // Pre-create base context prototype for Fast Path (shared immutable properties)
     // `call` is defined on prototype to avoid creating a closure per request
     const baseContextProto: any = {
-        reject,
+        fail,
+        fault,
         develop: runtime.develop,
         logger: noopLogger,
         emit: runtime.emit,
@@ -103,6 +104,11 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
     let cachedValidateParams: any = null;
     let cachedHandler: any = null;
     let cachedSkipValidation: boolean = false;
+    // The fast path executes the handler before the full context/logger exists. When
+    // the handler throws (or returns a non-object), we must NOT fall through and run
+    // it again in the slow path: remember the failure and let the slow path only
+    // handle the error response (single execution, single log).
+    let fastPathError: unknown;
 
     const fetch = async (options: {
         request: MilkioHttpRequest;
@@ -112,7 +118,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         rawResponse?: boolean;
     }): Promise<Response> => {
         const MAX_BODY_SIZE = 10 * 1024 * 1024;
-        const tooLarge = () => reject("REQUEST_TOO_LARGE", { maxBodySize: MAX_BODY_SIZE });
+        const tooLarge = () => fail("REQUEST_TOO_LARGE", { maxBodySize: MAX_BODY_SIZE });
         const readBodyText = async (): Promise<string> => {
             const preRead = (options.request as any).__bodyText;
             if (preRead !== undefined) {
@@ -192,6 +198,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
         // 测试环境下的 $event 端点：通过 base64 编码的事件名触发事件
         if (options.envMode === "test" && pathString.startsWith("/$event/")) {
+            const executeId = __createId();
             const base64Name = decodeURIComponent(pathString.slice(8));
             let eventName: string;
             try {
@@ -205,7 +212,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 }
             } catch {
                 const corsHeaders = getCorsHeaders(origin);
-                const body = JSON.stringify({ success: false, code: "PARAMS_TYPE_NOT_SUPPORTED", reject: { expected: "valid base64 event name" } });
+                const body = JSON.stringify(failureHandler(executeId, noopLogger, fail("PARAMS_TYPE_NOT_SUPPORTED", { expected: "valid base64 event name" }), { path: pathString, routeType: "event" }).response);
                 if (options.rawResponse) return { __rawResponse: true, body, status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } } as any;
                 return new Response(body, { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
             }
@@ -217,13 +224,12 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     eventData = reviveJSONParse(JSON.parse(rawBody));
                 } catch {
                     const corsHeaders = getCorsHeaders(origin);
-                    const body = JSON.stringify({ success: false, code: "PARAMS_TYPE_NOT_SUPPORTED", reject: { expected: "json" } });
+                    const body = JSON.stringify(failureHandler(executeId, noopLogger, fail("PARAMS_TYPE_NOT_SUPPORTED", { expected: "json" }), { path: pathString, routeType: "event" }).response);
                     if (options.rawResponse) return { __rawResponse: true, body, status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } } as any;
                     return new Response(body, { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
                 }
             }
 
-            const executeId = __createId();
             const corsHeaders = getCorsHeaders(origin);
             const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" };
 
@@ -232,8 +238,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             // milkio:executeBefore / milkio:httpResponse 事件，使 bootstrap 可以注入 db/redis 等能力。
             if (eventData && typeof eventData === "object" && !Array.isArray(eventData) && !("context" in eventData)) {
                 const context: any = {};
-                context.reject = reject;
-                context.raise = raise;
+                context.fail = fail;
+                context.fault = fault;
                 context.develop = runtime.develop;
                 context.executeId = executeId;
                 context.path = pathString;
@@ -255,9 +261,9 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 context.headers = options.request.headers;
                 eventData.context = context;
 
-                const emitHttpResponse = (success: boolean) => {
+                const emitHttpResponse = (success: boolean, failure?: MilkioFailureWire) => {
                     if (runtime._hasEmitHandlers?.("milkio:httpResponse") ?? true) {
-                        return runtime.emit("milkio:httpResponse", { executeId, logger, path: pathString, http: context.http, headers: options.request.headers, context, success, reject, raise });
+                        return runtime.emit("milkio:httpResponse", { executeId, logger, path: pathString, http: context.http, headers: options.request.headers, context, success, failure, fail, fault });
                     }
                 };
 
@@ -265,14 +271,14 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     // 先触发 executeBefore（bootstrap 注入 db/redis），事件处理完成后再触发
                     // httpResponse（释放连接），与 action 的生命周期保持一致。
                     if (runtime._hasEmitHandlers?.("milkio:executeBefore") ?? true) {
-                        await runtime.emit("milkio:executeBefore", { executeId, logger, path: pathString, meta: {}, context, reject, raise });
+                        await runtime.emit("milkio:executeBefore", { executeId, logger, path: pathString, meta: {}, context, fail, fault });
                     }
                     await runtime.emit(eventName, eventData);
                 } catch (emitError) {
-                    const errResult = exceptionHandler(executeId, logger, emitError);
-                    const errBody = JSON.stringify(errResult);
+                    const errResult = failureHandler(executeId, logger, emitError, { path: pathString, routeType: "event", onError: runtime.onError });
+                    const errBody = JSON.stringify(errResult.response);
                     try {
-                        await emitHttpResponse(false);
+                        await emitHttpResponse(false, errResult.response.error);
                     } catch {}
                     if (options.rawResponse) return { __rawResponse: true, body: errBody, status: 200, headers: jsonHeaders } as any;
                     return new Response(errBody, { status: 200, headers: jsonHeaders });
@@ -285,8 +291,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 try {
                     await runtime.emit(eventName, eventData);
                 } catch (emitError) {
-                    const errResult = exceptionHandler(executeId, noopLogger, emitError);
-                    const errBody = JSON.stringify(errResult);
+                    const errResult = failureHandler(executeId, noopLogger, emitError, { path: pathString, routeType: "event" });
+                    const errBody = JSON.stringify(errResult.response);
                     if (options.rawResponse) return { __rawResponse: true, body: errBody, status: 200, headers: jsonHeaders } as any;
                     return new Response(errBody, { status: 200, headers: jsonHeaders });
                 }
@@ -400,9 +406,11 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                                     } else if (!Array.isArray(result) && typeof result === "object") {
                                         return { __rawResponse: true, body: resultPrefix + JSON.stringify(result) + ',"executeId":"' + executeId + idSuffix, status: 200, headers: defaultMergedHeaders } as any;
                                     }
-                                    // Invalid result type - fall through to slow path
-                                } catch {
-                                    // Handler threw - fall through to slow path for proper error handling
+                                    // Invalid result type - slow path handles it as a fault, without re-running the handler
+                                    fastPathError = fault("FRAMEWORK_ERROR", { message: "The return type of the handler must be an 'object'." });
+                                } catch (error) {
+                                    // Handler threw - slow path handles the error response, without re-running the handler
+                                    fastPathError = error;
                                 }
                             }
                         }
@@ -441,7 +449,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             params: {
                 // For raw routes, don't consume the request body — the handler
                 // needs it intact. The body will be passed via the Request object.
-                string: isRawPath ? "" : (await readBodyText()),
+                // On a fast-path error the body was already consumed by the fast path.
+                string: isRawPath || fastPathError !== undefined ? "" : (await readBodyText()),
                 parsed: undefined,
             },
             request: options.request,
@@ -449,16 +458,19 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             cors,
         };
 
-        const context: any = { reject, raise };
+        const context: any = { fail, fault };
         try {
+            // Fast path already executed the handler; only produce the error response here.
+            if (fastPathError !== undefined) throw fastPathError;
+
             // Check if emit has handlers before awaiting
             const hasHttpRequestHandlers = runtime._hasEmitHandlers?.("milkio:httpRequest") ?? true;
-            if (hasHttpRequestHandlers) await runtime.emit("milkio:httpRequest", { executeId, logger, path: http.path.string as string, http, reject, raise });
+            if (hasHttpRequestHandlers) await runtime.emit("milkio:httpRequest", { executeId, logger, path: http.path.string as string, http, fail, fault });
 
             // 非 test 环境下拦截 $exports 内部路径
             if (options.envMode !== "test" && (http.path.string as string).includes("$")) {
-                await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject, raise });
-                throw reject("NOT_FOUND", { path: http.path.string as string });
+                await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, fail, fault });
+                throw fail("NOT_FOUND", { path: http.path.string as string });
             }
 
             // ===== RAW PATH =====
@@ -468,8 +480,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             if (isRawPath) {
                 const rawRoute = generated.rawSchema.routes[pathString];
                 if (!rawRoute) {
-                    await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject, raise });
-                    throw reject("NOT_FOUND", { path: http.path.string as string });
+                    await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, fail, fault });
+                    throw fail("NOT_FOUND", { path: http.path.string as string });
                 }
                 // Lazy-load module on first access, then cache
                 let module: any = rawRoute.module;
@@ -513,14 +525,14 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 const results: Results<any> = { value: undefined };
 
                 if (runtime._hasEmitHandlers?.("milkio:executeBefore") ?? true) {
-                    await runtime.emit("milkio:executeBefore", { executeId, logger, path: pathString, meta, context, reject, raise });
+                    await runtime.emit("milkio:executeBefore", { executeId, logger, path: pathString, meta, context, fail, fault });
                 }
 
                 const rawResponse: Response = await module.handler(context, handlerRequest);
                 results.value = rawResponse;
 
                 if (runtime._hasEmitHandlers?.("milkio:executeAfter") ?? true) {
-                    await runtime.emit("milkio:executeAfter", { executeId, logger, path: pathString, meta, context, results, reject, raise });
+                    await runtime.emit("milkio:executeAfter", { executeId, logger, path: pathString, meta, context, results, fail, fault });
                 }
 
                 // Apply CORS headers to the raw response
@@ -530,7 +542,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 }
 
                 const hasHttpResponseHandlers = runtime._hasEmitHandlers?.("milkio:httpResponse") ?? true;
-                if (hasHttpResponseHandlers) await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context, success: true, reject, raise });
+                if (hasHttpResponseHandlers) await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context, success: true, fail, fault });
 
                 // Run onFinally handlers (after httpResponse, matching action path ordering)
                 if (finales.length > 0) {
@@ -561,8 +573,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                         if (routeSchema === null) {
                             routeSchema = generated.routeSchema?.[http.path.string];
                             if (routeSchema === undefined) {
-                                await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject, raise });
-                                throw reject("NOT_FOUND", { path: http.path.string as string });
+                                await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, fail, fault });
+                                throw fail("NOT_FOUND", { path: http.path.string as string });
                             }
                             if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
                             else routeSchema.module = await routeSchema.module();
@@ -573,8 +585,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                         if (routeSchema === null) {
                             routeSchema = generated.routeSchema?.[http.path.string];
                             if (routeSchema === undefined) {
-                                await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject, raise });
-                                throw reject("NOT_FOUND", { path: http.path.string as string });
+                                await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, fail, fault });
+                                throw fail("NOT_FOUND", { path: http.path.string as string });
                             }
                             if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
                             else routeSchema.module = await routeSchema.module();
@@ -585,7 +597,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                         cachedPathString = pathString;
                     }
 
-                    if (routeSchema.type !== "action") throw reject("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "text/event-stream". If you are using the "@milkio/stargate" package, please add \`type: "stream"\` to the execute options.` });
+                    if (routeSchema.type !== "action") throw fail("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "text/event-stream". If you are using the "@milkio/stargate" package, please add \`type: "stream"\` to the execute options.` });
                 }
 
                 context.http = http;
@@ -613,7 +625,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 }
 
                 const hasHttpResponseHandlers = runtime._hasEmitHandlers?.("milkio:httpResponse") ?? true;
-                if (hasHttpResponseHandlers) await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: executed.context, success: true, reject, raise });
+                if (hasHttpResponseHandlers) await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: executed.context, success: true, fail, fault });
 
                 if (finales.length > 0) {
                     for (const handler of finales) {
@@ -639,14 +651,14 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     if ((http.path.string as string).includes("$") || !(http.path.string as string).endsWith("~") || routeSchema === null) {
                         routeSchema = generated.routeSchema?.[http.path.string];
                         if (routeSchema === undefined) {
-                            await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, reject, raise });
-                            throw reject("NOT_FOUND", { path: http.path.string as string });
+                            await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, fail, fault });
+                            throw fail("NOT_FOUND", { path: http.path.string as string });
                         }
                         if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
                         else routeSchema.module = await routeSchema.module();
                         trie.add(http.path.string as string, routeSchema);
                     }
-                    if (routeSchema.type !== "stream") throw reject("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "application/json". If you are using the "@milkio/stargate" package, please remove \`type: "stream"\` to the execute options.` });
+                    if (routeSchema.type !== "stream") throw fail("UNACCEPTABLE", { expected: "stream", message: `Not acceptable, the Accept in the request header should be "application/json". If you are using the "@milkio/stargate" package, please remove \`type: "stream"\` to the execute options.` });
                 }
 
                 let streamClosed = false;
@@ -706,10 +718,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                                     }
                                 }
                             } catch (error) {
-                                const exception = exceptionHandler(executeId, logger, error);
-                                const result: any = {};
-                                result[exception.code] = exception.reject;
-                                controller.write(`data:${JSON.stringify([result, null])}\n\n`);
+                                const result = failureHandler(executeId, logger, error, { path: http.path.string as string, routeType: "stream", onError: runtime.onError }).response;
+                                controller.write(`data:${JSON.stringify([result.error, null])}\n\n`);
                             }
                             await new Promise((resolve) => setTimeout(resolve, 0));
                             await handleClose();
@@ -740,10 +750,8 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                                     }
                                 }
                             } catch (error) {
-                                const exception = exceptionHandler(executeId, logger, error);
-                                const result: any = {};
-                                result[exception.code] = exception.reject;
-                                controller.enqueue(`data:${JSON.stringify([result, null])}\n\n`);
+                                const result = failureHandler(executeId, logger, error, { path: http.path.string as string, routeType: "stream", onError: runtime.onError }).response;
+                                controller.enqueue(`data:${JSON.stringify([result.error, null])}\n\n`);
                             }
                             await handleClose();
                             await new Promise((resolve) => setTimeout(resolve, 0));
@@ -760,18 +768,17 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 // Stream path: create new headers to avoid polluting shared object
                 response.headers = { ...response.headers, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" };
 
-                await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: executed.context, success: true, reject, raise });
+                await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context: executed.context, success: true, fail, fault });
 
                 return new Response(response.body, response);
             }
         } catch (error) {
-            const results: Results<MilkioResponseReject> = {
-                value: exceptionHandler(executeId, logger, error),
-            };
-            if (results.value !== undefined) response.body = JSON.stringify(results.value);
+            const failureResult = failureHandler(executeId, logger, error, { path: http.path.string as string, routeType: (context as any)?.routeType, onError: runtime.onError });
+            const results: Results<MilkioResponseFailure> = { value: failureResult.response };
+            response.body = JSON.stringify(results.value);
             // Error path: create new headers to avoid polluting shared object
             response.headers = { ...response.headers, ...corsHeaders };
-            await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context, success: false, reject, raise });
+            await runtime.emit("milkio:httpResponse", { executeId, logger, path: http.path.string as string, http, headers: http.request.headers, context, success: false, failure: failureResult.response.error, fail, fault });
             // Run onFinally handlers even on error (important for raw routes where
             // the handler may have registered cleanup via context.onFinally before throwing)
             if (finales.length > 0) {
@@ -818,7 +825,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
         if (routeSchema === null) {
             routeSchema = generated.routeSchema?.[options.path];
             if (routeSchema === undefined) {
-                throw reject("NOT_FOUND", { path: options.path });
+                throw fail("NOT_FOUND", { path: options.path });
             }
             if (typeof routeSchema.module !== "function") routeSchema.module = await routeSchema.module;
             else routeSchema.module = await routeSchema.module();
@@ -838,7 +845,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     return undefined;
                 },
                 set: () => {
-                    throw reject("UNACCEPTABLE", { expected: "context.http", message: "This request was invoked through the execute method. Since no actual request was generated, the HTTP methods under the context cannot be accessed." });
+                    throw fail("UNACCEPTABLE", { expected: "context.http", message: "This request was invoked through the execute method. Since no actual request was generated, the HTTP methods under the context cannot be accessed." });
                 },
             },
         );
@@ -856,7 +863,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             runtime.runtime.request.delete(options.executeId);
         };
 
-        const context = { http: http, headers, routeType: routeSchema.type, reject, raise };
+        const context = { http: http, headers, routeType: routeSchema.type, fail, fault };
 
         try {
             if (routeSchema.type === "action") {
@@ -908,17 +915,21 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                     }
                     port.postMessage({ success: true, data: undefined, executeId: options.executeId, done: true });
                 } catch (error) {
-                    const exception = exceptionHandler(options.executeId, logger, error);
-                    const result: any = {};
-                    result[exception.code] = exception.reject;
-                    port.postMessage({ success: true, data: [result, null], executeId: options.executeId, done: true });
+                    const result = failureHandler(options.executeId, logger, error, { path: options.path, routeType: "stream", onError: runtime.onError }).response;
+                    port.postMessage({ success: true, data: [result.error, null], executeId: options.executeId, done: true });
                 }
                 await handleClose("stream");
             }
         } catch (error) {
-            const result = exceptionHandler(options.executeId, logger, error);
+            const result = failureHandler(options.executeId, logger, error, { path: options.path, routeType: routeSchema?.type, onError: runtime.onError }).response;
+            if (finales.length > 0) {
+                for (const handler of finales) {
+                    try { await handler(); } catch (finaleError) { logger.error("An error occurred inside onFinally.", finaleError); }
+                }
+            }
             await logger._.submit(context as any);
-            port.postMessage({ success: false, data: undefined, error: result, executeId: options.executeId, done: true });
+            runtime.runtime.request.delete(options.executeId);
+            port.postMessage({ success: false, data: undefined, error: result.error, executeId: options.executeId, done: true });
         }
     };
 

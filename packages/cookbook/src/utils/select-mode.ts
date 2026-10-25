@@ -1,4 +1,3 @@
-import { env } from "bun";
 import consola from "consola";
 import type { CookbookOptions } from "./cookbook-dto-types";
 import chalk from "chalk";
@@ -55,8 +54,8 @@ export async function selectMode(options: CookbookOptions, params?: Params) {
     return mode;
   }
 
-  if (env?.VITE_MODE || env?.MODE) {
-    const mode = `${env?.VITE_MODE || env?.MODE}`;
+  if (process.env?.VITE_MODE || process.env?.MODE) {
+    const mode = `${process.env?.VITE_MODE || process.env?.MODE}`;
     if (mode) {
       if (options.general.modes.includes(mode) === false) {
         consola.warn(

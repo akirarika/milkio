@@ -2,6 +2,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { existsSync, lstatSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { build as viteBuild } from "vite";
 
 // The milkio source directory (where this script lives).
 // Used to locate milkio's own packages when this script is invoked from
@@ -46,15 +47,15 @@ async function readDependencies(pkgJsonPath: string): Promise<Record<string, str
   }
 }
 
-// ---- step 1: copy test project to test-bun / test-deno ----
+// ---- step 1: copy test project to test-bun ----
 // This step is specific to the milkio workspace itself (it has a projects/test
-// project that is mirrored to projects/test-bun and projects/test-deno so the
-// same tests can run under both runtimes). When this script is run from a
-// downstream workspace that does not have projects/test, skip this step.
+// project that is mirrored to projects/test-bun so the same tests can run
+// under the Bun runtime). When this script is run from a downstream workspace
+// that does not have projects/test, skip this step.
 
 const PROJECT_BASE = "./projects";
 const SOURCE_PROJECT = "test";
-const TARGET_PROJECTS = ["test-bun", "test-deno"];
+const TARGET_PROJECTS = ["test-bun"];
 const DIRS_TO_COPY = ["app"];
 
 const sourcePath = path.join(PROJECT_BASE, SOURCE_PROJECT);
@@ -94,24 +95,33 @@ if (existsSync(sourcePath)) {
 
 const WS_ROOTS = ["packages", "projects"];
 
-for (const root of WS_ROOTS) {
-  if (!existsSync(root)) continue;
-  const dirs = await fs.readdir(root, { withFileTypes: true });
-  for (const dirent of dirs) {
-    if (!dirent.isDirectory()) continue;
+// With pnpm's workspace links (node_modules/.pnpm exists), pnpm maintains the
+// node_modules/@milkio/* links itself and they point at the real package
+// directories (outside node_modules), so no copy/build workaround is needed.
+// The copy steps below only exist for package managers/layouts that leave
+// broken or missing links behind (the historical Bun-on-Windows behaviour).
+const isPnpmLayout = existsSync(path.join("node_modules", ".pnpm"));
 
-    const pkgDir = path.join(root, dirent.name);
-    const pkgJsonPath = path.join(pkgDir, "package.json");
-    const pkgName = await readPackageName(pkgJsonPath);
-    if (!pkgName) continue;
+if (!isPnpmLayout) {
+  for (const root of WS_ROOTS) {
+    if (!existsSync(root)) continue;
+    const dirs = await fs.readdir(root, { withFileTypes: true });
+    for (const dirent of dirs) {
+      if (!dirent.isDirectory()) continue;
 
-    const nodeModulesPath = path.join("node_modules", pkgName);
+      const pkgDir = path.join(root, dirent.name);
+      const pkgJsonPath = path.join(pkgDir, "package.json");
+      const pkgName = await readPackageName(pkgJsonPath);
+      if (!pkgName) continue;
 
-    // existsSync returns false for broken Windows symlinks
-    if (!existsSync(nodeModulesPath)) {
-      console.log(`fix symlink: ${pkgDir} -> ${nodeModulesPath}`);
-      try { await fs.rm(nodeModulesPath, { recursive: true, force: true }); } catch { /* ignore */ }
-      await copyDir(pkgDir, nodeModulesPath);
+      const nodeModulesPath = path.join("node_modules", pkgName);
+
+      // existsSync returns false for broken Windows symlinks
+      if (!existsSync(nodeModulesPath)) {
+        console.log(`fix symlink: ${pkgDir} -> ${nodeModulesPath}`);
+        try { await fs.rm(nodeModulesPath, { recursive: true, force: true }); } catch { /* ignore */ }
+        await copyDir(pkgDir, nodeModulesPath);
+      }
     }
   }
 }
@@ -232,14 +242,14 @@ if (isDownstreamWorkspace) {
 // node-runtime "test" project in the milkio workspace as well.
 //
 // IMPORTANT: only do this when node_modules/@milkio/vite-plugin-milkio is a
-// real copy. When it is a symlink (a healthy bun workspace link, e.g. on
+// real copy. When it is a symlink (a healthy pnpm workspace link, e.g. on
 // Linux/CI), Node resolves the real path under packages/* — which is OUTSIDE
 // node_modules — so type stripping already works and no build is needed.
 // Building in that case would write index.js and rewrite package.json THROUGH
 // the symlink into the source package, corrupting it and breaking the
 // subsequent `co generate` build in CI.
 
-{
+if (!isPnpmLayout) {
   const vitePluginMilkioDir = path.join("node_modules", "@milkio", "vite-plugin-milkio");
   let isSymlink = false;
   try {
@@ -250,17 +260,26 @@ if (isDownstreamWorkspace) {
   if (!isSymlink && existsSync(vitePluginMilkioDir)) {
     const entrypoint = path.join(vitePluginMilkioDir, "index.ts");
     if (existsSync(entrypoint)) {
-      const buildResult = await Bun.build({
-        entrypoints: [entrypoint],
-        outdir: vitePluginMilkioDir,
-        target: "node",
-        format: "esm",
-        external: ["vite", "@iarna/toml", "fs-extra", "glob"],
+      // Vite (Rolldown) replaces the previous Bun.build call here: bundle the
+      // plugin to a plain ESM file so Node can load it from node_modules
+      // without type stripping support (Node refuses to strip types inside
+      // node_modules).
+      await viteBuild({
+        configFile: false,
+        logLevel: "error",
+        build: {
+          ssr: entrypoint,
+          outDir: vitePluginMilkioDir,
+          emptyOutDir: false,
+          minify: false,
+          sourcemap: false,
+          target: "node22",
+          rollupOptions: {
+            external: ["vite", "@iarna/toml", "fs-extra", "glob"],
+            output: { entryFileNames: "index.js", format: "es" },
+          },
+        },
       });
-      if (!buildResult.success) {
-        for (const log of buildResult.logs) console.log(log);
-        throw new Error("Failed to build vite-plugin-milkio");
-      }
       // Update package.json exports to point to .js instead of .ts
       const pkgJsonPath = path.join(vitePluginMilkioDir, "package.json");
       const pkg = JSON.parse(await fs.readFile(pkgJsonPath, "utf-8"));

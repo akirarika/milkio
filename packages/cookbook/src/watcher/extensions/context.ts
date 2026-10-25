@@ -43,13 +43,18 @@ export const contextWatcherExtension = defineWatcherExtension({
      * @returns Whether all event handlers returned true
      */
     emitAllApproved: <Key extends keyof MilkioEvents, Value extends MilkioEvents[Key]>(key: Key, value: Value) => Promise<boolean>;
-    reject: MilkioRejectFunction;
     /**
-     * Raise an error by object form, e.g. raise({ REQUEST_FAIL: "some error" })
-     * Used to explicitly bubble an error (similar to golang-style error propagation)
-     * @param obj An object whose key is the reject code and value is the error data
+     * Fail: expected business rejection (warn level, no stack, data is sent to the client)
+     * @param code Fail code
+     * @param data Fail data
      */
-    raise: MilkioRaiseFunction;
+    fail: MilkioFailFunction;
+    /**
+     * Fault: unexpected/internal failure (error level, stack kept, hidden from the client)
+     * @param code Fault code
+     * @param data Fault data
+     */
+    fault: MilkioFaultFunction;
 };
 `;
         content += "\nexport interface MilkioContext extends $contextMixin";

@@ -1,12 +1,12 @@
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { astra } from "../../../test.ts";
 
 /**
  * 合法参数测试
  * 验证正确的参数能够通过 typia 校验并正常返回
  */
-it.sequential("valid params pass validation", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("valid params pass validation", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, results] = await world.execute("/security/strict-params", {
     params: {
       username: 'testuser',
@@ -16,7 +16,7 @@ it.sequential("valid params pass validation", async () => {
     },
     generateParams: false,
   });
-  if (error) throw reject("Milkio did not execute successfully", error);
+  if (error) throw fail("Milkio did not execute successfully", error);
 
   expect(results.username).toBe('testuser');
   expect(results.role).toBe('user');
@@ -28,8 +28,8 @@ it.sequential("valid params pass validation", async () => {
  * 验证 typia 对字符串联合类型的校验
  * 传入非法的 role 值应被 typia 拒绝
  */
-it.sequential("invalid role rejected by typia", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("invalid role rejected by typia", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error] = await world.execute("/security/strict-params", {
     params: {
       username: 'testuser',
@@ -39,7 +39,7 @@ it.sequential("invalid role rejected by typia", async () => {
     } as any,
     generateParams: false,
   });
-  if (!error) throw reject("Should have failed with invalid role", null);
+  if (!error) throw fail("Should have failed with invalid role", null);
 });
 
 /**
@@ -47,8 +47,8 @@ it.sequential("invalid role rejected by typia", async () => {
  * 验证 typia 对基础类型的校验
  * 传入错误类型的 age 值应被拒绝
  */
-it.sequential("invalid type rejected by typia", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("invalid type rejected by typia", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error] = await world.execute("/security/strict-params", {
     params: {
       username: 'testuser',
@@ -58,7 +58,7 @@ it.sequential("invalid type rejected by typia", async () => {
     } as any,
     generateParams: false,
   });
-  if (!error) throw reject("Should have failed with invalid age type", null);
+  if (!error) throw fail("Should have failed with invalid age type", null);
 });
 
 /**
@@ -66,8 +66,8 @@ it.sequential("invalid type rejected by typia", async () => {
  * 验证 typia 对必填字段的校验
  * 缺少必填字段应被拒绝
  */
-it.sequential("missing required field rejected", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("missing required field rejected", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error] = await world.execute("/security/strict-params", {
     params: {
       username: 'testuser',
@@ -76,7 +76,7 @@ it.sequential("missing required field rejected", async () => {
     } as any,
     generateParams: false,
   });
-  if (!error) throw reject("Should have failed with missing password", null);
+  if (!error) throw fail("Should have failed with missing password", null);
 });
 
 /**
@@ -84,8 +84,8 @@ it.sequential("missing required field rejected", async () => {
  * 验证 typia.validatePrune 会过滤掉不在 Params 类型定义中的额外字段
  * handler 收到的 params 不应包含 extraField
  */
-it.sequential("extra fields are stripped when typeSafety is on", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("extra fields are stripped when typeSafety is on", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, results] = await world.execute("/security/strict-params", {
     params: {
       username: 'testuser',
@@ -97,7 +97,7 @@ it.sequential("extra fields are stripped when typeSafety is on", async () => {
     } as any,
     generateParams: false,
   });
-  if (error) throw reject("Milkio did not execute successfully", error);
+  if (error) throw fail("Milkio did not execute successfully", error);
 
   expect(results.receivedFields).not.toContain('extraField');
   expect(results.receivedFields).not.toContain('anotherExtra');
@@ -116,8 +116,8 @@ it.sequential("extra fields are stripped when typeSafety is on", async () => {
  * 验证关闭 typeSafety 后，typia 不再过滤额外字段
  * handler 收到的 params 应包含 extraField
  */
-it.sequential("extra fields are preserved when typeSafety is off", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("extra fields are preserved when typeSafety is off", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, results] = await world.execute("/security/strict-params-off", {
     params: {
       username: 'testuser',
@@ -129,7 +129,7 @@ it.sequential("extra fields are preserved when typeSafety is off", async () => {
     } as any,
     generateParams: false,
   });
-  if (error) throw reject("Milkio did not execute successfully", error);
+  if (error) throw fail("Milkio did not execute successfully", error);
 
   expect(results.receivedFields).toContain('extraField');
   expect(results.receivedFields).toContain('anotherExtra');
@@ -144,8 +144,8 @@ it.sequential("extra fields are preserved when typeSafety is off", async () => {
  * 验证关闭 typeSafety 后，typia 不再校验参数类型
  * 传入错误类型的 age 值不应被拒绝
  */
-it.sequential("invalid type not rejected when typeSafety is off", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("invalid type not rejected when typeSafety is off", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, results] = await world.execute("/security/strict-params-off", {
     params: {
       username: 'testuser',
@@ -155,7 +155,7 @@ it.sequential("invalid type not rejected when typeSafety is off", async () => {
     } as any,
     generateParams: false,
   });
-  if (error) throw reject("Should not have failed when typeSafety is off", error);
+  if (error) throw fail("Should not have failed when typeSafety is off", error);
 
   expect(results.username).toBe('testuser');
   expect(results.age).toBe('not-a-number');
@@ -166,8 +166,8 @@ it.sequential("invalid type not rejected when typeSafety is off", async () => {
  * 验证关闭 typeSafety 后，typia 不再校验联合类型
  * 传入非法的 role 值不应被拒绝
  */
-it.sequential("invalid role not rejected when typeSafety is off", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("invalid role not rejected when typeSafety is off", async () => {
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   const [error, results] = await world.execute("/security/strict-params-off", {
     params: {
       username: 'testuser',
@@ -177,7 +177,7 @@ it.sequential("invalid role not rejected when typeSafety is off", async () => {
     } as any,
     generateParams: false,
   });
-  if (error) throw reject("Should not have failed when typeSafety is off", error);
+  if (error) throw fail("Should not have failed when typeSafety is off", error);
 
   expect(results.role).toBe('superadmin');
 });

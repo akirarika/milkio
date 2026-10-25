@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import { LineSplitter, MAX_LINE_BYTES, type LineSplitterOptions } from "./line-splitter";
 
 function collect(chunks: Array<string | Uint8Array>, options?: LineSplitterOptions): Array<string> {

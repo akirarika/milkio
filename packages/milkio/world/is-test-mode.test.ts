@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 // createWorld 中 isTestMode 的判定规则：world.isTestMode === (config.mode === "test")。
 // 这里直接对该判定做单元测试（与 world/index.ts 中保持同一表达式）。

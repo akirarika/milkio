@@ -1,13 +1,13 @@
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { astra } from "../../../test.ts";
 
-it.sequential("basic", { skip: true }, async () => {
-    const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("basic", { skip: true }, async () => {
+    const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
     const [error, results] = await world.execute("/action/type-safety", {
         params: {},
         generateParams: false,
     });
-    if (error) throw reject("Milkio did not execute successfully", error);
+    if (error) throw fail("Milkio did not execute successfully", error);
 
     expect(results.username).toBe("administrator");
     expect(typeof results.createdAt).toBe("object");

@@ -1,2 +1,5 @@
-export interface _ {
+export interface Fail {
+}
+
+export interface Fault {
 }

@@ -1,8 +1,9 @@
+import { writeFileEnsured } from "../../utils/node-compat";
 import { join } from "node:path";
 import type { CookbookOptions } from "../../utils/cookbook-dto-types.ts";
 
 export async function nodeHandler(project: CookbookOptions["projects"]["key"], milkioDirPath: string) {
-    await Bun.write(
+    await writeFileEnsured(
         join(milkioDirPath, "run.ts"),
         `#!/usr/bin/env node
 // @ts-nocheck

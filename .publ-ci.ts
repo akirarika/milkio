@@ -1,7 +1,10 @@
 import { join } from "node:path";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { rolldown } from "rolldown";
 
 const cwd = process.cwd();
+const DRY_RUN = process.env.DRY_RUN === "1";
 
 const mainPackage = "milkio";
 const childPackages = [
@@ -52,29 +55,39 @@ function npmCmd(): string {
   return process.platform === "win32" ? "npm.cmd" : "npm";
 }
 
+function isWin32Cmd(cmd: string): boolean {
+  return process.platform === "win32" && /\.(cmd|bat)$/i.test(cmd);
+}
+
 function run(cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string> }) {
-  const r = Bun.spawnSync({
-    cmd: [cmd, ...args],
+  const result = spawnSync(cmd, args, {
     cwd: opts?.cwd ?? cwd,
     env: { ...process.env, ...opts?.env },
-    stdout: "inherit",
-    stderr: "inherit",
+    stdio: "inherit",
+    shell: isWin32Cmd(cmd),
   });
-  if (r.exitCode !== 0) throw new Error(`Command failed: ${cmd} ${args.join(" ")}`);
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(`Command failed: ${cmd} ${args.join(" ")} (exit code ${result.status})`);
+  }
 }
 
 function npmViewExists(pkgName: string, version: string): boolean {
-  const r = Bun.spawnSync({
-    cmd: [npmCmd(), "view", `${pkgName}@${version}`, "--json"],
+  if (DRY_RUN) return false;
+  const result = spawnSync(npmCmd(), ["view", `${pkgName}@${version}`, "--json"], {
     cwd,
     env: { ...process.env },
-    stdout: "ignore",
-    stderr: "ignore",
+    stdio: "ignore",
+    shell: isWin32Cmd(npmCmd()),
   });
-  return r.exitCode === 0;
+  return result.status === 0;
 }
 
 function npmPublish(dir: string, npmTag: string) {
+  if (DRY_RUN) {
+    console.log(`[dry-run] npm publish skipped for ${dir}`);
+    return;
+  }
   const args = ["publish", "--access", "public"];
   if (npmTag) args.push("--tag", npmTag);
   run(npmCmd(), args, { cwd: dir });
@@ -141,6 +154,10 @@ function writeDistPackageJson(pkgDir: string, outDir: string) {
   JSON.parse(raw);
 }
 
+// Replaces the previous Bun.build call: Rolldown is the bundler used by Vite 8
+// / Vite+, and the previous build inlined every dependency except the explicit
+// externals. Rolldown's default (without an external list) does the same, while
+// node builtins stay external because of `platform: "node"`.
 async function buildDist(pkgName: string) {
   const pkgDir = join(cwd, "packages", pkgName);
   const outDir = join(pkgDir, "dist");
@@ -152,27 +169,26 @@ async function buildDist(pkgName: string) {
   if (pkgName === "vite-plugin-milkio")
     external.push("vite", "vite-plugin-node", "@mjackson/node-fetch-server");
 
-  const result = await Bun.build({
-    entrypoints: [join(pkgDir, "index.ts")],
-    outdir: outDir,
-    target: "node",
+  const bundle = await rolldown({
+    input: join(pkgDir, "index.ts"),
+    platform: "node",
+    external: external.length > 0 ? external : undefined,
+  });
+  await bundle.write({
+    dir: outDir,
     format: "esm",
-    splitting: true,
     sourcemap: "inline",
     minify: false,
-    external,
+    entryFileNames: "index.js",
+    chunkFileNames: "[name]-[hash].js",
   });
-
-  if (!result.success) {
-    const msgs = result.logs.map((l) => l.message).join("\n");
-    throw new Error(`Build failed for ${pkgName}\n${msgs}`);
-  }
+  await bundle.close();
 
   // d.ts
   run(
     process.execPath,
     [
-      "../../node_modules/typescript/bin/tsc",
+      join(cwd, "node_modules", "typescript", "bin", "tsc"),
       "index.ts",
       "--declaration",
       "--emitDeclarationOnly",
@@ -265,6 +281,27 @@ function publishDirectPackages(version: string, npmTag: string) {
   }
 }
 
+// Builds every published platform binary with Vite+ (`vp pack` -> tsdown's
+// experimental `exe` option -> Node.js single executable application).
+// tsdown cross-compiles by downloading the matching Node.js binary.
+const cookbookBinaries = [
+  { platform: "darwin", arch: "arm64", built: "co-darwin-arm64", exeName: "co" },
+  { platform: "darwin", arch: "x64", built: "co-darwin-x64", exeName: "co" },
+  { platform: "linux", arch: "arm64", built: "co-linux-arm64", exeName: "co" },
+  { platform: "linux", arch: "x64", built: "co-linux-x64", exeName: "co" },
+  { platform: "win32", arch: "x64", built: "co-win-x64.exe", exeName: "co.exe" },
+];
+
+function buildCookbookBinaries() {
+  const buildDir = join(cwd, "packages", "cookbook", "build");
+  rmSync(buildDir, { recursive: true, force: true });
+
+  console.log("Building cookbook binaries (Node SEA) for all platforms...");
+  run(process.execPath, [join(cwd, "node_modules", "vite-plus", "bin", "vp"), "-C", "packages/cookbook", "pack"], {
+    env: { ...process.env, COOKBOOK_EXE_TARGETS: "all" },
+  });
+}
+
 function publishCookbookBinaries(version: string, npmTag: string) {
   const repo = normalizeRepository(
     readJson<PkgJson>(join(cwd, "packages", mainPackage, "package.json")).repository,
@@ -273,15 +310,14 @@ function publishCookbookBinaries(version: string, npmTag: string) {
   const cookbookDistRoot = join(cwd, "packages", "cookbook", "dist");
   ensureDir(cookbookDistRoot);
 
-  const targets = [
-    { platform: "darwin", arch: "arm64", target: "bun-darwin-arm64" },
-    { platform: "darwin", arch: "x64", target: "bun-darwin-x64" },
-    { platform: "linux", arch: "arm64", target: "bun-linux-arm64" },
-    { platform: "linux", arch: "x64", target: "bun-linux-x64" },
-    { platform: "win32", arch: "x64", target: "bun-windows-x64" },
-  ];
+  const missing = cookbookBinaries.filter(
+    (target) => !npmViewExists(`@milkio/cookbook-${target.platform}-${target.arch}`, version),
+  );
+  if (missing.length > 0) {
+    buildCookbookBinaries();
+  }
 
-  for (const t of targets) {
+  for (const t of cookbookBinaries) {
     const pkgName = `@milkio/cookbook-${t.platform}-${t.arch}`;
 
     if (npmViewExists(pkgName, version)) {
@@ -293,27 +329,11 @@ function publishCookbookBinaries(version: string, npmTag: string) {
     rmSync(outDir, { recursive: true, force: true });
     ensureDir(outDir);
 
-    console.log(`Building binary ${pkgName}@${version}...`);
-    run(
-      process.execPath,
-      [
-        "build",
-        join(cwd, "packages", "cookbook", "cookbook.ts"),
-        "--outfile",
-        join(outDir, "co"),
-        "--compile",
-        "--minify",
-        "--sourcemap=inline",
-        "--env=COOKBOOK_*",
-        "--target",
-        t.target,
-        "--external",
-        "vue",
-        "--external",
-        "react",
-      ],
-      { env: { COOKBOOK_PRODUCTION: "true" } },
-    );
+    const builtPath = join(cwd, "packages", "cookbook", "build", t.built);
+    if (!existsSync(builtPath)) {
+      throw new Error(`Built cookbook binary not found: ${builtPath}`);
+    }
+    cpSync(builtPath, join(outDir, t.exeName));
 
     writeFileSync(
       join(outDir, "index.js"),
@@ -345,7 +365,7 @@ async function main() {
   console.log(`[publish-ci] version=${version}, npmTag=${npmTag || "(latest)"}`);
 
   // 1) cookbook 二进制分发包
-  publishCookbookBinaries(version, npmTag);
+  if (!process.env.SKIP_BINARIES) publishCookbookBinaries(version, npmTag);
 
   // 2) 构建 dist + 发布（milkio 与 @milkio/*）
   await publishDistPackages(version, npmTag);

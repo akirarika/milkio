@@ -1,9 +1,9 @@
+import { readText, writeFileEnsured, globFiles, pathExists } from "../utils/node-compat";
 import { watch, type FSWatcher } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
-import { exists, mkdir, readdir, rm } from "node:fs/promises";
+import { mkdir, readdir, rm } from "node:fs/promises";
 import { cwd, exit } from "node:process";
 import type { CookbookOptions } from "../utils/cookbook-dto-types.ts";
-import { Glob } from "bun";
 import type { CookbookWatcherExtensionProject, CookbookWatcherFile, defineWatcherExtension } from "./extensions.ts";
 import consola from "consola";
 import { readFile } from "node:fs/promises";
@@ -49,7 +49,7 @@ export async function initWatcher(options: CookbookOptions, mode: string, watch:
         const project = options.projects[projectName];
         if (project.type !== "milkio") continue;
         const root = join(cwd(), "projects", projectName);
-        if (!(await exists(join(root, "app")))) continue;
+        if (!(await pathExists(join(root, "app")))) continue;
         processedProjectCount++;
     }
     progress.configure({ totalUnits: processedProjectCount * TOTAL_STAGE_WEIGHT });
@@ -62,11 +62,11 @@ export async function initWatcher(options: CookbookOptions, mode: string, watch:
                     const project = options.projects[projectName];
                     const root = join(cwd(), "projects", projectName);
                     if (project.type !== "milkio") return;
-                    if (!(await exists(root))) return;
-                    if (!(await exists(join(root, ".milkio")))) await mkdir(join(root, ".milkio"));
+                    if (!(await pathExists(root))) return;
+                    if (!(await pathExists(join(root, ".milkio")))) await mkdir(join(root, ".milkio"));
 
                     const appRoot = join(root, "app");
-                    if (!(await exists(appRoot))) return;
+                    if (!(await pathExists(appRoot))) return;
 
                     const entries = await readdir(appRoot, { withFileTypes: true });
                     const validDirs = entries
@@ -90,7 +90,7 @@ export async function initWatcher(options: CookbookOptions, mode: string, watch:
     }
 
     for (const projectName in options.projects) {
-        if (!(await exists(join(cwd(), "projects", projectName, ".milkio", "index.ts")))) await Bun.write(join(cwd(), "projects", projectName, ".milkio", "index.ts"), indexTs);
+        if (!(await pathExists(join(cwd(), "projects", projectName, ".milkio", "index.ts")))) await writeFileEnsured(join(cwd(), "projects", projectName, ".milkio", "index.ts"), indexTs);
     }
 
     return dispose;
@@ -99,14 +99,14 @@ export async function initWatcher(options: CookbookOptions, mode: string, watch:
 async function initializeProject(mode: string, root: string, appRoot: string, validDirs: string[], options: CookbookOptions, project: CookbookWatcherExtensionProject) {
     const versionKey = `v${__VERSION__}.${mode}.${options.hash}`;
     const versionPath = join(root, ".milkio", ".version");
-    const needsReinit = !(await exists(versionPath)) || (await readFile(versionPath, "utf-8")) !== versionKey;
+    const needsReinit = !(await pathExists(versionPath)) || (await readFile(versionPath, "utf-8")) !== versionKey;
 
     if (needsReinit) {
         await rm(join(root, ".milkio"), { recursive: true, force: true });
         try {
             await mkdir(join(root, ".milkio"));
         } catch (error) { }
-        await Bun.write(versionPath, versionKey);
+        await writeFileEnsured(versionPath, versionKey);
     }
 
     // Create stub files only on fresh init
@@ -114,7 +114,7 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
         const milkioDir = join(root, ".milkio");
         const stubs: Record<string, string> = {
             "index.ts": indexTs,
-            "declares.ts": `// declares (stub)\nexport type MilkioMeta = any;\nexport type MilkioContext = any;\nexport type MilkioRejectCode = any;\nexport type MilkioEvents = any;\n`,
+            "declares.ts": `// declares (stub)\nexport type MilkioMeta = any;\nexport type MilkioContext = any;\nexport type MilkioFailCode = any;\nexport type MilkioFaultCode = any;\nexport type MilkioFailAny = any;\nexport type MilkioFaultAny = any;\nexport type MilkioPublicFailure = any;\nexport type MilkioFailFunction = any;\nexport type MilkioFaultFunction = any;\nexport type MilkioEvents = any;\n`,
             "config-schema.ts": `// config-schema (stub)\nexport const configSchema = { get: async () => ({}) };\n`,
             "route-schema.ts": `// route-schema (stub)\nconst routeSchema: Record<string, any> = {};\nexport default routeSchema;\n`,
             "typia-schema.ts": `// typia-schema (stub)\nconst typiaSchema: Record<string, any> = {};\nexport default typiaSchema;\n`,
@@ -124,7 +124,7 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
         };
         for (const [fileName, content] of Object.entries(stubs)) {
             const filePath = join(milkioDir, fileName);
-            await Bun.write(filePath, content);
+            await writeFileEnsured(filePath, content);
         }
     }
 
@@ -134,13 +134,13 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
     const projectFiles = allFiles.get(root)!;
 
     const globPattern = `{${validDirs.join(",")}}/**/*.ts`;
-    const glob = new Glob(globPattern);
-    const filesAsyncGenerator = glob.scan({ cwd: appRoot, onlyFiles: true });
+    const filesAsyncGenerator = globFiles(globPattern, appRoot);
 
     const extensionChangeFiles: Array<Array<CookbookWatcherFile>> = [];
     for (let i = 0; i < imports.length; i++) extensionChangeFiles.push([]);
 
     progress.stage(root, "scan", SCAN_WEIGHT);
+    const scannedPaths = new Set<string>();
     for await (const filePathRaw of filesAsyncGenerator) {
         if (filePathRaw.endsWith(".test.ts") || filePathRaw.endsWith(".spec.ts") || filePathRaw.includes(" copy")) continue;
         const filePath = filePathRaw.replaceAll("\\", "/");
@@ -149,7 +149,8 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
         if (fileName.startsWith("_")) continue;
         const fileData = processFile(filePath, appRoot, fileName);
         fileData.dependencyChanged = false;
-        if (!projectFiles.has(filePath)) projectFiles.set(filePath, fileData);
+        scannedPaths.add(filePath);
+        projectFiles.set(filePath, fileData);
         for (let i = 0; i < imports.length; i++) {
             if (imports[i].filter(fileData)) {
                 extensionChangeFiles[i].push(fileData);
@@ -157,6 +158,10 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
         }
 
         await parseAndCacheDependencies(resolve(appRoot, filePath), appRoot);
+    }
+    // `allFiles` must not keep deleted files forever, otherwise generated declares would import them.
+    for (const existingPath of projectFiles.keys()) {
+        if (!scannedPaths.has(existingPath)) projectFiles.delete(existingPath);
     }
     progress.completeStage(root);
 
@@ -191,7 +196,7 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
 
 async function generateDeclares(root: string, mode: string, options: CookbookOptions, project: CookbookWatcherExtensionProject, extensionChangeFiles: Array<Array<CookbookWatcherFile>>) {
     let header = "// declares";
-    header += `\nimport type { $context, $meta, $rejectCode, $events, Logger, Results, ContextHttp, MilkioRuntimeInit, MilkioInit, Action } from "milkio";`;
+    header += `\nimport type { $context, $meta, $failCode, $faultCode, $events, Logger, Results, ContextHttp, MilkioRuntimeInit, MilkioInit, Action, MilkioFail, MilkioFaultShape, MilkioPublicFault, MilkioFailureWire } from "milkio";`;
     header += `\nimport type { generated } from "./index.ts";`;
 
     let content = `\n`;
@@ -218,9 +223,9 @@ async function generateDeclares(root: string, mode: string, options: CookbookOpt
     // 比较内容，相同则跳过写入，避免触发 vite page reload
     const declaresPath = join(root, ".milkio", "declares.ts");
     let oldDeclaresContent: string | null = null;
-    try { oldDeclaresContent = await Bun.file(declaresPath).text(); } catch {}
+    try { oldDeclaresContent = await readText(declaresPath); } catch {}
     if (oldDeclaresContent !== newDeclaresContent) {
-        await Bun.write(declaresPath, newDeclaresContent);
+        await writeFileEnsured(declaresPath, newDeclaresContent);
     }
 }
 
@@ -245,9 +250,14 @@ function setupWatcher(mode: string, root: string, appRoot: string, validDirs: st
 
             for (const [filePath, isDependency] of batch) {
                 const fileName = filePath.split("/").pop()!;
+                if (!(await pathExists(join(appRoot, filePath)))) {
+                    // The file was deleted: drop it so generated declares no longer import it.
+                    projectFiles.delete(filePath);
+                    continue;
+                }
                 const fileData = processFile(filePath, appRoot, fileName);
                 fileData.dependencyChanged = isDependency;
-                if (!projectFiles.has(filePath)) projectFiles.set(filePath, fileData);
+                projectFiles.set(filePath, fileData);
                 for (let i = 0; i < imports.length; i++) {
                     if (imports[i].filter(fileData)) {
                         extensionChangeFiles[i].push(fileData);

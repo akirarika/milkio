@@ -1,4 +1,4 @@
-import { describe, it, beforeAll, afterAll } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vite-plus/test";
 import { spawn, execSync, type ChildProcess } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -9,6 +9,10 @@ import {
 	printSingleReport,
 	printComparisonTable,
 } from "./utils/report.ts";
+
+// NOTE: this is a manual, opt-in benchmark (`describe.skip` below) that runs its
+// framework servers on the Bun runtime. It is NOT part of the pnpm/Node tooling,
+// build or CI paths: Bun is only needed if you explicitly run this file.
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -230,7 +234,7 @@ async function benchHTTP(
 // ---------------------------------------------------------------------------
 // Lifecycle & Tests
 // 使用 describe.skip 使 `co test` 跳过本文件，避免启动外部服务器。
-// 手动运行: bun run vitest run app/modules/benchmark/__TEST__.test.ts
+// 手动运行: pnpm exec vp test app/modules/benchmark/__TEST__.test.ts
 // ---------------------------------------------------------------------------
 
 describe.skip("Benchmark (手动运行)", () => {
@@ -242,7 +246,7 @@ beforeAll(async () => {
 	);
 	if (!existsSync(benchmarkRouteDir)) {
 		console.log("[setup] .milkio missing benchmark route, building...");
-		execSync("bun run build", {
+		execSync("pnpm run build", {
 			cwd: PROJECT_ROOT,
 			stdio: "inherit",
 			timeout: 120_000,
@@ -301,9 +305,9 @@ afterAll(async () => {
 // ---------------------------------------------------------------------------
 
 for (const concurrency of CONCURRENCY_LEVELS) {
-	describe.sequential(`并发 C${concurrency}`, () => {
+	describe(`并发 C${concurrency}`, () => {
 		for (const [key, config] of Object.entries(FRAMEWORKS)) {
-			it.sequential(
+			it(
 				`${config.name} /benchmark/json`,
 				{ timeout: 120_000 },
 				async () => {

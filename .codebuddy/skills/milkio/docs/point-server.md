@@ -166,7 +166,7 @@ export async function handler(
   whereCase.push(eq(articleTable.updatedAt, params.data.updatedAt));
 
   const result = await context.db.update(articleTable).set({ ...params.data, updatedAt: undefined }).where(and(...whereCase)).limit(1);
-  if (result[0].affectedRows === 0) throw context.reject("DATA_CONFLICT", undefined);
+  if (result[0].affectedRows === 0) throw context.fail("DATA_CONFLICT", undefined);
 
   return {};
 };
@@ -202,7 +202,7 @@ export async function handler(
   if (params.id) whereCase.push(eq(articleTable.id, params.id));
   if (whereCase.length === 0) {
     context.logger.error('缺少查询条件 (read.action.ts)', JSON.stringify(params));
-    throw context.reject("DATA_NOT_FOUND", undefined);
+    throw context.fail("DATA_NOT_FOUND", undefined);
   }
 
   const data = await context.db.query.articleTable.findFirst({
@@ -210,7 +210,7 @@ export async function handler(
   });
   if (!data) {
     context.logger.error('数据不存在 (read.action.ts)', JSON.stringify(params));
-    throw context.reject("DATA_NOT_FOUND", undefined);
+    throw context.fail("DATA_NOT_FOUND", undefined);
   }
 
   const result = {
@@ -362,15 +362,16 @@ export async function handler(
 
 ## 错误处理
 
-要使动作失败并返回错误，使用 `throw context.reject("错误码", 数据)`。例如数据不存在时：`throw context.reject("DATA_NOT_FOUND", undefined)`。
+失败分为两类，**定义在同一个 `*.code.ts` 里**：
 
-系统公共错误码定义在 `/app/codes` 目录下的文件中，**目录中的所有文件均为有效错误码**。
+- **`Fail`（fail-code）**：预期内的业务拒绝，日志 warn 级，**不采集堆栈**，`code` 与 `data` 返回给客户端；
+- **`Fault`（fault-code）**：意料外/内部错误，日志 error 级，带堆栈与 cause，**仅本工程内部使用**，客户端只会收到通用 `"INTERNAL_SERVER_ERROR"`。
 
-模块专属错误码定义在 `/app/modules/模块名/$codes/模块名.code.ts` 中。例如点数模块的两个错误码：
+系统公共错误码定义在 `/app/codes` 目录下，模块专属错误码定义在 `/app/modules/模块名/$codes/模块名.code.ts` 中。每个文件必须同时导出 `Fail` 与 `Fault`（可以为空）：
 
 ```
 // /app/modules/point/$codes/point.code.ts
-export interface _ {
+export interface Fail {
   /**
    * 点数兑换失败
    */
@@ -383,22 +384,34 @@ export interface _ {
     available: number;
   };
 }
+
+export interface Fault {
+  /**
+   * 账本不变量被破坏，属于程序异常，不应发生
+   */
+  POINT_LEDGER_INVARIANT_BROKEN: {
+    ledgerId: string;
+  };
+}
 ```
 
 抛出示例：
 
 ```ts
-// 点数兑换失败
-throw context.reject("POINT_EXCHANGE_FAILED", undefined);
-
-// 点数不足
-throw context.reject("POINT_INSUFFICIENT", {
+// fail：业务拒绝，warn，无堆栈，data 发给客户端
+throw context.fail("POINT_EXCHANGE_FAILED", undefined);
+throw context.fail("POINT_INSUFFICIENT", {
   required: 100,
   available: 50,
 });
+
+// fault：内部异常，error，带堆栈，只进服务端日志
+throw context.fault("POINT_LEDGER_INVARIANT_BROKEN", { ledgerId });
 ```
 
-**重点：错误码的数据结构中不得包含 `message` 等文本字段。** 具体的错误提示文案应由前端根据错误码生成——后端返回文本会导致国际化困难，且增加传输体积。前端根据错误码决定展示内容；对于携带数据的错误码，前端可利用这些数据拼装出完整的提示信息。
+**重点：fail-code 的数据结构中不得包含 `message` 等文本字段。** 具体的错误提示文案应由前端根据错误码生成——后端返回文本会导致国际化困难，且增加传输体积。前端根据错误码决定展示内容；对于携带数据的错误码，前端可利用这些数据拼装出完整的提示信息。
+
+**fault-code 的 data 可以包含内部细节**（SQL、上游响应等），它不会返回给客户端，只用于日志和 `onError`。不要把 `catch` 到的未意料异常包装成 `context.fail`，直接 `throw` 或 `context.fault` 才会按 error 级记录。
 
 ## 测试
 
@@ -410,7 +423,7 @@ throw context.reject("POINT_INSUFFICIENT", {
 
 **基础创建与查询测试 (`add`, `read`)**：
 ```ts
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { astra } from "../../utils/test.ts";
 
 /**
@@ -419,7 +432,7 @@ import { astra } from "../../utils/test.ts";
  * 不做断言，仅用于调试和观察返回值。
  */
 test("adjust", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   // 调试：执行创建动作，generateParams 会自动生成符合接口定义的随机参数
   await world.execute("/application/add", { generateParams: true });
 });
@@ -432,19 +445,19 @@ test("adjust", async () => {
  * 3. 断言查询结果中的 ID 与创建时返回的 ID 一致
  */
 test("basic", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   // 关键：清理数据库，确保测试环境干净，避免其他测试数据的干扰
   await world.cleanDatabase();
 
   // 1. 调用创建接口，generateParams 会自动填充所需的参数字段
   const [errorAdd, resultAdd] = await world.execute("/application/add", { generateParams: true });
-  if (errorAdd) throw reject("创建失败", errorAdd);
+  if (errorAdd) throw fail("创建失败", errorAdd);
   // 获取新建数据的 ID，用于后续查询
   const newId = resultAdd.id;
 
   // 2. 调用查询接口，通过 ID 查询刚创建的数据，验证数据已正确持久化
   const [errorGet, resultGet] = await world.execute("/application/read", { generateParams: false, params: { id: newId } });
-  if (errorGet) throw reject("查询失败", errorGet);
+  if (errorGet) throw fail("查询失败", errorGet);
 
   // 3. 断言：查询结果中的 ID 应与创建时返回的 ID 一致，确认数据完整性
   expect(resultGet.data?.id).toBe(newId);
@@ -453,7 +466,7 @@ test("basic", async () => {
 
 **查询列表测试 (`browse`)**：
 ```ts
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { astra } from "../../utils/test.ts";
 
 /**
@@ -462,7 +475,7 @@ import { astra } from "../../utils/test.ts";
  * 不做断言，仅用于调试和观察返回值。
  */
 test("adjust", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   // 调试：执行列表查询动作，generateParams 会自动生成查询参数
   await world.execute("/application/browse", { generateParams: true });
 });
@@ -475,19 +488,19 @@ test("adjust", async () => {
  * 3. 断言列表中包含刚创建的数据
  */
 test("basic", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   // 关键：清理数据库，确保测试环境干净，避免其他测试数据的干扰
   await world.cleanDatabase();
 
   // 创建一条数据，后续用来验证列表查询结果
   const [errorAdd, resultAdd] = await world.execute("/application/add", { generateParams: true });
-  if (errorAdd) throw reject("Execution failed", errorAdd);
+  if (errorAdd) throw fail("Execution failed", errorAdd);
   // 记录创建数据的 ID，用于后续在列表中查找匹配
   const id = resultAdd.id;
 
   // 调用 browse 接口查询数据列表
   const [errorBrowse, resultBrowse] = await world.execute("/application/browse", { generateParams: false });
-  if (errorBrowse) throw reject("Execution failed", errorBrowse);
+  if (errorBrowse) throw fail("Execution failed", errorBrowse);
 
   // 断言：列表中应能找到刚创建的数据，确认 browse 接口返回完整数据
   const found = resultBrowse.data.find((item) => item.id === id);
@@ -497,7 +510,7 @@ test("basic", async () => {
 
 **删除测试 (`delete`)**：
 ```ts
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { astra } from "../../utils/test.ts";
 
 /**
@@ -506,7 +519,7 @@ import { astra } from "../../utils/test.ts";
  * 不做断言，仅用于调试和观察返回值。
  */
 test("adjust", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   // 调试：执行删除动作，generateParams 会自动生成包含 ID 的删除参数
   await world.execute("/application/delete", { generateParams: true });
 });
@@ -519,33 +532,33 @@ test("adjust", async () => {
  * 3. 再次查询该数据，断言应返回 DATA_NOT_FOUND 错误
  */
 test("basic", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   // 关键：清理数据库，确保测试环境干净，避免其他测试数据的干扰
   await world.cleanDatabase();
 
   // 创建一条数据，后续用来测试删除功能
   const [errorAdd, resultAdd] = await world.execute("/application/add", { generateParams: true });
-  if (errorAdd) throw reject("创建失败", errorAdd);
+  if (errorAdd) throw fail("创建失败", errorAdd);
   // 记录创建数据的 ID，用于后续删除和验证
   const id = resultAdd.id;
 
   // 调用删除接口，通过 ID 删除刚创建的数据
   const [errorDelete, resultDelete] = await world.execute("/application/delete", { generateParams: false, params: { id } });
-  if (errorDelete) throw reject("删除失败", errorDelete);
+  if (errorDelete) throw fail("删除失败", errorDelete);
 
   // 再次查询该数据，验证其已被删除
   const [errorGet, resultGet] = await world.execute("/application/read", { generateParams: false, params: { id } });
 
   // 关键断言：确保错误类型是 DATA_NOT_FOUND，说明数据已被成功删除
   if (!errorGet || errorGet.DATA_NOT_FOUND === undefined) {
-    throw reject("删除后查询未返回预期错误", errorGet);
+    throw fail("删除后查询未返回预期错误", errorGet);
   }
 });
 ```
 
 **更新测试 (`edit`)**：
 ```ts
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { astra } from "../../utils/test.ts";
 
 /**
@@ -554,7 +567,7 @@ import { astra } from "../../utils/test.ts";
  * 不做断言，仅用于调试和观察返回值。
  */
 test("adjust", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   // 调试：执行更新动作，generateParams 会自动生成更新所需的参数
   await world.execute("/application/edit", { generateParams: true });
 });
@@ -569,30 +582,30 @@ test("adjust", async () => {
  * 5. 断言更新前后的数据不一致，确认更新生效
  */
 test("basic", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   // 关键：清理数据库，确保测试环境干净，避免其他测试数据的干扰
   await world.cleanDatabase();
 
   // 创建一条数据，后续用来测试更新功能
   const [errorAdd, resultAdd] = await world.execute("/application/add", { generateParams: true });
-  if (errorAdd) throw reject("创建失败", errorAdd);
+  if (errorAdd) throw fail("创建失败", errorAdd);
   // 记录创建数据的 ID，用于后续查询和更新定位
   const id = resultAdd.id;
 
   // 记录更新前的数据快照，用于与更新后的数据做对比
   const [errorBefore, resultBefore] = await world.execute("/application/read", { generateParams: false, params: { id } });
-  if (errorBefore) throw reject("查询失败（更新前）", errorBefore);
+  if (errorBefore) throw fail("查询失败（更新前）", errorBefore);
 
   // 执行更新动作：params 中的 id 用于定位要更新的数据，generateParams 会生成其他更新字段
   const [errorUpdate, resultUpdate] = await world.execute("/application/edit", {
     params: { data: { id } },
     generateParams: true,
   });
-  if (errorUpdate) throw reject("更新失败", errorUpdate);
+  if (errorUpdate) throw fail("更新失败", errorUpdate);
 
   // 获取更新后的数据，用于与更新前做对比
   const [errorAfter, resultAfter] = await world.execute("/application/read", { generateParams: false, params: { id } });
-  if (errorAfter) throw reject("查询失败（更新后）", errorAfter);
+  if (errorAfter) throw fail("查询失败（更新后）", errorAfter);
 
   // 断言：更新前后的数据不应完全相同，确认更新操作确实修改了数据
   expect(resultBefore.data).not.toEqual(resultAfter.data);
@@ -601,7 +614,7 @@ test("basic", async () => {
 
 **批量查询测试 (`read-many`)**：
 ```ts
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { astra } from "../../utils/test.ts";
 
 /**
@@ -610,7 +623,7 @@ import { astra } from "../../utils/test.ts";
  * 不做断言，仅用于调试和观察返回值。
  */
 test("adjust", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   // 调试：执行单条查询动作（注意这里用 read 做快速调试）
   await world.execute("/application/read", { generateParams: true });
 });
@@ -623,7 +636,7 @@ test("adjust", async () => {
  * 3. 断言返回的数据条数与创建的条数一致
  */
 test("basic", async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   // 关键：清理数据库，确保测试环境干净，避免其他测试数据的干扰
   await world.cleanDatabase();
 
@@ -634,14 +647,14 @@ test("basic", async () => {
 
   for (let i = 0; i < count; i++) {
     const [errorAdd, resultAdd] = await world.execute("/application/add", { generateParams: true });
-    if (errorAdd) throw reject("创建失败", errorAdd);
+    if (errorAdd) throw fail("创建失败", errorAdd);
     // 将每条新建数据的 ID 添加到数组中
     ids.push(resultAdd.id);
   }
 
   // 执行批量查询，传入所有创建数据的 ID 列表
   const [errorReadMany, resultReadMany] = await world.execute("/application/read-many", { generateParams: false, params: { ids } });
-  if (errorReadMany) throw reject("批量查询失败", errorReadMany);
+  if (errorReadMany) throw fail("批量查询失败", errorReadMany);
 
   // 断言：返回的数据条数应与创建的条数一致，确认批量查询返回了完整的结果
   expect(resultReadMany.data.length).toEqual(count);
@@ -660,7 +673,7 @@ test("basic", async () => {
  * 2. 应返回 INVALID_TIME_PRECISION 错误
  */
 test('invalidTimePrecision', async () => {
-  const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+  const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
   await world.cleanDatabase();
 
   const invalidDate = new Date('2025-01-15T10:30:00Z');
@@ -677,9 +690,9 @@ test('invalidTimePrecision', async () => {
     },
   });
 
-  // 断言：返回的错误码应该是 INVALID_TIME_PRECISION
-  if (!errorAdd || !('INVALID_TIME_PRECISION' in errorAdd)) {
-    throw reject('应该返回 INVALID_TIME_PRECISION 错误', errorAdd);
+  // 断言：返回的 fail-code 应该是 INVALID_TIME_PRECISION
+  if (!errorAdd || errorAdd.kind !== "fail" || errorAdd.code !== "INVALID_TIME_PRECISION") {
+    throw fail('应该返回 INVALID_TIME_PRECISION 错误', errorAdd);
   }
 });
 ```
@@ -691,27 +704,27 @@ test('invalidTimePrecision', async () => {
 
 ## 错误处理规范
 
-在动作代码中，使用 `throw context.reject("ERROR_CODE", undefined);` 抛出业务错误。
+在动作代码中，使用 `throw context.fail("ERROR_CODE", undefined);` 抛出业务错误；内部异常使用 `throw context.fault("FAULT_CODE", data);`。
 
-在测试代码中，请使用以下**正确方式**检查错误类型：
+在测试代码中，请使用以下方式检查错误类型（`kind` + `code` 收窄）：
 
 ```typescript
-// 正确：检查错误对象中是否存在特定的错误码属性
-if ("VERIFICATION_CODE_INVALID" in error) {
+// 正确：先确认是 fail，再按 code 收窄
+if (error?.kind === "fail" && error.code === "VERIFICATION_CODE_INVALID") {
     // 处理验证码无效的错误
 }
 
-if (!("VERIFICATION_CODE_INVALID" in error)) {
+if (!(error?.kind === "fail" && error.code === "VERIFICATION_CODE_INVALID")) {
     // 处理其他类型的错误
 }
 ```
 
-**重要**：请勿使用以下方式判断错误类型，尽管它们可能在某些情况下运行正常，但会导致 TypeScript 类型推断不准确，违反项目规范：
+**重要**：不要使用 keyed-map 写法（`"CODE" in error` / `error.CODE`），也不要用 `as any` 绕过类型：
 
 ```typescript
 // 错误！禁止使用
-expect(error?.code).toBe("VERIFICATION_CODE_INVALID");
-expect(error?.VERIFICATION_CODE_INVALID).toBeDefined();
+expect(error?.code).toBe("VERIFICATION_CODE_INVALID");     // 缺少 kind 收窄
+expect(error?.VERIFICATION_CODE_INVALID).toBeDefined();    // 旧 keyed-map 写法
 ```
 
 ## 随机参数生成
@@ -720,9 +733,9 @@ expect(error?.VERIFICATION_CODE_INVALID).toBeDefined();
 
 ```ts
 // 示例：创建一个随机用户
-const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
 const [errorAdd, resultAdd] = await world.execute("/user/add", { generateParams: true });
-if (errorAdd) throw reject("创建用户失败", errorAdd);
+if (errorAdd) throw fail("创建用户失败", errorAdd);
 const userId = resultAdd.id;
 ```
 
@@ -730,9 +743,9 @@ const userId = resultAdd.id;
 
 ```ts
 // 示例：创建一个随机用户，指定用户名
-const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
 const [errorAdd, resultAdd] = await world.execute("/user/add", { generateParams: true, params: { data: { username: "test-user" } } });
-if (errorAdd) throw reject("创建用户失败", errorAdd);
+if (errorAdd) throw fail("创建用户失败", errorAdd);
 const userId = resultAdd.id;
 ```
 
@@ -785,7 +798,7 @@ expect(resultInit.voice!.volume).toBe(50);
 import { userSeed } from "../../modules/user/$seeds/user.seed.ts";
 
 // 示例：使用默认用户 ID 进行测试
-const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
 const [errorAdd, resultAdd] = await world.execute("/foo/bar/baz", { generateParams: false, params: { userId: userSeed.id } });
 ```
 

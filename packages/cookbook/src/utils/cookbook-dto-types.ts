@@ -48,7 +48,7 @@ export interface CookbookOptions {
       meta: Partial<{
         inspect: boolean;
       }>;
-      runtime?: "node" | "deno" | "bun";
+      runtime?: "node" | "bun";
       name?: string;
       lazyRoutes?: boolean;
       watcher?: Array<string>;
@@ -70,7 +70,7 @@ export interface CookbookOptions {
     modes: Array<string>;
   };
   config: {
-    [key: string]: string | number | boolean;
+    [key: string]: string | number | boolean | undefined;
     // AI integration (optional, used by co create / co x commands)
     aiModel?: string;
     aiModelDeepResearch?: string;

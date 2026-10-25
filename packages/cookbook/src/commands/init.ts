@@ -1,3 +1,4 @@
+import { pathExists } from "../utils/node-compat";
 import { defineCookbookCommand } from "@milkio/cookbook-command";
 import consola from "consola";
 import { finished } from "node:stream/promises";
@@ -7,7 +8,7 @@ import { cwd, exit } from "node:process";
 import { __VERSION__ } from "../../__VERSION__";
 import { Readable } from "node:stream";
 import compressing from "compressing";
-import { exists, readdir as readdirAsync, stat as statAsync, readFile, writeFile } from "node:fs/promises";
+import { readdir as readdirAsync, stat as statAsync, readFile, writeFile } from "node:fs/promises";
 import { withPromptTimeout } from "../utils/prompt-timeout";
 import { prompt } from "../utils/prompt";
 
@@ -20,7 +21,7 @@ export default await defineCookbookCommand(async (utils) => {
     if (!existsSync(tempspace)) mkdirSync(tempspace);
 
     let currentWriteDir = cwd();
-    if (await exists(join(currentWriteDir, "packages", "cookbook", "src", "commands", "init.ts"))) {
+    if (await pathExists(join(currentWriteDir, "packages", "cookbook", "src", "commands", "init.ts"))) {
         const tempDir = join(tempspace, `${Date.now()}`);
         currentWriteDir = await utils.inputString({
             message: "The current directory seems to be a cookbook project. Please enter the directory you want to initialize the cookbook in",
@@ -29,7 +30,7 @@ export default await defineCookbookCommand(async (utils) => {
         });
         if (currentWriteDir === undefined) currentWriteDir = tempDir;
         consola.info(`Initializing cookbook in ${currentWriteDir}`);
-        if (!await exists(currentWriteDir)) mkdirSync(currentWriteDir);
+        if (!await pathExists(currentWriteDir)) mkdirSync(currentWriteDir);
     } else {
         for (const fileName of (await readdir(currentWriteDir))) {
             if (fileName === '.git') continue;
@@ -151,7 +152,7 @@ export default await defineCookbookCommand(async (utils) => {
         if (existsSync(destination)) await remove(destination);
 
         const fileStream = createWriteStream(destination);
-        await finished(Readable.fromWeb(res.body!).pipe(fileStream));
+        await finished(Readable.fromWeb(res.body as any).pipe(fileStream));
         consola.success("Package downloaded successfully");
     } catch (error: any) {
         consola.error(`Download failed: ${error?.message ?? error}`);
@@ -218,7 +219,7 @@ export default await defineCookbookCommand(async (utils) => {
 
     try {
         const cookbookTomlPath = join(currentWriteDir, "cookbook.toml");
-        if (await exists(cookbookTomlPath)) {
+        if (await pathExists(cookbookTomlPath)) {
             const cookbookTomlContent = await readFile(cookbookTomlPath, 'utf8');
             const updatedContent = cookbookTomlContent.replace(
                 /packageManager = ".*"/g,

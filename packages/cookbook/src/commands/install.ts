@@ -27,6 +27,7 @@ export default await defineCookbookCommand(async (utils) => {
           if (command === "@biomejs/biome") return true;
           if (command === "typia") return true;
           if (command === "vitest") return true;
+          if (command === "vite-plus") return true;
           if (command === "jest") return true;
           if (command === "eslint") return true;
           return false;

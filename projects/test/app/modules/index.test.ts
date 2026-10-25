@@ -1,8 +1,8 @@
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { astra } from "../../test.ts";
 
-it.sequential("basic", async () => {
-    const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+it("basic", async () => {
+    const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
     const [error, results] = await world.execute("/" /* There is no need to pass in /index here, it will be automatically omitted */, {
         params: {
             a: "2",
@@ -10,7 +10,7 @@ it.sequential("basic", async () => {
         },
         generateParams: false,
     });
-    if (error) throw reject("Milkio did not execute successfully", error);
+    if (error) throw fail("Milkio did not execute successfully", error);
 
     // Check if the return value is as expected
     expect(results.count).toBe(4);

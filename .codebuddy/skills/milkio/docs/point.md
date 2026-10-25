@@ -62,11 +62,11 @@ Typia 通过分析你的代码并执行 AOT（提前）编译，将代码中的�
 ```
 // /app/modules/application/__TEST__.test.ts
 test("test-bar", async () => {
-    const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+    const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
     const [error, result] = await world.execute("/application/add", {
         generateParams: true
     });
-    if (error) throw reject('测试失败', error);
+    if (error) throw fail('测试失败', error);
     expect(typeof result.id).toBe('string');
  });
 ```
@@ -107,7 +107,7 @@ export async function handler(
 
 ### `context.logger.error(message, ...data)`
 
-记录错误日志，用于在业务校验失败或异常情况时记录详细信息。**注意**：`logger.error` 只负责记录日志，不会中断执行流程。如果你需要在记录错误后中断请求，必须在下一行 `throw context.reject(...)`。
+记录错误日志，用于在业务校验失败或异常情况时记录详细信息。**注意**：`logger.error` 只负责记录日志，不会中断执行流程。如果你需要在记录错误后中断请求，必须在下一行 `throw context.fail(...)`。
 
 ```ts
 export async function handler(
@@ -117,12 +117,12 @@ export async function handler(
   if (!params.phone) {
     // 先记录错误日志，再抛出拒绝
     context.logger.error('新手机号不能为空 (edit-phone.action.ts)', JSON.stringify(params));
-    throw context.reject('DATA_NOT_FOUND', undefined);
+    throw context.fail('DATA_NOT_FOUND', undefined);
   }
 
   if (!currentUser) {
     context.logger.error('用户不存在 (edit-phone.action.ts)', JSON.stringify(params));
-    throw context.reject('DATA_NOT_FOUND', undefined);
+    throw context.fail('DATA_NOT_FOUND', undefined);
   }
 };
 ```

@@ -31,6 +31,24 @@ export async function create(options: MilkioInit) {
 
 **注意**：Bootstrap 的注册顺序很重要——Redis 应在 Drizzle 之前加载，认证应在数据库之后加载。
 
+### 失败告警（onError）
+
+`createWorld` 的 options 支持 `onError(report)`，**只对 fault（未意料/内部错误）调用**；fail（业务拒绝）只记 warn 日志、不会触发告警。`report` 包含真实 fault-code、data、stack、cause、executeId、path，适合直接接 Sentry/OTel：
+
+```ts
+const world = await createWorld(generated, configSchema, {
+  ...options,
+  onError: (report) => {
+    Sentry.captureException(report.cause ?? new Error(report.code), {
+      tags: { code: report.code, executeId: report.executeId },
+    });
+  },
+  bootstraps: [loadRedis, loadDrizzle, loadUserAuth],
+});
+```
+
+客户端只会收到通用 `{ kind: "fault", code: "INTERNAL_SERVER_ERROR" }` + executeId，真实 fault-code/data/stack 只在这里和服务端日志中出现。
+
 ### 典型全局 Bootstrap 示例
 
 #### 数据库连接（Drizzle）
@@ -122,13 +140,13 @@ export const loadUserAuth = async (world: MilkioWorld<typeof generated>) => {
         return;
       }
 
-      throw event.reject('LOGIN_REQUIRED', undefined);
+      throw event.fail('LOGIN_REQUIRED', undefined);
     }
 
     // 通过 Token 查询用户信息...
     const user = await getUserByToken(event.context, accessToken);
     if (!user) {
-      throw event.reject('INVALID_TOKEN', undefined);
+      throw event.fail('INVALID_TOKEN', undefined);
     }
 
     event.context.userDevice = user.userDevice;
@@ -142,7 +160,7 @@ export const loadUserAuth = async (world: MilkioWorld<typeof generated>) => {
 1. **`milkio:executeBefore` 事件**：模块级 Bootstrap 通常通过监听此事件实现请求拦截。
 2. **`event.context`**：可以在 context 上挂载自定义属性（如 `userDevice`、`userProperties`），后续 action 中可通过 `context.userDevice` 等访问。
 3. **`event.meta.allow`**：action 的 `meta.allow` 数组用于声明允许的访问方式（如 `['guest']` 表示允许未登录访问）。
-4. **`event.reject()`**：认证失败时使用 `event.reject()` 抛出错误，与 action 中的 `context.reject()` 用法相同。
+4. **`event.fail()`**：认证失败时使用 `event.fail()` 抛出错误，与 action 中的 `context.fail()` 用法相同。
 
 ## 全局 Bootstrap vs 模块级 Bootstrap
 
@@ -168,5 +186,5 @@ Bootstrap 中可以监听以下 Milkio 框架事件：
 
 1. **顺序很重要**：全局 Bootstrap 的注册顺序决定了初始化顺序和事件监听优先级。
 2. **测试环境放通**：认证 Bootstrap 应在测试环境下放通请求，方便测试。
-3. **错误提前抛出**：在 `milkio:executeBefore` 中发现不合法请求时，应立即 `throw event.reject()`，不要让请求继续执行。
+3. **错误提前抛出**：在 `milkio:executeBefore` 中发现不合法请求时，应立即 `throw event.fail()`，不要让请求继续执行。
 4. **context 挂载**：通过在 context 上挂载属性（如 `context.userDevice`），可以在后续的 action 中直接使用，避免重复查询。

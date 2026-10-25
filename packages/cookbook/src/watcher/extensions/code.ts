@@ -10,32 +10,51 @@ export const codeWatcherExtension = defineWatcherExtension({
         const types = "";
         let content = "";
 
-        content += `\n
-export type MilkioRejectFunction = {
-    <Code extends keyof MilkioRejectCode>(code: Code, ...data: MilkioRejectCode[Code] extends undefined ? [] | [undefined] : [MilkioRejectCode[Code]]): MilkioRejectError<Code, MilkioRejectCode[Code]>;
-};
-export type MilkioRaiseFunction = {
-    <T>(obj: T): MilkioRejectError<Extract<keyof T, keyof MilkioRejectCode>, any>;
-};
-export type MilkioRejectError<Code extends keyof MilkioRejectCode = keyof MilkioRejectCode, RejectData extends MilkioRejectCode[Code] = MilkioRejectCode[Code]> = { code: Code; data: RejectData; stack: string; $milkioReject: true };
-export interface MilkioRejectCode extends `;
+        // Sort by path so the generated declares order is stable (glob order is not guaranteed).
+        const codeFiles = [...allFiles].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+
+        const failKeys: Array<string> = [];
+        const faultKeys: Array<string> = [];
         let codeIndex = 0;
-        const codeKeys: string[] = [];
-        for await (const file of allFiles) {
-            header += `\nimport type { _ as code_${codeIndex} } from "../app/${file.path}";`;
-            codeKeys.push(`code_${codeIndex}`);
+        for (const file of codeFiles) {
+            header += `\nimport type { Fail as fail_${codeIndex}, Fault as fault_${codeIndex} } from "../app/${file.path}";`;
+            failKeys.push(`fail_${codeIndex}`);
+            faultKeys.push(`fault_${codeIndex}`);
             ++codeIndex;
         }
-        if (codeKeys.length > 0) {
-            const omitKeys = codeKeys.map((k) => `keyof ${k}`).join(" | ");
-            content += `Omit<$rejectCode, ${omitKeys}>`;
-            for (const k of codeKeys) {
-                content += `, ${k}`;
-            }
-        } else {
-            content += "$rejectCode";
-        }
+
+        content += `\nexport interface MilkioFailCode extends $failCode`;
+        for (const key of failKeys) content += `, ${key}`;
         content += " {}";
+
+        content += `\nexport interface MilkioFaultCode extends $faultCode`;
+        for (const key of faultKeys) content += `, ${key}`;
+        content += " {}";
+
+        content += `\n
+// A code must belong to exactly one bucket (fail or fault), otherwise client narrowing is ambiguous.
+type $AssertTrue<T extends true> = T;
+export type $NoCodeInBothKinds = $AssertTrue<[Extract<keyof MilkioFailCode, keyof MilkioFaultCode>] extends [never] ? true : false>;
+
+/** Server-side fail union (data is part of the client contract) */
+export type MilkioFailAny = { [K in keyof MilkioFailCode & string]: MilkioFail<K, MilkioFailCode[K]> }[keyof MilkioFailCode & string];
+
+/** Server-side fault union (data/stack are only used internally) */
+export type MilkioFaultAny = { [K in keyof MilkioFaultCode & string]: MilkioFaultShape<K, MilkioFaultCode[K]> }[keyof MilkioFaultCode & string];
+
+/** Client-visible union: all fail-codes + one generic fault shape; internal fault-codes are never exposed here */
+export type MilkioPublicFailure = MilkioFailAny | MilkioPublicFault;
+
+export type MilkioFailFunction = <Code extends keyof MilkioFailCode & string>(
+    code: Code,
+    ...data: MilkioFailCode[Code] extends undefined ? [] | [undefined] : [MilkioFailCode[Code]]
+) => MilkioFail<Code, MilkioFailCode[Code]>;
+
+export type MilkioFaultFunction = <Code extends keyof MilkioFaultCode & string>(
+    code: Code,
+    ...data: MilkioFaultCode[Code] extends undefined ? [] | [undefined] : [MilkioFaultCode[Code]]
+) => MilkioFaultShape<Code, MilkioFaultCode[Code]>;
+`;
 
         return [header, types, content];
     },

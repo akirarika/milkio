@@ -35,7 +35,67 @@ export type ExecuteResultsOption = { executeId: string };
 
 export type GeneratorGeneric<T> = T extends AsyncGenerator<infer I> ? I : never;
 
-export async function createStargateWorker<Generated extends { routeSchema: any; rejectCode: any }>(stargateOptions: MilkioStargateOptions) {
+// ---------------------------------------------------------------------------
+// Failure protocol v2 (same wire as @milkio/stargate): `fail` keeps code + data,
+// `fault` only carries the generic INTERNAL_SERVER_ERROR code.
+// Types are duplicated locally on purpose: this package depends on neither stargate nor milkio.
+// ---------------------------------------------------------------------------
+
+export type MilkioFailureWire =
+    | { kind: "fail"; code: string; data: unknown }
+    | { kind: "fault"; code: "INTERNAL_SERVER_ERROR" };
+
+/** structural shape of a failure restored from the wire (fail keeps code/data; fault stays generic) */
+export interface MilkioClientFailure {
+    readonly $milkioFailure: true;
+    readonly kind: "fail" | "fault";
+    readonly code: string;
+    readonly data?: unknown;
+}
+
+/** faults synthesized by the client itself; they are not server fault-codes */
+export type MilkioClientTransportFailure =
+    | (MilkioClientFailure & { readonly kind: "fault"; readonly code: "NETWORK_ERROR" })
+    | (MilkioClientFailure & { readonly kind: "fault"; readonly code: "REQUEST_TIMEOUT"; readonly data: { timeout: number; message: string } });
+
+/**
+ * Everything a stargate-worker call can fail with: the generated client-visible failure union
+ * (all fail-codes with typed data + the generic server fault) plus the client transport faults.
+ * The transport members carry literal codes so `failure.code` narrowing still works for fail-codes.
+ */
+export type MilkioPublicFailure<Generated extends { failure: any } = { failure: any }> = Generated["failure"] | MilkioClientTransportFailure;
+
+function createFail(code: string, data?: unknown): MilkioClientFailure {
+    return { $milkioFailure: true, kind: "fail", code, data };
+}
+
+function createFault(code: string, data?: unknown): MilkioClientFailure {
+    return { $milkioFailure: true, kind: "fault", code, data };
+}
+
+/** only transport-level faults are retried; fail and server faults are never retried */
+function isTransportFailure(failure: { readonly kind: string; readonly code: string }): boolean {
+    return failure.kind === "fault" && (failure.code === "NETWORK_ERROR" || failure.code === "REQUEST_TIMEOUT");
+}
+
+/** restore a wire failure: fail keeps code/data, fault is always reduced to the generic code by the server */
+function reviveFailureWire(wire: unknown): MilkioClientFailure {
+    if (typeof wire === "object" && wire !== null) {
+        const parsed = wire as { kind?: unknown; code?: unknown; data?: unknown };
+        if (parsed.kind === "fail" && typeof parsed.code === "string") return createFail(parsed.code, parsed.data);
+        if (parsed.kind === "fault") return createFault("INTERNAL_SERVER_ERROR");
+    }
+    return createFault("INTERNAL_SERVER_ERROR");
+}
+
+export async function createStargateWorker<Generated extends { routeSchema: any; failure: MilkioClientFailure }>(stargateOptions: MilkioStargateOptions) {
+    type PublicFailure = MilkioPublicFailure<Generated>;
+    /**
+     * Restored wire failures are cast to the generated failure union: the server contract guarantees the
+     * fail-code string is one of the generated codes, only the runtime value is unknown statically.
+     */
+    const reviveFailure = (wire: unknown): PublicFailure => reviveFailureWire(wire) as unknown as PublicFailure;
+
     const executeIds = new Set<string>();
     const connect = new Promise((resolve) => {
         const handler = (event: { data: any }) => {
@@ -80,9 +140,9 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
         ): Promise<
             Generated["routeSchema"][Path]["types"]["🥛"] extends boolean
             ? // action
-            [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, Generated["routeSchema"][Path]["types"]["result"], ExecuteResultsOption]
+            [PublicFailure, null, ExecuteResultsOption] | [null, Generated["routeSchema"][Path]["types"]["result"], ExecuteResultsOption]
             : // stream
-            [Partial<Generated["rejectCode"]>, null, ExecuteResultsOption] | [null, AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], undefined>, ExecuteResultsOption]
+            [PublicFailure, null, ExecuteResultsOption] | [null, AsyncGenerator<[PublicFailure, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], undefined>, ExecuteResultsOption]
         > {
             // oxlint-disable-next-line no-async-promise-executor
             return new Promise(async (resolve) => {
@@ -123,7 +183,7 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
                         }
                     }
 
-                    const executeRequest = (): Promise<[any, any, ExecuteResultsOption]> => {
+                    const executeRequest = (): Promise<[PublicFailure | null, any, ExecuteResultsOption]> => {
                         return new Promise((reqResolve) => {
                             const reqExecuteId = __createId();
                             executeIds.add(reqExecuteId);
@@ -132,10 +192,9 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
                                 if (event.data.executeId !== reqExecuteId) return;
                                 executeIds.delete(reqExecuteId);
                                 stargateOptions.port.removeEventListener("message", handler);
-                                if (!event.data.success) {
-                                    const error: any = {};
-                                    error[event.data.error.code] = event.data.error.reject;
-                                    reqResolve([error, null, { executeId: reqExecuteId }]);
+                                if (event.data.success !== true) {
+                                    // { executeId, success:false, data:undefined, error: wireFailure, done:true }
+                                    reqResolve([reviveFailure(event.data.error), null, { executeId: reqExecuteId }]);
                                 } else {
                                     reqResolve([null, event.data.data, { executeId: reqExecuteId }]);
                                 }
@@ -150,23 +209,25 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
                         });
                     };
 
-                    let [error, result, resultOption] = await executeRequest();
+                    let [failure, result, resultOption] = await executeRequest();
 
-                    for (let retryIndex = 0; retryIndex < retryCount && error; retryIndex++) {
+                    // only transport-level faults are retried; fail and server faults are never retried
+                    for (let retryIndex = 0; retryIndex < retryCount && failure !== null && isTransportFailure(failure); retryIndex++) {
                         if (retryIndex > 0) {
                             await new Promise((r) => setTimeout(r, 500));
                         }
-                        [error, result, resultOption] = await executeRequest();
+                        [failure, result, resultOption] = await executeRequest();
                     }
 
-                    if (error) {
-                        if (cacheStrategy !== 'off' && cacheStorage) {
+                    if (failure) {
+                        // fail is a real business result and never falls back to cache; faults may fall back
+                        if (cacheStrategy !== 'off' && cacheStorage && failure.kind !== 'fail') {
                             const cached = await cacheStorage.get(cacheKey);
                             if (cached) {
                                 return resolve([null, cached.data, { executeId: 'cached' }] as any);
                             }
                         }
-                        return resolve([error, null, resultOption]);
+                        return resolve([failure, null, resultOption] as any);
                     }
 
                     if (cacheStrategy !== 'off' && cacheStorage) {
@@ -183,25 +244,44 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
                     const handler = (event: { data: any }) => {
                         if (typeof event.data !== "object") return;
                         if (event.data.executeId !== executeId) return;
+
+                        const cleanup = () => {
+                            stargateOptions.port.removeEventListener("message", handler);
+                            executeIds.delete(executeId);
+                        };
+
+                        // data frames are `[null, value]`; failure frames are `[wireFailure, null]`
+                        const data = event.data.data;
+                        const frameFailure = Array.isArray(data) && data.length > 0 && data[0] !== null && data[0] !== undefined ? data[0] : undefined;
+                        // action-like envelope (failure before the stream started) has `success:false` + `error`
+                        const wireFailure = event.data.success !== true ? event.data.error : frameFailure;
+
                         if (!flow) {
-                            flow = createFlow(stargateOptions, executeId);
-                            if (!event.data.success) {
-                                const error: any = {};
-                                error[event.data.error.code] = event.data.error.reject;
-                                resolve([error, null, { executeId }]);
+                            if (wireFailure !== undefined) {
+                                cleanup();
+                                resolve([reviveFailure(wireFailure), null, { executeId }] as any);
+                                return;
                             }
-                            if (event.data.success) resolve([null, flow, { executeId }] as any);
-                        } else {
+                            flow = createFlow(stargateOptions, executeId);
+                            resolve([null, flow, { executeId }] as any);
+                            // the start ack frame carries no data; a real first data frame is forwarded below
                             if (event.data.done) {
-                                stargateOptions.port.removeEventListener("message", handler);
-                                executeIds.delete(executeId);
-                                if (event.data.success) flow.return(undefined, true);
-                                else flow.throw(event.data.data?.at(0), true);
-                            } else if (!event.data.success) {
-                                stargateOptions.port.removeEventListener("message", handler);
-                                executeIds.delete(executeId);
-                                flow.throw(event.data.data, true);
-                            } else if (event.data.success) flow.emit(event.data.data);
+                                cleanup();
+                                flow.return(undefined, true);
+                            } else if (data !== undefined) {
+                                flow.emit(data);
+                            }
+                            return;
+                        }
+
+                        if (wireFailure !== undefined) {
+                            cleanup();
+                            flow.throw(reviveFailure(wireFailure), true);
+                        } else if (event.data.done) {
+                            cleanup();
+                            flow.return(undefined, true);
+                        } else if (data !== undefined) {
+                            flow.emit(data);
                         }
                     };
                     stargateOptions.port.addEventListener("message", handler);
@@ -216,7 +296,7 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
         },
         $types: undefined as unknown as {
             generated: Generated,
-            error: Generated["rejectCode"];
+            failure: PublicFailure;
             params: {
                 [Path in keyof Generated["routeSchema"]]: Generated["routeSchema"][Path]["types"]["params"]
             },
@@ -225,7 +305,7 @@ export async function createStargateWorker<Generated extends { routeSchema: any;
                 ? // action
                 Generated["routeSchema"][Path]["types"]["result"]
                 : // stream
-                AsyncGenerator<[Partial<Generated["rejectCode"]>, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], undefined>
+                AsyncGenerator<[PublicFailure, null] | [null, GeneratorGeneric<Generated["routeSchema"][Path]["types"]["result"]>], undefined>
             },
         },
     };
@@ -306,9 +386,16 @@ export function createFlow<T>(stargateOptions: MilkioStargateOptions, executeId:
     return iterator as MilkioFlow<T>;
 }
 
-function withResolvers<T = any>(): PromiseWithResolvers<T> {
-    let resolve: PromiseWithResolvers<T>["resolve"];
-    let reject: PromiseWithResolvers<T>["reject"];
+/** locally declared so the package does not require the `ESNext.Promise` lib (PromiseWithResolvers) */
+export interface MilkioPromiseWithResolvers<T> {
+    promise: Promise<T>;
+    resolve: (value: T | PromiseLike<T>) => void;
+    reject: (reason?: any) => void;
+}
+
+function withResolvers<T = any>(): MilkioPromiseWithResolvers<T> {
+    let resolve: MilkioPromiseWithResolvers<T>["resolve"];
+    let reject: MilkioPromiseWithResolvers<T>["reject"];
     const promise = new Promise<T>((res, rej) => {
         resolve = res;
         reject = rej;

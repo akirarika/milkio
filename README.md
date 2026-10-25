@@ -15,3 +15,16 @@
         <img src="https://raw.githubusercontent.com/akirarika/.github/main/profile/image.png" width="320px" />
     </a>
 </p>
+
+## Development
+
+This monorepo is developed with **pnpm + Node.js (26.x) + [Vite+](https://vite.plus)**. Bun is **not** required for any install, build, test or CI step.
+
+```bash
+pnpm install
+pnpm run co            # cookbook CLI (dev / generate / test / ...)
+pnpm test              # tests via Vite+ (`vp test`, bundled Vitest 5)
+```
+
+Milkio applications still support the **Bun runtime** (`runtime = "bun"` in `cookbook.toml`); `projects/test-bun` is the Bun runtime-compatibility demo and is the only place in this repository that intentionally invokes the `bun` binary.
+

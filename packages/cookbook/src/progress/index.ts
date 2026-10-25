@@ -1,3 +1,4 @@
+import { sleep } from "../utils/node-compat";
 import chalk from "chalk";
 import consola from "consola";
 
@@ -26,7 +27,7 @@ export const progress = {
   timeStart: 0,
   time: 0,
   timeWaste: 0,
-  intervalId: undefined as Timer | undefined,
+  intervalId: undefined as NodeJS.Timeout | undefined,
   usingStages: false,
   totalUnits: 0,
   scopes: new Map<string, ScopeState>(),
@@ -135,7 +136,7 @@ export const progress = {
     clearInterval(progress.intervalId);
     const p = Math.ceil(progress.current * 1000);
     for (let index = 0; index < 32; index++) {
-      await Bun.sleep(1000 / 60);
+      await sleep(1000 / 60);
       progress.rate = Math.ceil(p + ((1000 - p) / 32) * index);
     }
     progress.rate = 1000;

@@ -3,7 +3,6 @@ import { join } from "node:path";
 import { cwd, stdout } from "node:process";
 import type { CookbookOptions } from "../utils/cookbook-dto-types.ts";
 import { spawn, type ChildProcess } from "node:child_process";
-import { env } from "bun";
 import killPort from "kill-port";
 import { rename, unlink, writeFile } from "node:fs/promises";
 import { outputPrefix, setMaxNameLength } from "../utils/output-prefix.ts";
@@ -368,7 +367,7 @@ export function createWorker(
                 // ignore
             }
             try {
-                const envMixed: NodeJS.ProcessEnv = { ...env, ...options.env, IS_COOKBOOK: "1" };
+                const envMixed: NodeJS.ProcessEnv = { ...process.env, ...options.env, IS_COOKBOOK: "1" };
                 if (worker.meta.inspect) envMixed.NODE_OPTIONS = "--inspect";
                 // NOTE: do NOT pass windowsHide here. The background dev server
                 // is launched with a hidden console (see start.ts), and child

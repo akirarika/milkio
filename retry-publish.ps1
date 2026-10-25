@@ -46,11 +46,11 @@ function Publish-Version {
     param([int]$patch)
     Write-Host "[$(Get-Date -Format 'HH:mm:ss')] 发布 1.3.$patch..."
     try {
-        $result = bun .publ.ts "1.3.$patch" 2>&1
+        $result = node .publ.ts "1.3.$patch" 2>&1
         $output = $result -join "`n"
         Write-Host $output
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "[$(Get-Date -Format 'HH:mm:ss')] ❌ bun .publ.ts 失败，exit code: $LASTEXITCODE"
+            Write-Host "[$(Get-Date -Format 'HH:mm:ss')] ❌ node .publ.ts 失败，exit code: $LASTEXITCODE"
             return $false
         }
         # Check if push was successful

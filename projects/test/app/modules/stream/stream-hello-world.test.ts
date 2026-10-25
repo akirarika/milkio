@@ -1,8 +1,8 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { astra } from "../../../test.ts";
 
-test.sequential("basic", async () => {
-    const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+test("basic", async () => {
+    const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
     const [error, results] = await world.execute("/stream/stream-hello-world~", {
         type: "stream",
         params: {
@@ -12,11 +12,11 @@ test.sequential("basic", async () => {
         },
         generateParams: false,
     });
-    if (error) throw reject("Milkio did not execute successfully", error);
+    if (error) throw fail("Milkio did not execute successfully", error);
 
     const values: Array<number> = [];
     for await (const [error, result] of results) {
-        if (error) throw reject("Milkio did not execute successfully", error);
+        if (error) throw fail("Milkio did not execute successfully", error);
         values.push(result.value);
     }
 
@@ -24,8 +24,8 @@ test.sequential("basic", async () => {
     expect(values).toEqual([4, 8, 16, 32, 64, 128, 256, 512]);
 });
 
-test.sequential("sleep", async () => {
-    const [context, reject, world] = await astra.createMirrorWorld(import.meta.url);
+test("sleep", async () => {
+    const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
     const [error, results] = await world.execute("/stream/stream-hello-world~", {
         type: "stream",
         params: {
@@ -36,11 +36,11 @@ test.sequential("sleep", async () => {
         generateParams: false,
     });
     context.logger.info("stream-hello-world sleep 100ms", error);
-    if (error) throw reject("Milkio did not execute successfully", error);
+    if (error) throw fail("Milkio did not execute successfully", error);
 
     const values: Array<number> = [];
     for await (const [error, result] of results) {
-        if (error) throw reject("Milkio did not execute successfully", error);
+        if (error) throw fail("Milkio did not execute successfully", error);
         values.push(result.value);
     }
 

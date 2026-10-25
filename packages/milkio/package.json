@@ -18,8 +18,6 @@
     "typia": "14.0.0"
   },
   "devDependencies": {
-    "@vitest/ui": "^4.1.0",
-    "typescript": "^7.0.2",
-    "vitest": "^4.1.0"
+    "typescript": "^7.0.2"
   }
 }

@@ -31,5 +31,5 @@ export async function handler(context: MilkioContext, params: Params): Promise<R
     return { received: eventData.received, approved };
   }
 
-  throw context.reject('REQUEST_FAIL', 'Invalid mode');
+  throw context.fail('REQUEST_FAIL', 'Invalid mode');
 }

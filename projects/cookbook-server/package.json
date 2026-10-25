@@ -8,10 +8,10 @@
     "build": "echo 'skip build cookbook-server'",
     "drizzle": "drizzle-kit"
   },
-  "trustedDependencies": [],
   "dependencies": {
     "@milkio/astra": "workspace:*",
     "@milkio/stargate": "workspace:*",
+    "@milkio/vite-plugin-milkio": "workspace:*",
     "@mjackson/node-fetch-server": "^0.6.1",
     "milkid": "^3.0.0",
     "milkio": "workspace:*",

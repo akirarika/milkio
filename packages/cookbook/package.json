@@ -13,10 +13,10 @@
     "typia": "typia"
   },
   "dependencies": {
+    "@iarna/toml": "^2.2.5",
     "@inquirer/prompts": "^7.3.3",
     "@milkio/cookbook-command": "workspace:*",
     "@milkio/cookbook-server": "workspace:*",
-    "@types/bun": "latest",
     "@types/kill-port": "^2.0.3",
     "@types/lodash-es": "^4.17.12",
     "chalk": "^5.3.0",
@@ -27,8 +27,7 @@
     "lodash-es": "^4.17.21",
     "typescript": "^7.0.2",
     "typia": "14.0.0",
-    "ttsc": "0.27.0",
-    "vitest": "^4.1.0"
+    "ttsc": "0.27.0"
   },
   "devDependencies": {}
 }

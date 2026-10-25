@@ -41,26 +41,35 @@ if err != nil {
 
 **重要**：在 vue 前端工程中，不得直接使用 `stargate.execute` 调用后端服务器端点。前端必须通过 `aurora.ipc.execute` 调用 embed 端点，由 embed 统一代理与后端的通信。详见 SKILL.md 中"前端必须通过 embed 与后端通信"章节。
 
-前端通过 `aurora.ipc.execute` 调用 embed 端点时，错误处理方式与直接使用 `stargate.execute` 相同：
+前端通过 `aurora.ipc.execute` 调用 embed 端点时，失败处理方式与直接使用 `stargate.execute` 相同。
 
-我们必须使用 `'YOUR_ERR_CODE' in error` 的方式来判断错误类型。注意，不得使用 `typeof error?.'YOUR_ERR_CODE' !== undefined` 的方式来判断是否有错误产生。这会导致 typescript 类型错误。
+返回值仍为 `[failure, result, details]`，失败对象带 `kind`：
+
+- `failure.kind === "fail"`：用 `failure.code` 判断具体业务错误，`failure.data` 是类型收窄后的数据；
+- `failure.kind === "fault"`：意料外/内部错误，只有通用 `code: "INTERNAL_SERVER_ERROR"`，没有真实 fault-code/data，应显示错误页并带上 `details.executeId`。
+
+不要再用 `'YOUR_ERR_CODE' in error` 这种 keyed-map 写法。
 
 ```ts
 const aurora = await useAurora();
-const [error, result, details] = await aurora.ipc.execute("/foo/bar", {
+const [failure, result, details] = await aurora.ipc.execute("/foo/bar", {
   params: {
     hello: "Milkio",
   },
 });
 
-if (error) {
-    if ('USER_EMAIL_UPDATE_LIMIT' in error) {
-        return alert('你最近修改过邮箱了，从上次修改之日起7天内不能重复修改');
-    } else if ('USER_EMAIL_EXIST' in error) {
-        return alert('该邮箱已被其他用户使用');
+if (failure) {
+    if (failure.kind === "fault") {
+        // 意料外的错误：错误页 + executeId
+        throw showError({ data: { failure, result, details } });
     }
-    else {
-        throw showError({ data: { error, result, details } }); // 对于意料外的错误，直接显示 nuxt 的错误页面
+    switch (failure.code) {
+        case 'USER_EMAIL_UPDATE_LIMIT':
+            return alert('你最近修改过邮箱了，从上次修改之日起7天内不能重复修改');
+        case 'USER_EMAIL_EXIST':
+            return alert('该邮箱已被其他用户使用');
+        default:
+            return alert('操作失败');
     }
 }
 
@@ -74,48 +83,53 @@ result;
 - 对于需要显式要求用户操作的错误，例如需要用户主动点击重试、或者需要用户输入验证码等，你应该采用弹窗等交互方式，让用户可以继续操作。
 - 对于意料外的、无法重试的、属于程序异常的错误，你应该直接显示 nuxt 的错误页面，阻止用户的其他操作，不要静默处理，这很可能让错误不受控地扩散甚至产生脏数据。
 
-不得忽略错误，宁愿中断用户的操作（使用 `showError({ data: { error, result, details } })` 直接显示 nuxt 的错误页面）也不要忽略任何错误。必须要阻止错误不受控地扩散甚至产生脏数据。
+不得忽略错误，宁愿中断用户的操作（使用 `showError({ data: { failure, result, details } })` 直接显示 nuxt 的错误页面）也不要忽略任何错误。必须要阻止错误不受控地扩散甚至产生脏数据。
 
 ## 在 milkio 工程中处理失败
 
 由于 milkio 工程通常不是与用户交互的一线，所以不需要处理失败，只需要在执行失败时，直接抛出错误即可。
 
-**重要**：当 milkio 工程作为中间层（如 embed）调用其他 milkio 工程并需要将错误向上传递时，必须使用 `throw context.reject(error)` 而非 `throw error`。直接 `throw error` 会导致错误码无法正确序列化，前端无法通过 `'ERROR_CODE' in error` 匹配到具体错误类型。
+`stargate.execute` 返回的 `failure` 有两种 `kind`：
+
+- `"fail"`：预期内的业务拒绝，带真实 `code` 与 `data`；
+- `"fault"`：未意料/内部错误，对客户端只暴露通用字符串码 `"INTERNAL_SERVER_ERROR"`，真实 fault-code/data/stack 只留在产生错误的那台服务的日志里。
+
+**重要**：当 milkio 工程作为中间层（如 embed）调用其他 milkio 工程并需要将失败向上传递时，直接 `throw failure` 即可（不要重新包装成 `context.fail(...)`）。失败对象自带 `$milkioFailure` 标记，服务端能识别并保持 kind/code；这样 fail 会继续按 warn 处理，fault 会继续按 error 处理。
 
 ```ts
-const [error, result, details] = await stargate.execute("/foo/bar", {
+const [failure, result, details] = await stargate.execute("/foo/bar", {
   params: {
     hello: "Milkio",
   },
 });
 
-if (error) throw context.reject(error);
+if (failure) throw failure;
 
 result;
 ```
 
-当然，对于一些特殊的场景，你也许需要在执行失败时，继续执行后续的逻辑或者进行重试，你可以根据错误类型来进行处理。具体情况具体分析。
+如果你需要根据失败类型做处理：`failure.kind === "fail"` 时可按 `failure.code` 分支并使用 `failure.data`；`failure.kind === "fault"` 时只应记录/上报，不要依赖具体 fault-code（客户端拿不到）。
 
 ## 调用 Stream 端点
 
 除了普通的 action 端点，Milkio 还支持 stream 端点（`.stream.ts`）。调用 stream 时，路径末尾需要加 `~` 后缀，`stargate.execute` 会返回一个 `AsyncGenerator`：
 
 ```ts
-const [error, iterator, details] = await stargate.execute('/event/watch~', {
+const [failure, iterator, details] = await stargate.execute('/event/watch~', {
   params: {},
 });
 
-if (error) {
+if (failure) {
   // 连接失败处理
-  throw context.reject(error);
+  throw failure;
 }
 
 // iterator 是一个 AsyncGenerator，持续接收服务端推送的数据
 for await (const chunk of iterator) {
-  const [chunkError, chunkData] = chunk;
-  if (chunkError) {
-    // 数据块错误
-    console.error(chunkError);
+  const [chunkFailure, chunkData] = chunk;
+  if (chunkFailure) {
+    // 数据块失败
+    console.error(chunkFailure);
     continue;
   }
   // 处理推送数据
@@ -126,7 +140,7 @@ for await (const chunk of iterator) {
 **与 action 调用的区别**：
 - 路径以 `~` 结尾（如 `/event/watch~`）
 - 成功时返回 `[null, AsyncGenerator, details]`
-- `AsyncGenerator` 的每个 yield 值为 `[chunkError, chunkData]` 格式
+- `AsyncGenerator` 的每个 yield 值为 `[chunkFailure, chunkData]` 格式
 - 连接会持续保持，直到服务端关闭或客户端主动 break
 
 ## 事件钩子

@@ -180,7 +180,7 @@ if (error) {
 type Paths = keyof stargate.$types.generated['routeSchema'];
 type ParamsOf<P extends Paths> = stargate.$types.params[P];
 type ResultOf<P extends Paths> = stargate.$types.results[P];
-type ErrorCode = stargate.$types.error;
+type ErrorCode = stargate.$types.failure;
 ```
 
 ## 多 Stargate 实例

@@ -1,7 +1,8 @@
+import { readText, pathExists } from "../../utils/node-compat";
 import consola from "consola";
 import { join } from "node:path";
 import { defineWatcherExtension } from "../extensions";
-import { exists } from "node:fs/promises";
+
 import { getLatestSchemaFolder } from "../../utils/get-latest-schema-folder";
 import { writeFileAtomic } from "../../utils/write-file-atomic";
 
@@ -23,7 +24,7 @@ export const routeWatcherExtension = defineWatcherExtension({
             if (!hashFile) continue;
             const hashFileName = `${hashFile}/schema.ts`;
             const transpiledHashFilePath = join(milkioTranspiledRouteDirPath, file.importName, hashFileName);
-            if (!(await exists(transpiledHashFilePath))) continue;
+            if (!(await pathExists(transpiledHashFilePath))) continue;
 
             let routePath = file.path.slice(0, file.path.length - 10);
             if (routePath.endsWith("/index") || routePath === "index") routePath = routePath.slice(0, routePath.length - 5);
@@ -47,7 +48,7 @@ export const routeWatcherExtension = defineWatcherExtension({
         const newRouteSchemaContent = `${routeSchemaFileImports}\n\n${routeSchemaFileExports}\n`;
         // 比较内容，相同则跳过写入，避免触发 vite page reload
         let oldRouteSchemaContent: string | null = null;
-        try { oldRouteSchemaContent = await Bun.file(writePath).text(); } catch {}
+        try { oldRouteSchemaContent = await readText(writePath); } catch {}
         if (oldRouteSchemaContent !== newRouteSchemaContent) {
             await writeFileAtomic(writePath, newRouteSchemaContent);
         }

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from "vitest";
+import { afterAll, beforeAll, expect, test } from "vite-plus/test";
 import { createHash } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -7,7 +7,7 @@ import { join } from "node:path";
 
 // 回归测试：cookbook 生成的 node 入口（.milkio/run.ts）曾在大请求体（>128KB，
 // 即超过 2 个约 64KB 的 TCP 分片）时丢失第 3 个分片，导致 JSON.parse 失败。
-// 本测试文件会随 .prepare.ts 同步到 test（node）/ test-bun / test-deno 三个项目，
+// 本测试文件会随 .prepare.ts 同步到 test（node）/ test-bun 两个项目，
 // 读取各项目真实生成的 .milkio/run.ts：
 // - 所有运行时：断言生成物中不存在有缺陷的 bodyBuffer 累积逻辑
 // - node 运行时：额外真实启动该入口并 POST 大 body 验证完整性
@@ -49,7 +49,9 @@ beforeAll(async () => {
 	await mkdir(RUN_DIR, { recursive: true });
 	await writeFile(join(RUN_DIR, "run.ts"), patched, "utf-8");
 
-	serverProcess = spawn("bun", [join(RUN_DIR, "run.ts")], {
+	// Run the generated node entry with the Node.js runtime that is executing
+	// this test suite — this regression test must pass without Bun installed.
+	serverProcess = spawn(process.execPath, [join(RUN_DIR, "run.ts")], {
 		env: { ...process.env, MILKIO_PORT: String(PORT) },
 		stdio: ["ignore", "pipe", "pipe"],
 	});
@@ -65,7 +67,7 @@ afterAll(async () => {
 	await rm(RUN_DIR, { recursive: true, force: true });
 });
 
-test.sequential("generated run.ts contains no buggy body buffering", async () => {
+test("generated run.ts contains no buggy body buffering", async () => {
 	const code = await readFile(GENERATED_RUN, "utf-8");
 	expect(code).not.toContain("bodyBuffer");
 	if (isNodeFlavor) {
@@ -73,7 +75,7 @@ test.sequential("generated run.ts contains no buggy body buffering", async () =>
 	}
 });
 
-test.sequential("large body (~1MB) through node adapter arrives intact", { skip: !isNodeFlavor }, async () => {
+test("large body (~1MB) through node adapter arrives intact", { skip: !isNodeFlavor }, async () => {
 	const unit = "kecream-milkio-node-adapter-测试-\"quoted\"-\n";
 	let content = "";
 	while (content.length < 1024 * 1024) content += unit;
@@ -91,7 +93,7 @@ test.sequential("large body (~1MB) through node adapter arrives intact", { skip:
 	expect(parsed.data.md5).toBe(createHash("md5").update(content, "utf-8").digest("hex"));
 });
 
-test.sequential("empty body through node adapter does not crash", { skip: !isNodeFlavor }, async () => {
+test("empty body through node adapter does not crash", { skip: !isNodeFlavor }, async () => {
 	const response = await fetch(`http://localhost:${PORT}/action/large-echo`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -99,5 +101,5 @@ test.sequential("empty body through node adapter does not crash", { skip: !isNod
 	const parsed = (await response.json()) as any;
 	// 空 body 应当得到正常的参数校验失败，而不是服务器崩溃或挂起
 	expect(parsed.success).toBe(false);
-	expect(parsed.code).toBeDefined();
+	expect(parsed.error?.code).toBeDefined();
 });

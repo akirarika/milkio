@@ -1,7 +1,8 @@
+import { writeFileEnsured, pathExists } from "../../utils/node-compat";
 import consola from "consola";
 import { join, dirname } from "node:path";
 import { defineWatcherExtension } from "../extensions";
-import { exists, mkdir, readdir, readFile, rm } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm } from "node:fs/promises";
 import { calcHash } from "../../utils/calc-hash";
 import { writeFileAtomic } from "../../utils/write-file-atomic";
 import { runTypiaTransform, typiaTransformFailures } from "../../utils/run-typia-transform";
@@ -87,7 +88,7 @@ export const typiaWatcherExtension = defineWatcherExtension({
           const paths = [join(milkioGeneratedTypiaDirPath, file.importName), join(milkioTranspiledTypiaDirPath, file.importName)];
 
           for (const path of paths) {
-            if (await exists(path)) {
+            if (await pathExists(path)) {
               for (const oldHash of await readdir(path)) {
                 if (oldHash !== hash) {
                   deleteTasks.push(rm(join(path, oldHash), { recursive: true, force: true }));
@@ -146,7 +147,7 @@ export const typiaWatcherExtension = defineWatcherExtension({
 
     for (const subDir of ["generated", "transpiled"]) {
       const typeDir = join(milkioDirPath, subDir, "typia");
-      if (await exists(typeDir)) {
+      if (await pathExists(typeDir)) {
         for (const importName of await readdir(typeDir)) {
           if (!validImportNames.has(importName)) {
             cleanupTasks.push(rm(join(typeDir, importName), { recursive: true, force: true }));
@@ -177,7 +178,7 @@ export const typiaWatcherExtension = defineWatcherExtension({
       let hash = hashes.get(file.importName);
       if (!hash) {
         const generatedDir = join(milkioGeneratedTypiaDirPath, file.importName);
-        if (await exists(generatedDir)) {
+        if (await pathExists(generatedDir)) {
           const latestDir = await getLatestSchemaFolder(generatedDir);
           if (latestDir) hash = latestDir;
         }
@@ -190,6 +191,6 @@ export const typiaWatcherExtension = defineWatcherExtension({
 
     const typiaSchemaContent = ["export default {", ...properties, "};", ""].join("\n");
 
-    await Bun.write(join(milkioDirPath, "typia-schema.ts"), typiaSchemaContent);
+    await writeFileEnsured(join(milkioDirPath, "typia-schema.ts"), typiaSchemaContent);
   },
 });

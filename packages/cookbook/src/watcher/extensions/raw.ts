@@ -1,3 +1,4 @@
+import { readText, writeFileEnsured } from "../../utils/node-compat";
 import consola from "consola";
 import { join } from "node:path";
 import { defineWatcherExtension } from "../extensions";
@@ -56,9 +57,9 @@ export const rawWatcherExtension = defineWatcherExtension({
         const newRawSchemaContent = `${rawSchemaFileHeader}\n\n${rawSchemaFileExports}\n\n${rawSchemaFileRoutes}\n\nexport default { rawPaths, routes };\n`;
         // 比较内容，相同则跳过写入，避免触发 vite page reload
         let oldRawSchemaContent: string | null = null;
-        try { oldRawSchemaContent = await Bun.file(writePath).text(); } catch {}
+        try { oldRawSchemaContent = await readText(writePath); } catch {}
         if (oldRawSchemaContent !== newRawSchemaContent) {
-            await Bun.write(writePath, newRawSchemaContent);
+            await writeFileEnsured(writePath, newRawSchemaContent);
         }
     },
 });
