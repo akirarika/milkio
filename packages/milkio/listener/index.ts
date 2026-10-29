@@ -24,6 +24,14 @@ export type MilkioHttpResponse = Mixin<
 export function __initListener(generated: GeneratedInit, runtime: any, executer: ReturnType<typeof __initExecuter>) {
     const port = runtime.port;
     const trie = new Trie<any>();
+    // Raw routes: exact keys hit in O(1); keys ending in "/*" are prefix routes,
+    // matched by longest prefix so nested prefixes stay deterministic.
+    const rawPaths: Set<string> = generated.rawSchema?.rawPaths ?? new Set<string>();
+    const rawPrefixes: Array<{ key: string; prefix: string }> = [];
+    for (const rawPath of rawPaths) {
+        if (rawPath.endsWith("/*")) rawPrefixes.push({ key: rawPath, prefix: rawPath.slice(0, -1) });
+    }
+    rawPrefixes.sort((a, b) => b.prefix.length - a.prefix.length);
     // HTTP only: the message/worker path never has a raw request body to limit.
     const configuredBodyLimit = runtime.http?.bodyLimit ?? runtime.http?.maxBodySize;
     const bodyLimit = Number.isFinite(configuredBodyLimit) && configuredBodyLimit > 0 ? configuredBodyLimit : DEFAULT_BODY_LIMIT;
@@ -468,7 +476,16 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
 
         // Check if this is a raw route — raw routes bypass action/stream logic
         // and let the handler own the full Request/Response lifecycle.
-        const isRawPath = generated.rawSchema?.rawPaths?.has(pathString) ?? false;
+        let rawRouteKey: string | undefined = rawPaths.has(pathString) ? pathString : undefined;
+        if (rawRouteKey === undefined) {
+            for (const item of rawPrefixes) {
+                if (pathString.startsWith(item.prefix)) {
+                    rawRouteKey = item.key;
+                    break;
+                }
+            }
+        }
+        const isRawPath = rawRouteKey !== undefined;
 
         // Read the body before the try block, then rethrow the limit failure inside
         // it so REQUEST_TOO_LARGE gets the regular failure envelope + httpResponse event.
@@ -519,7 +536,7 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
             // They bypass typia validation, JSON serialization, and stargate.
             // Use case: SSE passthrough (e.g. OpenAI proxy), webhooks, binary.
             if (isRawPath) {
-                const rawRoute = generated.rawSchema.routes[pathString];
+                const rawRoute = generated.rawSchema.routes[rawRouteKey as string];
                 if (!rawRoute) {
                     await runtime.emit("milkio:httpNotFound", { executeId, logger, path: http.path.string as string, http, fail, fault });
                     throw fail("NOT_FOUND", { path: http.path.string as string });

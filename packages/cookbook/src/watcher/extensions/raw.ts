@@ -42,7 +42,14 @@ export const rawWatcherExtension = defineWatcherExtension({
             }
             routePaths.add(routePath);
 
-            const routeKey = `/${routePath}`;
+            // catch-all 动态 raw 路由：[...].raw.ts / [...name].raw.ts 折叠为前缀键。
+            // 例：modules/extensions/[...].raw.ts → "/extensions/*"，listener 按最长前缀匹配。
+            const catchAllMatch = /^(.*)\/\[\.\.\.[a-z0-9-]*\]$/.exec(routePath);
+            const routeKey = /^\[\.\.\.[a-z0-9-]*\]$/.test(routePath)
+                ? "/*"
+                : catchAllMatch
+                    ? `/${catchAllMatch[1]}/*`
+                    : `/${routePath}`;
             rawSchemaFileExports += `\n  "${routeKey}",`;
             rawSchemaFileRoutes += `\n  "${routeKey}": { type: "raw", module: () => import("../app/${file.path}") },`;
         }

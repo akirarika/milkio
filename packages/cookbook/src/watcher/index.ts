@@ -367,12 +367,34 @@ function processFile(filePath: string, appRoot: string, fileName: string): Cookb
         }
 
         if (!isFileSegment) {
-            if (!/^\$?[a-z0-9-]+$/.test(segment)) {
+            // catch-all 动态段（[...] / [...name]）只允许出现在 raw 文件中，
+            // 且必须是最后一个目录段，否则前缀无法确定。
+            const isCatchAllSegment = /^\[\.\.\.[a-z0-9-]*\]$/.test(segment);
+            if (isCatchAllSegment) {
+                if (type !== "raw") {
+                    consola.error(`Invalid folder: '${segment}' (${join(appRoot, filePath)}). Dynamic route segments are only allowed in *.raw.ts files.`);
+                    exit(1);
+                }
+                if (i !== parts.length - 2) {
+                    consola.error(`Invalid folder: '${segment}' (${join(appRoot, filePath)}). A catch-all segment must be the last directory segment.`);
+                    exit(1);
+                }
+            } else if (!/^\$?[a-z0-9-]+$/.test(segment)) {
                 consola.error(`Invalid folder: '${segment}' (${join(appRoot, filePath)}). Allow starting with $, followed by lowercase letters, digits, and hyphens. Files/directories starting with $ will not be exposed as routes.`);
                 exit(1);
             }
         } else {
             const mainPart = segment.slice(0, -3);
+
+            // [...].raw.ts / [...name].raw.ts：catch-all 动态 raw 路由，跳过常规文件名校验。
+            const catchAllFileMatch = /^\[\.\.\.[a-z0-9-]*\]\.([a-z]+)$/.exec(mainPart);
+            if (catchAllFileMatch) {
+                if (type !== "raw") {
+                    consola.error(`Invalid file: '${segment}' (${join(appRoot, filePath)}). Dynamic route segments are only allowed in *.raw.ts files.`);
+                    exit(1);
+                }
+                continue;
+            }
 
             const dotCount = segment.split(".").length - 1;
             if (dotCount < 1 || dotCount > 2) {
