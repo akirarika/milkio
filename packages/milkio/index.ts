@@ -16,3 +16,4 @@ export * from "./meta/index.ts";
 export * from "./step/index.ts";
 export * from "./listener/index.ts";
 export * from "./failure/index.ts";
+export * from "./cache/index.ts";

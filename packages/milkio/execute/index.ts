@@ -2,6 +2,7 @@ import type { IValidation } from "typia";
 import { fail, fault } from "../index.ts";
 import type { $context, $meta, Logger, Results, GeneratedInit } from "../index.ts";
 import { headersToJSON } from "../utils/headers-to-json.ts";
+import { __cacheTick } from "../cache/index.ts";
 import { mergeDeep } from "../utils/merge-deep.ts";
 import { reviveJSONParse } from "../utils/revive-json-parse.ts";
 
@@ -48,6 +49,9 @@ export function __initExecuter(generated: GeneratedInit, runtime: any) {
 
         const finales: Array<any> = [];
         const onFinally = (handler: any) => finales.unshift(handler);
+        // 缓存维护排在 finales 末尾：onFinally 是 unshift，用户钩子都会先执行，
+        // 因此它正好落在“所有钩子结束、正式响应之前”的位置
+        finales.push(() => __cacheTick());
 
         let params: Record<any, unknown>;
         if (options.paramsType === "raw") {

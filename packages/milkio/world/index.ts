@@ -1,5 +1,6 @@
 import { type $types, __initListener, __initExecuter, __initEventManager, type ExecuteId, type Logger, type Mixin, type GeneratedInit, type Ping, type LoggerSubmittingHandler, type LoggerInsertingHandler, type CorsConfig, type MilkioFaultReport } from "../index.ts";
 import { defineDefaultExecuteIdGenerator } from "../execute/execute-id-generator.ts";
+import { __configureMilkioCache, readHeapUsedBytes } from "../cache/index.ts";
 
 export interface MilkioInit {
     port: number;
@@ -24,6 +25,11 @@ export interface MilkioInit {
     onLoggerInserting?: LoggerInsertingHandler;
     /** called only for fault-level failures (unexpected/internal); never for fail (business rejections) */
     onError?: (report: MilkioFaultReport) => void;
+    /**
+     * 全局内存水位（字节）。运行时能读到可信的堆占用（Node 进程 / Node worker）时，
+     * 缓存在超过该水位后渐进逐出；不传则不检查水位。
+     */
+    memoryLimitBytes?: number;
     bootstraps?: Array<(world: any) => Promise<void> | void>;
 }
 
@@ -49,6 +55,7 @@ export type MilkioRuntimeInit<T extends MilkioInit> = Mixin<
 export async function createWorld<MilkioOptions extends MilkioInit>(generated: GeneratedInit, configSchema: { get: () => Promise<Record<any, any>> }, options: MilkioOptions): Promise<MilkioWorld<GeneratedInit, MilkioOptions>> {
     const executeId = options.executeId ?? defineDefaultExecuteIdGenerator();
     const config = await configSchema.get();
+    __configureMilkioCache({ memoryLimitBytes: options.memoryLimitBytes });
 
     const runtime = {
         request: new Map(),
@@ -89,6 +96,16 @@ export async function createWorld<MilkioOptions extends MilkioInit>(generated: G
         // function
         config,
         isTestMode: (config as Record<any, any>)?.mode === "test",
+        // 内存水位：供缓存与未来其他需要判断内存压力的功能复用
+        memory: {
+            limitBytes: options.memoryLimitBytes,
+            usedBytes: () => readHeapUsedBytes(),
+            exceeded: () => {
+                if (options.memoryLimitBytes === undefined) return false;
+                const used = readHeapUsedBytes();
+                return used !== null && used > options.memoryLimitBytes;
+            },
+        },
     };
 
     runtime.app = world;
@@ -123,4 +140,12 @@ export interface MilkioWorld<Generated extends GeneratedInit, MilkioOptions exte
     listener: Awaited<ReturnType<typeof __initListener>>;
     config: Readonly<Awaited<ReturnType<$types["configSchema"]["get"]>>>;
     isTestMode: boolean;
+    memory: {
+        /** 全局内存水位（字节）；未配置为 undefined */
+        limitBytes: number | undefined;
+        /** 当前 isolate 的堆占用；运行时不可读时为 null */
+        usedBytes: () => number | null;
+        /** 是否超过水位；未配置或运行时不可读时恒为 false */
+        exceeded: () => boolean;
+    };
 }

@@ -1,4 +1,6 @@
 import { routeValidateWatcherExtension } from "./route-validate";
+import { databaseValidateWatcherExtension } from "./database-validate";
+import { cacheValidateWatcherExtension } from "./cache-validate";
 import { configWatcherExtension } from "./config";
 import { routeGenerateWatcherExtension } from "./route-generate";
 import { routeTypiaWatcherExtension } from "./route-typia";
@@ -20,6 +22,10 @@ export const imports: Array<ReturnType<typeof defineWatcherExtension>> = [
     // has the correct structure. This runs before any other extension so issues
     // are caught immediately.
     routeValidateWatcherExtension,
+    // database-validate / cache-validate: enforce the $databases and $caches
+    // directory conventions before any generation extension runs
+    databaseValidateWatcherExtension,
+    cacheValidateWatcherExtension,
     // drizzle must run BEFORE route: action files import drizzle-schema,
     // so drizzle-schema.ts must be generated before typia runs
     drizzleWatcherExtension,

@@ -19,6 +19,8 @@ const DECLARES_WEIGHT = 4;
 const ASYNC_GROUP_WEIGHT = 20;
 const STAGE_WEIGHTS: Array<number> = [
     2, // route-validate
+    1, // database-validate
+    1, // cache-validate
     4, // drizzle
     10, // route-generate
     40, // route-typia (the heaviest phase)
