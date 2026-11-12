@@ -6,6 +6,9 @@
  * 2. 检查 npm 上是否已存在该版本（任一包冲突则中止）
  * 3. 写入所有包的版本号 / __VERSION__ / 模板的 peerDependencies
  * 4. git add -A && git commit && git push（推送后由 GitHub Actions 发布）
+ * 5. 等待发布完成：静默等待 15 分钟，随后以 5 分钟为频率轮询 npm，
+ *    直到所有包在 npm 上可见；超时上限 45 分钟，仍有缺失则如实汇报并以退出码 1 结束。
+ *    传入 --skip-wait 可跳过该阶段。
  *
  * 说明：
  * - 本脚本用 `node .publ.ts` 直接运行（Node 26 原生 TypeScript 类型擦除），
@@ -37,6 +40,16 @@ const childPackages = [
 
 const DRY_RUN = process.env.DRY_RUN === "1";
 const cwd = process.cwd();
+
+// 等待发布完成的节奏：静默 15 分钟 → 每 5 分钟轮询一次 → 45 分钟超时。
+const SILENT_WAIT_MS = 15 * 60 * 1000;
+const POLL_INTERVAL_MS = 5 * 60 * 1000;
+const PUBLISH_TIMEOUT_MS = 45 * 60 * 1000;
+
+// --skip-wait 跳过“等待发布完成”阶段；其余以 - 开头的参数均视为标志，位置参数才是版本号。
+const argv = process.argv.slice(2);
+const SKIP_WAIT = argv.includes("--skip-wait");
+const versionArg = argv.find((arg) => !arg.startsWith("-"));
 
 // 极简 logger：不引入 consola 等外部依赖，保证 `node .publ.ts` 在仓库根目录可直接运行。
 const useColor = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
@@ -112,12 +125,78 @@ async function writeVersionModule(path: string, version: string): Promise<void> 
 /** 该版本是否已存在于 npm；网络/registry 异常会抛出，避免误判为“可发布”。 */
 function npmVersionExists(packageName: string, version: string): boolean {
     try {
-        run(npmBin(), ["view", `${packageName}@${version}`, "version", "--json"], { capture: true });
+        // --prefer-online 绕过本地元数据缓存，否则轮询阶段可能永远读到旧 packument。
+        run(
+            npmBin(),
+            ["view", "--prefer-online", `${packageName}@${version}`, "version", "--json"],
+            { capture: true },
+        );
         return true;
     } catch (error: any) {
         const output = String(error?.message ?? "");
         if (/E404|404 Not Found|No match found|ETARGET|not found/i.test(output)) return false;
         throw error;
+    }
+}
+
+/** 所有待发布包在 npm 上的真实包名（package.json 的 name）。 */
+async function resolvePackageNames(): Promise<string[]> {
+    const names: string[] = [];
+    for (const directory of [mainPackage, ...childPackages]) {
+        const packageJson = await readJson<{ name: string }>(
+            join(cwd, "packages", directory, "package.json"),
+        );
+        names.push(packageJson.name);
+    }
+    return names;
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * 等待 GitHub Actions 发布流水线完成：静默等待 15 分钟后，以 5 分钟为频率轮询 npm，
+ * 直到所有包都可见；超过 45 分钟仍有缺失则抛出错误（如实汇报缺失包）。
+ */
+async function waitForPublished(packageNames: string[], version: string): Promise<void> {
+    const deadline = Date.now() + PUBLISH_TIMEOUT_MS;
+    await sleep(SILENT_WAIT_MS);
+
+    while (true) {
+        const missing: string[] = [];
+        for (const packageName of packageNames) {
+            try {
+                if (!npmVersionExists(packageName, version)) missing.push(packageName);
+            } catch (error: any) {
+                // 网络/registry 抖动不算“已发布”，本轮记为缺失，下一轮重试。
+                logger.warn(
+                    `查询 ${packageName} 失败：${error instanceof Error ? error.message : String(error)}`,
+                );
+                missing.push(packageName);
+            }
+        }
+
+        if (missing.length === 0) {
+            logger.success(`全部 ${packageNames.length} 个包已在 npm 上可见：v${version}`);
+            return;
+        }
+
+        // 最后一次检查落在超时点上，且不因定时器漂移而提前终止。
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) {
+            throw new Error(
+                `等待发布完成超时（${PUBLISH_TIMEOUT_MS / 60000} 分钟），` +
+                    `以下 ${missing.length} 个包在 npm 上仍未找到：\n` +
+                    missing.map((name) => `  - ${name}@${version}`).join("\n"),
+            );
+        }
+
+        logger.info(
+            `已发布 ${packageNames.length - missing.length}/${packageNames.length}，` +
+                `尚未就绪：${missing.join("、")}（剩余 ${Math.ceil(remaining / 60000)} 分钟）`,
+        );
+        await sleep(Math.min(POLL_INTERVAL_MS, remaining));
     }
 }
 
@@ -129,7 +208,7 @@ async function main() {
     logger.success(`当前版本为: ${latestVersion}`);
 
     // 版本号：命令行参数 > 环境变量 VERSION > 自动递增 patch；全程不读 stdin。
-    let newVersion = process.argv[2] || process.env.VERSION || "";
+    let newVersion = versionArg || process.env.VERSION || "";
     if (!newVersion) {
         const [major, minor, patch] = latestVersion.split(".").map(Number);
         newVersion = `${major}.${minor}.${patch + 1}`;
@@ -147,15 +226,14 @@ async function main() {
     logger.success("远端仓库可达");
 
     logger.info("检查 npm 版本是否存在...");
-    const packagesToCheck = [mainPackage, ...childPackages];
+    const packageNames = await resolvePackageNames();
     let hasConflict = false;
-    for (const packageName of packagesToCheck) {
-        const pkgJson = await readJson<{ name: string }>(join(cwd, "packages", packageName, "package.json"));
-        if (npmVersionExists(pkgJson.name, newVersion)) {
-            logger.error(`已存在 ${pkgJson.name}@${newVersion}`);
+    for (const packageName of packageNames) {
+        if (npmVersionExists(packageName, newVersion)) {
+            logger.error(`已存在 ${packageName}@${newVersion}`);
             hasConflict = true;
         } else {
-            logger.success(`可以发布 ${pkgJson.name}@${newVersion}`);
+            logger.success(`可以发布 ${packageName}@${newVersion}`);
         }
     }
     if (hasConflict) {
@@ -209,6 +287,13 @@ async function main() {
     logger.info("正在推送到远程仓库...");
     run("git", ["push", "origin", "HEAD"]);
     logger.success(`已推送 v${newVersion}，发布流水线已触发`);
+
+    if (SKIP_WAIT) {
+        logger.info("已传入 --skip-wait，跳过等待发布完成阶段");
+        return;
+    }
+
+    await waitForPublished(packageNames, newVersion);
 }
 
 main().catch((error) => {

@@ -753,7 +753,25 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                 // @ts-ignore: bun
                 let stream: ReadableStream;
                 // @ts-ignore: bun
-                let control: ReadableStreamDirectController | ReadableStreamDefaultController;
+                let control: ReadableStreamDirectController | ReadableStreamDefaultController | undefined;
+                let controllerClosed = false;
+                /**
+                 * 关闭响应流的唯一入口（幂等）
+                 *
+                 * 客户端断流时 `cancel()` 与仍在途的 `pull()` 会各自尝试关闭一次控制器。二次 `close()`
+                 * 抛出的 ERR_INVALID_STATE 会让 `pull()` 返回一个被拒绝的 Promise；此时响应流已经
+                 * 没有接收方，拒绝只能变成未捕获异常，直接把整个进程打死（Node 与 Bun 都是）。
+                 */
+                const closeStream = async () => {
+                    if (controllerClosed) return;
+                    controllerClosed = true;
+                    if (control === undefined) return;
+                    try {
+                        control.close();
+                    } catch (error) {
+                        if ((error as { code?: string })?.code !== "ERR_INVALID_STATE") logger.error("An error occurred inside closeStream.", error);
+                    }
+                };
 
                 // @ts-ignore: bun
                 if (typeof Bun !== "undefined") {
@@ -764,28 +782,49 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                         async pull(controller: ReadableStreamDirectController) {
                             control = controller;
                             try {
-                                controller.write(`data:@${JSON.stringify({ success: true, data: undefined, executeId } satisfies MilkioResponseSuccess<any>)}\n\n`);
-                                for await (const value of executed.results.value) {
-                                    if (!options.request.signal.aborted) {
+                                // 断流之后才被调度到的 pull：不再写任何帧，直接走下面的收尾
+                                if (!options.request.signal.aborted) {
+                                    controller.write(`data:@${JSON.stringify({ success: true, data: undefined, executeId } satisfies MilkioResponseSuccess<any>)}\n\n`);
+                                    for await (const value of executed.results.value) {
+                                        // 读取中途断流：跳出循环由外层统一收尾，不能在这里 close 完还继续往下写
+                                        if (options.request.signal.aborted) break;
                                         const result: string = JSON.stringify([null, value]);
                                         controller.write(`data:${result}\n\n`);
-                                    } else {
-                                        executed.results.value.return(undefined);
-                                        await handleClose();
-                                        controller.close();
                                     }
                                 }
                             } catch (error) {
-                                const result = failureHandler(executeId, logger, error, { path: http.path.string as string, routeType: "stream", onError: runtime.onError }).response;
-                                controller.write(`data:${JSON.stringify([result.error, null])}\n\n`);
+                                // 断流导致的写入失败：控制器已关闭，再写失败帧只会二次抛错
+                                if (!controllerClosed) {
+                                    const result = failureHandler(executeId, logger, error, { path: http.path.string as string, routeType: "stream", onError: runtime.onError }).response;
+                                    try {
+                                        controller.write(`data:${JSON.stringify([result.error, null])}\n\n`);
+                                    } catch {
+                                        // 控制器刚被关闭：这一帧没有接收方
+                                    }
+                                }
                             }
-                            await new Promise((resolve) => setTimeout(resolve, 0));
-                            await handleClose();
-                            controller.close();
+                            try {
+                                await new Promise((resolve) => setTimeout(resolve, 0));
+                                await handleClose();
+                            } catch (error) {
+                                logger.error("An error occurred while closing the stream.", error);
+                            }
+                            await closeStream();
                         },
                         async cancel() {
-                            await handleClose();
-                            control.close();
+                            // 主动结束生成器：断流适配器不一定 abort 请求信号，不 return 的话
+                            // 生成器的 finally（断开连接时的清理）永远不会执行
+                            try {
+                                await executed.results.value.return(undefined);
+                            } catch (error) {
+                                logger.error("An error occurred while stopping the stream generator.", error);
+                            }
+                            try {
+                                await handleClose();
+                            } catch (error) {
+                                logger.error("An error occurred while closing the stream.", error);
+                            }
+                            await closeStream();
                         },
                     } as any);
                 } else {
@@ -796,28 +835,49 @@ export function __initListener(generated: GeneratedInit, runtime: any, executer:
                         async pull(controller) {
                             control = controller;
                             try {
-                                controller.enqueue(`data:@${JSON.stringify({ success: true, data: undefined, executeId } satisfies MilkioResponseSuccess<any>)}\n\n`);
-                                for await (const value of executed.results.value) {
-                                    if (!options.request.signal?.aborted) {
+                                // 断流之后才被调度到的 pull：不再写任何帧，直接走下面的收尾
+                                if (!options.request.signal?.aborted) {
+                                    controller.enqueue(`data:@${JSON.stringify({ success: true, data: undefined, executeId } satisfies MilkioResponseSuccess<any>)}\n\n`);
+                                    for await (const value of executed.results.value) {
+                                        // 读取中途断流：跳出循环由外层统一收尾，不能在这里 close 完还继续往下写
+                                        if (options.request.signal?.aborted) break;
                                         const result: string = JSON.stringify([null, value]);
                                         controller.enqueue(`data:${result}\n\n`);
-                                    } else {
-                                        executed.results.value.return(undefined);
-                                        await handleClose();
-                                        controller.close();
                                     }
                                 }
                             } catch (error) {
-                                const result = failureHandler(executeId, logger, error, { path: http.path.string as string, routeType: "stream", onError: runtime.onError }).response;
-                                controller.enqueue(`data:${JSON.stringify([result.error, null])}\n\n`);
+                                // 断流导致的写入失败：控制器已关闭，再写失败帧只会二次抛错
+                                if (!controllerClosed) {
+                                    const result = failureHandler(executeId, logger, error, { path: http.path.string as string, routeType: "stream", onError: runtime.onError }).response;
+                                    try {
+                                        controller.enqueue(`data:${JSON.stringify([result.error, null])}\n\n`);
+                                    } catch {
+                                        // 控制器刚被关闭：这一帧没有接收方
+                                    }
+                                }
                             }
-                            await handleClose();
-                            await new Promise((resolve) => setTimeout(resolve, 0));
-                            controller.close();
+                            try {
+                                await new Promise((resolve) => setTimeout(resolve, 0));
+                                await handleClose();
+                            } catch (error) {
+                                logger.error("An error occurred while closing the stream.", error);
+                            }
+                            await closeStream();
                         },
                         async cancel() {
-                            await handleClose();
-                            control.close();
+                            // 主动结束生成器：断流适配器不一定 abort 请求信号，不 return 的话
+                            // 生成器的 finally（断开连接时的清理）永远不会执行
+                            try {
+                                await executed.results.value.return(undefined);
+                            } catch (error) {
+                                logger.error("An error occurred while stopping the stream generator.", error);
+                            }
+                            try {
+                                await handleClose();
+                            } catch (error) {
+                                logger.error("An error occurred while closing the stream.", error);
+                            }
+                            await closeStream();
                         },
                     } as any);
                 }
