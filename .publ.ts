@@ -38,6 +38,20 @@ const childPackages = [
     "template-cookbook",
 ];
 
+// `@milkio/cookbook` 自身已停止发布（现在的分发方式是平台二进制包
+// `@milkio/cookbook-<platform>-<arch>`）。它的版本号仍需要跟随 bump，
+// 但不能再进入「npm 冲突检查 / 等待发布完成」清单，否则会一直等到超时。
+const packagesNotPublishedToNpm = new Set(["cookbook"]);
+
+// 与 .publ-ci.ts 的 publishCookbookBinaries() 保持一致：CI 会发布这 5 个二进制包。
+const cookbookBinaryPackages = [
+    "@milkio/cookbook-darwin-arm64",
+    "@milkio/cookbook-darwin-x64",
+    "@milkio/cookbook-linux-arm64",
+    "@milkio/cookbook-linux-x64",
+    "@milkio/cookbook-win32-x64",
+];
+
 const DRY_RUN = process.env.DRY_RUN === "1";
 const cwd = process.cwd();
 
@@ -139,15 +153,17 @@ function npmVersionExists(packageName: string, version: string): boolean {
     }
 }
 
-/** 所有待发布包在 npm 上的真实包名（package.json 的 name）。 */
+/** 所有会在 npm 上真实发布的包名（用于版本冲突检查 + 等待发布完成校验）。 */
 async function resolvePackageNames(): Promise<string[]> {
     const names: string[] = [];
     for (const directory of [mainPackage, ...childPackages]) {
+        if (packagesNotPublishedToNpm.has(directory)) continue;
         const packageJson = await readJson<{ name: string }>(
             join(cwd, "packages", directory, "package.json"),
         );
         names.push(packageJson.name);
     }
+    names.push(...cookbookBinaryPackages);
     return names;
 }
 
