@@ -1,7 +1,7 @@
 {
   "name": "@milkio/astra",
   "type": "module",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "exports": "./index.ts",
   "repository": {
     "type": "git",

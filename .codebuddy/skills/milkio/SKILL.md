@@ -101,9 +101,13 @@ co generate --mode=test
 co start --mode=test
 ```
 
+运行 `co start --mode=test` 后通常**不需要**运行 `co stop`：用户通常希望在你完成更改后直接预览结果，因此保持开发服务器在后台运行即可。除非用户显式要求你运行 `co stop`，否则不要主动停止它。
+
 ### `co stop`
 
 停止所有由 `co start` 启动的工程进程。
+
+通常不需要主动执行：除非用户显式要求停止开发服务器，否则保持其后台运行（见上节说明）。
 
 ```bash
 co stop
