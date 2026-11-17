@@ -550,7 +550,7 @@ test("basic", async () => {
   const [errorGet, resultGet] = await world.execute("/application/read", { generateParams: false, params: { id } });
 
   // 关键断言：确保错误类型是 DATA_NOT_FOUND，说明数据已被成功删除
-  if (!errorGet || errorGet.DATA_NOT_FOUND === undefined) {
+  if (!(errorGet?.kind === "fail" && errorGet.code === "DATA_NOT_FOUND")) {
     throw fail("删除后查询未返回预期错误", errorGet);
   }
 });
