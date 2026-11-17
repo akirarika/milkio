@@ -22,6 +22,53 @@ export type Params = {
   subCommand?: string; // 新增子命令字段
 };
 
+/** Detailed usage for `co drizzle --help` (the generic help only lists the command). */
+function printDrizzleHelp() {
+  console.log("co drizzle - generate and apply database migrations (non-interactive by default)");
+  console.log("");
+  console.log("Usage:");
+  console.log("  co drizzle <generate|migrate|push|pull|up|check|export> [options]");
+  console.log("");
+  console.log("Subcommands:");
+  console.log("  generate                  Generate migration files from *.table.ts changes");
+  console.log("  migrate                   Apply pending migrations");
+  console.log("  push                      Push the schema directly to the database (high risk)");
+  console.log("  pull                      Introspect the database into schema files");
+  console.log("  up                        Upgrade snapshot format");
+  console.log("  check                     Check migration consistency");
+  console.log("  export                    Print the SQL for the current schema");
+  console.log("");
+  console.log("Options:");
+  console.log("  --project=<name>          Project to operate on (required when several match)");
+  console.log("  --mode=<mode>             Drizzle mode from cookbook.toml (required when several match)");
+  console.log("  --yes                     Authorize operations that write to the database");
+  console.log("  --yes-migrate             Deprecated alias of --yes for `migrate`");
+  console.log("  --force                   push only: auto-approve data-loss statements");
+  console.log("  --json                    Print one JSON result on stdout, logs on stderr");
+  console.log("  --no-auto-migrate         generate only: do not run drizzle.migrate.ts afterwards");
+  console.log("  --answers=<json>          Answer captured prompts, e.g. '{\"choices\":[1]}'");
+  console.log("  --on-prompt=<choice>      Single-prompt shortcut: rename | create | abort");
+  console.log("  --interactive             Human mode: restore interactive prompts");
+  console.log("  --name=<name>             generate only: migration name (forwarded to drizzle-kit)");
+  console.log("  --custom                  generate only: create an empty custom migration");
+  console.log("  --prefix=<type>           generate only: migration prefix (forwarded to drizzle-kit)");
+  console.log("  --breakpoints             generate/pull only (forwarded to drizzle-kit)");
+  console.log("  --casing=<mode>           generate/push only (forwarded to drizzle-kit)");
+  console.log("  --verbose / --strict      push only (forwarded to drizzle-kit)");
+  console.log("");
+  console.log("Exit codes:");
+  console.log("  0 success or nothing to migrate");
+  console.log("  1 failure");
+  console.log("  2 decisions required (nothing was written); re-run with --answers");
+  console.log("  3 usage/authorization error");
+  console.log("  4 another drizzle operation is already running");
+  console.log("");
+  console.log("Examples:");
+  console.log("  co drizzle generate --project=test --mode=test --yes --json");
+  console.log("  co drizzle migrate --project=test --mode=test --yes --json");
+  console.log("  co drizzle generate --project=test --mode=test --yes --on-prompt=rename --json");
+}
+
 /** Detailed usage for `co logs --help` (the generic help only lists the command). */
 function printLogsHelp() {
   console.log("co logs - view cookbook logs (newest first)");
@@ -98,6 +145,10 @@ export async function cookbook() {
       if (cmd) {
         if (cmd.commands.includes("logs")) {
           printLogsHelp();
+          exit(0);
+        }
+        if (cmd.commands.includes("drizzle")) {
+          printDrizzleHelp();
           exit(0);
         }
         console.log(`co ${params.command}`);

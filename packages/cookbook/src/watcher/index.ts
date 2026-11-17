@@ -57,18 +57,18 @@ export async function initWatcher(options: CookbookOptions, mode: string, watch:
     progress.configure({ totalUnits: processedProjectCount * TOTAL_STAGE_WEIGHT });
 
     try {
-        const tasks: Array<Promise<void>> = [];
+        const tasks: Array<Promise<boolean>> = [];
         for (const projectName in options.projects ?? []) {
             tasks.push(
                 (async () => {
                     const project = options.projects[projectName];
                     const root = join(cwd(), "projects", projectName);
-                    if (project.type !== "milkio") return;
-                    if (!(await pathExists(root))) return;
+                    if (project.type !== "milkio") return false;
+                    if (!(await pathExists(root))) return false;
                     if (!(await pathExists(join(root, ".milkio")))) await mkdir(join(root, ".milkio"));
 
                     const appRoot = join(root, "app");
-                    if (!(await pathExists(appRoot))) return;
+                    if (!(await pathExists(appRoot))) return false;
 
                     const entries = await readdir(appRoot, { withFileTypes: true });
                     const validDirs = entries
@@ -76,16 +76,28 @@ export async function initWatcher(options: CookbookOptions, mode: string, watch:
                         .map((dirent) => dirent.name)
                         .filter((name) => !name.startsWith(".") && name !== "node_modules");
 
-                    await initializeProject(mode, root, appRoot, validDirs, options, project);
+                    const reinitialized = await initializeProject(mode, root, appRoot, validDirs, options, project);
 
                     if (watch) {
                         const watcher = setupWatcher(mode, root, appRoot, validDirs, options, project);
                         watchers.push(watcher);
                     }
+                    return reinitialized;
                 })(),
             );
         }
-        await Promise.all(tasks);
+        const reinitializedProjects = await Promise.all(tasks);
+        // A version mismatch re-runs the generators above; keep the workspace's
+        // agent skills in sync with the cookbook build at the same moment.
+        if (reinitializedProjects.some(Boolean)) {
+            try {
+                const { syncMilkioSkills } = await import("../skills/sync");
+                await syncMilkioSkills(cwd());
+            } catch (error) {
+                // Skill syncing must never break a cookbook build.
+                consola.warn(`failed to sync milkio skills: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        }
     } catch (error) {
         dispose();
         throw error;
@@ -98,7 +110,7 @@ export async function initWatcher(options: CookbookOptions, mode: string, watch:
     return dispose;
 }
 
-async function initializeProject(mode: string, root: string, appRoot: string, validDirs: string[], options: CookbookOptions, project: CookbookWatcherExtensionProject) {
+async function initializeProject(mode: string, root: string, appRoot: string, validDirs: string[], options: CookbookOptions, project: CookbookWatcherExtensionProject): Promise<boolean> {
     const versionKey = `v${__VERSION__}.${mode}.${options.hash}`;
     const versionPath = join(root, ".milkio", ".version");
     const needsReinit = !(await pathExists(versionPath)) || (await readFile(versionPath, "utf-8")) !== versionKey;
@@ -194,6 +206,8 @@ async function initializeProject(mode: string, root: string, appRoot: string, va
     progress.stage(root, "declares", DECLARES_WEIGHT);
     await generateDeclares(root, mode, options, project, extensionChangeFiles);
     progress.completeStage(root);
+
+    return needsReinit;
 }
 
 async function generateDeclares(root: string, mode: string, options: CookbookOptions, project: CookbookWatcherExtensionProject, extensionChangeFiles: Array<Array<CookbookWatcherFile>>) {

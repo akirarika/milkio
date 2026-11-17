@@ -9,6 +9,19 @@ import { build as viteBuild } from "vite";
 // a downstream workspace (e.g. kecream-projects) that depends on milkio.
 const MILKIO_DIR = path.dirname(fileURLToPath(import.meta.url));
 
+// ---- step 0: embed the canonical agent skill into @milkio/cookbook ----
+// `co` ships as a single executable, so the skill files are embedded as a
+// generated TypeScript module and synced into downstream workspaces when a
+// version change re-runs the generators.
+try {
+  const { generateSkills } = await import("./packages/cookbook/scripts/generate-skills.ts");
+  const skills = await generateSkills();
+  if (skills) console.log(`skills: embedded ${skills.count} file(s)`);
+  else console.log("skills: .codebuddy/skills/milkio not found, skipped");
+} catch (error) {
+  console.warn(`skills: generation skipped (${error instanceof Error ? error.message : String(error)})`);
+}
+
 async function copyDir(src: string, dest: string) {
   await fs.mkdir(dest, { recursive: true });
   const entries = await fs.readdir(src, { withFileTypes: true });

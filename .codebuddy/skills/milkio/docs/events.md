@@ -162,7 +162,7 @@ if (!emitData.data.allow) {
 const allow = await context.emitAnyApproved('sync:akira-storage:download-validate', emitData);
 if (!allow) {
   context.logger.error('鉴权未被通过', emitData);
-  throw context.fail('PAYMENT_ADD_FAILED', undefined);
+  throw context.fail('REQUEST_FAIL', undefined);
 }
 ```
 
@@ -283,7 +283,7 @@ export interface _ {
 const allow = await context.emitAnyApproved('sync:akira-storage:download-validate', emitData);
 if (!allow) {
   context.logger.error('鉴权未被通过', emitData);
-  throw context.fail('PAYMENT_ADD_FAILED', undefined);
+  throw context.fail('REQUEST_FAIL', undefined);
 }
 ```
 

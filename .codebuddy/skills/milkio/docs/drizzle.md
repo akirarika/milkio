@@ -330,18 +330,107 @@ mysqlTable(
 
 ## 数据库迁移
 
-**禁止自行编写迁移 SQL 文件。** 修改表结构（如新增字段、索引）后，只需在 `*.table.ts` 中声明变更，然后通知用户运行 `co drizzle generate` 命令生成迁移文件。该命令只有用户有权限执行。
+**由 AI 自己运行 `co drizzle`，无需用户执行。** `co drizzle` 默认**完全非交互**：不会弹出任何确认。只有一个候选 project / mode 时会自动选中；存在多个候选且未指定 `--project` / `--mode` 时会立即以退出码 3 失败并列出候选，不会等待输入。
 
-涉及步骤：
-1. 在 `*.table.ts` 中修改表定义（加字段、加索引等）
-2. 告知用户运行 `co drizzle generate` 生成迁移
-3. 告知用户运行 `co drizzle migrate` 执行迁移
+**禁止自行编写迁移 SQL 文件。** 修改表结构（如新增字段、索引、关系）后，只需在 `*.table.ts` 中声明变更，然后由你自己运行 `co drizzle generate` 生成迁移文件。不要手动创建或修改 `drizzle/` 目录下的 `.sql` 文件与 `_journal.json`。
 
-不要手动创建 `drizzle/` 目录下的 `.sql` 文件或修改 `_journal.json`。
+### 一条命令完成「生成迁移 + 应用迁移」
+
+```bash
+co drizzle generate --project=<项目名> --mode=<模式名> --yes --json
+```
+
+-   `--yes`：授权执行写数据库的操作（migrate，以及 generate 之后的自动 migrate）。不带 `--yes` 时，generate 只生成迁移文件、不应用迁移。
+-   项目若存在 `drizzle.migrate.ts`，generate 成功且带 `--yes` 时会自动执行它。
+-   不想自动应用迁移可加 `--no-auto-migrate`。
+
+### 其他命令
+
+-   `co drizzle migrate --project=<项目名> --mode=<模式名> --yes --json`：应用迁移。
+-   `co drizzle pull --project=<项目名> --mode=<模式名> --json`：从数据库内省 schema（不会提示）。
+-   `co drizzle push --project=<项目名> --mode=<模式名> --yes --json`：直接把 schema 推到数据库，属于高风险命令，必须带 `--yes`；若包含数据丢失语句（删表、删列等），还需额外 `--force`（或用 `--answers` 显式选择 `Yes`）。
+-   `co drizzle check --project=<项目名> --mode=<模式名> --json`：迁移后检查状态。
+-   `co drizzle export ...`：导出 SQL（可选）。
+
+### 输出与退出码
+
+带 `--json` 时，stdout 只有一个 JSON 文档，日志全部写在 stderr。结果字段：
+
+| 字段 | 说明 |
+|------|------|
+| `ok` | 是否成功 |
+| `status` | `generated` / `no_changes` / `migrated` / `pushed` / `introspected` / `checked` / `upgraded` / `exported` / `decisions_required` / `failed` |
+| `project` / `mode` / `database` | 本次操作的工程、模式、数据库（不含密码） |
+| `migrations` | `[{ tag, file, sql }]` |
+| `autoMigrate` | `{ ran, exitCode }` |
+| `decisions` / `fingerprint` / `resume` | 仅 `decisions_required` 时出现，见下节 |
+| `next` | 建议的下一步 |
+| `output` | `export` 时导出的 SQL 文本 |
+| `note` / `error` | 补充说明 / 失败原因 |
+
+退出码：
+
+-   `0`：成功或无需变更。
+-   `1`：失败。
+-   `2`：需要 AI 决策（此时未写入任何迁移文件）。
+-   `3`：参数 / 授权 / 项目 / mode 错误。
+-   `4`：并发锁冲突。
+
+### 退出码 2：需要 AI 决策
+
+schema 变更存在歧义时（典型：重命名列 / 表，drizzle-kit 分不清是 rename 还是 drop+create），命令不会卡住等待输入，而是以退出码 2 输出：
+
+```json
+{
+  "ok": false,
+  "status": "decisions_required",
+  "command": "generate",
+  "project": "test",
+  "mode": "test",
+  "fingerprint": "bb99d84e5d42d35e",
+  "decisions": [
+    {
+      "index": 0,
+      "kind": "rename_or_create",
+      "entity": "column",
+      "question": "Is nickname column in user table created or renamed from another column?",
+      "options": [
+        { "index": 0, "label": "nickname", "choice": "create" },
+        { "index": 1, "label": "name › nickname", "choice": "rename" }
+      ],
+      "digest": "479ffdcc84f0"
+    }
+  ],
+  "resume": "co drizzle generate --project=test --mode=test --yes --json --answers='{\"fingerprint\":\"bb99d84e5d42d35e\",\"digests\":[\"479ffdcc84f0\"],\"choices\":[\"<option index>\"]}'"
+}
+```
+
+处理流程：
+
+1. 读取 `decisions`，为每个问题按 `options[].index` 选一个选项（`choice` 字段说明了语义：`create` = 新建、`rename` = 重命名、`yes` / `no` = 确认或拒绝）。
+2. 把 `resume` 命令里尖括号占位符 `<option index>` 按提示顺序替换成对应的数字 index（例如重命名选 `1`，即 `"choices":[1]`），然后执行该命令即可一次成功。`resume` 会保留原命令的授权：原命令没有 `--yes` 时，resume 也不会带 `--yes`（不会因为重跑而自动应用迁移）。命令中的 `digests` 会逐个校验两次运行看到的是同一批问题；若不一致会再次以退出码 2 返回**新的** `decisions`（并带 `note` 提示），不会猜测作答。`fingerprint` 是整批决策的摘要，便于日志排查，不用于放行判断。
+3. 也可以直接自己拼 `--answers`：`--answers='{"fingerprint":"<fingerprint>","digests":["<digest>",...],"choices":[<index>,...]}'`。`digests` 与 `fingerprint` 可省略，但不建议省略（省略后不做一致性校验）。
+4. 已知会重命名时，可以一次成型（仅当恰好出现**一个**歧义提示时生效；出现第二个提示时仍会 exit 2 要求显式 answers，避免把 drop+create 误当成 rename）：
+
+```bash
+co drizzle generate --project=<项目名> --mode=<模式名> --yes --on-prompt=rename --json
+```
+
+**不要自己手写迁移 SQL，也不要修改 `drizzle/` 下的 `.sql` 或 `_journal.json` 来绕过决策。**
+
+### `--interactive` 仅人类使用
+
+`--interactive` 只给人类使用：显式开启后才会恢复 project / mode 选择与确认提示。AI 不要使用。
+
+### 涉及步骤
+
+1. 在 `*.table.ts` 中修改表定义（加字段、加索引、加关系等）。
+2. 自己运行 `co drizzle generate --project=<项目名> --mode=<模式名> --yes --json`，一次完成迁移文件的生成与应用。
+3. 按退出码处理：`0` 成功；`2` 走上面的决策流程；`3` / `4` 修正参数或稍后重试。
 
 ## 重要注意事项
 
-1.  **禁止自行编写迁移 SQL 文件**，必须由用户运行 `co drizzle generate` 生成。
+1.  **禁止自行编写迁移 SQL 文件**，由 AI 自己运行 `co drizzle generate ...`（见上节）生成。
 2.  数据库表名称必须以模块名开头，或完全等于模块名。请勿省略模块名。
 3.  **禁止使用外键约束**。如需创建索引，请使用单字段索引。
 4.  严格遵循一个文件一张数据库表的原则，切勿在单个文件中编写多张表。

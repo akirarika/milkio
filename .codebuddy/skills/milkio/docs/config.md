@@ -14,9 +14,9 @@
 
 ### 模式与文件名对应关系
 
-项目通过 `COOKBOOK_MODE` 环境变量区分不同运行模式，配置文件名与模式名严格对应。例如：
+项目通过 `VITE_MODE` 环境变量区分不同运行模式，配置文件名与模式名严格对应。例如：
 
-| COOKBOOK_MODE 值 | 对应的配置文件名 |
+| VITE_MODE 值 | 对应的配置文件名 |
 | ----------------- | ---------------- |
 | `test` | `test.config.ts` |
 | `dvlp-zh-cn` | `dvlp-zh-cn.config.ts` |
@@ -127,7 +127,7 @@ export default action({
 
 ```typescript
 // 在 config 中使用环境变量
-baseUrl: env.BASE_URL ?? 'http://localhost'
+baseUrl: env.BASE_URL ?? 'http://localhost';
 ```
 
 若环境变量未设置，则使用配置中的默认值。

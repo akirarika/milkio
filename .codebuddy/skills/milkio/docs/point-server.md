@@ -319,14 +319,14 @@ const result = await context.call(import('../points/$exports/add.action.ts'), {
 console.log(result.points); // 100
 ```
 
-## 参数类型
+## Params 与 Result 的类型
 
-参数类型应尽量基于数据库表类型派生，**避免直接使用 `number`、`string` 等基础类型**。可以通过 `Omit` 排除不需要的字段：
+Params 与 Result 的类型应尽量基于数据库表类型派生，**避免直接使用 `number`、`string` 等基础类型**。可以通过 `Omit` 排除不需要的字段：
 
 ```ts
 import { User } from "../../users/$databases/users.table.ts";
 
-export type Params = Omit<User, 'uploadAt' | 'clientId' | 'clientIp'>;
+type Params = Omit<User, 'uploadAt' | 'clientId' | 'clientIp'>;
 
 export async function handler(
   context: MilkioContext,
@@ -354,11 +354,13 @@ export async function handler(
 };
 ```
 
-分页、排序等数据库中无对应字段的参数，才可直接使用基础类型。
+对于分页、排序等数据库中无对应字段的参数的场景，才可直接使用基础类型。
 
 类型定义很重要——Milkio 基于 typia 会根据你定义的类型对前端传参进行校验：被 `Omit` 排除的字段会被自动过滤；缺少必填字段则会直接返回失败响应。
 
-**不要解构参数**，避免 `const { userId, points } = params.data` 这种写法，应直接使用 `params.data.userId`、`params.data.points` 访问。
+不要解构参数，避免 `const { userId, points } = params.data` 这种写法，应直接使用 `params.data.userId`、`params.data.points` 访问。
+
+尽量避免可选属性。代码都是你写的，你自然知道一个参数到底应该传还是不应该传。如果前端在发送请求的时候都传了，那你就不要假定这个参数是可以不传的。这更接近 Golang 的设计哲学，Golang 是没有可选参数的，如果一个值是可空的，而且确实有必要留空，那么可以先在注释里解释清楚什么情况下可以留空，然后使用联合类型，如 `id: User['id'] | null` 或者 `id: User['id'] | undefined`。
 
 ## 错误处理
 

@@ -1,5 +1,14 @@
 import { defineConfig } from "vite-plus";
 
+// Keep the embedded agent skill in sync whenever the executable is built
+// (`pnpm build:co` and the publish CI both go through this config).
+// The script skips silently when the canonical source directory is absent.
+const { generateSkills } = await import("./scripts/generate-skills.ts");
+const generatedSkills = await generateSkills();
+if (generatedSkills) {
+    console.log(`[skills] embedded ${generatedSkills.count} file(s) from .codebuddy/skills/milkio`);
+}
+
 // `co.exe` is a Node single executable application (SEA) built by Vite+
 // (`vp pack`, powered by tsdown). By default we build for the host platform
 // only. CI sets COOKBOOK_EXE_TARGETS=all to cross-build every published

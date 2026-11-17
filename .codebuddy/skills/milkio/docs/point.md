@@ -17,7 +17,7 @@
 
 ## 示例
 
-```
+```ts
 // /app/modules/application/add.action.ts
 import { MilkioContext, MilkioMeta } from '../../../.milkio/declares.ts';
 
@@ -59,7 +59,7 @@ Typia 通过分析你的代码并执行 AOT（提前）编译，将代码中的�
 
 你应该在对应模块的目录下创建一个 `__TEST__.test.ts`，在里面存放该模块所有相关的测试代码。每个模块只应有一个测试文件，将模块中所有端点的测试集中放在这个文件中。
 
-```
+```ts
 // /app/modules/application/__TEST__.test.ts
 test("test-bar", async () => {
     const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
