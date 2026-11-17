@@ -110,6 +110,38 @@ result;
 
 如果你需要根据失败类型做处理：`failure.kind === "fail"` 时可按 `failure.code` 分支并使用 `failure.data`；`failure.kind === "fault"` 时只应记录/上报，不要依赖具体 fault-code（客户端拿不到）。
 
+## 在测试（astra）中处理失败
+
+`astra.createMirrorWorld()` 返回的 `world.execute` / `world.emit` 内部就是通过客户端 `stargate` 访问 dev server，所以测试侧的失败返回值与客户端侧**完全一致**，类型也是同一个（`@milkio/astra` 直接取 stargate 实例的 `$types.failure`）：
+
+- 返回形状同样是 `[failure, result, details]`；
+- `failure.kind === "fail"` / `"fault"` 的区分、`failure.code` 收窄、`failure.data` 的类型都与客户端侧相同；
+- 客户端自己合成的传输层故障（`kind: "fault"` + `code: "NETWORK_ERROR"` / `"REQUEST_TIMEOUT"`）在测试侧同样可能返回。
+
+```ts
+const [context, fail, world] = await astra.createMirrorWorld(import.meta.url);
+
+const [failure, result] = await world.execute("/foo/bar", {
+  generateParams: false,
+  params: {},
+});
+
+if (failure) {
+  if (failure.kind === "fail" && failure.code === "USER_EMAIL_EXIST") {
+    // failure.data 已按该 fail-code 收窄
+    expect(failure.data.email).toBe("milkio@example.com");
+  }
+  if (failure.kind === "fault") {
+    // 意料外错误或传输层故障：仅记录/上报，并让测试失败
+    throw fail("Milkio did not execute successfully", failure);
+  }
+}
+
+result;
+```
+
+**不要再用 `'YOUR_ERR_CODE' in error` 判断失败类型**：这是旧版 keyed-map 协议的写法，客户端侧与测试侧都已不再使用；也不存在 `error.YOUR_ERR_CODE` 这种按错误码取 `data` 的方式。
+
 ## 调用 Stream 端点
 
 除了普通的 action 端点，Milkio 还支持 stream 端点（`.stream.ts`）。调用 stream 时，路径末尾需要加 `~` 后缀，`stargate.execute` 会返回一个 `AsyncGenerator`：

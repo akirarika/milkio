@@ -158,6 +158,16 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
 
     type RouteResult<Path extends keyof Generated["routeSchema"]> = Generated["routeSchema"][Path]["types"]["result"];
 
+    // The test side reaches the real dev server through the client-side stargate, so a
+    // failing `world.execute` / `world.emit` can be any failure the stargate itself can
+    // return: the generated fail-code union, the generic server fault, or a transport
+    // fault synthesized by the client (NETWORK_ERROR / REQUEST_TIMEOUT).
+    //
+    // Take the type from the stargate instance itself (`$types.failure`) instead of
+    // rebuilding it from `Generated["failure"]`, so the test side is type-identical to the
+    // client side, including every future addition to the client-visible failure union.
+    type PublicFailure = AstraOptions["stargate"]["$types"]["failure"];
+
     type Execute = <Path extends keyof Generated["routeSchema"]>(
         path: Path,
         options?: Mixin<
@@ -174,12 +184,12 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
     ) => Promise<
         Generated["routeSchema"][Path]["types"]["🥛"] extends boolean
         ? // action
-        [Generated["failure"], null, ExecuteResultsOption] | [null, RouteResult<Path>, ExecuteResultsOption]
+        [PublicFailure, null, ExecuteResultsOption] | [null, RouteResult<Path>, ExecuteResultsOption]
         : // stream
         // Stream schemas store the yield type directly in `result` (route-generate.ts
         // uses `Awaited<ReturnType<handler>> extends AsyncGenerator<infer I> ? I : never`),
         // so no `GeneratorGeneric` wrapper is needed here.
-        [Generated["failure"], null, ExecuteResultsOption] | [null, AsyncGenerator<[Generated["failure"], null] | [null, RouteResult<Path>], ExecuteResultsOption>]
+        [PublicFailure, null, ExecuteResultsOption] | [null, AsyncGenerator<[PublicFailure, null] | [null, RouteResult<Path>], undefined>, ExecuteResultsOption]
     >;
 
     type Emit = <Key extends keyof Generated["events"]>(
@@ -189,7 +199,7 @@ export async function createAstra<AstraOptions extends AstraOptionsInit, Generat
             headers?: Record<string, string>;
             timeout?: number;
         },
-    ) => Promise<[Generated["failure"], null, ExecuteResultsOption] | [null, Generated["events"][Key], ExecuteResultsOption]>;
+    ) => Promise<[PublicFailure, null, ExecuteResultsOption] | [null, Generated["events"][Key], ExecuteResultsOption]>;
 
     type MirrorWorld = Mixin<
         Awaited<ReturnType<AstraOptions["bootstrap"]>>,
